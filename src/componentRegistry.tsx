@@ -43,68 +43,81 @@ import {
   __experimentalBoxControl as BoxControl,
   __experimentalBorderControl as BorderControl,
   FormTokenField,
+  __experimentalGrid as Grid,
 } from '@wordpress/components';
 import { ComponentDefinition } from './types';
-import React from 'react';
-
-// Custom Grid component (not from WordPress)
-const GridContainer: React.FC<any> = ({ children, gridTemplateColumns = 'repeat(3, 1fr)', gap = '16px', gridTemplateRows = 'auto', ...rest }) => {
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns,
-        gridTemplateRows,
-        gap,
-        ...rest.style,
-      }}
-      {...rest}
-    >
-      {children}
-    </div>
-  );
-};
 
 export const componentRegistry: Record<string, ComponentDefinition> = {
   Grid: {
     name: 'Grid',
-    component: GridContainer,
+    component: Grid,
     acceptsChildren: true,
     defaultProps: {
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: '16px',
-      gridTemplateRows: 'auto',
+      columns: 3,
+      gap: 4,
     },
     propDefinitions: [
       {
-        name: 'gridTemplateColumns',
-        type: 'string',
-        defaultValue: 'repeat(3, 1fr)',
-        description: 'Grid column template (e.g., "1fr 2fr 1fr" or "repeat(3, 1fr)")',
+        name: 'columns',
+        type: 'number',
+        defaultValue: 3,
+        description: 'Number of columns',
       },
       {
-        name: 'gridTemplateRows',
-        type: 'string',
-        defaultValue: 'auto',
-        description: 'Grid row template (e.g., "100px auto 100px")',
+        name: 'rows',
+        type: 'number',
+        defaultValue: undefined,
+        description: 'Number of rows',
       },
       {
         name: 'gap',
-        type: 'string',
-        defaultValue: '16px',
-        description: 'Gap between grid items',
+        type: 'number',
+        defaultValue: 4,
+        description: 'Gap between items (multiplier of 4px)',
       },
       {
         name: 'rowGap',
         type: 'string',
         defaultValue: '',
-        description: 'Gap between rows (overrides gap)',
+        description: 'Gap between rows (CSS value)',
       },
       {
         name: 'columnGap',
         type: 'string',
         defaultValue: '',
-        description: 'Gap between columns (overrides gap)',
+        description: 'Gap between columns (CSS value)',
+      },
+      {
+        name: 'templateColumns',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom grid-template-columns (e.g., "1fr 2fr 1fr")',
+      },
+      {
+        name: 'templateRows',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom grid-template-rows (e.g., "100px auto 100px")',
+      },
+      {
+        name: 'align',
+        type: 'select',
+        options: ['start', 'center', 'end', 'stretch'],
+        defaultValue: 'start',
+        description: 'Vertical alignment of children',
+      },
+      {
+        name: 'justify',
+        type: 'select',
+        options: ['start', 'center', 'end', 'space-between', 'space-around'],
+        defaultValue: 'start',
+        description: 'Horizontal alignment of children',
+      },
+      {
+        name: 'isInline',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Display as inline-grid',
       },
     ],
   },
