@@ -13,7 +13,7 @@ interface ComponentTreeContextType {
   updateComponentProps: (id: string, props: Record<string, any>) => void;
   duplicateComponent: (id: string) => void;
   moveComponent: (id: string, direction: 'up' | 'down') => void;
-  reorderComponent: (activeId: string, overId: string) => void;
+  reorderComponent: (activeId: string, overId: string, position?: 'before' | 'after' | 'inside') => void;
   resetTree: () => void;
   getNodeById: (id: string) => ComponentNode | null;
 }
