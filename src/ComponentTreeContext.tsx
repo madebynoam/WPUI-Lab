@@ -13,6 +13,7 @@ interface ComponentTreeContextType {
   updateComponentProps: (id: string, props: Record<string, any>) => void;
   duplicateComponent: (id: string) => void;
   moveComponent: (id: string, direction: 'up' | 'down') => void;
+  reorderComponent: (activeId: string, overId: string) => void;
   resetTree: () => void;
   getNodeById: (id: string) => ComponentNode | null;
 }
@@ -156,6 +157,65 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     setTree(move(tree));
   };
 
+  const reorderComponent = (activeId: string, overId: string) => {
+    if (activeId === overId) return;
+
+    const findNodeAndParent = (
+      nodes: ComponentNode[],
+      id: string,
+      parent: ComponentNode[] | null = null
+    ): { node: ComponentNode; parent: ComponentNode[] | null; index: number } | null => {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === id) {
+          return { node: nodes[i], parent, index: i };
+        }
+        if (nodes[i].children) {
+          const found = findNodeAndParent(nodes[i].children!, id, nodes[i].children!);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const activeInfo = findNodeAndParent(tree, activeId, tree);
+    const overInfo = findNodeAndParent(tree, overId, tree);
+
+    if (!activeInfo || !overInfo) return;
+
+    // Only allow reordering within the same parent
+    if (activeInfo.parent !== overInfo.parent) return;
+
+    const parentArray = activeInfo.parent || tree;
+    const newParentArray = [...parentArray];
+
+    // Remove active item
+    const [removed] = newParentArray.splice(activeInfo.index, 1);
+
+    // Find new index for over item (may have changed after removal)
+    const newOverIndex = newParentArray.findIndex((n) => n.id === overId);
+
+    // Insert at new position
+    newParentArray.splice(newOverIndex, 0, removed);
+
+    // Update the tree
+    if (activeInfo.parent === null) {
+      setTree(newParentArray);
+    } else {
+      const updateTree = (nodes: ComponentNode[]): ComponentNode[] => {
+        return nodes.map((node) => {
+          if (node.children === activeInfo.parent) {
+            return { ...node, children: newParentArray };
+          }
+          if (node.children) {
+            return { ...node, children: updateTree(node.children) };
+          }
+          return node;
+        });
+      };
+      setTree(updateTree(tree));
+    }
+  };
+
   const resetTree = () => {
     setTree([]);
     setSelectedNodeId(null);
@@ -174,6 +234,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         updateComponentProps,
         duplicateComponent,
         moveComponent,
+        reorderComponent,
         resetTree,
         getNodeById: (id) => getNodeById(id),
       }}

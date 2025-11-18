@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useComponentTree } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
@@ -11,7 +11,23 @@ import {
   MenuGroup,
   MenuItem,
 } from '@wordpress/components';
-import { moreVertical, chevronDown, chevronRight } from '@wordpress/icons';
+import { moreVertical, chevronDown, chevronRight, dragHandle } from '@wordpress/icons';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TreeNodeProps {
   node: ComponentNode;
@@ -19,13 +35,35 @@ interface TreeNodeProps {
   positionInSet: number;
   setSize: number;
   allNodes: ComponentNode[];
+  expandedNodes: Set<string>;
+  setExpandedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
+  nodeRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
 }
 
-const TreeNode: React.FC<TreeNodeProps> = ({ node, level, positionInSet, setSize, allNodes }) => {
+const TreeNode: React.FC<TreeNodeProps> = ({
+  node,
+  level,
+  positionInSet,
+  setSize,
+  allNodes,
+  expandedNodes,
+  setExpandedNodes,
+  nodeRefs,
+}) => {
   const { selectedNodeId, setSelectedNodeId, removeComponent, duplicateComponent, moveComponent } = useComponentTree();
-  const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedNodeId === node.id;
+  const isExpanded = expandedNodes.has(node.id);
+
+  // Drag & drop
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: node.id });
 
   const renderChildren = () => {
     if (!isExpanded || !hasChildren) return null;
@@ -37,8 +75,30 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, positionInSet, setSize
         positionInSet={index + 1}
         setSize={node.children!.length}
         allNodes={allNodes}
+        expandedNodes={expandedNodes}
+        setExpandedNodes={setExpandedNodes}
+        nodeRefs={nodeRefs}
       />
     ));
+  };
+
+  const toggleExpand = () => {
+    if (!hasChildren) return;
+    setExpandedNodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(node.id)) {
+        next.delete(node.id);
+      } else {
+        next.add(node.id);
+      }
+      return next;
+    });
+  };
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
@@ -52,9 +112,18 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, positionInSet, setSize
         <TreeGridCell>
           {(props) => (
             <div
+              ref={(el) => {
+                setNodeRef(el);
+                if (el) {
+                  nodeRefs.current.set(node.id, el);
+                } else {
+                  nodeRefs.current.delete(node.id);
+                }
+              }}
               {...props}
               style={{
                 ...props.style,
+                ...style,
                 display: 'flex',
                 alignItems: 'center',
                 height: '32px',
@@ -77,13 +146,35 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, positionInSet, setSize
                 }
               }}
             >
+              {/* Drag Handle */}
+              <button
+                {...attributes}
+                {...listeners}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'grab',
+                  padding: '4px',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'inherit',
+                  opacity: 0.6,
+                }}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Drag to reorder"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 16.5h10V15H7v1.5zm0-9V9h10V7.5H7z" />
+                </svg>
+              </button>
               {/* Expander */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (hasChildren) {
-                    setIsExpanded(!isExpanded);
-                  }
+                  toggleExpand();
                 }}
                 style={{
                   background: 'none',
@@ -178,8 +269,76 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, positionInSet, setSize
 };
 
 export const TreePanel: React.FC = () => {
-  const { tree, addComponent, selectedNodeId, resetTree } = useComponentTree();
+  const { tree, addComponent, selectedNodeId, resetTree, reorderComponent } = useComponentTree();
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Drag & drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      reorderComponent(String(active.id), String(over.id));
+    }
+  };
+
+  // Find all ancestor IDs of a node
+  const findAncestors = (nodes: ComponentNode[], targetId: string, ancestors: string[] = []): string[] | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) {
+        return ancestors;
+      }
+      if (node.children) {
+        const result = findAncestors(node.children, targetId, [...ancestors, node.id]);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+
+  // Auto-expand ancestors and scroll to selected node
+  useEffect(() => {
+    if (selectedNodeId) {
+      const ancestors = findAncestors(tree, selectedNodeId);
+      if (ancestors) {
+        setExpandedNodes((prev) => {
+          const next = new Set(prev);
+          ancestors.forEach((id) => next.add(id));
+          return next;
+        });
+
+        // Scroll to selected node after a brief delay to ensure rendering
+        setTimeout(() => {
+          const element = nodeRefs.current.get(selectedNodeId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 100);
+      }
+    }
+  }, [selectedNodeId, tree]);
+
+  // Get all node IDs for SortableContext
+  const getAllNodeIds = (nodes: ComponentNode[]): string[] => {
+    const ids: string[] = [];
+    nodes.forEach((node) => {
+      ids.push(node.id);
+      if (node.children) {
+        ids.push(...getAllNodeIds(node.children));
+      }
+    });
+    return ids;
+  };
+
+  const allNodeIds = getAllNodeIds(tree);
 
   const selectedNode = selectedNodeId
     ? tree.find((n) => findNodeById(n, selectedNodeId))
@@ -263,7 +422,7 @@ export const TreePanel: React.FC = () => {
           <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>
             Select Component:
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '300px', overflow: 'auto' }}>
             {Object.keys(componentRegistry).map((componentType) => (
               <button
                 key={componentType}
@@ -298,18 +457,29 @@ export const TreePanel: React.FC = () => {
             No components yet
           </div>
         ) : (
-          <TreeGrid style={{ width: '100%' }}>
-            {tree.map((node, index) => (
-              <TreeNode
-                key={node.id}
-                node={node}
-                level={1}
-                positionInSet={index + 1}
-                setSize={tree.length}
-                allNodes={tree}
-              />
-            ))}
-          </TreeGrid>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={allNodeIds} strategy={verticalListSortingStrategy}>
+              <TreeGrid style={{ width: '100%' }}>
+                {tree.map((node, index) => (
+                  <TreeNode
+                    key={node.id}
+                    node={node}
+                    level={1}
+                    positionInSet={index + 1}
+                    setSize={tree.length}
+                    allNodes={tree}
+                    expandedNodes={expandedNodes}
+                    setExpandedNodes={setExpandedNodes}
+                    nodeRefs={nodeRefs}
+                  />
+                ))}
+              </TreeGrid>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 

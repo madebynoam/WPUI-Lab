@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useComponentTree } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import { Breadcrumb } from './Breadcrumb';
+import { wordpress } from '@wordpress/icons';
 
 const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
   const { setSelectedNodeId, selectedNodeId } = useComponentTree();
@@ -13,9 +14,9 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
   }
 
   const Component = definition.component;
-
-  // Handle special text/content props for Text and Heading
   let props = { ...node.props };
+
+  // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading') {
     const content = props.content || definition.defaultProps?.children;
     delete props.content;
@@ -58,7 +59,77 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
     );
   }
 
-  // Regular components with children
+  // Handle Icon component - needs icon prop from @wordpress/icons
+  if (node.type === 'Icon') {
+    // Use wordpress icon as default
+    const iconProp = wordpress;
+    delete props.icon;
+
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedNodeId(node.id);
+        }}
+        style={{
+          outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
+          cursor: 'pointer',
+          display: 'inline-block',
+        }}
+      >
+        <Component icon={iconProp} {...props} />
+      </div>
+    );
+  }
+
+  // Form controls and self-contained components (don't accept children)
+  const formControls = [
+    'TextControl',
+    'TextareaControl',
+    'SelectControl',
+    'ToggleControl',
+    'CheckboxControl',
+    'SearchControl',
+    'NumberControl',
+    'RadioControl',
+    'RangeControl',
+    'ColorPicker',
+    'ColorPalette',
+    'Spacer',
+    'Divider',
+    'Spinner',
+    'DateTimePicker',
+    'FontSizePicker',
+    'AnglePickerControl',
+    'BoxControl',
+    'BorderControl',
+    'FormTokenField',
+    'TabPanel',
+  ];
+
+  if (formControls.includes(node.type)) {
+    const mergedProps = { ...definition.defaultProps, ...props, onChange: () => {} };
+
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedNodeId(node.id);
+        }}
+        style={{
+          outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
+          cursor: 'pointer',
+          padding: '4px',
+        }}
+      >
+        <Component {...mergedProps} />
+      </div>
+    );
+  }
+
+  // Regular components with children - merge with defaultProps
+  const mergedProps = { ...definition.defaultProps, ...props };
+
   return (
     <div
       onClick={(e) => {
@@ -70,7 +141,7 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
         cursor: 'pointer',
       }}
     >
-      <Component {...props}>
+      <Component {...mergedProps}>
         {node.children && node.children.length > 0
           ? node.children.map((child) => <RenderNode key={child.id} node={child} />)
           : null}
@@ -80,7 +151,37 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
 };
 
 export const Canvas: React.FC = () => {
-  const { tree } = useComponentTree();
+  const { tree, selectedNodeId, setSelectedNodeId } = useComponentTree();
+
+  // Find parent of a node
+  const findParent = (nodes: ComponentNode[], targetId: string, parent: ComponentNode | null = null): ComponentNode | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) {
+        return parent;
+      }
+      if (node.children) {
+        const found = findParent(node.children, targetId, node);
+        if (found !== undefined) return found;
+      }
+    }
+    return undefined;
+  };
+
+  // Keyboard shortcut: Shift+Enter to select parent
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === 'Enter' && selectedNodeId) {
+        e.preventDefault();
+        const parent = findParent(tree, selectedNodeId);
+        if (parent) {
+          setSelectedNodeId(parent.id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNodeId, tree, setSelectedNodeId]);
 
   return (
     <div
