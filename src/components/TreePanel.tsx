@@ -2,118 +2,178 @@ import React, { useState } from 'react';
 import { useComponentTree } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
-import { Button } from '@wordpress/components';
+import {
+  Button,
+  __experimentalTreeGrid as TreeGrid,
+  __experimentalTreeGridRow as TreeGridRow,
+  __experimentalTreeGridCell as TreeGridCell,
+  DropdownMenu,
+  MenuGroup,
+  MenuItem,
+} from '@wordpress/components';
+import { moreVertical, chevronDown, chevronRight } from '@wordpress/icons';
 
-const TreeNode: React.FC<{ node: ComponentNode; level: number }> = ({ node, level }) => {
+interface TreeNodeProps {
+  node: ComponentNode;
+  level: number;
+  positionInSet: number;
+  setSize: number;
+  allNodes: ComponentNode[];
+}
+
+const TreeNode: React.FC<TreeNodeProps> = ({ node, level, positionInSet, setSize, allNodes }) => {
   const { selectedNodeId, setSelectedNodeId, removeComponent, duplicateComponent, moveComponent } = useComponentTree();
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
+  const isSelected = selectedNodeId === node.id;
+
+  const renderChildren = () => {
+    if (!isExpanded || !hasChildren) return null;
+    return node.children!.map((child, index) => (
+      <TreeNode
+        key={child.id}
+        node={child}
+        level={level + 1}
+        positionInSet={index + 1}
+        setSize={node.children!.length}
+        allNodes={allNodes}
+      />
+    ));
+  };
 
   return (
-    <div>
-      <div
-        style={{
-          padding: '6px 8px',
-          paddingLeft: `${level * 16 + 8}px`,
-          cursor: 'pointer',
-          backgroundColor: selectedNodeId === node.id ? '#e0e0e0' : 'transparent',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          borderLeft: selectedNodeId === node.id ? '3px solid #0073aa' : 'none',
-        }}
-        onClick={() => setSelectedNodeId(node.id)}
+    <>
+      <TreeGridRow
+        level={level}
+        positionInSet={positionInSet}
+        setSize={setSize}
+        isExpanded={hasChildren ? isExpanded : undefined}
       >
-        {hasChildren && (
-          <span
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-            style={{ cursor: 'pointer', userSelect: 'none', width: '16px' }}
-          >
-            {isExpanded ? '▼' : '▶'}
-          </span>
-        )}
-        {!hasChildren && <span style={{ width: '16px' }}></span>}
-        <span style={{ flex: 1, fontSize: '13px' }}>{node.type}</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            moveComponent(node.id, 'up');
-          }}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            fontSize: '11px',
-            color: '#666',
-          }}
-          title="Move up"
-        >
-          ↑
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            moveComponent(node.id, 'down');
-          }}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            fontSize: '11px',
-            color: '#666',
-          }}
-          title="Move down"
-        >
-          ↓
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            duplicateComponent(node.id);
-          }}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            fontSize: '11px',
-            color: '#666',
-          }}
-          title="Duplicate"
-        >
-          ⎘
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            removeComponent(node.id);
-          }}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            fontSize: '11px',
-            color: '#c33',
-          }}
-          title="Remove"
-        >
-          ✕
-        </button>
-      </div>
-      {isExpanded && hasChildren && (
-        <div>
-          {node.children!.map((child) => (
-            <TreeNode key={child.id} node={child} level={level + 1} />
-          ))}
-        </div>
-      )}
-    </div>
+        <TreeGridCell>
+          {(props) => (
+            <div
+              {...props}
+              style={{
+                ...props.style,
+                display: 'flex',
+                alignItems: 'center',
+                height: '32px',
+                paddingLeft: `${(level - 1) * 12 + 8}px`,
+                paddingRight: '8px',
+                backgroundColor: isSelected ? '#2271b1' : 'transparent',
+                color: isSelected ? '#fff' : '#1e1e1e',
+                cursor: 'pointer',
+                transition: 'background-color 0.1s ease',
+              }}
+              onClick={() => setSelectedNodeId(node.id)}
+              onMouseEnter={(e) => {
+                if (!isSelected) {
+                  e.currentTarget.style.backgroundColor = '#f0f0f0';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSelected) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              {/* Expander */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (hasChildren) {
+                    setIsExpanded(!isExpanded);
+                  }
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: hasChildren ? 'pointer' : 'default',
+                  padding: '4px',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'inherit',
+                  opacity: hasChildren ? 1 : 0,
+                  transition: 'transform 0.1s ease',
+                  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                }}
+                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                disabled={!hasChildren}
+              >
+                {hasChildren && (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.5 11.6L12 16l-5.5-4.4.9-1.2L12 14l4.5-3.6 1 1.2z" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Component Name */}
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: '13px',
+                  fontWeight: 400,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  marginLeft: '4px',
+                }}
+              >
+                {node.type}
+              </span>
+
+              {/* Options Menu */}
+              <div onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu
+                  icon={moreVertical}
+                  label="Options"
+                  className="wp-designer-tree-menu"
+                  popoverProps={{ placement: 'left-start' }}
+                >
+                  {() => (
+                    <MenuGroup>
+                      <MenuItem
+                        onClick={() => {
+                          moveComponent(node.id, 'up');
+                        }}
+                      >
+                        Move up
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          moveComponent(node.id, 'down');
+                        }}
+                      >
+                        Move down
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          duplicateComponent(node.id);
+                        }}
+                      >
+                        Duplicate
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          removeComponent(node.id);
+                        }}
+                        isDestructive
+                      >
+                        Remove
+                      </MenuItem>
+                    </MenuGroup>
+                  )}
+                </DropdownMenu>
+              </div>
+            </div>
+          )}
+        </TreeGridCell>
+      </TreeGridRow>
+      {renderChildren()}
+    </>
   );
 };
 
@@ -238,7 +298,18 @@ export const TreePanel: React.FC = () => {
             No components yet
           </div>
         ) : (
-          tree.map((node) => <TreeNode key={node.id} node={node} level={0} />)
+          <TreeGrid style={{ width: '100%' }}>
+            {tree.map((node, index) => (
+              <TreeNode
+                key={node.id}
+                node={node}
+                level={1}
+                positionInSet={index + 1}
+                setSize={tree.length}
+                allNodes={tree}
+              />
+            ))}
+          </TreeGrid>
         )}
       </div>
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { useComponentTree } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
+import { Breadcrumb } from './Breadcrumb';
 
 const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
   const { setSelectedNodeId, selectedNodeId } = useComponentTree();
@@ -85,19 +86,28 @@ export const Canvas: React.FC = () => {
     <div
       style={{
         flex: 1,
-        padding: '20px',
-        backgroundColor: '#f0f0f0',
-        overflow: 'auto',
-        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      {tree.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-          Add components from the tree panel to get started
-        </div>
-      ) : (
-        tree.map((node) => <RenderNode key={node.id} node={node} />)
-      )}
+      <div
+        style={{
+          flex: 1,
+          padding: '20px',
+          backgroundColor: '#f0f0f0',
+          overflow: 'auto',
+        }}
+      >
+        {tree.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            Add components from the tree panel to get started
+          </div>
+        ) : (
+          tree.map((node) => <RenderNode key={node.id} node={node} />)
+        )}
+      </div>
+      <Breadcrumb />
     </div>
   );
 };
