@@ -157,63 +157,92 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     setTree(move(tree));
   };
 
-  const reorderComponent = (activeId: string, overId: string) => {
-    if (activeId === overId) return;
+  const reorderComponent = (
+    activeId: string,
+    overId: string,
+    position?: 'before' | 'after' | 'inside'
+  ) => {
+    if (activeId === overId && position !== 'inside') return;
 
     const findNodeAndParent = (
       nodes: ComponentNode[],
       id: string,
-      parent: ComponentNode[] | null = null
-    ): { node: ComponentNode; parent: ComponentNode[] | null; index: number } | null => {
+      parentId: string | null = null
+    ): { node: ComponentNode; parentId: string | null; parentArray: ComponentNode[]; index: number } | null => {
       for (let i = 0; i < nodes.length; i++) {
         if (nodes[i].id === id) {
-          return { node: nodes[i], parent, index: i };
+          return { node: nodes[i], parentId, parentArray: nodes, index: i };
         }
         if (nodes[i].children) {
-          const found = findNodeAndParent(nodes[i].children!, id, nodes[i].children!);
+          const found = findNodeAndParent(nodes[i].children!, id, nodes[i].id);
           if (found) return found;
         }
       }
       return null;
     };
 
-    const activeInfo = findNodeAndParent(tree, activeId, tree);
-    const overInfo = findNodeAndParent(tree, overId, tree);
+    const activeInfo = findNodeAndParent(tree, activeId);
+    const overInfo = findNodeAndParent(tree, overId);
 
     if (!activeInfo || !overInfo) return;
 
-    // Only allow reordering within the same parent
-    if (activeInfo.parent !== overInfo.parent) return;
+    // Prevent dropping a parent into its own child
+    const isDescendant = (parentId: string, childId: string): boolean => {
+      const node = getNodeById(parentId);
+      if (!node || !node.children) return false;
+      for (const child of node.children) {
+        if (child.id === childId || isDescendant(child.id, childId)) return true;
+      }
+      return false;
+    };
 
-    const parentArray = activeInfo.parent || tree;
-    const newParentArray = [...parentArray];
+    if (isDescendant(activeId, overId)) return;
 
-    // Remove active item
-    const [removed] = newParentArray.splice(activeInfo.index, 1);
+    // Clone the tree for manipulation
+    let newTree = JSON.parse(JSON.stringify(tree)) as ComponentNode[];
 
-    // Find new index for over item (may have changed after removal)
-    const newOverIndex = newParentArray.findIndex((n) => n.id === overId);
+    // Remove the active node from its current position
+    const removeNode = (nodes: ComponentNode[], id: string): ComponentNode | null => {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === id) {
+          return nodes.splice(i, 1)[0];
+        }
+        if (nodes[i].children) {
+          const removed = removeNode(nodes[i].children!, id);
+          if (removed) return removed;
+        }
+      }
+      return null;
+    };
 
-    // Insert at new position
-    newParentArray.splice(newOverIndex, 0, removed);
+    const movedNode = removeNode(newTree, activeId);
+    if (!movedNode) return;
 
-    // Update the tree
-    if (activeInfo.parent === null) {
-      setTree(newParentArray);
-    } else {
-      const updateTree = (nodes: ComponentNode[]): ComponentNode[] => {
-        return nodes.map((node) => {
-          if (node.children === activeInfo.parent) {
-            return { ...node, children: newParentArray };
+    // Insert the node at the new position
+    const insertNode = (nodes: ComponentNode[], targetId: string, node: ComponentNode, pos: 'before' | 'after' | 'inside'): boolean => {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === targetId) {
+          if (pos === 'inside') {
+            if (!nodes[i].children) nodes[i].children = [];
+            nodes[i].children!.push(node);
+          } else if (pos === 'before') {
+            nodes.splice(i, 0, node);
+          } else {
+            nodes.splice(i + 1, 0, node);
           }
-          if (node.children) {
-            return { ...node, children: updateTree(node.children) };
-          }
-          return node;
-        });
-      };
-      setTree(updateTree(tree));
-    }
+          return true;
+        }
+        if (nodes[i].children) {
+          if (insertNode(nodes[i].children!, targetId, node, pos)) return true;
+        }
+      }
+      return false;
+    };
+
+    const actualPosition = position || 'after';
+    insertNode(newTree, overId, movedNode, actualPosition);
+
+    setTree(newTree);
   };
 
   const resetTree = () => {

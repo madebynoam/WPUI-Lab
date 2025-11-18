@@ -20,13 +20,11 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverEvent,
+  useDraggable,
+  useDroppable,
+  DragOverlay,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 interface TreeNodeProps {
@@ -38,6 +36,8 @@ interface TreeNodeProps {
   expandedNodes: Set<string>;
   setExpandedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
   nodeRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+  dragOverId: string | null;
+  dropPosition: 'before' | 'after' | 'inside' | null;
 }
 
 const TreeNode: React.FC<TreeNodeProps> = ({
@@ -49,21 +49,30 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   expandedNodes,
   setExpandedNodes,
   nodeRefs,
+  dragOverId,
+  dropPosition,
 }) => {
   const { selectedNodeId, setSelectedNodeId, removeComponent, duplicateComponent, moveComponent } = useComponentTree();
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedNodeId === node.id;
   const isExpanded = expandedNodes.has(node.id);
+  const definition = componentRegistry[node.type];
+  const canAcceptChildren = definition?.acceptsChildren ?? false;
 
   // Drag & drop
   const {
     attributes,
     listeners,
-    setNodeRef,
+    setNodeRef: setDragRef,
     transform,
-    transition,
     isDragging,
-  } = useSortable({ id: node.id });
+  } = useDraggable({ id: node.id });
+
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: node.id });
+
+  const showDropBefore = dragOverId === node.id && dropPosition === 'before';
+  const showDropAfter = dragOverId === node.id && dropPosition === 'after';
+  const showDropInside = dragOverId === node.id && dropPosition === 'inside';
 
   const renderChildren = () => {
     if (!isExpanded || !hasChildren) return null;
@@ -78,6 +87,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         expandedNodes={expandedNodes}
         setExpandedNodes={setExpandedNodes}
         nodeRefs={nodeRefs}
+        dragOverId={dragOverId}
+        dropPosition={dropPosition}
       />
     ));
   };
@@ -97,12 +108,18 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
   };
 
   return (
     <>
+      {showDropBefore && (
+        <div style={{
+          height: '2px',
+          backgroundColor: '#007cba',
+          marginLeft: `${(level - 1) * 12 + 8}px`,
+        }} />
+      )}
       <TreeGridRow
         level={level}
         positionInSet={positionInSet}
@@ -113,7 +130,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           {(props) => (
             <div
               ref={(el) => {
-                setNodeRef(el);
+                setDragRef(el);
+                setDropRef(el);
                 if (el) {
                   nodeRefs.current.set(node.id, el);
                 } else {
@@ -129,19 +147,20 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 height: '32px',
                 paddingLeft: `${(level - 1) * 12 + 8}px`,
                 paddingRight: '8px',
-                backgroundColor: isSelected ? '#2271b1' : 'transparent',
+                backgroundColor: isSelected ? '#2271b1' : (showDropInside ? '#e0f0ff' : 'transparent'),
                 color: isSelected ? '#fff' : '#1e1e1e',
-                cursor: 'pointer',
+                cursor: isDragging ? 'grabbing' : 'pointer',
                 transition: 'background-color 0.1s ease',
+                outline: showDropInside ? '2px solid #007cba' : 'none',
               }}
               onClick={() => setSelectedNodeId(node.id)}
               onMouseEnter={(e) => {
-                if (!isSelected) {
+                if (!isSelected && !showDropInside) {
                   e.currentTarget.style.backgroundColor = '#f0f0f0';
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isSelected) {
+                if (!isSelected && !showDropInside) {
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }
               }}
@@ -263,7 +282,21 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           )}
         </TreeGridCell>
       </TreeGridRow>
+      {showDropAfter && !isExpanded && (
+        <div style={{
+          height: '2px',
+          backgroundColor: '#007cba',
+          marginLeft: `${(level - 1) * 12 + 8}px`,
+        }} />
+      )}
       {renderChildren()}
+      {showDropAfter && isExpanded && hasChildren && (
+        <div style={{
+          height: '2px',
+          backgroundColor: '#007cba',
+          marginLeft: `${level * 12 + 8}px`,
+        }} />
+      )}
     </>
   );
 };
@@ -273,21 +306,91 @@ export const TreePanel: React.FC = () => {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | 'inside' | null>(null);
 
   // Drag & drop sensors
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
   );
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over, delta } = event;
+
+    if (!over || !active) {
+      setDragOverId(null);
+      setDropPosition(null);
+      return;
+    }
+
+    const overId = String(over.id);
+    const overElement = nodeRefs.current.get(overId);
+
+    if (!overElement) {
+      setDragOverId(null);
+      setDropPosition(null);
+      return;
+    }
+
+    // Get the bounding rect of the element we're over
+    const rect = overElement.getBoundingClientRect();
+    const mouseY = event.activatorEvent instanceof MouseEvent ? event.activatorEvent.clientY + delta.y : rect.top + rect.height / 2;
+
+    // Calculate position within the element (0 = top, 1 = bottom)
+    const relativeY = (mouseY - rect.top) / rect.height;
+
+    // Determine drop position
+    let position: 'before' | 'after' | 'inside' = 'after';
+
+    // Check if the node can accept children
+    const findNode = (nodes: ComponentNode[], id: string): ComponentNode | null => {
+      for (const node of nodes) {
+        if (node.id === id) return node;
+        if (node.children) {
+          const found = findNode(node.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const overNode = findNode(tree, overId);
+    const canAcceptChildren = overNode && componentRegistry[overNode.type]?.acceptsChildren;
+    const isExpanded = overNode && expandedNodes.has(overNode.id);
+
+    // Top 25% = before, bottom 25% = after, middle 50% = inside (if can accept children)
+    if (relativeY < 0.25) {
+      position = 'before';
+    } else if (relativeY > 0.75) {
+      position = 'after';
+    } else if (canAcceptChildren) {
+      position = 'inside';
+    } else if (relativeY < 0.5) {
+      position = 'before';
+    } else {
+      position = 'after';
+    }
+
+    setDragOverId(overId);
+    setDropPosition(position);
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      reorderComponent(String(active.id), String(over.id));
+    if (over && active.id !== over.id && dropPosition) {
+      reorderComponent(String(active.id), String(over.id), dropPosition);
+    } else if (over && active.id === over.id && dropPosition === 'inside') {
+      reorderComponent(String(active.id), String(over.id), dropPosition);
     }
+
+    setDragOverId(null);
+    setDropPosition(null);
   };
 
   // Find all ancestor IDs of a node
@@ -461,24 +564,25 @@ export const TreePanel: React.FC = () => {
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
           >
-            <SortableContext items={allNodeIds} strategy={verticalListSortingStrategy}>
-              <TreeGrid style={{ width: '100%' }}>
-                {tree.map((node, index) => (
-                  <TreeNode
-                    key={node.id}
-                    node={node}
-                    level={1}
-                    positionInSet={index + 1}
-                    setSize={tree.length}
-                    allNodes={tree}
-                    expandedNodes={expandedNodes}
-                    setExpandedNodes={setExpandedNodes}
-                    nodeRefs={nodeRefs}
-                  />
-                ))}
-              </TreeGrid>
-            </SortableContext>
+            <TreeGrid style={{ width: '100%' }}>
+              {tree.map((node, index) => (
+                <TreeNode
+                  key={node.id}
+                  node={node}
+                  level={1}
+                  positionInSet={index + 1}
+                  setSize={tree.length}
+                  allNodes={tree}
+                  expandedNodes={expandedNodes}
+                  setExpandedNodes={setExpandedNodes}
+                  nodeRefs={nodeRefs}
+                  dragOverId={dragOverId}
+                  dropPosition={dropPosition}
+                />
+              ))}
+            </TreeGrid>
           </DndContext>
         )}
       </div>
