@@ -133,9 +133,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     <>
       {showDropBefore && (
         <div style={{
-          height: '2px',
-          backgroundColor: '#007cba',
+          height: '3px',
+          backgroundColor: '#2271b1',
           marginLeft: `${(level - 1) * 12 + 8}px`,
+          borderRadius: '2px',
+          boxShadow: '0 0 4px rgba(34, 113, 177, 0.5)',
         }} />
       )}
       <TreeGridRow
@@ -170,11 +172,13 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 height: '32px',
                 paddingLeft: `${(level - 1) * 12 + 8}px`,
                 paddingRight: '8px',
-                backgroundColor: isSelected ? '#2271b1' : (showDropInside ? '#e0f0ff' : 'transparent'),
+                backgroundColor: isSelected ? '#2271b1' : (showDropInside ? '#cce5ff' : 'transparent'),
                 color: isSelected ? '#fff' : '#1e1e1e',
                 cursor: isDragging ? 'grabbing' : 'pointer',
-                transition: 'background-color 0.1s ease',
-                outline: showDropInside ? '2px solid #007cba' : 'none',
+                transition: 'background-color 0.1s ease, border 0.1s ease',
+                border: showDropInside ? '2px solid #2271b1' : '2px solid transparent',
+                borderRadius: showDropInside ? '4px' : '0',
+                margin: showDropInside ? '2px 0' : '0',
               }}
               onClick={() => setSelectedNodeId(node.id)}
               onMouseEnter={(e) => {
@@ -309,17 +313,21 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       </TreeGridRow>
       {showDropAfter && !isExpanded && (
         <div style={{
-          height: '2px',
-          backgroundColor: '#007cba',
+          height: '3px',
+          backgroundColor: '#2271b1',
           marginLeft: `${(level - 1) * 12 + 8}px`,
+          borderRadius: '2px',
+          boxShadow: '0 0 4px rgba(34, 113, 177, 0.5)',
         }} />
       )}
       {renderChildren()}
       {showDropAfter && isExpanded && hasChildren && (
         <div style={{
-          height: '2px',
-          backgroundColor: '#007cba',
+          height: '3px',
+          backgroundColor: '#2271b1',
           marginLeft: `${level * 12 + 8}px`,
+          borderRadius: '2px',
+          boxShadow: '0 0 4px rgba(34, 113, 177, 0.5)',
         }} />
       )}
     </>
@@ -381,14 +389,14 @@ export const TreePanel: React.FC = () => {
       return;
     }
 
-    // Use the center Y position of the dragged item
+    // Get center point of dragged item
     const mouseY = activeRect.top + activeRect.height / 2;
+    const mouseX = activeRect.left + activeRect.width / 2;
 
-    // Calculate position within the element (0 = top, 1 = bottom)
-    const relativeY = (mouseY - rect.top) / rect.height;
-
-    // Determine drop position
-    let position: 'before' | 'after' | 'inside' = 'after';
+    // Calculate distances to edges (Gutenberg-style pixel-based)
+    const distanceToTop = mouseY - rect.top;
+    const distanceToBottom = rect.bottom - mouseY;
+    const distanceToLeft = mouseX - rect.left;
 
     // Check if the node can accept children
     const findNode = (nodes: ComponentNode[], id: string): ComponentNode | null => {
@@ -403,23 +411,35 @@ export const TreePanel: React.FC = () => {
     };
 
     const overNode = findNode(tree, overId);
+    const activeNode = findNode(tree, String(active.id));
     const canAcceptChildren = overNode && componentRegistry[overNode.type]?.acceptsChildren;
+    const isExpanded = overNode && expandedNodes.has(overNode.id);
     const hasChildren = overNode && overNode.children && overNode.children.length > 0;
 
-    // Gutenberg-style positioning: Use threshold-based edge detection
-    // For containers with children: top/bottom 20% = before/after, middle 60% = inside
-    // For empty containers: top/bottom 10% = before/after, middle 80% = inside (easier to drop inside)
-    const edgeThreshold = hasChildren ? 0.2 : 0.1;
+    // Gutenberg-style thresholds (pixel-based, not percentage)
+    const EDGE_THRESHOLD = 12; // pixels from top/bottom edge for before/after
+    const NEST_INDENT = 16; // horizontal offset needed to trigger nesting
 
-    if (relativeY < edgeThreshold) {
+    // Determine drop position using Gutenberg's algorithm
+    let position: 'before' | 'after' | 'inside' = 'after';
+
+    // Priority 1: Within edge threshold → before/after
+    if (distanceToTop <= EDGE_THRESHOLD) {
       position = 'before';
-    } else if (relativeY > (1 - edgeThreshold)) {
+    } else if (distanceToBottom <= EDGE_THRESHOLD) {
       position = 'after';
-    } else if (canAcceptChildren) {
+    }
+    // Priority 2: Expanded container with children → always after (below children)
+    else if (isExpanded && hasChildren) {
+      position = 'after';
+    }
+    // Priority 3: Check for nesting intent (horizontal offset + container capability)
+    else if (canAcceptChildren && distanceToLeft >= NEST_INDENT) {
       position = 'inside';
-    } else {
-      // If can't accept children, use middle point to decide before/after
-      position = relativeY < 0.5 ? 'before' : 'after';
+    }
+    // Priority 4: Default to closest edge
+    else {
+      position = distanceToTop < distanceToBottom ? 'before' : 'after';
     }
 
     setDragOverId(overId);
