@@ -20,18 +20,27 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'size',
         type: 'select',
-        options: ['small', 'medium', 'large'],
+        options: ['xSmall', 'small', 'medium', 'large'],
         defaultValue: 'medium',
+        description: 'Card size'
       },
       {
         name: 'elevation',
         type: 'number',
         defaultValue: 0,
+        description: 'Shadow depth (0-5)'
       },
       {
         name: 'isBorderless',
         type: 'boolean',
         defaultValue: false,
+        description: 'Remove border'
+      },
+      {
+        name: 'isRounded',
+        type: 'boolean',
+        defaultValue: true,
+        description: 'Rounded corners'
       },
     ],
   },
@@ -42,9 +51,23 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     defaultProps: {},
     propDefinitions: [
       {
+        name: 'size',
+        type: 'select',
+        options: ['xSmall', 'small', 'medium', 'large'],
+        defaultValue: 'medium',
+        description: 'Padding size'
+      },
+      {
         name: 'isShady',
         type: 'boolean',
         defaultValue: false,
+        description: 'Light gray background'
+      },
+      {
+        name: 'isScrollable',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Enable scrolling'
       },
     ],
   },
@@ -55,9 +78,23 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     defaultProps: {},
     propDefinitions: [
       {
+        name: 'size',
+        type: 'select',
+        options: ['xSmall', 'small', 'medium', 'large'],
+        defaultValue: 'medium',
+        description: 'Padding size'
+      },
+      {
         name: 'isShady',
         type: 'boolean',
         defaultValue: false,
+        description: 'Light gray background'
+      },
+      {
+        name: 'isBorderless',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Remove border'
       },
     ],
   },
@@ -68,32 +105,48 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     defaultProps: { children: 'Button' },
     propDefinitions: [
       {
+        name: 'text',
+        type: 'string',
+        defaultValue: 'Button',
+        description: 'Button text content',
+      },
+      {
         name: 'variant',
         type: 'select',
         options: ['primary', 'secondary', 'tertiary', 'link'],
         defaultValue: 'secondary',
+        description: 'Button style variant'
       },
       {
         name: 'size',
         type: 'select',
         options: ['small', 'default', 'compact'],
         defaultValue: 'default',
+        description: 'Button size'
       },
       {
         name: 'isDestructive',
         type: 'boolean',
         defaultValue: false,
+        description: 'Red destructive style'
       },
       {
         name: 'disabled',
         type: 'boolean',
         defaultValue: false,
+        description: 'Disable button'
       },
       {
-        name: 'text',
-        type: 'string',
-        defaultValue: 'Button',
-        description: 'Button text content',
+        name: 'isBusy',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Show loading state'
+      },
+      {
+        name: 'isPressed',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Pressed/active state'
       },
     ],
   },
@@ -107,18 +160,40 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'spacing',
         type: 'number',
         defaultValue: 2,
+        description: 'Space between items (multiplier of 4px)'
       },
       {
         name: 'alignment',
         type: 'select',
-        options: ['top', 'center', 'bottom', 'stretch'],
+        options: ['top', 'topLeft', 'topRight', 'left', 'center', 'right', 'bottom', 'bottomLeft', 'bottomRight', 'edge', 'stretch'],
         defaultValue: 'center',
+        description: 'Vertical alignment'
       },
       {
         name: 'justify',
         type: 'select',
-        options: ['flex-start', 'center', 'flex-end', 'space-between', 'space-around'],
+        options: ['flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly'],
         defaultValue: 'flex-start',
+        description: 'Horizontal distribution'
+      },
+      {
+        name: 'direction',
+        type: 'select',
+        options: ['row', 'column'],
+        defaultValue: 'row',
+        description: 'Content flow direction'
+      },
+      {
+        name: 'expanded',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Expand to max width'
+      },
+      {
+        name: 'wrap',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Allow items to wrap'
       },
     ],
   },
@@ -132,12 +207,40 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'spacing',
         type: 'number',
         defaultValue: 2,
+        description: 'Space between items (multiplier of 4px)'
       },
       {
         name: 'alignment',
         type: 'select',
-        options: ['left', 'center', 'right', 'stretch'],
+        options: ['top', 'topLeft', 'topRight', 'left', 'center', 'right', 'bottom', 'bottomLeft', 'bottomRight', 'edge', 'stretch'],
         defaultValue: 'stretch',
+        description: 'Horizontal alignment'
+      },
+      {
+        name: 'justify',
+        type: 'select',
+        options: ['flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly'],
+        defaultValue: 'flex-start',
+        description: 'Vertical distribution'
+      },
+      {
+        name: 'direction',
+        type: 'select',
+        options: ['column', 'row'],
+        defaultValue: 'column',
+        description: 'Content flow direction'
+      },
+      {
+        name: 'expanded',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Expand to max height'
+      },
+      {
+        name: 'wrap',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Allow items to wrap'
       },
     ],
   },
