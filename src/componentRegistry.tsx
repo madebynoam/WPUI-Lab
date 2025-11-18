@@ -45,8 +45,70 @@ import {
   FormTokenField,
 } from '@wordpress/components';
 import { ComponentDefinition } from './types';
+import React from 'react';
+
+// Custom Grid component (not from WordPress)
+const GridContainer: React.FC<any> = ({ children, gridTemplateColumns = 'repeat(3, 1fr)', gap = '16px', gridTemplateRows = 'auto', ...rest }) => {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns,
+        gridTemplateRows,
+        gap,
+        ...rest.style,
+      }}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
 
 export const componentRegistry: Record<string, ComponentDefinition> = {
+  Grid: {
+    name: 'Grid',
+    component: GridContainer,
+    acceptsChildren: true,
+    defaultProps: {
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '16px',
+      gridTemplateRows: 'auto',
+    },
+    propDefinitions: [
+      {
+        name: 'gridTemplateColumns',
+        type: 'string',
+        defaultValue: 'repeat(3, 1fr)',
+        description: 'Grid column template (e.g., "1fr 2fr 1fr" or "repeat(3, 1fr)")',
+      },
+      {
+        name: 'gridTemplateRows',
+        type: 'string',
+        defaultValue: 'auto',
+        description: 'Grid row template (e.g., "100px auto 100px")',
+      },
+      {
+        name: 'gap',
+        type: 'string',
+        defaultValue: '16px',
+        description: 'Gap between grid items',
+      },
+      {
+        name: 'rowGap',
+        type: 'string',
+        defaultValue: '',
+        description: 'Gap between rows (overrides gap)',
+      },
+      {
+        name: 'columnGap',
+        type: 'string',
+        defaultValue: '',
+        description: 'Gap between columns (overrides gap)',
+      },
+    ],
+  },
+
   Card: {
     name: 'Card',
     component: Card,

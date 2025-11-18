@@ -16,6 +16,21 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
   const Component = definition.component;
   let props = { ...node.props };
 
+  // Extract grid child properties to apply to wrapper
+  const gridColumn = props.gridColumn;
+  const gridRow = props.gridRow;
+  delete props.gridColumn;
+  delete props.gridRow;
+
+  // Base wrapper style with grid child properties
+  const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => ({
+    outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
+    cursor: 'pointer',
+    ...(gridColumn && { gridColumn }),
+    ...(gridRow && { gridRow }),
+    ...additionalStyles,
+  });
+
   // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading') {
     const content = props.content || definition.defaultProps?.children;
@@ -27,10 +42,7 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
           e.stopPropagation();
           setSelectedNodeId(node.id);
         }}
-        style={{
-          outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
-          cursor: 'pointer',
-        }}
+        style={getWrapperStyle()}
       >
         <Component {...props}>{content}</Component>
       </div>
@@ -48,11 +60,7 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
           e.stopPropagation();
           setSelectedNodeId(node.id);
         }}
-        style={{
-          outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
-          cursor: 'pointer',
-          display: 'inline-block',
-        }}
+        style={getWrapperStyle({ display: 'inline-block' })}
       >
         <Component {...props}>{text}</Component>
       </div>
@@ -71,11 +79,7 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
           e.stopPropagation();
           setSelectedNodeId(node.id);
         }}
-        style={{
-          outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
-          cursor: 'pointer',
-          display: 'inline-block',
-        }}
+        style={getWrapperStyle({ display: 'inline-block' })}
       >
         <Component icon={iconProp} {...props} />
       </div>
@@ -116,11 +120,7 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
           e.stopPropagation();
           setSelectedNodeId(node.id);
         }}
-        style={{
-          outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
-          cursor: 'pointer',
-          padding: '4px',
-        }}
+        style={getWrapperStyle({ padding: '4px' })}
       >
         <Component {...mergedProps} />
       </div>
@@ -136,10 +136,7 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
         e.stopPropagation();
         setSelectedNodeId(node.id);
       }}
-      style={{
-        outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
-        cursor: 'pointer',
-      }}
+      style={getWrapperStyle()}
     >
       <Component {...mergedProps}>
         {node.children && node.children.length > 0

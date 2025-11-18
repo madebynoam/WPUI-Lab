@@ -9,7 +9,7 @@ import {
 } from '@wordpress/components';
 
 export const PropertiesPanel: React.FC = () => {
-  const { selectedNodeId, getNodeById, updateComponentProps } = useComponentTree();
+  const { selectedNodeId, getNodeById, updateComponentProps, tree } = useComponentTree();
 
   if (!selectedNodeId) {
     return (
@@ -33,6 +33,23 @@ export const PropertiesPanel: React.FC = () => {
 
   const definition = componentRegistry[node.type];
   if (!definition) return null;
+
+  // Find parent to check if it's a Grid
+  const findParent = (nodes: any[], targetId: string): any => {
+    for (const n of nodes) {
+      if (n.children) {
+        if (n.children.find((c: any) => c.id === targetId)) {
+          return n;
+        }
+        const found = findParent(n.children, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const parent = findParent(tree, selectedNodeId);
+  const isChildOfGrid = parent?.type === 'Grid';
 
   const handlePropChange = (propName: string, value: any) => {
     updateComponentProps(selectedNodeId, { [propName]: value });
@@ -100,7 +117,43 @@ export const PropertiesPanel: React.FC = () => {
           );
         })}
 
-        {definition.propDefinitions.length === 0 && (
+        {/* Grid child properties */}
+        {isChildOfGrid && (
+          <>
+            <div style={{
+              marginTop: '24px',
+              paddingTop: '16px',
+              borderTop: '1px solid #e0e0e0',
+              marginBottom: '12px',
+            }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#666' }}>
+                Grid Layout
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <TextControl
+                label="gridColumn"
+                value={node.props.gridColumn || ''}
+                onChange={(value) => handlePropChange('gridColumn', value)}
+                help="Column span (e.g., 'span 2' or '1 / 3')"
+                placeholder="auto"
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <TextControl
+                label="gridRow"
+                value={node.props.gridRow || ''}
+                onChange={(value) => handlePropChange('gridRow', value)}
+                help="Row span (e.g., 'span 2' or '1 / 3')"
+                placeholder="auto"
+              />
+            </div>
+          </>
+        )}
+
+        {definition.propDefinitions.length === 0 && !isChildOfGrid && (
           <div style={{ color: '#999', fontSize: '13px', textAlign: 'center' }}>
             No editable properties
           </div>
