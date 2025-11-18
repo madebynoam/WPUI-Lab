@@ -5,7 +5,7 @@ import { componentRegistry } from '../componentRegistry';
 import { Button } from '@wordpress/components';
 
 const TreeNode: React.FC<{ node: ComponentNode; level: number }> = ({ node, level }) => {
-  const { selectedNodeId, setSelectedNodeId, removeComponent } = useComponentTree();
+  const { selectedNodeId, setSelectedNodeId, removeComponent, duplicateComponent, moveComponent } = useComponentTree();
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
 
@@ -40,15 +40,66 @@ const TreeNode: React.FC<{ node: ComponentNode; level: number }> = ({ node, leve
         <button
           onClick={(e) => {
             e.stopPropagation();
+            moveComponent(node.id, 'up');
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '2px 4px',
+            fontSize: '11px',
+            color: '#666',
+          }}
+          title="Move up"
+        >
+          ↑
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            moveComponent(node.id, 'down');
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '2px 4px',
+            fontSize: '11px',
+            color: '#666',
+          }}
+          title="Move down"
+        >
+          ↓
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            duplicateComponent(node.id);
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '2px 4px',
+            fontSize: '11px',
+            color: '#666',
+          }}
+          title="Duplicate"
+        >
+          ⎘
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
             removeComponent(node.id);
           }}
           style={{
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            padding: '2px 6px',
-            fontSize: '12px',
-            color: '#666',
+            padding: '2px 4px',
+            fontSize: '11px',
+            color: '#c33',
           }}
           title="Remove"
         >
@@ -67,7 +118,7 @@ const TreeNode: React.FC<{ node: ComponentNode; level: number }> = ({ node, leve
 };
 
 export const TreePanel: React.FC = () => {
-  const { tree, addComponent, selectedNodeId } = useComponentTree();
+  const { tree, addComponent, selectedNodeId, resetTree } = useComponentTree();
   const [showAddMenu, setShowAddMenu] = useState(false);
 
   const selectedNode = selectedNodeId
@@ -190,6 +241,24 @@ export const TreePanel: React.FC = () => {
           tree.map((node) => <TreeNode key={node.id} node={node} level={0} />)
         )}
       </div>
+
+      {tree.length > 0 && (
+        <div style={{ padding: '8px', borderTop: '1px solid #ccc' }}>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => {
+              if (confirm('Are you sure you want to reset the entire tree?')) {
+                resetTree();
+              }
+            }}
+            isDestructive
+            style={{ width: '100%' }}
+          >
+            Reset All
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

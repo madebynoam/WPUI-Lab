@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { ComponentNode } from './types';
+
+const STORAGE_KEY = 'wp-designer-tree';
 
 interface ComponentTreeContextType {
   tree: ComponentNode[];
@@ -9,14 +11,28 @@ interface ComponentTreeContextType {
   addComponent: (componentType: string, parentId?: string) => void;
   removeComponent: (id: string) => void;
   updateComponentProps: (id: string, props: Record<string, any>) => void;
+  duplicateComponent: (id: string) => void;
+  moveComponent: (id: string, direction: 'up' | 'down') => void;
+  resetTree: () => void;
   getNodeById: (id: string) => ComponentNode | null;
 }
 
 const ComponentTreeContext = createContext<ComponentTreeContextType | undefined>(undefined);
 
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
-  const [tree, setTree] = useState<ComponentNode[]>([]);
+  const [tree, setTreeState] = useState<ComponentNode[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tree));
+  }, [tree]);
+
+  const setTree = (newTree: ComponentNode[]) => {
+    setTreeState(newTree);
+  };
 
   const generateId = () => `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -95,6 +111,57 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     setTree(updateNode(tree));
   };
 
+  const duplicateComponent = (id: string) => {
+    const deepClone = (node: ComponentNode): ComponentNode => ({
+      ...node,
+      id: generateId(),
+      children: node.children?.map(deepClone),
+    });
+
+    const duplicate = (nodes: ComponentNode[], parentArray: ComponentNode[]): ComponentNode[] => {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === id) {
+          const cloned = deepClone(nodes[i]);
+          parentArray.splice(i + 1, 0, cloned);
+          setSelectedNodeId(cloned.id);
+          return parentArray;
+        }
+        if (nodes[i].children) {
+          nodes[i].children = duplicate(nodes[i].children!, nodes[i].children!);
+        }
+      }
+      return parentArray;
+    };
+
+    setTree([...duplicate(tree, [...tree])]);
+  };
+
+  const moveComponent = (id: string, direction: 'up' | 'down') => {
+    const move = (nodes: ComponentNode[]): ComponentNode[] => {
+      const index = nodes.findIndex(n => n.id === id);
+      if (index !== -1) {
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex >= 0 && newIndex < nodes.length) {
+          const newNodes = [...nodes];
+          [newNodes[index], newNodes[newIndex]] = [newNodes[newIndex], newNodes[index]];
+          return newNodes;
+        }
+        return nodes;
+      }
+      return nodes.map(node => ({
+        ...node,
+        children: node.children ? move(node.children) : node.children,
+      }));
+    };
+    setTree(move(tree));
+  };
+
+  const resetTree = () => {
+    setTree([]);
+    setSelectedNodeId(null);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
   return (
     <ComponentTreeContext.Provider
       value={{
@@ -105,6 +172,9 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         addComponent,
         removeComponent,
         updateComponentProps,
+        duplicateComponent,
+        moveComponent,
+        resetTree,
         getNodeById: (id) => getNodeById(id),
       }}
     >
