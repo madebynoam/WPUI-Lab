@@ -416,28 +416,23 @@ export const TreePanel: React.FC = () => {
     const isExpanded = overNode && expandedNodes.has(overNode.id);
     const hasChildren = overNode && overNode.children && overNode.children.length > 0;
 
-    // Gutenberg-style thresholds (pixel-based, not percentage)
-    const EDGE_THRESHOLD = 12; // pixels from top/bottom edge for before/after
-    const NEST_INDENT = 16; // horizontal offset needed to trigger nesting
+    // Simple, natural thresholds
+    const EDGE_THRESHOLD = 8; // pixels from top/bottom edge for before/after
 
-    // Determine drop position using Gutenberg's algorithm
+    // Determine drop position - simple and predictable
     let position: 'before' | 'after' | 'inside' = 'after';
 
-    // Priority 1: Within edge threshold → before/after
+    // Within edge threshold → before/after
     if (distanceToTop <= EDGE_THRESHOLD) {
       position = 'before';
     } else if (distanceToBottom <= EDGE_THRESHOLD) {
       position = 'after';
     }
-    // Priority 2: Expanded container with children → always after (below children)
-    else if (isExpanded && hasChildren) {
-      position = 'after';
-    }
-    // Priority 3: Check for nesting intent (horizontal offset + container capability)
-    else if (canAcceptChildren && distanceToLeft >= NEST_INDENT) {
+    // In the middle → nest if possible
+    else if (canAcceptChildren) {
       position = 'inside';
     }
-    // Priority 4: Default to closest edge
+    // Default to closest edge
     else {
       position = distanceToTop < distanceToBottom ? 'before' : 'after';
     }
