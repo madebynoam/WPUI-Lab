@@ -36,7 +36,7 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
   const isRootVStack = node.id === ROOT_VSTACK_ID;
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => ({
     outline: selectedNodeId === node.id && !isRootVStack ? '2px solid #0073aa' : 'none',
-    cursor: 'pointer',
+    cursor: 'default',
     ...(gridColumn && { gridColumn }),
     ...(gridRow && { gridRow }),
     ...additionalStyles,
@@ -243,28 +243,65 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
             {(() => {
               // Get grid properties
               const columns = mergedProps.columns || 2;
-              const gap = mergedProps.gap || 0;
+              // gap is a multiplier of 4px in WordPress components
+              const gapMultiplier = typeof mergedProps.gap === 'number' ? mergedProps.gap : 0;
+              const gapPx = gapMultiplier * 4;
 
-              // Calculate column widths (assuming equal columns for now)
-              const lines = [];
+              const elements = [];
+
+              // Draw column boundaries and gutters
               for (let i = 1; i < columns; i++) {
-                const xPercent = (100 / columns) * i;
-                lines.push(
-                  <line
-                    key={`col-${i}`}
-                    x1={`${xPercent}%`}
-                    y1="0"
-                    x2={`${xPercent}%`}
-                    y2="100%"
-                    stroke="#007cba"
-                    strokeWidth="1"
-                    strokeDasharray="4 4"
-                    opacity="0.5"
-                  />
-                );
+                if (gapPx > 0) {
+                  // Calculate gutter position
+                  // In CSS Grid, gaps are between columns, so position is at end of column i-1
+                  const gutterXPercent = (100 / columns) * i;
+
+                  elements.push(
+                    <rect
+                      key={`gutter-${i}`}
+                      x={`calc(${gutterXPercent}% - ${gapPx / 2}px)`}
+                      y="0"
+                      width={`${gapPx}px`}
+                      height="100%"
+                      fill="#007cba"
+                      opacity="0.15"
+                    />
+                  );
+
+                  // Draw line in the center of the gutter
+                  elements.push(
+                    <line
+                      key={`col-${i}`}
+                      x1={`${gutterXPercent}%`}
+                      y1="0"
+                      x2={`${gutterXPercent}%`}
+                      y2="100%"
+                      stroke="#007cba"
+                      strokeWidth="1"
+                      strokeDasharray="4 4"
+                      opacity="0.5"
+                    />
+                  );
+                } else {
+                  // No gap - just draw divider lines at column boundaries
+                  const xPercent = (100 / columns) * i;
+                  elements.push(
+                    <line
+                      key={`col-${i}`}
+                      x1={`${xPercent}%`}
+                      y1="0"
+                      x2={`${xPercent}%`}
+                      y2="100%"
+                      stroke="#007cba"
+                      strokeWidth="1"
+                      strokeDasharray="4 4"
+                      opacity="0.5"
+                    />
+                  );
+                }
               }
 
-              return lines;
+              return elements;
             })()}
           </svg>
         </div>

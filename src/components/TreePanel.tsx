@@ -273,7 +273,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 paddingRight: '8px',
                 backgroundColor: isSelected ? '#2271b1' : (showDropInside ? '#e5f5fa' : 'transparent'),
                 color: isSelected ? '#fff' : '#1e1e1e',
-                cursor: isDragging ? 'grabbing' : 'pointer',
+                cursor: isDragging ? 'grabbing' : 'default',
                 transition: 'background-color 0.15s ease, border 0.15s ease, box-shadow 0.15s ease',
                 border: showDropInside ? '2px solid #007cba' : '2px solid transparent',
                 borderRadius: showDropInside ? '4px' : '0',
