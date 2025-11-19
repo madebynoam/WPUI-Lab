@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useComponentTree } from '../ComponentTreeContext';
+import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import {
@@ -45,7 +45,6 @@ import {
   rectIntersection,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { ROOT_VSTACK_ID } from '../ComponentTreeContext';
 
 // Component groups for the inserter
 interface ComponentGroup {
@@ -144,8 +143,10 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   const isExpanded = expandedNodes.has(node.id);
   const definition = componentRegistry[node.type];
   const canAcceptChildren = definition?.acceptsChildren ?? false;
+  const isRootVStack = node.id === ROOT_VSTACK_ID;
 
   // Drag & drop - separate draggable (for handle) and droppable (for row)
+  // Don't allow dragging the root VStack
   const {
     attributes,
     listeners,
@@ -154,7 +155,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     isDragging,
   } = useDraggable({
     id: node.id,
-    data: { type: node.type }
+    data: { type: node.type },
+    disabled: isRootVStack,
   });
 
   const { setNodeRef: setDropRef } = useDroppable({
@@ -298,7 +300,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 style={{
                   background: 'none',
                   border: 'none',
-                  cursor: 'grab',
+                  cursor: isRootVStack ? 'default' : 'grab',
                   padding: '4px',
                   width: '24px',
                   height: '24px',
@@ -306,14 +308,17 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'inherit',
-                  opacity: 0.6,
+                  opacity: isRootVStack ? 0 : 0.6,
                 }}
                 onClick={(e) => e.stopPropagation()}
                 aria-label="Drag to reorder"
+                disabled={isRootVStack}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M7 16.5h10V15H7v1.5zm0-9V9h10V7.5H7z" />
-                </svg>
+                {!isRootVStack && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 16.5h10V15H7v1.5zm0-9V9h10V7.5H7z" />
+                  </svg>
+                )}
               </button>
               {/* Expander */}
               <button
@@ -358,52 +363,54 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                   marginLeft: '4px',
                 }}
               >
-                {node.type}
+                {node.id === ROOT_VSTACK_ID ? 'Page' : node.type}
               </span>
 
-              {/* Options Menu */}
-              <div onClick={(e) => e.stopPropagation()}>
-                <DropdownMenu
-                  icon={moreVertical}
-                  label="Options"
-                  className="wp-designer-tree-menu"
-                  popoverProps={{ placement: 'left-start' }}
-                >
-                  {() => (
-                    <MenuGroup>
-                      <MenuItem
-                        onClick={() => {
-                          moveComponent(node.id, 'up');
-                        }}
-                      >
-                        Move up
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => {
-                          moveComponent(node.id, 'down');
-                        }}
-                      >
-                        Move down
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => {
-                          duplicateComponent(node.id);
-                        }}
-                      >
-                        Duplicate
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => {
-                          removeComponent(node.id);
-                        }}
-                        isDestructive
-                      >
-                        Remove
-                      </MenuItem>
-                    </MenuGroup>
-                  )}
-                </DropdownMenu>
-              </div>
+              {/* Options Menu - Hide for root VStack */}
+              {!isRootVStack && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu
+                    icon={moreVertical}
+                    label="Options"
+                    className="wp-designer-tree-menu"
+                    popoverProps={{ placement: 'left-start' }}
+                  >
+                    {() => (
+                      <MenuGroup>
+                        <MenuItem
+                          onClick={() => {
+                            moveComponent(node.id, 'up');
+                          }}
+                        >
+                          Move up
+                        </MenuItem>
+                        <MenuItem
+                          onClick={() => {
+                            moveComponent(node.id, 'down');
+                          }}
+                        >
+                          Move down
+                        </MenuItem>
+                        <MenuItem
+                          onClick={() => {
+                            duplicateComponent(node.id);
+                          }}
+                        >
+                          Duplicate
+                        </MenuItem>
+                        <MenuItem
+                          onClick={() => {
+                            removeComponent(node.id);
+                          }}
+                          isDestructive
+                        >
+                          Remove
+                        </MenuItem>
+                      </MenuGroup>
+                    )}
+                  </DropdownMenu>
+                </div>
+              )}
             </div>
             );
           }}
@@ -462,7 +469,7 @@ export const TreePanel: React.FC = () => {
   const { tree, addComponent, selectedNodeId, resetTree, reorderComponent } = useComponentTree();
   const [showInserter, setShowInserter] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set([ROOT_VSTACK_ID]));
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | 'inside' | null>(null);
@@ -541,11 +548,6 @@ export const TreePanel: React.FC = () => {
     const isExpanded = overNode && expandedNodes.has(overNode.id);
     const hasChildren = overNode && overNode.children && overNode.children.length > 0;
 
-    // Simple, ergonomic drop zones
-    const TOP_ZONE = 0.3; // Top 30% for "before"
-    const BOTTOM_ZONE = 0.7; // Bottom 30% for "after"
-    // Middle 40% (0.3-0.7) is for nesting
-
     // Calculate position based on Y position
     const relativePosition = relativeY / elementHeight;
 
@@ -556,21 +558,31 @@ export const TreePanel: React.FC = () => {
     if (canAcceptChildren && !hasChildren) {
       position = 'inside';
     }
-    // Top zone (0-30%) → insert before
-    else if (relativePosition < TOP_ZONE) {
-      position = 'before';
-    }
-    // Bottom zone (70-100%) → insert after
-    else if (relativePosition > BOTTOM_ZONE) {
-      position = 'after';
-    }
-    // Middle zone (30-70%) → nest if container, otherwise use closest edge
-    else {
-      if (canAcceptChildren) {
-        // Any container in the middle zone = nest inside
-        position = 'inside';
+    // For containers, use larger nesting zone (20-80%)
+    else if (canAcceptChildren) {
+      const CONTAINER_TOP_ZONE = 0.2; // Top 20% for "before"
+      const CONTAINER_BOTTOM_ZONE = 0.8; // Bottom 20% for "after"
+
+      if (relativePosition < CONTAINER_TOP_ZONE) {
+        position = 'before';
+      } else if (relativePosition > CONTAINER_BOTTOM_ZONE) {
+        position = 'after';
       } else {
-        // Can't nest, so use closest edge
+        // Middle 60% (0.2-0.8) nests inside
+        position = 'inside';
+      }
+    }
+    // For non-containers, use standard zones (30-70%)
+    else {
+      const TOP_ZONE = 0.3;
+      const BOTTOM_ZONE = 0.7;
+
+      if (relativePosition < TOP_ZONE) {
+        position = 'before';
+      } else if (relativePosition > BOTTOM_ZONE) {
+        position = 'after';
+      } else {
+        // Middle 40% uses closest edge
         position = relativePosition < 0.5 ? 'before' : 'after';
       }
     }
@@ -836,114 +848,31 @@ export const TreePanel: React.FC = () => {
       )}
 
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {tree.length === 0 ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '13px' }}>
-            No components yet
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={pointerWithin}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-          >
-            {(() => {
-              // Helper function to check if a node or any of its children are interactive
-              const isInteractiveNode = (node: ComponentNode): boolean => {
-                if (INTERACTIVE_COMPONENT_TYPES.includes(node.type)) return true;
-                if (node.children) {
-                  return node.children.some(child => isInteractiveNode(child));
-                }
-                return false;
-              };
-
-              // Separate tree into regular and interactive components
-              const regularComponents = tree.filter(node => !isInteractiveNode(node));
-              const interactiveComponents = tree.filter(node => isInteractiveNode(node));
-
-              return (
-                <>
-                  {/* Regular Page Components Section */}
-                  {regularComponents.length > 0 && (
-                    <>
-                      <div style={{
-                        padding: '8px 12px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        color: '#757575',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        borderBottom: '1px solid #e0e0e0',
-                      }}>
-                        Page Components
-                      </div>
-                      <TreeGrid style={{ width: '100%' }}>
-                        {regularComponents.map((node, index) => (
-                          <TreeNode
-                            key={node.id}
-                            node={node}
-                            level={1}
-                            positionInSet={index + 1}
-                            setSize={regularComponents.length}
-                            allNodes={tree}
-                            expandedNodes={expandedNodes}
-                            setExpandedNodes={setExpandedNodes}
-                            nodeRefs={nodeRefs}
-                            dragOverId={dragOverId}
-                            dropPosition={dropPosition}
-                          />
-                        ))}
-                      </TreeGrid>
-                    </>
-                  )}
-
-                  {/* Separator */}
-                  {regularComponents.length > 0 && interactiveComponents.length > 0 && (
-                    <div style={{
-                      margin: '12px 0',
-                      borderTop: '1px solid #e0e0e0',
-                    }} />
-                  )}
-
-                  {/* Interactive Components Section */}
-                  {interactiveComponents.length > 0 && (
-                    <>
-                      <div style={{
-                        padding: '8px 12px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        color: '#757575',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        borderBottom: '1px solid #e0e0e0',
-                      }}>
-                        Interactive Components
-                      </div>
-                      <TreeGrid style={{ width: '100%' }}>
-                        {interactiveComponents.map((node, index) => (
-                          <TreeNode
-                            key={node.id}
-                            node={node}
-                            level={1}
-                            positionInSet={index + 1}
-                            setSize={interactiveComponents.length}
-                            allNodes={tree}
-                            expandedNodes={expandedNodes}
-                            setExpandedNodes={setExpandedNodes}
-                            nodeRefs={nodeRefs}
-                            dragOverId={dragOverId}
-                            dropPosition={dropPosition}
-                          />
-                        ))}
-                      </TreeGrid>
-                    </>
-                  )}
-                </>
-              );
-            })()}
-          </DndContext>
-        )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <TreeGrid style={{ width: '100%' }}>
+            {tree.map((node, index) => (
+              <TreeNode
+                key={node.id}
+                node={node}
+                level={1}
+                positionInSet={index + 1}
+                setSize={tree.length}
+                allNodes={tree}
+                expandedNodes={expandedNodes}
+                setExpandedNodes={setExpandedNodes}
+                nodeRefs={nodeRefs}
+                dragOverId={dragOverId}
+                dropPosition={dropPosition}
+              />
+            ))}
+          </TreeGrid>
+        </DndContext>
       </div>
 
       {tree.length > 0 && (

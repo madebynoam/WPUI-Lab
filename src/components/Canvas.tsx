@@ -7,7 +7,7 @@ import { wordpress } from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 
 const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
-  const { setSelectedNodeId, selectedNodeId } = useComponentTree();
+  const { setSelectedNodeId, selectedNodeId, gridLinesVisible } = useComponentTree();
   const definition = componentRegistry[node.type];
 
   if (!definition) {
@@ -23,10 +23,14 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
   let props = { ...node.props };
 
   // Extract grid child properties to apply to wrapper
-  const gridColumn = props.gridColumn;
-  const gridRow = props.gridRow;
-  delete props.gridColumn;
-  delete props.gridRow;
+  const gridColumnSpan = props.gridColumnSpan;
+  const gridRowSpan = props.gridRowSpan;
+  delete props.gridColumnSpan;
+  delete props.gridRowSpan;
+
+  // Convert span numbers to CSS grid syntax
+  const gridColumn = gridColumnSpan && gridColumnSpan > 1 ? `span ${gridColumnSpan}` : undefined;
+  const gridRow = gridRowSpan && gridRowSpan > 1 ? `span ${gridRowSpan}` : undefined;
 
   // Base wrapper style with grid child properties
   const isRootVStack = node.id === ROOT_VSTACK_ID;
@@ -197,25 +201,86 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
   // Regular components with children - merge with defaultProps
   const mergedProps = { ...definition.defaultProps, ...props };
 
+  // Check if this is a Grid with grid lines enabled
+  const showGridLines = node.type === 'Grid' && gridLinesVisible.has(node.id);
+
   return (
     <div
       onClick={(e) => {
         e.stopPropagation();
         setSelectedNodeId(node.id);
       }}
-      style={getWrapperStyle()}
+      style={{ ...getWrapperStyle(), position: showGridLines ? 'relative' : undefined }}
     >
       <Component {...mergedProps}>
         {node.children && node.children.length > 0
           ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
           : null}
       </Component>
+
+      {/* Grid Lines Overlay */}
+      {showGridLines && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            pointerEvents: 'none',
+            zIndex: 1000,
+          }}
+        >
+          <svg
+            width="100%"
+            height="100%"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+            }}
+          >
+            {(() => {
+              // Get grid properties
+              const columns = mergedProps.columns || 2;
+              const gap = mergedProps.gap || 0;
+
+              // Calculate column widths (assuming equal columns for now)
+              const lines = [];
+              for (let i = 1; i < columns; i++) {
+                const xPercent = (100 / columns) * i;
+                lines.push(
+                  <line
+                    key={`col-${i}`}
+                    x1={`${xPercent}%`}
+                    y1="0"
+                    x2={`${xPercent}%`}
+                    y2="100%"
+                    stroke="#007cba"
+                    strokeWidth="1"
+                    strokeDasharray="4 4"
+                    opacity="0.5"
+                  />
+                );
+              }
+
+              return lines;
+            })()}
+          </svg>
+        </div>
+      )}
     </div>
   );
 };
 
 export const Canvas: React.FC = () => {
-  const { tree, selectedNodeId, setSelectedNodeId, getNodeById } = useComponentTree();
+  const { tree, selectedNodeId, setSelectedNodeId, getNodeById, gridLinesVisible, toggleGridLines } = useComponentTree();
+
+  // Get page-level properties from root VStack
+  const rootVStack = getNodeById(ROOT_VSTACK_ID);
+  const pageMaxWidth = rootVStack?.props.maxWidth ?? 1440;
+  const pageBackgroundColor = rootVStack?.props.backgroundColor ?? 'rgb(249, 250, 251)';
+  const pagePadding = rootVStack?.props.padding ?? 20;
 
   // Find parent of a node
   const findParent = (nodes: ComponentNode[], targetId: string, parent: ComponentNode | null = null): ComponentNode | null => {
@@ -284,11 +349,20 @@ export const Canvas: React.FC = () => {
           setSelectedNodeId(ROOT_VSTACK_ID);
         }
       }
+
+      // Control+G to toggle grid lines for selected Grid component
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g' && selectedNodeId) {
+        const selectedNode = getNodeById(selectedNodeId);
+        if (selectedNode && selectedNode.type === 'Grid') {
+          e.preventDefault();
+          toggleGridLines(selectedNodeId);
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodeId, tree, setSelectedNodeId, getNodeById, findInteractiveAncestor]);
+  }, [selectedNodeId, tree, setSelectedNodeId, getNodeById, findInteractiveAncestor, toggleGridLines]);
 
   // Check if selected node is an interactive component or a child of one
   const selectedNode = selectedNodeId ? getNodeById(selectedNodeId) : null;
@@ -307,9 +381,11 @@ export const Canvas: React.FC = () => {
       <div
         style={{
           flex: 1,
-          padding: '20px',
-          backgroundColor: 'rgb(249, 250, 251)',
+          padding: `${pagePadding}px`,
+          backgroundColor: pageBackgroundColor,
           overflow: 'auto',
+          display: 'flex',
+          justifyContent: 'center',
         }}
         onClick={(e) => {
           // Deselect when clicking canvas background
@@ -318,21 +394,23 @@ export const Canvas: React.FC = () => {
           }
         }}
       >
-        {isInteractiveSelected && interactiveAncestor ? (
-          // Render only the interactive component in isolation
-          <div style={{
-            padding: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100%',
-          }}>
-            <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
-          </div>
-        ) : (
-          // Render full page tree for normal components (skip interactive components)
-          tree.map((node) => <RenderNode key={node.id} node={node} renderInteractive={false} />)
-        )}
+        <div style={{ width: '100%', maxWidth: `${pageMaxWidth}px` }}>
+          {isInteractiveSelected && interactiveAncestor ? (
+            // Render only the interactive component in isolation
+            <div style={{
+              padding: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '100%',
+            }}>
+              <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
+            </div>
+          ) : (
+            // Render full page tree for normal components (skip interactive components)
+            tree.map((node) => <RenderNode key={node.id} node={node} renderInteractive={false} />)
+          )}
+        </div>
       </div>
       <Breadcrumb />
     </div>

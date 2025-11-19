@@ -16,6 +16,8 @@ interface ComponentTreeContextType {
   reorderComponent: (activeId: string, overId: string, position?: 'before' | 'after' | 'inside') => void;
   resetTree: () => void;
   getNodeById: (id: string) => ComponentNode | null;
+  gridLinesVisible: Set<string>;
+  toggleGridLines: (id: string) => void;
 }
 
 const ComponentTreeContext = createContext<ComponentTreeContextType | undefined>(undefined);
@@ -26,7 +28,22 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   const [tree, setTreeState] = useState<ComponentNode[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsedTree = JSON.parse(saved);
+
+      // Migration: Check if root VStack exists
+      const hasRootVStack = parsedTree.length === 1 && parsedTree[0].id === ROOT_VSTACK_ID;
+
+      if (!hasRootVStack) {
+        // Migrate old structure: wrap existing components in root VStack
+        return [{
+          id: ROOT_VSTACK_ID,
+          type: 'VStack',
+          props: { spacing: 4 },
+          children: parsedTree,
+        }];
+      }
+
+      return parsedTree;
     }
     // Initialize with root VStack
     return [{
@@ -37,6 +54,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     }];
   });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(ROOT_VSTACK_ID);
+  const [gridLinesVisible, setGridLinesVisible] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tree));
@@ -265,6 +283,18 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const toggleGridLines = (id: string) => {
+    setGridLinesVisible((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   return (
     <ComponentTreeContext.Provider
       value={{
@@ -280,6 +310,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         reorderComponent,
         resetTree,
         getNodeById: (id) => getNodeById(id),
+        gridLinesVisible,
+        toggleGridLines,
       }}
     >
       {children}
