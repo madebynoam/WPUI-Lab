@@ -371,8 +371,12 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const resetTree = () => {
-    setTree([]);
-    setSelectedNodeId(null);
+    // Reset to a single clean default page
+    const defaultPage = createInitialPage('page-1', 'Page 1');
+    setPagesState([defaultPage]);
+    setCurrentPageId(defaultPage.id);
+    setSelectedNodeId(ROOT_VSTACK_ID);
+    setGridLinesVisible(new Set());
     localStorage.removeItem(STORAGE_KEY);
   };
 
