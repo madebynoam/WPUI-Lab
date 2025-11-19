@@ -3,7 +3,7 @@ import { useComponentTree } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 
 export const Breadcrumb: React.FC = () => {
-  const { selectedNodeId, setSelectedNodeId, tree } = useComponentTree();
+  const { selectedNodeIds, toggleNodeSelection, tree } = useComponentTree();
 
   const getNodePath = (targetId: string | null): ComponentNode[] => {
     if (!targetId) return [];
@@ -29,7 +29,7 @@ export const Breadcrumb: React.FC = () => {
     return path;
   };
 
-  const path = getNodePath(selectedNodeId);
+  const path = getNodePath(selectedNodeIds.length > 0 ? selectedNodeIds[0] : null);
 
   if (path.length === 0) {
     return null;
@@ -55,7 +55,7 @@ export const Breadcrumb: React.FC = () => {
             <span style={{ color: '#999', margin: '0 4px' }}>/</span>
           )}
           <button
-            onClick={() => setSelectedNodeId(node.id)}
+            onClick={() => toggleNodeSelection(node.id, false)}
             style={{
               background: index === path.length - 1 ? '#e0e0e0' : 'transparent',
               border: 'none',

@@ -7,7 +7,7 @@ import { wordpress } from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel-v2';
 
 const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
-  const { setSelectedNodeId, selectedNodeId, gridLinesVisible, undo, redo, canUndo, canRedo } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, gridLinesVisible, undo, redo, canUndo, canRedo, tree } = useComponentTree();
   const definition = componentRegistry[node.type];
 
   if (!definition) {
@@ -34,8 +34,9 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
 
   // Base wrapper style with grid child properties
   const isRootVStack = node.id === ROOT_VSTACK_ID;
+  const isSelected = selectedNodeIds.includes(node.id);
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => ({
-    outline: selectedNodeId === node.id && !isRootVStack ? '2px solid #0073aa' : 'none',
+    outline: isSelected && !isRootVStack ? '2px solid #0073aa' : 'none',
     cursor: 'default',
     ...(gridColumn && { gridColumn }),
     ...(gridRow && { gridRow }),
@@ -51,7 +52,9 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
       <div
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedNodeId(node.id);
+          const multiSelect = e.metaKey || e.ctrlKey;
+          const rangeSelect = e.shiftKey;
+          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
         }}
         style={getWrapperStyle()}
       >
@@ -69,7 +72,9 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
       <div
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedNodeId(node.id);
+          const multiSelect = e.metaKey || e.ctrlKey;
+          const rangeSelect = e.shiftKey;
+          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
         }}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
@@ -88,7 +93,9 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
       <div
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedNodeId(node.id);
+          const multiSelect = e.metaKey || e.ctrlKey;
+          const rangeSelect = e.shiftKey;
+          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
         }}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
@@ -106,7 +113,9 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
         <div
           onClick={(e) => {
             e.stopPropagation();
-            setSelectedNodeId(node.id);
+            const multiSelect = e.metaKey || e.ctrlKey;
+            const rangeSelect = e.shiftKey;
+            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
           }}
           style={{
             ...getWrapperStyle(),
@@ -144,7 +153,9 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
       <div
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedNodeId(node.id);
+          const multiSelect = e.metaKey || e.ctrlKey;
+          const rangeSelect = e.shiftKey;
+          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
         }}
         style={getWrapperStyle()}
       >
@@ -189,7 +200,9 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
       <div
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedNodeId(node.id);
+          const multiSelect = e.metaKey || e.ctrlKey;
+          const rangeSelect = e.shiftKey;
+          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
         }}
         style={getWrapperStyle({ padding: '4px' })}
       >
@@ -208,7 +221,9 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
     <div
       onClick={(e) => {
         e.stopPropagation();
-        setSelectedNodeId(node.id);
+        const multiSelect = e.metaKey || e.ctrlKey;
+        const rangeSelect = e.shiftKey;
+        toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
       }}
       style={{ ...getWrapperStyle(), position: showGridLines ? 'relative' : undefined }}
     >
@@ -311,7 +326,7 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
 };
 
 export const Canvas: React.FC = () => {
-  const { tree, selectedNodeId, setSelectedNodeId, getNodeById, gridLinesVisible, toggleGridLines, undo, redo, canUndo, canRedo } = useComponentTree();
+  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, gridLinesVisible, toggleGridLines, undo, redo, canUndo, canRedo } = useComponentTree();
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
@@ -384,46 +399,46 @@ export const Canvas: React.FC = () => {
       // Cmd/Ctrl+Enter to go to page settings (select root VStack)
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        setSelectedNodeId(ROOT_VSTACK_ID);
+        toggleNodeSelection(ROOT_VSTACK_ID, false);
       }
 
       // Shift+Enter to select parent
-      if (e.shiftKey && e.key === 'Enter' && selectedNodeId) {
+      if (e.shiftKey && e.key === 'Enter' && selectedNodeIds.length > 0) {
         e.preventDefault();
-        const parent = findParent(tree, selectedNodeId);
+        const parent = findParent(tree, selectedNodeIds[0]);
         if (parent) {
-          setSelectedNodeId(parent.id);
+          toggleNodeSelection(parent.id, false);
         }
       }
 
       // Escape to eject from interactive component isolated view
-      if (e.key === 'Escape' && selectedNodeId) {
+      if (e.key === 'Escape' && selectedNodeIds.length > 0) {
         // Check if we're inside an interactive component
-        const ancestor = findInteractiveAncestor(selectedNodeId);
+        const ancestor = findInteractiveAncestor(selectedNodeIds[0]);
         if (ancestor) {
           e.preventDefault();
           // Return to root VStack to show full page view
-          setSelectedNodeId(ROOT_VSTACK_ID);
+          toggleNodeSelection(ROOT_VSTACK_ID, false);
         }
       }
 
       // Control+G to toggle grid lines for selected Grid component
-      if ((e.ctrlKey || e.metaKey) && e.key === 'g' && selectedNodeId) {
-        const selectedNode = getNodeById(selectedNodeId);
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g' && selectedNodeIds.length > 0) {
+        const selectedNode = getNodeById(selectedNodeIds[0]);
         if (selectedNode && selectedNode.type === 'Grid') {
           e.preventDefault();
-          toggleGridLines(selectedNodeId);
+          toggleGridLines(selectedNodeIds[0]);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodeId, tree, setSelectedNodeId, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo]);
+  }, [selectedNodeIds, tree, toggleNodeSelection, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo]);
 
   // Check if selected node is an interactive component or a child of one
-  const selectedNode = selectedNodeId ? getNodeById(selectedNodeId) : null;
-  const interactiveAncestor = selectedNodeId ? findInteractiveAncestor(selectedNodeId) : null;
+  const selectedNode = selectedNodeIds.length > 0 ? getNodeById(selectedNodeIds[0]) : null;
+  const interactiveAncestor = selectedNodeIds.length > 0 ? findInteractiveAncestor(selectedNodeIds[0]) : null;
   const isInteractiveSelected = !!interactiveAncestor;
 
   return (
@@ -447,7 +462,7 @@ export const Canvas: React.FC = () => {
         onClick={(e) => {
           // Deselect when clicking canvas background
           if (e.target === e.currentTarget) {
-            setSelectedNodeId(ROOT_VSTACK_ID);
+            toggleNodeSelection(ROOT_VSTACK_ID, false);
           }
         }}
       >

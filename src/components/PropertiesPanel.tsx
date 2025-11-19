@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { componentRegistry } from '../componentRegistry';
 import {
@@ -10,9 +10,40 @@ import {
 } from '@wordpress/components';
 
 export const PropertiesPanel: React.FC = () => {
-  const { selectedNodeId, getNodeById, updateComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines } = useComponentTree();
+  const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines } = useComponentTree();
 
-  if (!selectedNodeId) {
+  const selectedNodes = useMemo(() => {
+    return selectedNodeIds.map(id => getNodeById(id)).filter(Boolean) as ReturnType<typeof getNodeById>[];
+  }, [selectedNodeIds, getNodeById]);
+
+  const isMultiSelect = selectedNodes.length > 1;
+  const firstNode = selectedNodes[0];
+
+  // Find shared properties for multi-select - must be called before any early returns
+  const getSharedProps = useMemo(() => {
+    if (!isMultiSelect || !firstNode) return firstNode?.props || {};
+
+    const shared: Record<string, any> = {};
+    const allPropNames = new Set<string>();
+    
+    // Collect all prop names from all nodes
+    selectedNodes.forEach(node => {
+      Object.keys(node.props || {}).forEach(key => allPropNames.add(key));
+    });
+
+    // Find props that have the same value across all nodes
+    allPropNames.forEach(propName => {
+      const values = selectedNodes.map(node => node.props[propName]);
+      const firstValue = values[0];
+      if (values.every(val => val === firstValue)) {
+        shared[propName] = firstValue;
+      }
+    });
+
+    return shared;
+  }, [selectedNodes, isMultiSelect, firstNode]);
+
+  if (selectedNodes.length === 0) {
     return (
       <div
         style={{
@@ -29,14 +60,13 @@ export const PropertiesPanel: React.FC = () => {
     );
   }
 
-  const node = getNodeById(selectedNodeId);
-  if (!node) return null;
+  if (!firstNode) return null;
 
-  // Special case: Page-level properties for root VStack
-  if (selectedNodeId === ROOT_VSTACK_ID) {
-    const maxWidth = node.props.maxWidth ?? 1440;
-    const backgroundColor = node.props.backgroundColor ?? 'rgb(249, 250, 251)';
-    const padding = node.props.padding ?? 20;
+  // Special case: Page-level properties for root VStack (only single select)
+  if (selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_VSTACK_ID) {
+    const maxWidth = firstNode.props.maxWidth ?? 1440;
+    const backgroundColor = firstNode.props.backgroundColor ?? 'rgb(249, 250, 251)';
+    const padding = firstNode.props.padding ?? 20;
 
     return (
       <div
@@ -59,7 +89,7 @@ export const PropertiesPanel: React.FC = () => {
             <NumberControl
               label="Max Width"
               value={maxWidth}
-              onChange={(value) => updateComponentProps(selectedNodeId, { maxWidth: Number(value) })}
+              onChange={(value) => updateComponentProps(selectedNodeIds[0], { maxWidth: Number(value) })}
               help="Maximum width of the page content (px)"
             />
           </div>
@@ -70,7 +100,7 @@ export const PropertiesPanel: React.FC = () => {
             </div>
             <ColorPicker
               color={backgroundColor}
-              onChange={(color) => updateComponentProps(selectedNodeId, { backgroundColor: color })}
+              onChange={(color) => updateComponentProps(selectedNodeIds[0], { backgroundColor: color })}
               enableAlpha
             />
             <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
@@ -82,7 +112,7 @@ export const PropertiesPanel: React.FC = () => {
             <NumberControl
               label="Padding"
               value={padding}
-              onChange={(value) => updateComponentProps(selectedNodeId, { padding: Number(value) })}
+              onChange={(value) => updateComponentProps(selectedNodeIds[0], { padding: Number(value) })}
               help="Padding around the page content (px)"
             />
           </div>
@@ -91,10 +121,39 @@ export const PropertiesPanel: React.FC = () => {
     );
   }
 
-  const definition = componentRegistry[node.type];
+  // For multi-select, only show properties if all nodes are the same type
+  const allSameType = selectedNodes.every(node => node.type === firstNode.type);
+  if (isMultiSelect && !allSameType) {
+    return (
+      <div
+        style={{
+          width: '280px',
+          borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
+          backgroundColor: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
+          <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Properties</h3>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+            {selectedNodes.length} items selected
+          </div>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+          <div style={{ color: '#999', fontSize: '13px', textAlign: 'center' }}>
+            Select items of the same type to edit shared properties
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const definition = componentRegistry[firstNode.type];
   if (!definition) return null;
 
-  // Find parent to check if it's a Grid
+  // Find parent to check if it's a Grid (only for single select)
   const findParent = (nodes: any[], targetId: string): any => {
     for (const n of nodes) {
       if (n.children) {
@@ -108,11 +167,16 @@ export const PropertiesPanel: React.FC = () => {
     return null;
   };
 
-  const parent = findParent(tree, selectedNodeId);
+  const parent = !isMultiSelect ? findParent(tree, selectedNodeIds[0]) : null;
   const isChildOfGrid = parent?.type === 'Grid';
 
   const handlePropChange = (propName: string, value: any) => {
-    updateComponentProps(selectedNodeId, { [propName]: value });
+    // Apply to all selected nodes using batch update
+    if (selectedNodeIds.length > 1) {
+      updateMultipleComponentProps(selectedNodeIds, { [propName]: value });
+    } else {
+      updateComponentProps(selectedNodeIds[0], { [propName]: value });
+    }
   };
 
   return (
@@ -128,23 +192,36 @@ export const PropertiesPanel: React.FC = () => {
     >
       <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
         <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Properties</h3>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{node.type}</div>
+        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+          {isMultiSelect ? `${selectedNodes.length} × ${firstNode.type}` : firstNode.type}
+        </div>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-        {/* Layer Name */}
-        <div style={{ marginBottom: '16px' }}>
-          <TextControl
-            label="Layer Name"
-            value={node.name || ''}
-            onChange={(value) => updateComponentName(selectedNodeId, value)}
-            help="Custom name for this layer"
-            placeholder={node.type}
-          />
-        </div>
+        {/* Layer Name - only for single select */}
+        {!isMultiSelect && (
+          <div style={{ marginBottom: '16px' }}>
+            <TextControl
+              label="Layer Name"
+              value={firstNode.name || ''}
+              onChange={(value) => updateComponentName(selectedNodeIds[0], value)}
+              help="Custom name for this layer"
+              placeholder={firstNode.type}
+            />
+          </div>
+        )}
 
         {definition.propDefinitions.map((propDef) => {
-          const currentValue = node.props[propDef.name] ?? propDef.defaultValue;
+          // For multi-select, show shared value if available, otherwise show first node's value
+          // This allows setting properties even when they differ across selected nodes
+          const currentValue = isMultiSelect 
+            ? (getSharedProps[propDef.name] !== undefined 
+                ? getSharedProps[propDef.name] 
+                : firstNode.props[propDef.name] ?? propDef.defaultValue)
+            : firstNode.props[propDef.name] ?? propDef.defaultValue;
+          
+          // Show indicator if property is not shared in multi-select
+          const isShared = !isMultiSelect || (propDef.name in getSharedProps);
 
           return (
             <div key={propDef.name} style={{ marginBottom: '16px' }}>
@@ -153,7 +230,8 @@ export const PropertiesPanel: React.FC = () => {
                   label={propDef.name}
                   value={currentValue || ''}
                   onChange={(value) => handlePropChange(propDef.name, value)}
-                  help={propDef.description}
+                  help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+                  placeholder={isMultiSelect && !isShared ? 'Mixed values' : undefined}
                 />
               )}
 
@@ -162,7 +240,7 @@ export const PropertiesPanel: React.FC = () => {
                   label={propDef.name}
                   value={currentValue}
                   onChange={(value) => handlePropChange(propDef.name, Number(value))}
-                  help={propDef.description}
+                  help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
                 />
               )}
 
@@ -171,7 +249,7 @@ export const PropertiesPanel: React.FC = () => {
                   label={propDef.name}
                   checked={currentValue || false}
                   onChange={(value) => handlePropChange(propDef.name, value)}
-                  help={propDef.description}
+                  help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
                 />
               )}
 
@@ -181,15 +259,15 @@ export const PropertiesPanel: React.FC = () => {
                   value={currentValue}
                   options={propDef.options.map((opt) => ({ label: opt, value: opt }))}
                   onChange={(value) => handlePropChange(propDef.name, value)}
-                  help={propDef.description}
+                  help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
                 />
               )}
             </div>
           );
         })}
 
-        {/* Grid Lines Toggle - only for Grid components */}
-        {node.type === 'Grid' && (
+        {/* Grid Lines Toggle - only for Grid components, single select */}
+        {!isMultiSelect && firstNode.type === 'Grid' && (
           <>
             <div style={{
               marginTop: definition.propDefinitions.length > 0 ? '24px' : '0',
@@ -199,16 +277,16 @@ export const PropertiesPanel: React.FC = () => {
             }}>
               <ToggleControl
                 label="Show Grid Lines"
-                checked={gridLinesVisible.has(selectedNodeId)}
-                onChange={() => toggleGridLines(selectedNodeId)}
+                checked={gridLinesVisible.has(selectedNodeIds[0])}
+                onChange={() => toggleGridLines(selectedNodeIds[0])}
                 help="Toggle grid overlay (Control+G)"
               />
             </div>
           </>
         )}
 
-        {/* Grid child properties */}
-        {isChildOfGrid && (
+        {/* Grid child properties - only for single select */}
+        {!isMultiSelect && isChildOfGrid && (
           <>
             <div style={{
               marginTop: '24px',
@@ -224,7 +302,7 @@ export const PropertiesPanel: React.FC = () => {
             <div style={{ marginBottom: '16px' }}>
               <NumberControl
                 label="Column Span"
-                value={node.props.gridColumnSpan || 1}
+                value={firstNode.props.gridColumnSpan || 1}
                 onChange={(value) => handlePropChange('gridColumnSpan', Number(value))}
                 help="Number of columns to span"
                 min={1}
@@ -234,7 +312,7 @@ export const PropertiesPanel: React.FC = () => {
             <div style={{ marginBottom: '16px' }}>
               <NumberControl
                 label="Row Span"
-                value={node.props.gridRowSpan || 1}
+                value={firstNode.props.gridRowSpan || 1}
                 onChange={(value) => handlePropChange('gridRowSpan', Number(value))}
                 help="Number of rows to span"
                 min={1}

@@ -6,18 +6,21 @@ const STORAGE_KEY = 'wp-designer-pages';
 interface ComponentTreeContextType {
   // Current page's tree
   tree: ComponentNode[];
-  selectedNodeId: string | null;
+  selectedNodeIds: string[];
   setTree: (tree: ComponentNode[]) => void;
-  setSelectedNodeId: (id: string | null) => void;
+  setSelectedNodeIds: (ids: string[] | ((prev: string[]) => string[])) => void;
+  toggleNodeSelection: (id: string, multiSelect?: boolean, rangeSelect?: boolean, allNodes?: ComponentNode[]) => void;
   addComponent: (componentType: string, parentId?: string) => void;
   removeComponent: (id: string) => void;
   updateComponentProps: (id: string, props: Record<string, any>) => void;
+  updateMultipleComponentProps: (ids: string[], props: Record<string, any>) => void;
   updateComponentName: (id: string, name: string) => void;
   duplicateComponent: (id: string) => void;
   moveComponent: (id: string, direction: 'up' | 'down') => void;
   reorderComponent: (activeId: string, overId: string, position?: 'before' | 'after' | 'inside') => void;
   resetTree: () => void;
   getNodeById: (id: string) => ComponentNode | null;
+  getParentById: (id: string) => ComponentNode | null;
   gridLinesVisible: Set<string>;
   toggleGridLines: (id: string) => void;
 
@@ -122,7 +125,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     return 'page-1';
   });
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(ROOT_VSTACK_ID);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([ROOT_VSTACK_ID]);
   const [gridLinesVisible, setGridLinesVisible] = useState<Set<string>>(new Set());
 
   // History management
@@ -194,7 +197,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       isRestoring.current = true;
       setPagesState(previous.pages);
       setCurrentPageId(previous.currentPageId);
-      setSelectedNodeId(ROOT_VSTACK_ID);
+      setSelectedNodeIds([ROOT_VSTACK_ID]);
       setGridLinesVisible(new Set());
       isRestoring.current = false;
 
@@ -216,7 +219,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       isRestoring.current = true;
       setPagesState(next.pages);
       setCurrentPageId(next.currentPageId);
-      setSelectedNodeId(ROOT_VSTACK_ID);
+      setSelectedNodeIds([ROOT_VSTACK_ID]);
       setGridLinesVisible(new Set());
       isRestoring.current = false;
 
@@ -315,11 +318,71 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     return null;
   };
 
+  const getParentById = (id: string, nodes: ComponentNode[] = tree): ComponentNode | null => {
+    for (const node of nodes) {
+      if (node.children?.some(child => child.id === id)) return node;
+      if (node.children) {
+        const found = getParentById(id, node.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const toggleNodeSelection = useCallback((id: string, multiSelect: boolean = false, rangeSelect: boolean = false, allNodes: ComponentNode[] = tree) => {
+    setSelectedNodeIds(prev => {
+      if (rangeSelect && prev.length > 0) {
+        // Range selection: select all nodes between last selected and clicked node
+        const flatNodes: ComponentNode[] = [];
+        const flatten = (nodes: ComponentNode[]) => {
+          nodes.forEach(node => {
+            flatNodes.push(node);
+            if (node.children) {
+              flatten(node.children);
+            }
+          });
+        };
+        flatten(allNodes);
+
+        const lastSelectedIndex = flatNodes.findIndex(n => n.id === prev[prev.length - 1]);
+        const clickedIndex = flatNodes.findIndex(n => n.id === id);
+
+        if (lastSelectedIndex !== -1 && clickedIndex !== -1) {
+          const start = Math.min(lastSelectedIndex, clickedIndex);
+          const end = Math.max(lastSelectedIndex, clickedIndex);
+          const rangeIds = flatNodes.slice(start, end + 1).map(n => n.id);
+          // Combine with existing selection, removing duplicates
+          const combined = [...new Set([...prev, ...rangeIds])];
+          return combined;
+        }
+        // Fallback to regular multi-select if range can't be determined
+        return prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id];
+      } else if (multiSelect) {
+        // Toggle: if already selected, remove it; otherwise add it
+        if (prev.includes(id)) {
+          const filtered = prev.filter(selectedId => selectedId !== id);
+          // Always keep at least one selected (prefer ROOT_VSTACK_ID)
+          return filtered.length > 0 ? filtered : [ROOT_VSTACK_ID];
+        } else {
+          return [...prev, id];
+        }
+      } else {
+        // Single select: replace selection
+        return [id];
+      }
+    });
+  }, [tree]);
+
   const addComponent = (componentType: string, parentId?: string) => {
+    // Set default gridColumnSpan for all new components
+    const props: Record<string, any> = {
+      gridColumnSpan: 12,
+    };
+
     const newNode: ComponentNode = {
       id: generateId(),
       type: componentType,
-      props: {},
+      props,
       children: [],
     };
 
@@ -345,7 +408,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       };
       setTree(addToParent(tree));
     }
-    setSelectedNodeId(newNode.id);
+    setSelectedNodeIds([newNode.id]);
   };
 
   const removeComponent = (id: string) => {
@@ -362,15 +425,32 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       });
     };
     setTree(removeFromTree(tree));
-    if (selectedNodeId === id) {
-      setSelectedNodeId(ROOT_VSTACK_ID);
-    }
+    setSelectedNodeIds(prev => {
+      const filtered = prev.filter(selectedId => selectedId !== id);
+      return filtered.length > 0 ? filtered : [ROOT_VSTACK_ID];
+    });
   };
 
   const updateComponentProps = (id: string, props: Record<string, any>) => {
     const updateNode = (nodes: ComponentNode[]): ComponentNode[] => {
       return nodes.map(node => {
         if (node.id === id) {
+          return { ...node, props: { ...node.props, ...props } };
+        }
+        if (node.children) {
+          return { ...node, children: updateNode(node.children) };
+        }
+        return node;
+      });
+    };
+    setTree(updateNode(tree));
+  };
+
+  const updateMultipleComponentProps = (ids: string[], props: Record<string, any>) => {
+    const idsSet = new Set(ids);
+    const updateNode = (nodes: ComponentNode[]): ComponentNode[] => {
+      return nodes.map(node => {
+        if (idsSet.has(node.id)) {
           return { ...node, props: { ...node.props, ...props } };
         }
         if (node.children) {
@@ -409,7 +489,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         if (nodes[i].id === id) {
           const cloned = deepClone(nodes[i]);
           parentArray.splice(i + 1, 0, cloned);
-          setSelectedNodeId(cloned.id);
+          setSelectedNodeIds([cloned.id]);
           return parentArray;
         }
         if (nodes[i].children) {
@@ -535,7 +615,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     const defaultPage = createInitialPage('page-1', 'Page 1');
     setPagesWithHistory([defaultPage], 'resetTree');
     setCurrentPageIdWithHistory(defaultPage.id);
-    setSelectedNodeId(ROOT_VSTACK_ID);
+    setSelectedNodeIds([ROOT_VSTACK_ID]);
     setGridLinesVisible(new Set());
     localStorage.removeItem(STORAGE_KEY);
     clearHistory();
@@ -556,7 +636,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   // Page management functions
   const setCurrentPage = (pageId: string) => {
     setCurrentPageIdWithHistory(pageId);
-    setSelectedNodeId(ROOT_VSTACK_ID);
+    setSelectedNodeIds([ROOT_VSTACK_ID]);
     setGridLinesVisible(new Set());
   };
 
@@ -568,7 +648,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     );
     setPagesWithHistory([...pages, newPage], 'addPage');
     setCurrentPageIdWithHistory(newPage.id);
-    setSelectedNodeId(ROOT_VSTACK_ID);
+    setSelectedNodeIds([ROOT_VSTACK_ID]);
+    setGridLinesVisible(new Set());
   };
 
   const deletePage = (pageId: string) => {
@@ -581,7 +662,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     // If deleting current page, switch to first page
     if (pageId === currentPageId) {
       setCurrentPageIdWithHistory(newPages[0].id);
-      setSelectedNodeId(ROOT_VSTACK_ID);
+      setSelectedNodeIds([ROOT_VSTACK_ID]);
     }
   };
 
@@ -613,25 +694,29 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
     setPagesWithHistory([...pages, newPage], 'duplicatePage');
     setCurrentPageIdWithHistory(newPage.id);
-    setSelectedNodeId(ROOT_VSTACK_ID);
+    setSelectedNodeIds([ROOT_VSTACK_ID]);
+    setGridLinesVisible(new Set());
   };
 
   return (
     <ComponentTreeContext.Provider
       value={{
         tree,
-        selectedNodeId,
+        selectedNodeIds,
         setTree,
-        setSelectedNodeId,
+        setSelectedNodeIds,
+        toggleNodeSelection,
         addComponent,
         removeComponent,
         updateComponentProps,
+        updateMultipleComponentProps,
         updateComponentName,
         duplicateComponent,
         moveComponent,
         reorderComponent,
         resetTree,
         getNodeById: (id) => getNodeById(id),
+        getParentById: (id) => getParentById(id),
         gridLinesVisible,
         toggleGridLines,
         pages,

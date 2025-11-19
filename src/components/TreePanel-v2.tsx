@@ -135,8 +135,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	const {
 		tree,
 		addComponent,
-		selectedNodeId,
-		setSelectedNodeId,
+		selectedNodeIds,
+		toggleNodeSelection,
 		resetTree,
 		reorderComponent,
 		removeComponent,
@@ -150,6 +150,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		renamePage,
 		duplicatePage,
 		setTree,
+		getParentById,
+		getNodeById,
 	} = useComponentTree();
 
 	const [inserterTab, setInserterTab] = useState<"blocks" | "patterns">(
@@ -177,29 +179,31 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
 	// Handle adding component
 	const handleAddComponent = (componentType: string) => {
-		const targetId = selectedNodeId || ROOT_VSTACK_ID;
-		const findNode = (
-			nodes: ComponentNode[],
-			id: string
-		): ComponentNode | null => {
-			for (const node of nodes) {
-				if (node.id === id) return node;
-				if (node.children) {
-					const found = findNode(node.children, id);
-					if (found) return found;
-				}
-			}
-			return null;
-		};
-
-		const targetNode = findNode(tree, targetId);
+		const targetId = selectedNodeIds[0] || ROOT_VSTACK_ID;
+		const targetNode = getNodeById(targetId);
 		const canAcceptChildren =
 			targetNode && componentRegistry[targetNode.type]?.acceptsChildren;
+
+		let parentId = targetId;
+
+		// If target doesn't accept children, find the nearest parent container
+		if (!canAcceptChildren && targetId !== ROOT_VSTACK_ID) {
+			let currentNode = targetNode;
+			while (currentNode) {
+				const parent = getParentById(currentNode.id);
+				if (!parent) break;
+				if (componentRegistry[parent.type]?.acceptsChildren) {
+					parentId = parent.id;
+					break;
+				}
+				currentNode = parent;
+			}
+		}
 
 		if (canAcceptChildren) {
 			addComponent(componentType, targetId);
 		} else {
-			addComponent(componentType);
+			addComponent(componentType, parentId);
 		}
 		onCloseInserter();
 		setSearchTerm("");
@@ -211,48 +215,45 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		if (!pattern) return;
 
 		const patternWithIds = assignIds(pattern.tree);
-		const targetId = selectedNodeId || ROOT_VSTACK_ID;
-
-		const findNode = (
-			nodes: ComponentNode[],
-			id: string
-		): ComponentNode | null => {
-			for (const node of nodes) {
-				if (node.id === id) return node;
-				if (node.children) {
-					const found = findNode(node.children, id);
-					if (found) return found;
-				}
-			}
-			return null;
-		};
-
-		const targetNode = findNode(tree, targetId);
+		const targetId = selectedNodeIds[0] || ROOT_VSTACK_ID;
+		const targetNode = getNodeById(targetId);
 		const canAcceptChildren =
 			targetNode && componentRegistry[targetNode.type]?.acceptsChildren;
 
-		if (canAcceptChildren) {
-			const addToParent = (nodes: ComponentNode[]): ComponentNode[] => {
-				return nodes.map((node) => {
-					if (node.id === targetId) {
-						return {
-							...node,
-							children: [...(node.children || []), patternWithIds],
-						};
-					}
-					if (node.children) {
-						return {
-							...node,
-							children: addToParent(node.children),
-						};
-					}
-					return node;
-				});
-			};
-			setTree(addToParent(tree));
-		} else {
-			setTree([...tree, patternWithIds]);
+		let parentId = targetId;
+
+		// If target doesn't accept children, find the nearest parent container
+		if (!canAcceptChildren && targetId !== ROOT_VSTACK_ID) {
+			let currentNode = targetNode;
+			while (currentNode) {
+				const parent = getParentById(currentNode.id);
+				if (!parent) break;
+				if (componentRegistry[parent.type]?.acceptsChildren) {
+					parentId = parent.id;
+					break;
+				}
+				currentNode = parent;
+			}
 		}
+
+		const addToParent = (nodes: ComponentNode[]): ComponentNode[] => {
+			return nodes.map((node) => {
+				if (node.id === parentId) {
+					return {
+						...node,
+						children: [...(node.children || []), patternWithIds],
+					};
+				}
+				if (node.children) {
+					return {
+						...node,
+						children: addToParent(node.children),
+					};
+				}
+				return node;
+			});
+		};
+		setTree(addToParent(tree));
 
 		onCloseInserter();
 		setSearchTerm("");
@@ -316,29 +317,34 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	);
 
 	useEffect(() => {
-		if (!selectedNodeId) return;
-		const path = findNodePath(tree, selectedNodeId);
-		if (!path) return;
-		setExpandedNodes((prev) => {
-			let changed = false;
-			const next = new Set(prev);
-			path.slice(0, -1).forEach((id) => {
-				if (!next.has(id)) {
-					next.add(id);
-					changed = true;
-				}
-			});
-			return changed ? next : prev;
+		if (selectedNodeIds.length === 0) return;
+		// Expand paths for all selected nodes
+		selectedNodeIds.forEach((selectedId) => {
+			const path = findNodePath(tree, selectedId);
+			if (path) {
+				setExpandedNodes((prev) => {
+					let changed = false;
+					const next = new Set(prev);
+					path.slice(0, -1).forEach((id) => {
+						if (!next.has(id)) {
+							next.add(id);
+							changed = true;
+						}
+					});
+					return changed ? next : prev;
+				});
+			}
 		});
-	}, [selectedNodeId, tree, findNodePath]);
+	}, [selectedNodeIds, tree, findNodePath]);
 
 	useEffect(() => {
-		if (!selectedNodeId) return;
-		const el = nodeRefs.current.get(selectedNodeId);
+		if (selectedNodeIds.length === 0) return;
+		// Scroll to first selected node
+		const el = nodeRefs.current.get(selectedNodeIds[0]);
 		if (el) {
 			el.scrollIntoView({ block: "nearest", behavior: "smooth" });
 		}
-	}, [selectedNodeId]);
+	}, [selectedNodeIds]);
 
 	// Render tree node with WordPress ListView styling
 	const TreeNode: React.FC<{ node: ComponentNode; level: number }> = ({
@@ -349,7 +355,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		const [dropPosition, setDropPosition] = useState<DropPosition | null>(null);
 		const ref = useRef<HTMLDivElement>(null);
 
-		const isSelected = selectedNodeId === node.id;
+		const isSelected = selectedNodeIds.includes(node.id);
 		const hasChildren = node.children && node.children.length > 0;
 		const isRootVStack = node.id === ROOT_VSTACK_ID;
 		const isExpanded = expandedNodes.has(node.id);
@@ -482,7 +488,11 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							? "1px solid #2271b1"
 							: "1px solid transparent",
 					}}
-					onClick={() => setSelectedNodeId(node.id)}
+					onClick={(e) => {
+						const multiSelect = e.metaKey || e.ctrlKey;
+						const rangeSelect = e.shiftKey;
+						toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+					}}
 					onMouseEnter={() => setIsHovered(true)}
 					onMouseLeave={() => setIsHovered(false)}
 				>
