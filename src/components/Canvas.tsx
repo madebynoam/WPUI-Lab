@@ -4,7 +4,7 @@ import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import { Breadcrumb } from './Breadcrumb';
 import { wordpress } from '@wordpress/icons';
-import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
+import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel-v2';
 
 const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
   const { setSelectedNodeId, selectedNodeId, gridLinesVisible, undo, redo, canUndo, canRedo } = useComponentTree();

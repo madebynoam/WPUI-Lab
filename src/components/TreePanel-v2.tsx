@@ -158,10 +158,10 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	const [searchTerm, setSearchTerm] = useState("");
 	const [editingPageId, setEditingPageId] = useState<string | null>(null);
 	const [editingPageName, setEditingPageName] = useState("");
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
-    new Set([ROOT_VSTACK_ID])
-  );
-  const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+	const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
+		new Set([ROOT_VSTACK_ID])
+	);
+	const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
 	const toggleExpand = (nodeId: string) => {
 		setExpandedNodes((prev) => {
@@ -281,59 +281,66 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		}))
 		.filter((cat) => cat.patterns.length > 0);
 
-  const registerNodeRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    if (el) {
-      nodeRefs.current.set(id, el);
-    } else {
-      nodeRefs.current.delete(id);
-    }
-  }, []);
+	const registerNodeRef = useCallback(
+		(id: string, el: HTMLDivElement | null) => {
+			if (el) {
+				nodeRefs.current.set(id, el);
+			} else {
+				nodeRefs.current.delete(id);
+			}
+		},
+		[]
+	);
 
-  const findNodePath = useCallback(
-    (nodes: ComponentNode[], targetId: string, path: string[] = []): string[] | null => {
-      for (const node of nodes) {
-        const nextPath = [...path, node.id];
-        if (node.id === targetId) {
-          return nextPath;
-        }
-        if (node.children) {
-          const found = findNodePath(node.children, targetId, nextPath);
-          if (found) {
-            return found;
-          }
-        }
-      }
-      return null;
-    },
-    []
-  );
+	const findNodePath = useCallback(
+		(
+			nodes: ComponentNode[],
+			targetId: string,
+			path: string[] = []
+		): string[] | null => {
+			for (const node of nodes) {
+				const nextPath = [...path, node.id];
+				if (node.id === targetId) {
+					return nextPath;
+				}
+				if (node.children) {
+					const found = findNodePath(node.children, targetId, nextPath);
+					if (found) {
+						return found;
+					}
+				}
+			}
+			return null;
+		},
+		[]
+	);
 
-  useEffect(() => {
-    if (!selectedNodeId) return;
-    const path = findNodePath(tree, selectedNodeId);
-    if (!path) return;
-    setExpandedNodes((prev) => {
-      let changed = false;
-      const next = new Set(prev);
-      path.slice(0, -1).forEach((id) => {
-        if (!next.has(id)) {
-          next.add(id);
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [selectedNodeId, tree, findNodePath]);
+	useEffect(() => {
+		if (!selectedNodeId) return;
+		const path = findNodePath(tree, selectedNodeId);
+		if (!path) return;
+		setExpandedNodes((prev) => {
+			let changed = false;
+			const next = new Set(prev);
+			path.slice(0, -1).forEach((id) => {
+				if (!next.has(id)) {
+					next.add(id);
+					changed = true;
+				}
+			});
+			return changed ? next : prev;
+		});
+	}, [selectedNodeId, tree, findNodePath]);
 
-  useEffect(() => {
-    if (!selectedNodeId) return;
-    const el = nodeRefs.current.get(selectedNodeId);
-    if (el) {
-      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-  }, [selectedNodeId]);
+	useEffect(() => {
+		if (!selectedNodeId) return;
+		const el = nodeRefs.current.get(selectedNodeId);
+		if (el) {
+			el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+		}
+	}, [selectedNodeId]);
 
-  // Render tree node with WordPress ListView styling
+	// Render tree node with WordPress ListView styling
 	const TreeNode: React.FC<{ node: ComponentNode; level: number }> = ({
 		node,
 		level,
@@ -433,23 +440,23 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		// Combine drag and drop refs
 		drag(drop(ref));
 
-    useEffect(() => {
-      if (ref.current) {
-        registerNodeRef(node.id, ref.current);
-        return () => registerNodeRef(node.id, null);
-      }
-      return () => registerNodeRef(node.id, null);
-    }, [node.id, registerNodeRef]);
+		useEffect(() => {
+			if (ref.current) {
+				registerNodeRef(node.id, ref.current);
+				return () => registerNodeRef(node.id, null);
+			}
+			return () => registerNodeRef(node.id, null);
+		}, [node.id, registerNodeRef]);
 
-    const showBeforeIndicator = isOver && canDrop && dropPosition === "before";
+		const showBeforeIndicator = isOver && canDrop && dropPosition === "before";
 		const showAfterIndicator = isOver && canDrop && dropPosition === "after";
 		const showInsideIndicator = isOver && canDrop && dropPosition === "inside";
 		const indentPx = level * 16 + 8;
 
 		return (
 			<div style={{ opacity: isDragging ? 0.5 : 1 }}>
-        <div
-          ref={ref}
+				<div
+					ref={ref}
 					style={{
 						position: "relative",
 						display: "flex",
