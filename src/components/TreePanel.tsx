@@ -13,6 +13,7 @@ import {
   SearchControl,
   Icon,
   __experimentalDivider as Divider,
+  TextControl,
 } from '@wordpress/components';
 import {
   moreVertical,
@@ -363,7 +364,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                   marginLeft: '4px',
                 }}
               >
-                {node.id === ROOT_VSTACK_ID ? 'Page' : node.type}
+                {node.id === ROOT_VSTACK_ID
+                  ? 'Page'
+                  : node.name
+                    ? `${node.name} (${node.type})`
+                    : node.type}
               </span>
 
               {/* Options Menu - Hide for root VStack */}
@@ -466,7 +471,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 export const TreePanel: React.FC = () => {
-  const { tree, addComponent, selectedNodeId, resetTree, reorderComponent } = useComponentTree();
+  const { tree, addComponent, selectedNodeId, resetTree, reorderComponent, pages, currentPageId, setCurrentPage, addPage, deletePage, renamePage } = useComponentTree();
   const [showInserter, setShowInserter] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set([ROOT_VSTACK_ID]));
@@ -474,6 +479,8 @@ export const TreePanel: React.FC = () => {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | 'inside' | null>(null);
   const dropPositionRef = useRef<'before' | 'after' | 'inside' | null>(null);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [editingPageName, setEditingPageName] = useState('');
 
   // Drag & drop sensors
   const sensors = useSensors(
@@ -733,6 +740,129 @@ export const TreePanel: React.FC = () => {
     >
       <div style={{ padding: '12px', borderBottom: '1px solid #ccc' }}>
         <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Component Tree</h3>
+      </div>
+
+      {/* Pages Section */}
+      <div style={{ padding: '8px', borderBottom: '1px solid #ccc', backgroundColor: '#f9f9f9' }}>
+        <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#666', textTransform: 'uppercase' }}>Pages</span>
+          <Button
+            size="small"
+            variant="secondary"
+            icon={plus}
+            onClick={() => addPage()}
+            style={{ minWidth: 'auto', padding: '4px 8px' }}
+          >
+            New
+          </Button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {pages.map((page) => (
+            <div
+              key={page.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '6px 8px',
+                backgroundColor: currentPageId === page.id ? '#2271b1' : '#fff',
+                color: currentPageId === page.id ? '#fff' : '#1e1e1e',
+                borderRadius: '2px',
+                cursor: 'pointer',
+                transition: 'background-color 0.15s ease',
+                border: '1px solid',
+                borderColor: currentPageId === page.id ? '#2271b1' : '#ddd',
+              }}
+              onClick={() => {
+                if (editingPageId !== page.id) {
+                  setCurrentPage(page.id);
+                }
+              }}
+              onMouseEnter={(e) => {
+                if (currentPageId !== page.id && editingPageId !== page.id) {
+                  e.currentTarget.style.backgroundColor = '#f0f0f0';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPageId !== page.id && editingPageId !== page.id) {
+                  e.currentTarget.style.backgroundColor = '#fff';
+                }
+              }}
+            >
+              {editingPageId === page.id ? (
+                <input
+                  type="text"
+                  value={editingPageName}
+                  onChange={(e) => setEditingPageName(e.target.value)}
+                  onBlur={() => {
+                    if (editingPageName.trim()) {
+                      renamePage(page.id, editingPageName.trim());
+                    }
+                    setEditingPageId(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (editingPageName.trim()) {
+                        renamePage(page.id, editingPageName.trim());
+                      }
+                      setEditingPageId(null);
+                    } else if (e.key === 'Escape') {
+                      setEditingPageId(null);
+                    }
+                  }}
+                  autoFocus
+                  style={{
+                    flex: 1,
+                    fontSize: '12px',
+                    padding: '2px 4px',
+                    border: '1px solid #007cba',
+                    borderRadius: '2px',
+                    outline: 'none',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span style={{ flex: 1, fontSize: '12px', fontWeight: currentPageId === page.id ? 500 : 400 }}>
+                  {page.name}
+                </span>
+              )}
+              <div onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu
+                  icon={moreVertical}
+                  label="Page options"
+                  popoverProps={{ placement: 'left-start' }}
+                >
+                  {() => (
+                    <MenuGroup>
+                      <MenuItem
+                        onClick={() => {
+                          setEditingPageId(page.id);
+                          setEditingPageName(page.name);
+                        }}
+                      >
+                        Rename
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          if (pages.length > 1) {
+                            if (confirm(`Delete page "${page.name}"?`)) {
+                              deletePage(page.id);
+                            }
+                          } else {
+                            alert('Cannot delete the last page');
+                          }
+                        }}
+                        isDestructive
+                        disabled={pages.length === 1}
+                      >
+                        Delete
+                      </MenuItem>
+                    </MenuGroup>
+                  )}
+                </DropdownMenu>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ padding: '8px', borderBottom: '1px solid #ccc' }}>

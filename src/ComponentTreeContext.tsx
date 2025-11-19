@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { ComponentNode } from './types';
+import { ComponentNode, Page } from './types';
 
-const STORAGE_KEY = 'wp-designer-tree';
+const STORAGE_KEY = 'wp-designer-pages';
 
 interface ComponentTreeContextType {
+  // Current page's tree
   tree: ComponentNode[];
   selectedNodeId: string | null;
   setTree: (tree: ComponentNode[]) => void;
@@ -11,6 +12,7 @@ interface ComponentTreeContextType {
   addComponent: (componentType: string, parentId?: string) => void;
   removeComponent: (id: string) => void;
   updateComponentProps: (id: string, props: Record<string, any>) => void;
+  updateComponentName: (id: string, name: string) => void;
   duplicateComponent: (id: string) => void;
   moveComponent: (id: string, direction: 'up' | 'down') => void;
   reorderComponent: (activeId: string, overId: string, position?: 'before' | 'after' | 'inside') => void;
@@ -18,50 +20,77 @@ interface ComponentTreeContextType {
   getNodeById: (id: string) => ComponentNode | null;
   gridLinesVisible: Set<string>;
   toggleGridLines: (id: string) => void;
+
+  // Pages management
+  pages: Page[];
+  currentPageId: string;
+  setCurrentPage: (pageId: string) => void;
+  addPage: (name?: string) => void;
+  deletePage: (pageId: string) => void;
+  renamePage: (pageId: string, name: string) => void;
 }
 
 const ComponentTreeContext = createContext<ComponentTreeContextType | undefined>(undefined);
 
 const ROOT_VSTACK_ID = 'root-vstack';
 
+const createInitialPage = (id: string, name: string): Page => ({
+  id,
+  name,
+  tree: [{
+    id: ROOT_VSTACK_ID,
+    type: 'VStack',
+    props: { spacing: 4 },
+    children: [],
+  }],
+});
+
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
-  const [tree, setTreeState] = useState<ComponentNode[]>(() => {
+  const [pages, setPagesState] = useState<Page[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      const parsedTree = JSON.parse(saved);
-
-      // Migration: Check if root VStack exists
-      const hasRootVStack = parsedTree.length === 1 && parsedTree[0].id === ROOT_VSTACK_ID;
-
-      if (!hasRootVStack) {
-        // Migrate old structure: wrap existing components in root VStack
-        return [{
-          id: ROOT_VSTACK_ID,
-          type: 'VStack',
-          props: { spacing: 4 },
-          children: parsedTree,
-        }];
+      try {
+        const data = JSON.parse(saved);
+        // Check if it's the new pages format
+        if (Array.isArray(data.pages) && data.pages.length > 0) {
+          return data.pages;
+        }
+      } catch (e) {
+        console.error('Failed to parse saved pages:', e);
       }
-
-      return parsedTree;
     }
-    // Initialize with root VStack
-    return [{
-      id: ROOT_VSTACK_ID,
-      type: 'VStack',
-      props: { spacing: 4 },
-      children: [],
-    }];
+    // Initialize with one default page
+    return [createInitialPage('page-1', 'Page 1')];
   });
+
+  const [currentPageId, setCurrentPageId] = useState<string>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.currentPageId) {
+          return data.currentPageId;
+        }
+      } catch (e) {}
+    }
+    return 'page-1';
+  });
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(ROOT_VSTACK_ID);
   const [gridLinesVisible, setGridLinesVisible] = useState<Set<string>>(new Set());
 
+  // Get current page's tree
+  const currentPage = pages.find(p => p.id === currentPageId) || pages[0];
+  const tree = currentPage?.tree || [];
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tree));
-  }, [tree]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ pages, currentPageId }));
+  }, [pages, currentPageId]);
 
   const setTree = (newTree: ComponentNode[]) => {
-    setTreeState(newTree);
+    setPagesState(pages.map(page =>
+      page.id === currentPageId ? { ...page, tree: newTree } : page
+    ));
   };
 
   const generateId = () => `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -134,6 +163,21 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       return nodes.map(node => {
         if (node.id === id) {
           return { ...node, props: { ...node.props, ...props } };
+        }
+        if (node.children) {
+          return { ...node, children: updateNode(node.children) };
+        }
+        return node;
+      });
+    };
+    setTree(updateNode(tree));
+  };
+
+  const updateComponentName = (id: string, name: string) => {
+    const updateNode = (nodes: ComponentNode[]): ComponentNode[] => {
+      return nodes.map(node => {
+        if (node.id === id) {
+          return { ...node, name: name || undefined };
         }
         if (node.children) {
           return { ...node, children: updateNode(node.children) };
@@ -295,6 +339,44 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     });
   };
 
+  // Page management functions
+  const setCurrentPage = (pageId: string) => {
+    setCurrentPageId(pageId);
+    setSelectedNodeId(ROOT_VSTACK_ID);
+    setGridLinesVisible(new Set());
+  };
+
+  const addPage = (name?: string) => {
+    const newPageNumber = pages.length + 1;
+    const newPage = createInitialPage(
+      `page-${Date.now()}`,
+      name || `Page ${newPageNumber}`
+    );
+    setPagesState([...pages, newPage]);
+    setCurrentPageId(newPage.id);
+    setSelectedNodeId(ROOT_VSTACK_ID);
+  };
+
+  const deletePage = (pageId: string) => {
+    // Don't allow deleting the last page
+    if (pages.length === 1) return;
+
+    const newPages = pages.filter(p => p.id !== pageId);
+    setPagesState(newPages);
+
+    // If deleting current page, switch to first page
+    if (pageId === currentPageId) {
+      setCurrentPageId(newPages[0].id);
+      setSelectedNodeId(ROOT_VSTACK_ID);
+    }
+  };
+
+  const renamePage = (pageId: string, name: string) => {
+    setPagesState(pages.map(page =>
+      page.id === pageId ? { ...page, name } : page
+    ));
+  };
+
   return (
     <ComponentTreeContext.Provider
       value={{
@@ -305,6 +387,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         addComponent,
         removeComponent,
         updateComponentProps,
+        updateComponentName,
         duplicateComponent,
         moveComponent,
         reorderComponent,
@@ -312,6 +395,12 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         getNodeById: (id) => getNodeById(id),
         gridLinesVisible,
         toggleGridLines,
+        pages,
+        currentPageId,
+        setCurrentPage,
+        addPage,
+        deletePage,
+        renamePage,
       }}
     >
       {children}

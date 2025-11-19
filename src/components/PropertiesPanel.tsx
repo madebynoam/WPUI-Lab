@@ -10,7 +10,7 @@ import {
 } from '@wordpress/components';
 
 export const PropertiesPanel: React.FC = () => {
-  const { selectedNodeId, getNodeById, updateComponentProps, tree, gridLinesVisible, toggleGridLines } = useComponentTree();
+  const { selectedNodeId, getNodeById, updateComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines } = useComponentTree();
 
   if (!selectedNodeId) {
     return (
@@ -132,6 +132,17 @@ export const PropertiesPanel: React.FC = () => {
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+        {/* Layer Name */}
+        <div style={{ marginBottom: '16px' }}>
+          <TextControl
+            label="Layer Name"
+            value={node.name || ''}
+            onChange={(value) => updateComponentName(selectedNodeId, value)}
+            help="Custom name for this layer"
+            placeholder={node.type}
+          />
+        </div>
+
         {definition.propDefinitions.map((propDef) => {
           const currentValue = node.props[propDef.name] ?? propDef.defaultValue;
 

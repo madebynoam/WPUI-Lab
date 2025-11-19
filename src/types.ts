@@ -3,8 +3,15 @@ import React from 'react';
 export interface ComponentNode {
   id: string;
   type: string;
+  name?: string;
   props: Record<string, any>;
   children?: ComponentNode[];
+}
+
+export interface Page {
+  id: string;
+  name: string;
+  tree: ComponentNode[];
 }
 
 export interface ComponentDefinition {
