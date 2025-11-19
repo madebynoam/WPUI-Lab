@@ -41,7 +41,12 @@ const createInitialPage = (id: string, name: string): Page => ({
     id: ROOT_VSTACK_ID,
     type: 'VStack',
     props: { spacing: 4 },
-    children: [],
+    children: [{
+      id: `grid-${Date.now()}`,
+      type: 'Grid',
+      props: { columns: 12, gap: 4 },
+      children: [],
+    }],
   }],
 });
 

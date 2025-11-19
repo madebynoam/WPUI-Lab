@@ -736,27 +736,104 @@ export const TreePanel: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
-      <div style={{ padding: '12px', borderBottom: '1px solid #ccc' }}>
-        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Component Tree</h3>
+      {/* WordPress Editor-style Top Bar */}
+      <div style={{
+        height: '60px',
+        backgroundColor: '#1e1e1e',
+        borderBottom: '1px solid #000',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 16px',
+        flexShrink: 0,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="#fff">
+            <path d="M12.158 12.786l-2.698 7.84c.87.46 1.837.718 2.84.718.721 0 1.414-.13 2.057-.368l-.144-.36-2.055-7.83zm-5.15 3.2c-.297-.703-.464-1.487-.464-2.31 0-1.548.632-2.945 1.65-3.95-.064.854.13 1.597.428 2.375l1.936 5.885zm11.47-9.215c-.82-.042-1.564-.083-1.564-.083-.738-.044-.652-1.174.087-1.134 0 0 2.224.175 3.652.175 1.346 0 3.61-.175 3.61-.175.738-.04.826 1.134.087 1.134 0 0-.706.041-1.476.083l-4.74 14.114-2.01-6.027 1.43-4.273c.738-.042 1.434-.083 1.434-.083.738-.042.65-1.133-.088-1.133 0 0-2.225.175-3.653.175l-.828-.007zm-2.344-6.053c1.72 0 3.283.655 4.453 1.733L18.7 4.56c-1.134-1.002-2.622-1.616-4.254-1.616-2.117 0-3.984.99-5.18 2.516l1.922 5.88c.862-1.528 2.482-2.575 4.35-2.575z"/>
+          </svg>
+        </div>
+
+        <button
+          onClick={() => setShowInserter(!showInserter)}
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '2px',
+            border: 'none',
+            backgroundColor: showInserter ? '#1e1e1e' : 'transparent',
+            color: '#fff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background-color 0.1s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!showInserter) {
+              e.currentTarget.style.backgroundColor = '#2c2c2c';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!showInserter) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+          aria-label={showInserter ? 'Close inserter' : 'Open inserter'}
+        >
+          {showInserter ? (
+            // X icon
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1-6.5-6.7z" />
+            </svg>
+          ) : (
+            // + icon
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18 11.2h-5.2V6h-1.6v5.2H6v1.6h5.2V18h1.6v-5.2H18z" />
+            </svg>
+          )}
+        </button>
       </div>
 
       {/* Pages Section */}
-      <div style={{ padding: '8px', borderBottom: '1px solid #ccc', backgroundColor: '#f9f9f9' }}>
-        <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: '#666', textTransform: 'uppercase' }}>Pages</span>
-          <Button
-            size="small"
-            variant="secondary"
-            icon={plus}
+      <div style={{ padding: '12px 8px', borderBottom: '1px solid #e0e0e0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Pages
+          </span>
+          <button
             onClick={() => addPage()}
-            style={{ minWidth: 'auto', padding: '4px 8px' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '2px',
+              color: '#666',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f0f0f0';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            aria-label="Add page"
           >
-            New
-          </Button>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18 11.2h-5.2V6h-1.6v5.2H6v1.6h5.2V18h1.6v-5.2H18z" />
+            </svg>
+          </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {pages.map((page) => (
             <div
               key={page.id}
@@ -764,13 +841,11 @@ export const TreePanel: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 padding: '6px 8px',
-                backgroundColor: currentPageId === page.id ? '#2271b1' : '#fff',
-                color: currentPageId === page.id ? '#fff' : '#1e1e1e',
+                backgroundColor: currentPageId === page.id ? '#e5f5fa' : 'transparent',
+                color: '#1e1e1e',
                 borderRadius: '2px',
                 cursor: 'pointer',
-                transition: 'background-color 0.15s ease',
-                border: '1px solid',
-                borderColor: currentPageId === page.id ? '#2271b1' : '#ddd',
+                fontSize: '13px',
               }}
               onClick={() => {
                 if (editingPageId !== page.id) {
@@ -779,12 +854,12 @@ export const TreePanel: React.FC = () => {
               }}
               onMouseEnter={(e) => {
                 if (currentPageId !== page.id && editingPageId !== page.id) {
-                  e.currentTarget.style.backgroundColor = '#f0f0f0';
+                  e.currentTarget.style.backgroundColor = '#f5f5f5';
                 }
               }}
               onMouseLeave={(e) => {
                 if (currentPageId !== page.id && editingPageId !== page.id) {
-                  e.currentTarget.style.backgroundColor = '#fff';
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }
               }}
             >
@@ -812,16 +887,17 @@ export const TreePanel: React.FC = () => {
                   autoFocus
                   style={{
                     flex: 1,
-                    fontSize: '12px',
+                    fontSize: '13px',
                     padding: '2px 4px',
                     border: '1px solid #007cba',
                     borderRadius: '2px',
                     outline: 'none',
+                    backgroundColor: '#fff',
                   }}
                   onClick={(e) => e.stopPropagation()}
                 />
               ) : (
-                <span style={{ flex: 1, fontSize: '12px', fontWeight: currentPageId === page.id ? 500 : 400 }}>
+                <span style={{ flex: 1, fontWeight: currentPageId === page.id ? 500 : 400 }}>
                   {page.name}
                 </span>
               )}
@@ -865,30 +941,30 @@ export const TreePanel: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ padding: '8px', borderBottom: '1px solid #ccc' }}>
-        <Button
-          variant="primary"
-          size="small"
-          onClick={() => setShowInserter(!showInserter)}
-          icon={plus}
-          style={{ width: '100%' }}
-        >
-          {showInserter ? 'Close Inserter' : 'Add Component'}
-        </Button>
+      {/* Layers Label */}
+      <div style={{ padding: '12px 8px 8px 8px', borderBottom: '1px solid #e0e0e0' }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Layers
+        </span>
       </div>
 
-      {/* WordPress-style Block Inserter Panel */}
+      {/* WordPress-style Block Inserter Panel - Overlay */}
       {showInserter && (
         <div
           style={{
-            borderBottom: '1px solid #ccc',
+            position: 'absolute',
+            top: '60px',
+            left: 0,
+            right: 0,
+            bottom: 0,
             backgroundColor: '#fff',
-            maxHeight: '60vh',
+            zIndex: 1000,
             display: 'flex',
             flexDirection: 'column',
+            borderTop: '1px solid #e0e0e0',
           }}
         >
-          <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
             <SearchControl
               value={searchTerm}
               onChange={setSearchTerm}
@@ -897,20 +973,20 @@ export const TreePanel: React.FC = () => {
             />
           </div>
 
-          <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
+          <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
             {filteredGroups.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px', color: '#757575', fontSize: '13px' }}>
                 No components found
               </div>
             ) : (
               filteredGroups.map((group) => (
-                <div key={group.name} style={{ marginBottom: '20px' }}>
+                <div key={group.name} style={{ marginBottom: '24px' }}>
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      marginBottom: '8px',
+                      gap: '8px',
+                      marginBottom: '12px',
                       fontSize: '11px',
                       fontWeight: 600,
                       color: '#1e1e1e',
@@ -925,7 +1001,7 @@ export const TreePanel: React.FC = () => {
                     style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '6px',
+                      gap: '8px',
                     }}
                   >
                     {group.components.map((componentType) => (
@@ -933,15 +1009,15 @@ export const TreePanel: React.FC = () => {
                         key={componentType}
                         onClick={() => handleAddComponent(componentType)}
                         style={{
-                          height: '56px',
+                          height: '64px',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '4px',
+                          gap: '6px',
                           fontSize: '11px',
                           textAlign: 'center',
-                          padding: '8px 4px',
+                          padding: '10px 6px',
                           border: '1px solid #ddd',
                           borderRadius: '2px',
                           backgroundColor: '#fff',
@@ -958,7 +1034,7 @@ export const TreePanel: React.FC = () => {
                           e.currentTarget.style.borderColor = '#ddd';
                         }}
                       >
-                        <Icon icon={blockDefault} size={20} />
+                        <Icon icon={blockDefault} size={24} />
                         <span style={{
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
