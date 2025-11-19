@@ -59,6 +59,39 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         console.error('Failed to parse saved pages:', e);
       }
     }
+
+    // Try to migrate from old storage key
+    const oldSaved = localStorage.getItem('wp-designer-tree');
+    if (oldSaved) {
+      try {
+        const oldTree = JSON.parse(oldSaved);
+        if (Array.isArray(oldTree) && oldTree.length > 0) {
+          // Check if tree already has root VStack
+          if (oldTree[0].id === ROOT_VSTACK_ID) {
+            return [{
+              id: 'page-1',
+              name: 'Page 1',
+              tree: oldTree,
+            }];
+          } else {
+            // Wrap existing components in root VStack
+            return [{
+              id: 'page-1',
+              name: 'Page 1',
+              tree: [{
+                id: ROOT_VSTACK_ID,
+                type: 'VStack',
+                props: { spacing: 4 },
+                children: oldTree,
+              }],
+            }];
+          }
+        }
+      } catch (e) {
+        console.error('Failed to migrate old tree:', e);
+      }
+    }
+
     // Initialize with one default page
     return [createInitialPage('page-1', 'Page 1')];
   });
@@ -81,7 +114,23 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   // Get current page's tree
   const currentPage = pages.find(p => p.id === currentPageId) || pages[0];
-  const tree = currentPage?.tree || [];
+  let tree = currentPage?.tree || [];
+
+  // Ensure every page has a root VStack
+  if (tree.length === 0 || tree[0].id !== ROOT_VSTACK_ID) {
+    console.warn('Page missing root VStack, fixing...');
+    const fixedTree = [{
+      id: ROOT_VSTACK_ID,
+      type: 'VStack',
+      props: { spacing: 4 },
+      children: tree.length > 0 ? tree : [],
+    }];
+    // Update the page with the fixed tree
+    setPagesState(pages.map(page =>
+      page.id === currentPageId ? { ...page, tree: fixedTree } : page
+    ));
+    tree = fixedTree;
+  }
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ pages, currentPageId }));

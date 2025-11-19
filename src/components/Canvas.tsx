@@ -367,6 +367,12 @@ export const Canvas: React.FC = () => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+Enter to go to page settings (select root VStack)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        setSelectedNodeId(ROOT_VSTACK_ID);
+      }
+
       // Shift+Enter to select parent
       if (e.shiftKey && e.key === 'Enter' && selectedNodeId) {
         e.preventDefault();
