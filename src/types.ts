@@ -29,3 +29,8 @@ export interface PropDefinition {
   defaultValue?: any;
   description?: string;
 }
+
+export interface HistoryState {
+  pages: Page[];
+  currentPageId: string;
+}

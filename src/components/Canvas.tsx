@@ -7,7 +7,7 @@ import { wordpress } from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 
 const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
-  const { setSelectedNodeId, selectedNodeId, gridLinesVisible } = useComponentTree();
+  const { setSelectedNodeId, selectedNodeId, gridLinesVisible, undo, redo, canUndo, canRedo } = useComponentTree();
   const definition = componentRegistry[node.type];
 
   if (!definition) {
@@ -311,7 +311,7 @@ const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }>
 };
 
 export const Canvas: React.FC = () => {
-  const { tree, selectedNodeId, setSelectedNodeId, getNodeById, gridLinesVisible, toggleGridLines } = useComponentTree();
+  const { tree, selectedNodeId, setSelectedNodeId, getNodeById, gridLinesVisible, toggleGridLines, undo, redo, canUndo, canRedo } = useComponentTree();
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
@@ -367,6 +367,20 @@ export const Canvas: React.FC = () => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && canUndo) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      // Cmd/Ctrl+Shift+Z for redo
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z' && canRedo) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
       // Cmd/Ctrl+Enter to go to page settings (select root VStack)
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
@@ -405,7 +419,7 @@ export const Canvas: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodeId, tree, setSelectedNodeId, getNodeById, findInteractiveAncestor, toggleGridLines]);
+  }, [selectedNodeId, tree, setSelectedNodeId, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo]);
 
   // Check if selected node is an interactive component or a child of one
   const selectedNode = selectedNodeId ? getNodeById(selectedNodeId) : null;
