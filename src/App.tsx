@@ -8,6 +8,7 @@ import '@wordpress/components/build-style/style.css';
 
 function App() {
   const [showPanels, setShowPanels] = useState(true);
+  const [showInserter, setShowInserter] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -25,9 +26,9 @@ function App() {
   return (
     <ComponentTreeProvider>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <TopBar />
+        <TopBar showInserter={showInserter} onToggleInserter={() => setShowInserter(!showInserter)} />
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {showPanels && <TreePanel />}
+          {showPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
           <Canvas />
           {showPanels && <PropertiesPanel />}
         </div>
