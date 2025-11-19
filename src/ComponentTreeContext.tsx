@@ -28,6 +28,7 @@ interface ComponentTreeContextType {
   addPage: (name?: string) => void;
   deletePage: (pageId: string) => void;
   renamePage: (pageId: string, name: string) => void;
+  duplicatePage: (pageId: string) => void;
 }
 
 const ComponentTreeContext = createContext<ComponentTreeContextType | undefined>(undefined);
@@ -435,6 +436,31 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     ));
   };
 
+  const duplicatePage = (pageId: string) => {
+    const pageToDuplicate = pages.find(p => p.id === pageId);
+    if (!pageToDuplicate) return;
+
+    // Deep clone the tree with new IDs
+    const deepCloneTree = (node: ComponentNode): ComponentNode => ({
+      ...node,
+      id: node.id === ROOT_VSTACK_ID ? ROOT_VSTACK_ID : generateId(),
+      children: node.children?.map(deepCloneTree),
+    });
+
+    const clonedTree = pageToDuplicate.tree.map(deepCloneTree);
+
+    // Create new page with cloned tree
+    const newPage: Page = {
+      id: `page-${Date.now()}`,
+      name: `${pageToDuplicate.name} Copy`,
+      tree: clonedTree,
+    };
+
+    setPagesState([...pages, newPage]);
+    setCurrentPageId(newPage.id);
+    setSelectedNodeId(ROOT_VSTACK_ID);
+  };
+
   return (
     <ComponentTreeContext.Provider
       value={{
@@ -459,6 +485,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         addPage,
         deletePage,
         renamePage,
+        duplicatePage,
       }}
     >
       {children}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
+import { patterns, patternCategories, assignIds } from '../patterns';
 import {
   Button,
   __experimentalTreeGrid as TreeGrid,
@@ -471,8 +472,9 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 export const TreePanel: React.FC = () => {
-  const { tree, addComponent, selectedNodeId, resetTree, reorderComponent, pages, currentPageId, setCurrentPage, addPage, deletePage, renamePage } = useComponentTree();
+  const { tree, addComponent, selectedNodeId, resetTree, reorderComponent, pages, currentPageId, setCurrentPage, addPage, deletePage, renamePage, duplicatePage, setTree } = useComponentTree();
   const [showInserter, setShowInserter] = useState(false);
+  const [inserterTab, setInserterTab] = useState<'blocks' | 'patterns'>('blocks');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set([ROOT_VSTACK_ID]));
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -719,6 +721,48 @@ export const TreePanel: React.FC = () => {
     setSearchTerm('');
   };
 
+  // Handle adding pattern - convert pattern template to actual nodes and insert
+  const handleAddPattern = (patternId: string) => {
+    const pattern = patterns.find(p => p.id === patternId);
+    if (!pattern) return;
+
+    // Assign IDs to the pattern tree
+    const patternWithIds = assignIds(pattern.tree);
+
+    const targetId = selectedNodeId || ROOT_VSTACK_ID;
+    const targetNode = findNodeInTree(tree, targetId);
+    const canAcceptChildren = targetNode && componentRegistry[targetNode.type]?.acceptsChildren;
+
+    // Add pattern to tree
+    if (canAcceptChildren) {
+      // Add as child of selected node
+      const addToParent = (nodes: ComponentNode[]): ComponentNode[] => {
+        return nodes.map(node => {
+          if (node.id === targetId) {
+            return {
+              ...node,
+              children: [...(node.children || []), patternWithIds],
+            };
+          }
+          if (node.children) {
+            return {
+              ...node,
+              children: addToParent(node.children),
+            };
+          }
+          return node;
+        });
+      };
+      setTree(addToParent(tree));
+    } else {
+      // Add as sibling (at root level)
+      setTree([...tree, patternWithIds]);
+    }
+
+    setShowInserter(false);
+    setSearchTerm('');
+  };
+
   // Filter components based on search term
   const filteredGroups = componentGroups.map(group => ({
     ...group,
@@ -726,6 +770,16 @@ export const TreePanel: React.FC = () => {
       comp.toLowerCase().includes(searchTerm.toLowerCase())
     ),
   })).filter(group => group.components.length > 0);
+
+  // Filter patterns based on search term
+  const filteredPatternCategories = patternCategories.map(category => ({
+    category,
+    patterns: patterns.filter(p =>
+      p.category === category &&
+      (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    ),
+  })).filter(cat => cat.patterns.length > 0);
 
   return (
     <div
@@ -919,6 +973,13 @@ export const TreePanel: React.FC = () => {
                       </MenuItem>
                       <MenuItem
                         onClick={() => {
+                          duplicatePage(page.id);
+                        }}
+                      >
+                        Duplicate
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
                           if (pages.length > 1) {
                             if (confirm(`Delete page "${page.name}"?`)) {
                               deletePage(page.id);
@@ -964,90 +1025,194 @@ export const TreePanel: React.FC = () => {
             borderTop: '1px solid #e0e0e0',
           }}
         >
+          {/* Tabs */}
+          <div style={{
+            display: 'flex',
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: '#f9f9f9',
+          }}>
+            <button
+              onClick={() => setInserterTab('blocks')}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                border: 'none',
+                backgroundColor: inserterTab === 'blocks' ? '#fff' : 'transparent',
+                borderBottom: inserterTab === 'blocks' ? '2px solid #2271b1' : '2px solid transparent',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: inserterTab === 'blocks' ? 600 : 400,
+                color: inserterTab === 'blocks' ? '#1e1e1e' : '#666',
+                fontFamily: 'inherit',
+              }}
+            >
+              Blocks
+            </button>
+            <button
+              onClick={() => setInserterTab('patterns')}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                border: 'none',
+                backgroundColor: inserterTab === 'patterns' ? '#fff' : 'transparent',
+                borderBottom: inserterTab === 'patterns' ? '2px solid #2271b1' : '2px solid transparent',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: inserterTab === 'patterns' ? 600 : 400,
+                color: inserterTab === 'patterns' ? '#1e1e1e' : '#666',
+                fontFamily: 'inherit',
+              }}
+            >
+              Patterns
+            </button>
+          </div>
+
+          {/* Search */}
           <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
             <SearchControl
               value={searchTerm}
               onChange={setSearchTerm}
-              placeholder="Search components..."
+              placeholder={inserterTab === 'blocks' ? 'Search blocks...' : 'Search patterns...'}
               __nextHasNoMarginBottom
             />
           </div>
 
+          {/* Content */}
           <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-            {filteredGroups.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px', color: '#757575', fontSize: '13px' }}>
-                No components found
-              </div>
-            ) : (
-              filteredGroups.map((group) => (
-                <div key={group.name} style={{ marginBottom: '24px' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '12px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: '#1e1e1e',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    <Icon icon={group.icon} size={16} />
-                    {group.name}
-                  </div>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '8px',
-                    }}
-                  >
-                    {group.components.map((componentType) => (
-                      <button
-                        key={componentType}
-                        onClick={() => handleAddComponent(componentType)}
-                        style={{
-                          height: '64px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          fontSize: '11px',
-                          textAlign: 'center',
-                          padding: '10px 6px',
-                          border: '1px solid #ddd',
-                          borderRadius: '2px',
-                          backgroundColor: '#fff',
-                          cursor: 'pointer',
-                          transition: 'all 0.1s ease',
-                          fontFamily: 'inherit',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f0f0f0';
-                          e.currentTarget.style.borderColor = '#2271b1';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#fff';
-                          e.currentTarget.style.borderColor = '#ddd';
-                        }}
-                      >
-                        <Icon icon={blockDefault} size={24} />
-                        <span style={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '100%',
-                        }}>
-                          {componentType}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+            {inserterTab === 'blocks' ? (
+              // Blocks content
+              filteredGroups.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#757575', fontSize: '13px' }}>
+                  No blocks found
                 </div>
-              ))
+              ) : (
+                filteredGroups.map((group) => (
+                  <div key={group.name} style={{ marginBottom: '24px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: '#1e1e1e',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      <Icon icon={group.icon} size={16} />
+                      {group.name}
+                    </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '8px',
+                      }}
+                    >
+                      {group.components.map((componentType) => (
+                        <button
+                          key={componentType}
+                          onClick={() => handleAddComponent(componentType)}
+                          style={{
+                            height: '64px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            fontSize: '11px',
+                            textAlign: 'center',
+                            padding: '10px 6px',
+                            border: '1px solid #ddd',
+                            borderRadius: '2px',
+                            backgroundColor: '#fff',
+                            cursor: 'pointer',
+                            transition: 'all 0.1s ease',
+                            fontFamily: 'inherit',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f0f0f0';
+                            e.currentTarget.style.borderColor = '#2271b1';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fff';
+                            e.currentTarget.style.borderColor = '#ddd';
+                          }}
+                        >
+                          <Icon icon={blockDefault} size={24} />
+                          <span style={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '100%',
+                          }}>
+                            {componentType}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )
+            ) : (
+              // Patterns content
+              filteredPatternCategories.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#757575', fontSize: '13px' }}>
+                  No patterns found
+                </div>
+              ) : (
+                filteredPatternCategories.map((cat) => (
+                  <div key={cat.category} style={{ marginBottom: '32px' }}>
+                    <div
+                      style={{
+                        marginBottom: '16px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: '#1e1e1e',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      {cat.category}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {cat.patterns.map((pattern) => (
+                        <button
+                          key={pattern.id}
+                          onClick={() => handleAddPattern(pattern.id)}
+                          style={{
+                            padding: '16px',
+                            border: '1px solid #ddd',
+                            borderRadius: '2px',
+                            backgroundColor: '#fff',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.1s ease',
+                            fontFamily: 'inherit',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f9f9f9';
+                            e.currentTarget.style.borderColor = '#2271b1';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fff';
+                            e.currentTarget.style.borderColor = '#ddd';
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, fontSize: '13px', color: '#1e1e1e', marginBottom: '4px' }}>
+                            {pattern.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {pattern.description}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )
             )}
           </div>
         </div>
