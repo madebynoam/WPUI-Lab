@@ -1,0 +1,56 @@
+/* WordPress ListView displacement animations */
+.tree-panel-leaf {
+  position: relative;
+  transform: translateY(0);
+  transition: transform 0.2s ease;
+}
+
+.tree-panel-leaf.is-displacement-up {
+  transform: translateY(-32px);
+}
+
+.tree-panel-leaf.is-displacement-down {
+  transform: translateY(32px);
+}
+
+.tree-panel-leaf.is-displacement-normal {
+  transform: translateY(0);
+}
+
+.tree-panel-leaf.is-dragging {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tree-panel-row {
+  cursor: grab;
+}
+
+.tree-panel-row:active {
+  cursor: grabbing;
+}
+
+.tree-panel-leaf.is-selected .tree-panel-row {
+  background-color: #2271b1;
+  color: #fff;
+}
+
+.tree-panel-row:hover {
+  background-color: #f0f0f0;
+}
+
+.tree-panel-leaf.is-selected .tree-panel-row:hover {
+  background-color: #2271b1;
+}
+
+.tree-panel-drop-indicator {
+  height: 4px;
+  background-color: #007cba;
+  margin-left: var(--indent-offset);
+}
+
+.tree-panel-drop-indicator-inside {
+  border: 2px solid #007cba;
+  background-color: rgba(0, 124, 186, 0.08);
+  border-radius: 2px;
+}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ComponentTreeProvider } from './ComponentTreeContext';
+import { TopBar } from './components/TopBar';
 import { TreePanel } from './components/TreePanel';
 import { Canvas } from './components/Canvas';
 import { PropertiesPanel } from './components/PropertiesPanel';
@@ -23,10 +24,13 @@ function App() {
 
   return (
     <ComponentTreeProvider>
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-        {showPanels && <TreePanel />}
-        <Canvas />
-        {showPanels && <PropertiesPanel />}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        <TopBar />
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {showPanels && <TreePanel />}
+          <Canvas />
+          {showPanels && <PropertiesPanel />}
+        </div>
       </div>
     </ComponentTreeProvider>
   );

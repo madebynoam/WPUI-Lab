@@ -16,8 +16,8 @@ export const PropertiesPanel: React.FC = () => {
     return (
       <div
         style={{
-          width: '300px',
-          borderLeft: '1px solid #ccc',
+          width: '280px',
+          borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
           backgroundColor: '#fff',
           padding: '16px',
         }}
@@ -41,15 +41,15 @@ export const PropertiesPanel: React.FC = () => {
     return (
       <div
         style={{
-          width: '300px',
-          borderLeft: '1px solid #ccc',
+          width: '280px',
+          borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
           backgroundColor: '#fff',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
         }}
       >
-        <div style={{ padding: '12px', borderBottom: '1px solid #ccc' }}>
+        <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Page Settings</h3>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Canvas Layout</div>
         </div>
@@ -118,15 +118,15 @@ export const PropertiesPanel: React.FC = () => {
   return (
     <div
       style={{
-        width: '300px',
-        borderLeft: '1px solid #ccc',
+        width: '280px',
+        borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
         backgroundColor: '#fff',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
       }}
     >
-      <div style={{ padding: '12px', borderBottom: '1px solid #ccc' }}>
+      <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
         <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Properties</h3>
         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{node.type}</div>
       </div>
