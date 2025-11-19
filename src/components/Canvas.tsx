@@ -1,16 +1,22 @@
-import React, { useEffect } from 'react';
-import { useComponentTree } from '../ComponentTreeContext';
+import React, { useEffect, useCallback } from 'react';
+import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import { Breadcrumb } from './Breadcrumb';
 import { wordpress } from '@wordpress/icons';
+import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 
-const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
+const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
   const { setSelectedNodeId, selectedNodeId } = useComponentTree();
   const definition = componentRegistry[node.type];
 
   if (!definition) {
     return <div>Unknown component: {node.type}</div>;
+  }
+
+  // Skip rendering interactive components unless explicitly allowed
+  if (INTERACTIVE_COMPONENT_TYPES.includes(node.type) && !renderInteractive) {
+    return null;
   }
 
   const Component = definition.component;
@@ -23,8 +29,9 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
   delete props.gridRow;
 
   // Base wrapper style with grid child properties
+  const isRootVStack = node.id === ROOT_VSTACK_ID;
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => ({
-    outline: selectedNodeId === node.id ? '2px solid #0073aa' : 'none',
+    outline: selectedNodeId === node.id && !isRootVStack ? '2px solid #0073aa' : 'none',
     cursor: 'pointer',
     ...(gridColumn && { gridColumn }),
     ...(gridRow && { gridRow }),
@@ -86,6 +93,66 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
     );
   }
 
+  // Handle interactive components (Modal, Popover, etc.) specially
+  if (INTERACTIVE_COMPONENT_TYPES.includes(node.type)) {
+    // For Modal in isolated view, render content directly without the overlay
+    if (node.type === 'Modal') {
+      // Render Modal content directly without the blocking overlay
+      return (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedNodeId(node.id);
+          }}
+          style={{
+            ...getWrapperStyle(),
+            backgroundColor: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            minWidth: '400px',
+            maxWidth: '600px',
+          }}
+        >
+          {/* Modal header */}
+          <div style={{
+            padding: '16px 24px',
+            borderBottom: '1px solid #e0e0e0',
+            fontWeight: 600,
+            fontSize: '14px',
+          }}>
+            {props.title || 'Modal Title'}
+          </div>
+
+          {/* Modal content */}
+          <div style={{ padding: '24px' }}>
+            {node.children && node.children.length > 0
+              ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
+              : <div style={{ padding: '20px', color: '#666', textAlign: 'center' }}>Add components inside this Modal</div>}
+          </div>
+        </div>
+      );
+    }
+
+    // For other interactive components, render normally
+    const mergedProps = { ...definition.defaultProps, ...props };
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedNodeId(node.id);
+        }}
+        style={getWrapperStyle()}
+      >
+        <Component {...mergedProps}>
+          {node.children && node.children.length > 0
+            ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
+            : null}
+        </Component>
+      </div>
+    );
+  }
+
   // Form controls and self-contained components (don't accept children)
   const formControls = [
     'TextControl',
@@ -140,7 +207,7 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
     >
       <Component {...mergedProps}>
         {node.children && node.children.length > 0
-          ? node.children.map((child) => <RenderNode key={child.id} node={child} />)
+          ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
           : null}
       </Component>
     </div>
@@ -148,7 +215,7 @@ const RenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
 };
 
 export const Canvas: React.FC = () => {
-  const { tree, selectedNodeId, setSelectedNodeId } = useComponentTree();
+  const { tree, selectedNodeId, setSelectedNodeId, getNodeById } = useComponentTree();
 
   // Find parent of a node
   const findParent = (nodes: ComponentNode[], targetId: string, parent: ComponentNode | null = null): ComponentNode | null => {
@@ -164,9 +231,41 @@ export const Canvas: React.FC = () => {
     return undefined;
   };
 
-  // Keyboard shortcut: Shift+Enter to select parent
+  // Find if a node is inside an interactive component
+  const findInteractiveAncestor = useCallback((nodeId: string): ComponentNode | null => {
+    const findInTree = (nodes: ComponentNode[]): ComponentNode | null => {
+      for (const node of nodes) {
+        // Check if this node is interactive and contains the target
+        if (INTERACTIVE_COMPONENT_TYPES.includes(node.type)) {
+          const containsTarget = (n: ComponentNode): boolean => {
+            if (n.id === nodeId) return true;
+            if (n.children) {
+              return n.children.some(child => containsTarget(child));
+            }
+            return false;
+          };
+
+          if (containsTarget(node)) {
+            return node;
+          }
+        }
+
+        // Recurse into children
+        if (node.children) {
+          const found = findInTree(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    return findInTree(tree);
+  }, [tree]);
+
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Shift+Enter to select parent
       if (e.shiftKey && e.key === 'Enter' && selectedNodeId) {
         e.preventDefault();
         const parent = findParent(tree, selectedNodeId);
@@ -174,11 +273,27 @@ export const Canvas: React.FC = () => {
           setSelectedNodeId(parent.id);
         }
       }
+
+      // Escape to eject from interactive component isolated view
+      if (e.key === 'Escape' && selectedNodeId) {
+        // Check if we're inside an interactive component
+        const ancestor = findInteractiveAncestor(selectedNodeId);
+        if (ancestor) {
+          e.preventDefault();
+          // Return to root VStack to show full page view
+          setSelectedNodeId(ROOT_VSTACK_ID);
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodeId, tree, setSelectedNodeId]);
+  }, [selectedNodeId, tree, setSelectedNodeId, getNodeById, findInteractiveAncestor]);
+
+  // Check if selected node is an interactive component or a child of one
+  const selectedNode = selectedNodeId ? getNodeById(selectedNodeId) : null;
+  const interactiveAncestor = selectedNodeId ? findInteractiveAncestor(selectedNodeId) : null;
+  const isInteractiveSelected = !!interactiveAncestor;
 
   return (
     <div
@@ -193,16 +308,30 @@ export const Canvas: React.FC = () => {
         style={{
           flex: 1,
           padding: '20px',
-          backgroundColor: '#f0f0f0',
+          backgroundColor: 'rgb(249, 250, 251)',
           overflow: 'auto',
         }}
+        onClick={(e) => {
+          // Deselect when clicking canvas background
+          if (e.target === e.currentTarget) {
+            setSelectedNodeId(ROOT_VSTACK_ID);
+          }
+        }}
       >
-        {tree.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-            Add components from the tree panel to get started
+        {isInteractiveSelected && interactiveAncestor ? (
+          // Render only the interactive component in isolation
+          <div style={{
+            padding: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100%',
+          }}>
+            <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
           </div>
         ) : (
-          tree.map((node) => <RenderNode key={node.id} node={node} />)
+          // Render full page tree for normal components (skip interactive components)
+          tree.map((node) => <RenderNode key={node.id} node={node} renderInteractive={false} />)
         )}
       </div>
       <Breadcrumb />

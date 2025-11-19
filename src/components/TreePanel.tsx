@@ -10,8 +10,25 @@ import {
   DropdownMenu,
   MenuGroup,
   MenuItem,
+  SearchControl,
+  Icon,
+  __experimentalDivider as Divider,
 } from '@wordpress/components';
-import { moreVertical, chevronDown, chevronRight, dragHandle } from '@wordpress/icons';
+import {
+  moreVertical,
+  chevronDown,
+  chevronRight,
+  dragHandle,
+  layout,
+  box,
+  pencil,
+  tag,
+  brush,
+  settings,
+  plugins,
+  plus,
+  blockDefault,
+} from '@wordpress/icons';
 import {
   DndContext,
   closestCenter,
@@ -28,6 +45,73 @@ import {
   rectIntersection,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { ROOT_VSTACK_ID } from '../ComponentTreeContext';
+
+// Component groups for the inserter
+interface ComponentGroup {
+  name: string;
+  icon: JSX.Element;
+  components: string[];
+}
+
+const componentGroups: ComponentGroup[] = [
+  {
+    name: 'Layout',
+    icon: layout,
+    components: ['VStack', 'HStack', 'Grid', 'Flex', 'FlexBlock', 'FlexItem'],
+  },
+  {
+    name: 'Containers',
+    icon: box,
+    components: ['Card', 'CardBody', 'CardHeader', 'Panel', 'PanelBody', 'PanelRow'],
+  },
+  {
+    name: 'Content',
+    icon: pencil,
+    components: ['Text', 'Heading', 'Button', 'Icon'],
+  },
+  {
+    name: 'Form Inputs',
+    icon: tag,
+    components: [
+      'TextControl',
+      'TextareaControl',
+      'SelectControl',
+      'NumberControl',
+      'SearchControl',
+      'ToggleControl',
+      'CheckboxControl',
+      'RadioControl',
+      'RangeControl',
+      'DateTimePicker',
+      'FontSizePicker',
+      'AnglePickerControl',
+    ],
+  },
+  {
+    name: 'Color',
+    icon: brush,
+    components: ['ColorPicker', 'ColorPalette'],
+  },
+  {
+    name: 'Advanced',
+    icon: settings,
+    components: ['BoxControl', 'BorderControl', 'FormTokenField', 'TabPanel'],
+  },
+  {
+    name: 'Interactive',
+    icon: plugins,
+    components: ['Modal', 'Popover', 'Dropdown', 'MenuGroup', 'MenuItem', 'Tooltip', 'Notice'],
+  },
+  {
+    name: 'Utilities',
+    icon: plus,
+    components: ['Spacer', 'Divider', 'Spinner', 'Truncate'],
+  },
+];
+
+// Interactive component types that should be rendered in isolation when selected
+export const INTERACTIVE_COMPONENT_TYPES = ['Modal', 'Popover', 'Dropdown', 'Tooltip', 'Notice'];
 
 interface TreeNodeProps {
   node: ComponentNode;
@@ -133,12 +217,25 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     <>
       {showDropBefore && (
         <div style={{
-          height: '3px',
-          backgroundColor: '#2271b1',
+          height: '2px',
+          backgroundColor: '#007cba',
           marginLeft: `${(level - 1) * 12 + 8}px`,
-          borderRadius: '2px',
-          boxShadow: '0 0 4px rgba(34, 113, 177, 0.5)',
-        }} />
+          marginRight: '8px',
+          borderRadius: '1px',
+          boxShadow: '0 0 8px rgba(0, 124, 186, 0.6), 0 0 2px rgba(0, 124, 186, 0.8)',
+          position: 'relative',
+        }}>
+          <div style={{
+            position: 'absolute',
+            left: '-4px',
+            top: '-3px',
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#007cba',
+            borderRadius: '50%',
+            boxShadow: '0 0 4px rgba(0, 124, 186, 0.8)',
+          }} />
+        </div>
       )}
       <TreeGridRow
         level={level}
@@ -172,13 +269,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 height: '32px',
                 paddingLeft: `${(level - 1) * 12 + 8}px`,
                 paddingRight: '8px',
-                backgroundColor: isSelected ? '#2271b1' : (showDropInside ? '#cce5ff' : 'transparent'),
+                backgroundColor: isSelected ? '#2271b1' : (showDropInside ? '#e5f5fa' : 'transparent'),
                 color: isSelected ? '#fff' : '#1e1e1e',
                 cursor: isDragging ? 'grabbing' : 'pointer',
-                transition: 'background-color 0.1s ease, border 0.1s ease',
-                border: showDropInside ? '2px solid #2271b1' : '2px solid transparent',
+                transition: 'background-color 0.15s ease, border 0.15s ease, box-shadow 0.15s ease',
+                border: showDropInside ? '2px solid #007cba' : '2px solid transparent',
                 borderRadius: showDropInside ? '4px' : '0',
                 margin: showDropInside ? '2px 0' : '0',
+                boxShadow: showDropInside ? '0 0 0 2px rgba(0, 124, 186, 0.1), inset 0 0 0 1px rgba(0, 124, 186, 0.2)' : 'none',
               }}
               onClick={() => setSelectedNodeId(node.id)}
               onMouseEnter={(e) => {
@@ -313,22 +411,48 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       </TreeGridRow>
       {showDropAfter && !isExpanded && (
         <div style={{
-          height: '3px',
-          backgroundColor: '#2271b1',
+          height: '2px',
+          backgroundColor: '#007cba',
           marginLeft: `${(level - 1) * 12 + 8}px`,
-          borderRadius: '2px',
-          boxShadow: '0 0 4px rgba(34, 113, 177, 0.5)',
-        }} />
+          marginRight: '8px',
+          borderRadius: '1px',
+          boxShadow: '0 0 8px rgba(0, 124, 186, 0.6), 0 0 2px rgba(0, 124, 186, 0.8)',
+          position: 'relative',
+        }}>
+          <div style={{
+            position: 'absolute',
+            left: '-4px',
+            top: '-3px',
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#007cba',
+            borderRadius: '50%',
+            boxShadow: '0 0 4px rgba(0, 124, 186, 0.8)',
+          }} />
+        </div>
       )}
       {renderChildren()}
       {showDropAfter && isExpanded && hasChildren && (
         <div style={{
-          height: '3px',
-          backgroundColor: '#2271b1',
+          height: '2px',
+          backgroundColor: '#007cba',
           marginLeft: `${level * 12 + 8}px`,
-          borderRadius: '2px',
-          boxShadow: '0 0 4px rgba(34, 113, 177, 0.5)',
-        }} />
+          marginRight: '8px',
+          borderRadius: '1px',
+          boxShadow: '0 0 8px rgba(0, 124, 186, 0.6), 0 0 2px rgba(0, 124, 186, 0.8)',
+          position: 'relative',
+        }}>
+          <div style={{
+            position: 'absolute',
+            left: '-4px',
+            top: '-3px',
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#007cba',
+            borderRadius: '50%',
+            boxShadow: '0 0 4px rgba(0, 124, 186, 0.8)',
+          }} />
+        </div>
       )}
     </>
   );
@@ -336,7 +460,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 
 export const TreePanel: React.FC = () => {
   const { tree, addComponent, selectedNodeId, resetTree, reorderComponent } = useComponentTree();
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showInserter, setShowInserter] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -393,10 +518,10 @@ export const TreePanel: React.FC = () => {
     const mouseY = activeRect.top + activeRect.height / 2;
     const mouseX = activeRect.left + activeRect.width / 2;
 
-    // Calculate distances to edges (Gutenberg-style pixel-based)
-    const distanceToTop = mouseY - rect.top;
-    const distanceToBottom = rect.bottom - mouseY;
-    const distanceToLeft = mouseX - rect.left;
+    // Calculate relative position within the element
+    const relativeY = mouseY - rect.top;
+    const elementHeight = rect.height;
+    const relativeX = mouseX - rect.left;
 
     // Check if the node can accept children
     const findNode = (nodes: ComponentNode[], id: string): ComponentNode | null => {
@@ -416,25 +541,38 @@ export const TreePanel: React.FC = () => {
     const isExpanded = overNode && expandedNodes.has(overNode.id);
     const hasChildren = overNode && overNode.children && overNode.children.length > 0;
 
-    // Simple, natural thresholds
-    const EDGE_THRESHOLD = 8; // pixels from top/bottom edge for before/after
+    // Simple, ergonomic drop zones
+    const TOP_ZONE = 0.3; // Top 30% for "before"
+    const BOTTOM_ZONE = 0.7; // Bottom 30% for "after"
+    // Middle 40% (0.3-0.7) is for nesting
 
-    // Determine drop position - simple and predictable
+    // Calculate position based on Y position
+    const relativePosition = relativeY / elementHeight;
+
     let position: 'before' | 'after' | 'inside' = 'after';
 
-    // Within edge threshold → before/after
-    if (distanceToTop <= EDGE_THRESHOLD) {
-      position = 'before';
-    } else if (distanceToBottom <= EDGE_THRESHOLD) {
-      position = 'after';
-    }
-    // In the middle → nest if possible
-    else if (canAcceptChildren) {
+    // SPECIAL CASE: Empty containers (no children) → ALWAYS nest inside
+    // This makes empty containers much easier to drop into
+    if (canAcceptChildren && !hasChildren) {
       position = 'inside';
     }
-    // Default to closest edge
+    // Top zone (0-30%) → insert before
+    else if (relativePosition < TOP_ZONE) {
+      position = 'before';
+    }
+    // Bottom zone (70-100%) → insert after
+    else if (relativePosition > BOTTOM_ZONE) {
+      position = 'after';
+    }
+    // Middle zone (30-70%) → nest if container, otherwise use closest edge
     else {
-      position = distanceToTop < distanceToBottom ? 'before' : 'after';
+      if (canAcceptChildren) {
+        // Any container in the middle zone = nest inside
+        position = 'inside';
+      } else {
+        // Can't nest, so use closest edge
+        position = relativePosition < 0.5 ? 'before' : 'after';
+      }
     }
 
     setDragOverId(overId);
@@ -524,10 +662,6 @@ export const TreePanel: React.FC = () => {
 
   const allNodeIds = getAllNodeIds(tree);
 
-  const selectedNode = selectedNodeId
-    ? tree.find((n) => findNodeById(n, selectedNodeId))
-    : null;
-
   function findNodeById(node: ComponentNode, id: string): ComponentNode | null {
     if (node.id === id) return node;
     if (node.children) {
@@ -539,13 +673,6 @@ export const TreePanel: React.FC = () => {
     return null;
   }
 
-  const canAddChild = selectedNodeId
-    ? (() => {
-        const node = findNodeInTree(tree, selectedNodeId);
-        return node ? componentRegistry[node.type]?.acceptsChildren : false;
-      })()
-    : false;
-
   function findNodeInTree(nodes: ComponentNode[], id: string): ComponentNode | null {
     for (const node of nodes) {
       if (node.id === id) return node;
@@ -556,6 +683,30 @@ export const TreePanel: React.FC = () => {
     }
     return null;
   }
+
+  // Handle adding component - always add to selected node (or root VStack if nothing selected)
+  const handleAddComponent = (componentType: string) => {
+    const targetId = selectedNodeId || ROOT_VSTACK_ID;
+    const targetNode = findNodeInTree(tree, targetId);
+    const canAcceptChildren = targetNode && componentRegistry[targetNode.type]?.acceptsChildren;
+
+    if (canAcceptChildren) {
+      addComponent(componentType, targetId);
+    } else {
+      // If selected node can't accept children, add as sibling (to parent)
+      addComponent(componentType);
+    }
+    setShowInserter(false);
+    setSearchTerm('');
+  };
+
+  // Filter components based on search term
+  const filteredGroups = componentGroups.map(group => ({
+    ...group,
+    components: group.components.filter(comp =>
+      comp.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+  })).filter(group => group.components.length > 0);
 
   return (
     <div
@@ -572,65 +723,114 @@ export const TreePanel: React.FC = () => {
         <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Component Tree</h3>
       </div>
 
-      <div style={{ padding: '8px', borderBottom: '1px solid #ccc', display: 'flex', gap: '8px' }}>
+      <div style={{ padding: '8px', borderBottom: '1px solid #ccc' }}>
         <Button
-          variant="secondary"
+          variant="primary"
           size="small"
-          onClick={() => setShowAddMenu(!showAddMenu)}
-          style={{ flex: 1 }}
+          onClick={() => setShowInserter(!showInserter)}
+          icon={plus}
+          style={{ width: '100%' }}
         >
-          + Add Root
+          {showInserter ? 'Close Inserter' : 'Add Component'}
         </Button>
-        {canAddChild && (
-          <Button
-            variant="secondary"
-            size="small"
-            onClick={() => {
-              setShowAddMenu(!showAddMenu);
-            }}
-            style={{ flex: 1 }}
-          >
-            + Add Child
-          </Button>
-        )}
       </div>
 
-      {showAddMenu && (
+      {/* WordPress-style Block Inserter Panel */}
+      {showInserter && (
         <div
           style={{
-            padding: '8px',
             borderBottom: '1px solid #ccc',
-            backgroundColor: '#f9f9f9',
+            backgroundColor: '#fff',
+            maxHeight: '60vh',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>
-            Select Component:
+          <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
+            <SearchControl
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search components..."
+              __nextHasNoMarginBottom
+            />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '300px', overflow: 'auto' }}>
-            {Object.keys(componentRegistry).map((componentType) => (
-              <button
-                key={componentType}
-                onClick={() => {
-                  if (canAddChild && selectedNodeId) {
-                    addComponent(componentType, selectedNodeId);
-                  } else {
-                    addComponent(componentType);
-                  }
-                  setShowAddMenu(false);
-                }}
-                style={{
-                  padding: '6px 8px',
-                  fontSize: '12px',
-                  textAlign: 'left',
-                  border: '1px solid #ddd',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  borderRadius: '3px',
-                }}
-              >
-                {componentType}
-              </button>
-            ))}
+
+          <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
+            {filteredGroups.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px', color: '#757575', fontSize: '13px' }}>
+                No components found
+              </div>
+            ) : (
+              filteredGroups.map((group) => (
+                <div key={group.name} style={{ marginBottom: '20px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginBottom: '8px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#1e1e1e',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    <Icon icon={group.icon} size={16} />
+                    {group.name}
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: '6px',
+                    }}
+                  >
+                    {group.components.map((componentType) => (
+                      <button
+                        key={componentType}
+                        onClick={() => handleAddComponent(componentType)}
+                        style={{
+                          height: '56px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          fontSize: '11px',
+                          textAlign: 'center',
+                          padding: '8px 4px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                          backgroundColor: '#fff',
+                          cursor: 'pointer',
+                          transition: 'all 0.1s ease',
+                          fontFamily: 'inherit',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f0f0f0';
+                          e.currentTarget.style.borderColor = '#2271b1';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#fff';
+                          e.currentTarget.style.borderColor = '#ddd';
+                        }}
+                      >
+                        <Icon icon={blockDefault} size={20} />
+                        <span style={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '100%',
+                        }}>
+                          {componentType}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -648,23 +848,100 @@ export const TreePanel: React.FC = () => {
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
-            <TreeGrid style={{ width: '100%' }}>
-              {tree.map((node, index) => (
-                <TreeNode
-                  key={node.id}
-                  node={node}
-                  level={1}
-                  positionInSet={index + 1}
-                  setSize={tree.length}
-                  allNodes={tree}
-                  expandedNodes={expandedNodes}
-                  setExpandedNodes={setExpandedNodes}
-                  nodeRefs={nodeRefs}
-                  dragOverId={dragOverId}
-                  dropPosition={dropPosition}
-                />
-              ))}
-            </TreeGrid>
+            {(() => {
+              // Helper function to check if a node or any of its children are interactive
+              const isInteractiveNode = (node: ComponentNode): boolean => {
+                if (INTERACTIVE_COMPONENT_TYPES.includes(node.type)) return true;
+                if (node.children) {
+                  return node.children.some(child => isInteractiveNode(child));
+                }
+                return false;
+              };
+
+              // Separate tree into regular and interactive components
+              const regularComponents = tree.filter(node => !isInteractiveNode(node));
+              const interactiveComponents = tree.filter(node => isInteractiveNode(node));
+
+              return (
+                <>
+                  {/* Regular Page Components Section */}
+                  {regularComponents.length > 0 && (
+                    <>
+                      <div style={{
+                        padding: '8px 12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: '#757575',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        borderBottom: '1px solid #e0e0e0',
+                      }}>
+                        Page Components
+                      </div>
+                      <TreeGrid style={{ width: '100%' }}>
+                        {regularComponents.map((node, index) => (
+                          <TreeNode
+                            key={node.id}
+                            node={node}
+                            level={1}
+                            positionInSet={index + 1}
+                            setSize={regularComponents.length}
+                            allNodes={tree}
+                            expandedNodes={expandedNodes}
+                            setExpandedNodes={setExpandedNodes}
+                            nodeRefs={nodeRefs}
+                            dragOverId={dragOverId}
+                            dropPosition={dropPosition}
+                          />
+                        ))}
+                      </TreeGrid>
+                    </>
+                  )}
+
+                  {/* Separator */}
+                  {regularComponents.length > 0 && interactiveComponents.length > 0 && (
+                    <div style={{
+                      margin: '12px 0',
+                      borderTop: '1px solid #e0e0e0',
+                    }} />
+                  )}
+
+                  {/* Interactive Components Section */}
+                  {interactiveComponents.length > 0 && (
+                    <>
+                      <div style={{
+                        padding: '8px 12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: '#757575',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        borderBottom: '1px solid #e0e0e0',
+                      }}>
+                        Interactive Components
+                      </div>
+                      <TreeGrid style={{ width: '100%' }}>
+                        {interactiveComponents.map((node, index) => (
+                          <TreeNode
+                            key={node.id}
+                            node={node}
+                            level={1}
+                            positionInSet={index + 1}
+                            setSize={interactiveComponents.length}
+                            allNodes={tree}
+                            expandedNodes={expandedNodes}
+                            setExpandedNodes={setExpandedNodes}
+                            nodeRefs={nodeRefs}
+                            dragOverId={dragOverId}
+                            dropPosition={dropPosition}
+                          />
+                        ))}
+                      </TreeGrid>
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </DndContext>
         )}
       </div>

@@ -20,12 +20,23 @@ interface ComponentTreeContextType {
 
 const ComponentTreeContext = createContext<ComponentTreeContextType | undefined>(undefined);
 
+const ROOT_VSTACK_ID = 'root-vstack';
+
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
   const [tree, setTreeState] = useState<ComponentNode[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Initialize with root VStack
+    return [{
+      id: ROOT_VSTACK_ID,
+      type: 'VStack',
+      props: { spacing: 4 },
+      children: [],
+    }];
   });
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(ROOT_VSTACK_ID);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tree));
@@ -82,6 +93,9 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const removeComponent = (id: string) => {
+    // Prevent deletion of root VStack
+    if (id === ROOT_VSTACK_ID) return;
+
     const removeFromTree = (nodes: ComponentNode[]): ComponentNode[] => {
       return nodes.filter(node => {
         if (node.id === id) return false;
@@ -93,7 +107,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     };
     setTree(removeFromTree(tree));
     if (selectedNodeId === id) {
-      setSelectedNodeId(null);
+      setSelectedNodeId(ROOT_VSTACK_ID);
     }
   };
 
@@ -280,3 +294,5 @@ export const useComponentTree = () => {
   }
   return context;
 };
+
+export { ROOT_VSTACK_ID };
