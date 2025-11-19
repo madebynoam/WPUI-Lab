@@ -1,25 +1,38 @@
 /* WordPress ListView displacement animations */
+/* React Spring handles the animations via inline styles, but these classes provide fallbacks */
+
 .tree-panel-leaf {
   position: relative;
-  transform: translateY(0);
-  transition: transform 0.2s ease;
 }
 
-.tree-panel-leaf.is-displacement-up {
-  transform: translateY(-32px);
+/* Displacement classes - only apply with motion enabled */
+@media not (prefers-reduced-motion: reduce) {
+  .tree-panel-leaf.is-displacement-up {
+    /* Animation handled by React Spring */
+  }
+
+  .tree-panel-leaf.is-displacement-down {
+    /* Animation handled by React Spring */
+  }
+
+  .tree-panel-leaf.is-displacement-normal {
+    /* Animation handled by React Spring */
+  }
 }
 
-.tree-panel-leaf.is-displacement-down {
-  transform: translateY(32px);
-}
-
-.tree-panel-leaf.is-displacement-normal {
-  transform: translateY(0);
+/* For users who prefer reduced motion, disable displacement animations */
+@media (prefers-reduced-motion: reduce) {
+  .tree-panel-leaf.is-displacement-up,
+  .tree-panel-leaf.is-displacement-down,
+  .tree-panel-leaf.is-displacement-normal {
+    transform: none !important;
+  }
 }
 
 .tree-panel-leaf.is-dragging {
   opacity: 0;
   pointer-events: none;
+  z-index: -9999;
 }
 
 .tree-panel-row {
@@ -43,14 +56,17 @@
   background-color: #2271b1;
 }
 
+/* Drop indicators */
 .tree-panel-drop-indicator {
   height: 4px;
   background-color: #007cba;
   margin-left: var(--indent-offset);
+  box-shadow: 0 0 8px rgba(0, 124, 186, 0.6);
 }
 
 .tree-panel-drop-indicator-inside {
   border: 2px solid #007cba;
   background-color: rgba(0, 124, 186, 0.08);
   border-radius: 2px;
+  box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1);
 }

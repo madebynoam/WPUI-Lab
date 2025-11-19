@@ -1,20 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import { patterns, patternCategories, assignIds } from '../patterns';
 import {
   Button,
-  __experimentalTreeGrid as TreeGrid,
-  __experimentalTreeGridRow as TreeGridRow,
-  __experimentalTreeGridCell as TreeGridCell,
   DropdownMenu,
   MenuGroup,
   MenuItem,
   SearchControl,
   Icon,
-  __experimentalDivider as Divider,
-  TextControl,
 } from '@wordpress/components';
 import {
   moreVertical,
@@ -32,21 +27,14 @@ import {
   blockDefault,
 } from '@wordpress/icons';
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragOverEvent,
-  useDraggable,
-  useDroppable,
-  DragOverlay,
-  pointerWithin,
-  rectIntersection,
-} from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
+  UncontrolledTreeEnvironment,
+  Tree,
+  StaticTreeDataProvider,
+  TreeItem,
+  TreeItemIndex,
+} from 'react-complex-tree';
+import 'react-complex-tree/lib/style-modern.css';
+import './TreePanel.css';
 
 // Component groups for the inserter
 interface ComponentGroup {
@@ -114,363 +102,6 @@ const componentGroups: ComponentGroup[] = [
 // Interactive component types that should be rendered in isolation when selected
 export const INTERACTIVE_COMPONENT_TYPES = ['Modal', 'Popover', 'Dropdown', 'Tooltip', 'Notice'];
 
-interface TreeNodeProps {
-  node: ComponentNode;
-  level: number;
-  positionInSet: number;
-  setSize: number;
-  allNodes: ComponentNode[];
-  expandedNodes: Set<string>;
-  setExpandedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
-  nodeRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
-  dragOverId: string | null;
-  dropPosition: 'before' | 'after' | 'inside' | null;
-}
-
-const TreeNode: React.FC<TreeNodeProps> = ({
-  node,
-  level,
-  positionInSet,
-  setSize,
-  allNodes,
-  expandedNodes,
-  setExpandedNodes,
-  nodeRefs,
-  dragOverId,
-  dropPosition,
-}) => {
-  const { selectedNodeId, setSelectedNodeId, removeComponent, duplicateComponent, moveComponent } = useComponentTree();
-  const hasChildren = node.children && node.children.length > 0;
-  const isSelected = selectedNodeId === node.id;
-  const isExpanded = expandedNodes.has(node.id);
-  const definition = componentRegistry[node.type];
-  const canAcceptChildren = definition?.acceptsChildren ?? false;
-  const isRootVStack = node.id === ROOT_VSTACK_ID;
-
-  // Drag & drop - separate draggable (for handle) and droppable (for row)
-  // Don't allow dragging the root VStack
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setDragHandleRef,
-    transform,
-    isDragging,
-  } = useDraggable({
-    id: node.id,
-    data: { type: node.type },
-    disabled: isRootVStack,
-  });
-
-  const { setNodeRef: setDropRef } = useDroppable({
-    id: node.id,
-    data: { type: node.type, acceptsChildren: canAcceptChildren }
-  });
-
-  const showDropBefore = dragOverId === node.id && dropPosition === 'before';
-  const showDropAfter = dragOverId === node.id && dropPosition === 'after';
-  const showDropInside = dragOverId === node.id && dropPosition === 'inside';
-
-  // Set droppable ref and track in nodeRefs
-  const setDroppableRef = (el: HTMLDivElement | null) => {
-    setDropRef(el);
-    if (el) {
-      nodeRefs.current.set(node.id, el);
-    } else {
-      nodeRefs.current.delete(node.id);
-    }
-  };
-
-  const renderChildren = () => {
-    if (!isExpanded || !hasChildren) return null;
-    return node.children!.map((child, index) => (
-      <TreeNode
-        key={child.id}
-        node={child}
-        level={level + 1}
-        positionInSet={index + 1}
-        setSize={node.children!.length}
-        allNodes={allNodes}
-        expandedNodes={expandedNodes}
-        setExpandedNodes={setExpandedNodes}
-        nodeRefs={nodeRefs}
-        dragOverId={dragOverId}
-        dropPosition={dropPosition}
-      />
-    ));
-  };
-
-  const toggleExpand = () => {
-    if (!hasChildren) return;
-    setExpandedNodes((prev) => {
-      const next = new Set(prev);
-      if (next.has(node.id)) {
-        next.delete(node.id);
-      } else {
-        next.add(node.id);
-      }
-      return next;
-    });
-  };
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    opacity: isDragging ? 0.3 : 1,
-  };
-
-  return (
-    <>
-      {showDropBefore && (
-        <div style={{
-          height: '2px',
-          backgroundColor: '#007cba',
-          marginLeft: `${(level - 1) * 12 + 8}px`,
-          marginRight: '8px',
-          borderRadius: '1px',
-          boxShadow: '0 0 8px rgba(0, 124, 186, 0.6), 0 0 2px rgba(0, 124, 186, 0.8)',
-          position: 'relative',
-        }}>
-          <div style={{
-            position: 'absolute',
-            left: '-4px',
-            top: '-3px',
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#007cba',
-            borderRadius: '50%',
-            boxShadow: '0 0 4px rgba(0, 124, 186, 0.8)',
-          }} />
-        </div>
-      )}
-      <TreeGridRow
-        level={level}
-        positionInSet={positionInSet}
-        setSize={setSize}
-        isExpanded={hasChildren ? isExpanded : undefined}
-      >
-        <TreeGridCell>
-          {(props) => {
-            // Combine refs from TreeGridCell and droppable
-            const combinedRef = (el: HTMLDivElement | null) => {
-              setDroppableRef(el);
-              if (props.ref) {
-                if (typeof props.ref === 'function') {
-                  (props.ref as any)(el);
-                } else {
-                  (props.ref as any).current = el;
-                }
-              }
-            };
-
-            return (
-              <div
-                {...props}
-                ref={combinedRef}
-                style={{
-                ...props.style,
-                ...style,
-                display: 'flex',
-                alignItems: 'center',
-                height: '32px',
-                paddingLeft: `${(level - 1) * 12 + 8}px`,
-                paddingRight: '8px',
-                backgroundColor: isSelected ? '#2271b1' : (showDropInside ? '#e5f5fa' : 'transparent'),
-                color: isSelected ? '#fff' : '#1e1e1e',
-                cursor: isDragging ? 'grabbing' : 'default',
-                transition: 'background-color 0.15s ease, border 0.15s ease, box-shadow 0.15s ease',
-                border: showDropInside ? '2px solid #007cba' : '2px solid transparent',
-                borderRadius: showDropInside ? '4px' : '0',
-                margin: showDropInside ? '2px 0' : '0',
-                boxShadow: showDropInside ? '0 0 0 2px rgba(0, 124, 186, 0.1), inset 0 0 0 1px rgba(0, 124, 186, 0.2)' : 'none',
-              }}
-              onClick={() => setSelectedNodeId(node.id)}
-              onMouseEnter={(e) => {
-                if (!isSelected && !showDropInside) {
-                  e.currentTarget.style.backgroundColor = '#f0f0f0';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSelected && !showDropInside) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              {/* Drag Handle */}
-              <button
-                ref={setDragHandleRef}
-                {...attributes}
-                {...listeners}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: isRootVStack ? 'default' : 'grab',
-                  padding: '4px',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'inherit',
-                  opacity: isRootVStack ? 0 : 0.6,
-                }}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Drag to reorder"
-                disabled={isRootVStack}
-              >
-                {!isRootVStack && (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M7 16.5h10V15H7v1.5zm0-9V9h10V7.5H7z" />
-                  </svg>
-                )}
-              </button>
-              {/* Expander */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleExpand();
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: hasChildren ? 'pointer' : 'default',
-                  padding: '4px',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'inherit',
-                  opacity: hasChildren ? 1 : 0,
-                  transition: 'transform 0.1s ease',
-                  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
-                }}
-                aria-label={isExpanded ? 'Collapse' : 'Expand'}
-                disabled={!hasChildren}
-              >
-                {hasChildren && (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.5 11.6L12 16l-5.5-4.4.9-1.2L12 14l4.5-3.6 1 1.2z" />
-                  </svg>
-                )}
-              </button>
-
-              {/* Component Name */}
-              <span
-                style={{
-                  flex: 1,
-                  fontSize: '13px',
-                  fontWeight: 400,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  marginLeft: '4px',
-                }}
-              >
-                {node.id === ROOT_VSTACK_ID
-                  ? 'Page'
-                  : node.name
-                    ? `${node.name} (${node.type})`
-                    : node.type}
-              </span>
-
-              {/* Options Menu - Hide for root VStack */}
-              {!isRootVStack && (
-                <div onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu
-                    icon={moreVertical}
-                    label="Options"
-                    className="wp-designer-tree-menu"
-                    popoverProps={{ placement: 'left-start' }}
-                  >
-                    {() => (
-                      <MenuGroup>
-                        <MenuItem
-                          onClick={() => {
-                            moveComponent(node.id, 'up');
-                          }}
-                        >
-                          Move up
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => {
-                            moveComponent(node.id, 'down');
-                          }}
-                        >
-                          Move down
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => {
-                            duplicateComponent(node.id);
-                          }}
-                        >
-                          Duplicate
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => {
-                            removeComponent(node.id);
-                          }}
-                          isDestructive
-                        >
-                          Remove
-                        </MenuItem>
-                      </MenuGroup>
-                    )}
-                  </DropdownMenu>
-                </div>
-              )}
-            </div>
-            );
-          }}
-        </TreeGridCell>
-      </TreeGridRow>
-      {showDropAfter && !isExpanded && (
-        <div style={{
-          height: '2px',
-          backgroundColor: '#007cba',
-          marginLeft: `${(level - 1) * 12 + 8}px`,
-          marginRight: '8px',
-          borderRadius: '1px',
-          boxShadow: '0 0 8px rgba(0, 124, 186, 0.6), 0 0 2px rgba(0, 124, 186, 0.8)',
-          position: 'relative',
-        }}>
-          <div style={{
-            position: 'absolute',
-            left: '-4px',
-            top: '-3px',
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#007cba',
-            borderRadius: '50%',
-            boxShadow: '0 0 4px rgba(0, 124, 186, 0.8)',
-          }} />
-        </div>
-      )}
-      {renderChildren()}
-      {showDropAfter && isExpanded && hasChildren && (
-        <div style={{
-          height: '2px',
-          backgroundColor: '#007cba',
-          marginLeft: `${level * 12 + 8}px`,
-          marginRight: '8px',
-          borderRadius: '1px',
-          boxShadow: '0 0 8px rgba(0, 124, 186, 0.6), 0 0 2px rgba(0, 124, 186, 0.8)',
-          position: 'relative',
-        }}>
-          <div style={{
-            position: 'absolute',
-            left: '-4px',
-            top: '-3px',
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#007cba',
-            borderRadius: '50%',
-            boxShadow: '0 0 4px rgba(0, 124, 186, 0.8)',
-          }} />
-        </div>
-      )}
-    </>
-  );
-};
-
 interface TreePanelProps {
   showInserter: boolean;
   onCloseInserter: () => void;
@@ -487,153 +118,203 @@ export const TreePanel: React.FC<TreePanelProps> = ({ showInserter, onCloseInser
   const dropPositionRef = useRef<'before' | 'after' | 'inside' | null>(null);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingPageName, setEditingPageName] = useState('');
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const [displacements, setDisplacements] = useState<DisplacementMap>({});
+  const draggedNodeRef = useRef<string | null>(null);
 
-  // Drag & drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor)
-  );
+  // Helper to get all node IDs in flat order (for displacement calculation)
+  const getAllNodesFlat = (nodes: ComponentNode[]): ComponentNode[] => {
+    const result: ComponentNode[] = [];
+    const traverse = (node: ComponentNode) => {
+      result.push(node);
+      if (node.children && expandedNodes.has(node.id)) {
+        node.children.forEach(traverse);
+      }
+    };
+    nodes.forEach(traverse);
+    return result;
+  };
 
-  const handleDragStart = () => {
+  // WordPress-style displacement calculation
+  const calculateDisplacements = (draggedId: string, targetId: string, position: 'before' | 'after' | 'inside'): DisplacementMap => {
+    const allNodes = getAllNodesFlat(tree);
+    const draggedIndex = allNodes.findIndex(n => n.id === draggedId);
+    const targetIndex = allNodes.findIndex(n => n.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return {};
+
+    const newDisplacements: DisplacementMap = {};
+
+    // Determine the target insertion index
+    let insertIndex = targetIndex;
+    if (position === 'after') {
+      insertIndex = targetIndex + 1;
+    } else if (position === 'inside') {
+      // For inside drops, no displacement needed
+      return {};
+    }
+
+    // Calculate displacements
+    if (draggedIndex < insertIndex) {
+      // Dragging down: nodes between current position and target move up
+      for (let i = draggedIndex + 1; i < insertIndex; i++) {
+        if (allNodes[i].id !== ROOT_VSTACK_ID) {
+          newDisplacements[allNodes[i].id] = 'up';
+        }
+      }
+    } else if (draggedIndex > insertIndex) {
+      // Dragging up: nodes between target and current position move down
+      for (let i = insertIndex; i < draggedIndex; i++) {
+        if (allNodes[i].id !== ROOT_VSTACK_ID) {
+          newDisplacements[allNodes[i].id] = 'down';
+        }
+      }
+    }
+
+    return newDisplacements;
+  };
+
+  const handleDragStart = (nodeId: string, event: React.DragEvent) => {
+    setDraggingNodeId(nodeId);
+    draggedNodeRef.current = nodeId;
     // Reset position tracking
     dropPositionRef.current = null;
     setDropPosition(null);
     setDragOverId(null);
+    setDisplacements({});
+
+    // Set drag image to semi-transparent
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', nodeId);
+    }
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
+  // WordPress-style throttled drag over handler (50ms)
+  const handleDragOverThrottled = useRef(
+    throttle(50, (event: DragEvent, targetNodeId: string) => {
+      if (!draggedNodeRef.current) return;
 
-    if (!over || !active) {
-      setDragOverId(null);
-      setDropPosition(null);
-      return;
-    }
-
-    const overId = String(over.id);
-    const overElement = nodeRefs.current.get(overId);
-
-    if (!overElement) {
-      setDragOverId(null);
-      setDropPosition(null);
-      return;
-    }
-
-    // Get the bounding rect of the element we're over
-    const rect = overElement.getBoundingClientRect();
-
-    // Use the center of the dragged element's current position
-    const activeRect = active.rect.current.translated;
-    if (!activeRect) {
-      setDragOverId(null);
-      setDropPosition(null);
-      return;
-    }
-
-    // Get center point of dragged item
-    const mouseY = activeRect.top + activeRect.height / 2;
-    const mouseX = activeRect.left + activeRect.width / 2;
-
-    // Calculate relative position within the element
-    const relativeY = mouseY - rect.top;
-    const elementHeight = rect.height;
-    const relativeX = mouseX - rect.left;
-
-    // Check if the node can accept children
-    const findNode = (nodes: ComponentNode[], id: string): ComponentNode | null => {
-      for (const node of nodes) {
-        if (node.id === id) return node;
-        if (node.children) {
-          const found = findNode(node.children, id);
-          if (found) return found;
-        }
+      const overElement = nodeRefs.current.get(targetNodeId);
+      if (!overElement) {
+        setDragOverId(null);
+        setDropPosition(null);
+        return;
       }
-      return null;
-    };
 
-    const overNode = findNode(tree, overId);
-    const activeNode = findNode(tree, String(active.id));
-    const canAcceptChildren = overNode && componentRegistry[overNode.type]?.acceptsChildren;
-    const isExpanded = overNode && expandedNodes.has(overNode.id);
-    const hasChildren = overNode && overNode.children && overNode.children.length > 0;
+      // Get the bounding rect of the element we're over
+      const rect = overElement.getBoundingClientRect();
 
-    // Calculate position based on Y position
-    const relativePosition = relativeY / elementHeight;
+      // Get mouse position
+      const mouseY = event.clientY;
+      const mouseX = event.clientX;
 
-    let position: 'before' | 'after' | 'inside' = 'after';
+      // Calculate relative position within the element
+      const relativeY = mouseY - rect.top;
+      const elementHeight = rect.height;
+      const relativeX = mouseX - rect.left;
 
-    // SPECIAL CASE: Empty containers (no children) → ALWAYS nest inside
-    // This makes empty containers much easier to drop into
-    if (canAcceptChildren && !hasChildren) {
-      position = 'inside';
-    }
-    // For containers, use larger nesting zone (20-80%)
-    else if (canAcceptChildren) {
-      const CONTAINER_TOP_ZONE = 0.2; // Top 20% for "before"
-      const CONTAINER_BOTTOM_ZONE = 0.8; // Bottom 20% for "after"
+      // Check if the node can accept children
+      const findNode = (nodes: ComponentNode[], id: string): ComponentNode | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node;
+          if (node.children) {
+            const found = findNode(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
 
-      if (relativePosition < CONTAINER_TOP_ZONE) {
-        position = 'before';
-      } else if (relativePosition > CONTAINER_BOTTOM_ZONE) {
-        position = 'after';
-      } else {
-        // Middle 60% (0.2-0.8) nests inside
+      const overNode = findNode(tree, targetNodeId);
+      const canAcceptChildren = overNode && componentRegistry[overNode.type]?.acceptsChildren;
+      const isExpanded = overNode && expandedNodes.has(overNode.id);
+      const hasChildren = overNode && overNode.children && overNode.children.length > 0;
+
+      // Calculate position based on Y position
+      const relativePosition = relativeY / elementHeight;
+
+      let position: 'before' | 'after' | 'inside' = 'after';
+
+      // SPECIAL CASE: Empty containers (no children) → ALWAYS nest inside
+      if (canAcceptChildren && !hasChildren) {
         position = 'inside';
       }
-    }
-    // For non-containers, use standard zones (30-70%)
-    else {
-      const TOP_ZONE = 0.3;
-      const BOTTOM_ZONE = 0.7;
+      // For containers, use larger nesting zone (20-80%)
+      else if (canAcceptChildren) {
+        const CONTAINER_TOP_ZONE = 0.2;
+        const CONTAINER_BOTTOM_ZONE = 0.8;
 
-      if (relativePosition < TOP_ZONE) {
-        position = 'before';
-      } else if (relativePosition > BOTTOM_ZONE) {
-        position = 'after';
-      } else {
-        // Middle 40% uses closest edge
-        position = relativePosition < 0.5 ? 'before' : 'after';
+        if (relativePosition < CONTAINER_TOP_ZONE) {
+          position = 'before';
+        } else if (relativePosition > CONTAINER_BOTTOM_ZONE) {
+          position = 'after';
+        } else {
+          // Middle 60% (0.2-0.8) nests inside
+          position = 'inside';
+        }
       }
-    }
+      // For non-containers, use standard zones (30-70%)
+      else {
+        const TOP_ZONE = 0.3;
+        const BOTTOM_ZONE = 0.7;
 
-    setDragOverId(overId);
-    setDropPosition(position);
-    dropPositionRef.current = position;
-  };
+        if (relativePosition < TOP_ZONE) {
+          position = 'before';
+        } else if (relativePosition > BOTTOM_ZONE) {
+          position = 'after';
+        } else {
+          // Middle 40% uses closest edge
+          position = relativePosition < 0.5 ? 'before' : 'after';
+        }
+      }
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+      setDragOverId(targetNodeId);
+      setDropPosition(position);
+      dropPositionRef.current = position;
 
-    if (!over) {
+      // Calculate and set displacements for FLIP animation
+      if (draggedNodeRef.current) {
+        const newDisplacements = calculateDisplacements(draggedNodeRef.current, targetNodeId, position);
+        setDisplacements(newDisplacements);
+      }
+    })
+  ).current;
+
+  const handleDragEnd = (event: React.DragEvent) => {
+    const draggedId = draggedNodeRef.current;
+
+    if (!draggedId || !dragOverId) {
+      // Reset state
+      setDraggingNodeId(null);
       setDragOverId(null);
       setDropPosition(null);
       dropPositionRef.current = null;
+      draggedNodeRef.current = null;
+      setDisplacements({});
       return;
     }
-
-    const activeId = String(active.id);
-    const overId = String(over.id);
 
     // Capture the drop position from ref (more reliable than state)
     const finalDropPosition = dropPositionRef.current;
 
     // Reset visual feedback
+    const dragOverIdCopy = dragOverId;
+    setDraggingNodeId(null);
     setDragOverId(null);
     setDropPosition(null);
     dropPositionRef.current = null;
+    draggedNodeRef.current = null;
+    setDisplacements({});
 
     // Allow dropping on self only if position is 'inside'
-    if (activeId === overId && finalDropPosition !== 'inside') {
+    if (draggedId === dragOverIdCopy && finalDropPosition !== 'inside') {
       return;
     }
 
     // Perform the reorder if we have a valid drop position
     if (finalDropPosition) {
-      reorderComponent(activeId, overId, finalDropPosition);
+      reorderComponent(draggedId, dragOverIdCopy, finalDropPosition);
     }
   };
 
@@ -1160,32 +841,48 @@ export const TreePanel: React.FC<TreePanelProps> = ({ showInserter, onCloseInser
         </div>
       )}
 
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={pointerWithin}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <TreeGrid style={{ width: '100%' }}>
-            {tree.map((node, index) => (
-              <TreeNode
-                key={node.id}
-                node={node}
-                level={1}
-                positionInSet={index + 1}
-                setSize={tree.length}
-                allNodes={tree}
-                expandedNodes={expandedNodes}
-                setExpandedNodes={setExpandedNodes}
-                nodeRefs={nodeRefs}
-                dragOverId={dragOverId}
-                dropPosition={dropPosition}
-              />
-            ))}
-          </TreeGrid>
-        </DndContext>
+      <div
+        style={{ flex: 1, overflow: 'auto' }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Find the target node element
+          const target = e.target as HTMLElement;
+          const nodeElement = target.closest('[data-node-id]') as HTMLElement;
+          if (nodeElement) {
+            const nodeId = nodeElement.getAttribute('data-node-id');
+            if (nodeId) {
+              handleDragOverThrottled(e.nativeEvent, nodeId);
+            }
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
+        <TreeGrid style={{ width: '100%' }}>
+          {tree.map((node, index) => (
+            <TreeNode
+              key={node.id}
+              node={node}
+              level={1}
+              positionInSet={index + 1}
+              setSize={tree.length}
+              allNodes={tree}
+              expandedNodes={expandedNodes}
+              setExpandedNodes={setExpandedNodes}
+              nodeRefs={nodeRefs}
+              dragOverId={dragOverId}
+              dropPosition={dropPosition}
+              draggingNodeId={draggingNodeId}
+              displacements={displacements}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            />
+          ))}
+        </TreeGrid>
       </div>
 
       {tree.length > 0 && (
