@@ -1,5 +1,6 @@
 import React from 'react';
 import { SearchControl, Icon } from '@wordpress/components';
+import { privateApis as blockEditorPrivateApis } from '@wordpress/block-editor';
 import {
   paragraph,
   heading,
@@ -15,6 +16,9 @@ import {
 } from '@wordpress/icons';
 import { patterns, patternCategories } from '../patterns';
 import { componentGroups } from './TreePanel';
+import { unlock } from '../utils/lock-unlock';
+
+const { TabbedSidebar } = unlock( blockEditorPrivateApis );
 
 // Map component types to WordPress icons
 const componentIconMap: Record<string, any> = {
@@ -136,159 +140,206 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
   };
 
   const renderBlocksContent = () => (
-    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '16px' }}>
-      {filteredGroups.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '24px',
-            color: '#757575',
-            fontSize: '13px',
-          }}
-        >
-          No blocks found
-        </div>
-      ) : (
-        filteredGroups.map((group) => (
-          <div key={group.name} style={{ marginBottom: '24px' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '12px',
-                color: '#1e1e1e',
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              <Icon icon={group.icon} size={16} />
-              {group.name}
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '8px',
-              }}
-            >
-              {group.components.map((comp) => (
-                <button
-                  key={comp}
-                  onClick={() => handleAddComponent(comp)}
-                  style={{
-                    padding: '12px 8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '2px',
-                    backgroundColor: '#fff',
-                    cursor: 'pointer',
-                    fontSize: '11px',
-                    textAlign: 'center',
-                    transition: 'all 0.1s',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '6px',
-                    minHeight: '64px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#0073aa';
-                    e.currentTarget.style.boxShadow =
-                      '0 2px 4px rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.backgroundColor = '#f9f9f9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#ddd';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.backgroundColor = '#fff';
-                  }}
-                >
-                  <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
-                  <span style={{ wordBreak: 'break-word' }}>{comp}</span>
-                </button>
-              ))}
-            </div>
+    <>
+      {/* Search */}
+      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+        <SearchControl
+          value={searchTerm}
+          onChange={onSearchChange}
+          placeholder="Search blocks..."
+          __nextHasNoMarginBottom
+        />
+      </div>
+
+      {/* Scrollable blocks */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '16px' }}>
+        {filteredGroups.length === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '24px',
+              color: '#757575',
+              fontSize: '13px',
+            }}
+          >
+            No blocks found
           </div>
-        ))
-      )}
-    </div>
+        ) : (
+          filteredGroups.map((group) => (
+            <div key={group.name} style={{ marginBottom: '24px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '12px',
+                  color: '#1e1e1e',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                <Icon icon={group.icon} size={16} />
+                {group.name}
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '8px',
+                }}
+              >
+                {group.components.map((comp) => (
+                  <button
+                    key={comp}
+                    onClick={() => handleAddComponent(comp)}
+                    style={{
+                      padding: '12px 8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '2px',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      textAlign: 'center',
+                      transition: 'all 0.1s',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '6px',
+                      minHeight: '64px',
+                      justifyContent: 'center',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#0073aa';
+                      e.currentTarget.style.boxShadow =
+                        '0 2px 4px rgba(0, 0, 0, 0.1)';
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#ddd';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.backgroundColor = '#fff';
+                    }}
+                  >
+                    <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
+                    <span style={{ wordBreak: 'break-word' }}>{comp}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </>
   );
 
   const renderPatternsContent = () => (
-    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '16px' }}>
-      {filteredPatternCategories.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '24px',
-            color: '#757575',
-            fontSize: '13px',
-          }}
-        >
-          No patterns found
-        </div>
-      ) : (
-        filteredPatternCategories.map((cat) => (
-          <div key={cat.category} style={{ marginBottom: '24px' }}>
-            <div
-              style={{
-                marginBottom: '12px',
-                color: '#757575',
-                fontSize: '12px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-              }}
-            >
-              {cat.category}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {cat.patterns.map((pattern) => (
-                <button
-                  key={pattern.id}
-                  onClick={() => handleAddPattern(pattern.id)}
-                  style={{
-                    padding: '12px',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '4px',
-                    backgroundColor: '#fff',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    textAlign: 'left',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#2271b1';
-                    e.currentTarget.style.boxShadow =
-                      '0 2px 4px rgba(0, 0, 0, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#e0e0e0';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <div
+    <>
+      {/* Search */}
+      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+        <SearchControl
+          value={searchTerm}
+          onChange={onSearchChange}
+          placeholder="Search patterns..."
+          __nextHasNoMarginBottom
+        />
+      </div>
+
+      {/* Scrollable patterns */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '16px' }}>
+        {filteredPatternCategories.length === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '24px',
+              color: '#757575',
+              fontSize: '13px',
+            }}
+          >
+            No patterns found
+          </div>
+        ) : (
+          filteredPatternCategories.map((cat) => (
+            <div key={cat.category} style={{ marginBottom: '24px' }}>
+              <div
+                style={{
+                  marginBottom: '12px',
+                  color: '#757575',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {cat.category}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {cat.patterns.map((pattern) => (
+                  <button
+                    key={pattern.id}
+                    onClick={() => handleAddPattern(pattern.id)}
                     style={{
-                      fontWeight: 500,
-                      color: '#1e1e1e',
-                      marginBottom: '4px',
+                      padding: '12px',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '4px',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      textAlign: 'left',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#2271b1';
+                      e.currentTarget.style.boxShadow =
+                        '0 2px 4px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e0e0e0';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
-                    {pattern.name}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>
-                    {pattern.description}
-                  </div>
-                </button>
-              ))}
+                    <div
+                      style={{
+                        fontWeight: 500,
+                        color: '#1e1e1e',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {pattern.name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {pattern.description}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))
-      )}
-    </div>
+          ))
+        )}
+      </div>
+    </>
   );
+
+  const tabsConfig = [
+    {
+      name: 'blocks',
+      title: 'Blocks',
+      panel: (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {renderBlocksContent()}
+        </div>
+      ),
+    },
+    {
+      name: 'patterns',
+      title: 'Patterns',
+      panel: (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {renderPatternsContent()}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div
@@ -305,63 +356,14 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
         borderTop: '1px solid #e0e0e0',
       }}
     >
-      {/* Tab buttons */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #ddd', backgroundColor: '#fff' }}>
-        <button
-          onClick={() => onTabChange('blocks')}
-          style={{
-            flex: 1,
-            padding: '12px 16px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            borderBottom: inserterTab === 'blocks' ? '4px solid #2271b1' : 'none',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: inserterTab === 'blocks' ? 600 : 400,
-            color: inserterTab === 'blocks' ? '#1e1e1e' : '#757575',
-          }}
-        >
-          Blocks
-        </button>
-        <button
-          onClick={() => onTabChange('patterns')}
-          style={{
-            flex: 1,
-            padding: '12px 16px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            borderBottom: inserterTab === 'patterns' ? '4px solid #2271b1' : 'none',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: inserterTab === 'patterns' ? 600 : 400,
-            color: inserterTab === 'patterns' ? '#1e1e1e' : '#757575',
-          }}
-        >
-          Patterns
-        </button>
-      </div>
-
-      {/* Custom Scrollable Content Container */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {/* Search */}
-        <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
-          <SearchControl
-            value={searchTerm}
-            onChange={onSearchChange}
-            placeholder={
-              inserterTab === 'blocks' ? 'Search blocks...' : 'Search patterns...'
-            }
-            __nextHasNoMarginBottom
-          />
-        </div>
-
-        {/* Content - Scrollable */}
-        <div style={{ flex: 1, overflow: 'auto' }}>
-          {inserterTab === 'blocks'
-            ? renderBlocksContent()
-            : renderPatternsContent()}
-        </div>
-      </div>
+      <TabbedSidebar
+        tabs={tabsConfig}
+        onClose={onCloseInserter}
+        onSelect={(tabId: string) => onTabChange(tabId as 'blocks' | 'patterns')}
+        selectedTab={inserterTab}
+        defaultTabId="blocks"
+        closeButtonLabel="Close inserter"
+      />
     </div>
   );
 };
