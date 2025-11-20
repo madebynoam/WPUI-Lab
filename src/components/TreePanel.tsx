@@ -23,6 +23,7 @@ import {
 	plugins,
 	plus,
 	blockDefault,
+	table,
 } from "@wordpress/icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import type { DropTargetMonitor } from "react-dnd";
@@ -103,6 +104,11 @@ export const componentGroups: ComponentGroup[] = [
 		name: "Utilities",
 		icon: plus,
 		components: ["Spacer", "Divider", "Spinner", "Truncate"],
+	},
+	{
+		name: "Data Display",
+		icon: table,
+		components: ["DataViews"],
 	},
 ];
 

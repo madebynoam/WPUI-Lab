@@ -44,7 +44,9 @@ import {
   FormTokenField,
   __experimentalGrid as Grid,
 } from '@wordpress/components';
+import { DataViews } from '@wordpress/dataviews';
 import { ComponentDefinition } from './types';
+import { getMockData, getFieldDefinitions } from './utils/mockDataGenerator';
 
 export const componentRegistry: Record<string, ComponentDefinition> = {
   Grid: {
@@ -1184,6 +1186,48 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'string',
         defaultValue: 'Tags',
         description: 'Field label',
+      },
+    ],
+  },
+
+  DataViews: {
+    name: 'DataViews',
+    component: DataViews,
+    acceptsChildren: false,
+    defaultProps: {
+      data: getMockData('blog'),
+      fields: getFieldDefinitions('blog'),
+      view: {
+        type: 'table',
+        perPage: 10,
+      },
+    },
+    propDefinitions: [
+      {
+        name: 'dataSource',
+        type: 'select',
+        options: ['blog', 'products', 'users'],
+        defaultValue: 'blog',
+        description: 'Sample data source to display',
+      },
+      {
+        name: 'viewType',
+        type: 'select',
+        options: ['table', 'grid', 'list'],
+        defaultValue: 'table',
+        description: 'Default view layout',
+      },
+      {
+        name: 'itemsPerPage',
+        type: 'number',
+        defaultValue: 10,
+        description: 'Items per page',
+      },
+      {
+        name: 'enableSearch',
+        type: 'boolean',
+        defaultValue: true,
+        description: 'Show search input',
       },
     ],
   },

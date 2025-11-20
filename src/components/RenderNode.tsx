@@ -4,6 +4,7 @@ import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import { wordpress } from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
+import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
 
 export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
   const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible } = useComponentTree();
@@ -163,6 +164,43 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
             ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
             : null}
         </Component>
+      </div>
+    );
+  }
+
+  // DataViews component - special handling for data-driven component
+  if (node.type === 'DataViews') {
+    const dataSource = (props.dataSource || 'blog') as DataSetType;
+    const viewType = props.viewType || 'table';
+    const itemsPerPage = props.itemsPerPage || 10;
+    const enableSearch = props.enableSearch !== false;
+
+    const mockData = getMockData(dataSource);
+    const fields = getFieldDefinitions(dataSource);
+
+    const mergedProps = {
+      data: mockData,
+      fields: fields,
+      view: {
+        type: viewType,
+        perPage: itemsPerPage,
+      },
+      onChangeView: () => {}, // Stub callback
+      onChangeSelection: () => {}, // Stub callback
+      search: enableSearch,
+    };
+
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          const multiSelect = e.metaKey || e.ctrlKey;
+          const rangeSelect = e.shiftKey;
+          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+        }}
+        style={getWrapperStyle()}
+      >
+        <Component {...mergedProps} />
       </div>
     );
   }

@@ -71,6 +71,8 @@ const componentIconMap: Record<string, any> = {
   Divider: blockDefault,
   Spinner: blockDefault,
   Truncate: blockDefault,
+  // Data Display
+  DataViews: table,
 };
 
 interface ComponentInserterProps {
