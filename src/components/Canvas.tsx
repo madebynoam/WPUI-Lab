@@ -4,7 +4,7 @@ import { ComponentNode } from '../types';
 import { Breadcrumb } from './Breadcrumb';
 import { findParent } from '../utils/treeHelpers';
 import { RenderNode } from './RenderNode';
-import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel-v2';
+import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 
 export const Canvas: React.FC = () => {
   const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo } = useComponentTree();

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ComponentTreeProvider } from './ComponentTreeContext';
 import { TopBar } from './components/TopBar';
-import { TreePanel } from './components/TreePanel-v2';
+import { TreePanel } from './components/TreePanel';
 import { Canvas } from './components/Canvas';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import '@wordpress/components/build-style/style.css';

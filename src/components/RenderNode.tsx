@@ -3,7 +3,7 @@ import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import { wordpress } from '@wordpress/icons';
-import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel-v2';
+import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 
 export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
   const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible } = useComponentTree();
