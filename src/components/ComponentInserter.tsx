@@ -354,16 +354,19 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
         display: 'flex',
         flexDirection: 'column',
         borderTop: '1px solid #e0e0e0',
+        minHeight: 0,
       }}
     >
-      <TabbedSidebar
-        tabs={tabsConfig}
-        onClose={onCloseInserter}
-        onSelect={(tabId: string) => onTabChange(tabId as 'blocks' | 'patterns')}
-        selectedTab={inserterTab}
-        defaultTabId="blocks"
-        closeButtonLabel="Close inserter"
-      />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <TabbedSidebar
+          tabs={tabsConfig}
+          onClose={onCloseInserter}
+          onSelect={(tabId: string) => onTabChange(tabId as 'blocks' | 'patterns')}
+          selectedTab={inserterTab}
+          defaultTabId="blocks"
+          closeButtonLabel="Close inserter"
+        />
+      </div>
     </div>
   );
 };
