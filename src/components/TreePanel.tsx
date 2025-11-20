@@ -174,6 +174,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		new Set([ROOT_VSTACK_ID])
 	);
 	const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+	const layerClickCountRef = useRef<Map<string, number>>(new Map());
+	const layerClickTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 	const pageClickCountRef = useRef<Record<string, number>>({});
 	const pageClickTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
 
@@ -298,6 +300,38 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		[]
 	);
 
+	// Create a handler factory for layer double-click detection
+	const createLayerNameClickHandler = useCallback(
+		(nodeId: string) => (e: React.MouseEvent) => {
+			if (nodeId === ROOT_VSTACK_ID) return;
+
+			const count = (layerClickCountRef.current.get(nodeId) || 0) + 1;
+			layerClickCountRef.current.set(nodeId, count);
+			console.log("Click count for", nodeId, ":", count);
+
+			if (count === 1) {
+				// First click - start timer
+				const timeout = setTimeout(() => {
+					layerClickCountRef.current.set(nodeId, 0);
+					console.log("Double-click timeout for", nodeId);
+				}, 300);
+				layerClickTimeoutRef.current.set(nodeId, timeout);
+			} else if (count === 2) {
+				// Second click within 300ms - trigger edit (selection still happens via parent onClick)
+				const timeout = layerClickTimeoutRef.current.get(nodeId);
+				if (timeout) {
+					clearTimeout(timeout);
+					layerClickTimeoutRef.current.delete(nodeId);
+				}
+				layerClickCountRef.current.set(nodeId, 0);
+				console.log("Double-click detected for", nodeId, "- entering edit mode");
+				setEditingNodeId(nodeId);
+				setEditingNodeName(tree.find((n: any) => n.id === nodeId)?.name || "");
+			}
+		},
+		[tree]
+	);
+
 	const findNodePath = useCallback(
 		(
 			nodes: ComponentNode[],
@@ -359,8 +393,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		const [isHovered, setIsHovered] = useState(false);
 		const [dropPosition, setDropPosition] = useState<DropPosition | null>(null);
 		const ref = useRef<HTMLDivElement>(null);
-		const clickCountRef = useRef(0);
-		const clickTimeoutRef = useRef<NodeJS.Timeout>();
 
 		const isSelected = selectedNodeIds.includes(node.id);
 		const hasChildren = node.children && node.children.length > 0;
@@ -375,27 +407,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
 		};
 
-		const handleNameClick = (e: React.MouseEvent) => {
-			if (node.id === ROOT_VSTACK_ID) return;
-
-			clickCountRef.current += 1;
-			console.log("Click count for", node.id, ":", clickCountRef.current);
-
-			if (clickCountRef.current === 1) {
-				// First click - start timer
-				clickTimeoutRef.current = setTimeout(() => {
-					clickCountRef.current = 0;
-					console.log("Double-click timeout for", node.id);
-				}, 300);
-			} else if (clickCountRef.current === 2) {
-				// Second click within 300ms - trigger edit (selection still happens via parent onClick)
-				clearTimeout(clickTimeoutRef.current);
-				clickCountRef.current = 0;
-				console.log("Double-click detected for", node.id, "- entering edit mode");
-				setEditingNodeId(node.id);
-				setEditingNodeName(node.name || "");
-			}
-		};
+		const handleNameClick = createLayerNameClickHandler(node.id);
 
 		const [{ isDragging }, drag] = useDrag({
 			type: ITEM_TYPE,
