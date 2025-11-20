@@ -214,7 +214,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		const pattern = patterns.find((p) => p.id === patternId);
 		if (!pattern) return;
 
-		const patternWithIds = assignIds(pattern.tree);
+		let patternWithIds = assignIds(pattern.tree);
 		const targetId = selectedNodeIds[0] || ROOT_VSTACK_ID;
 		const targetNode = getNodeById(targetId);
 		const canAcceptChildren =
@@ -234,6 +234,18 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 				}
 				currentNode = parent;
 			}
+		}
+
+		// If parent is a Grid, set default gridColumnSpan for the pattern root
+		const parentNode = getNodeById(parentId);
+		if (parentNode?.type === 'Grid') {
+			patternWithIds = {
+				...patternWithIds,
+				props: {
+					...patternWithIds.props,
+					gridColumnSpan: 12,
+				},
+			};
 		}
 
 		const addToParent = (nodes: ComponentNode[]): ComponentNode[] => {
