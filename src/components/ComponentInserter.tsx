@@ -1,5 +1,5 @@
 import React from 'react';
-import { SearchControl, Icon, TabPanel } from '@wordpress/components';
+import { SearchControl, Icon } from '@wordpress/components';
 import {
   paragraph,
   heading,
@@ -303,43 +303,64 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
         display: 'flex',
         flexDirection: 'column',
         borderTop: '1px solid #e0e0e0',
-        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <TabPanel
-          className="wp-designer-inserter-tabs"
-          activeClass="is-active"
-          onSelect={(tab) => onTabChange(tab as 'blocks' | 'patterns')}
-          tabs={[
-            { name: 'blocks', title: 'Blocks' },
-            { name: 'patterns', title: 'Patterns' },
-          ]}
-          initialTabName={inserterTab}
+      {/* Tab buttons */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #ddd', backgroundColor: '#fff' }}>
+        <button
+          onClick={() => onTabChange('blocks')}
+          style={{
+            flex: 1,
+            padding: '12px 16px',
+            border: 'none',
+            backgroundColor: 'transparent',
+            borderBottom: inserterTab === 'blocks' ? '4px solid #2271b1' : 'none',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: inserterTab === 'blocks' ? 600 : 400,
+            color: inserterTab === 'blocks' ? '#1e1e1e' : '#757575',
+          }}
         >
-          {() => (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              {/* Search */}
-              <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
-                <SearchControl
-                  value={searchTerm}
-                  onChange={onSearchChange}
-                  placeholder={
-                    inserterTab === 'blocks'
-                      ? 'Search blocks...'
-                      : 'Search patterns...'
-                  }
-                  __nextHasNoMarginBottom
-                />
-              </div>
+          Blocks
+        </button>
+        <button
+          onClick={() => onTabChange('patterns')}
+          style={{
+            flex: 1,
+            padding: '12px 16px',
+            border: 'none',
+            backgroundColor: 'transparent',
+            borderBottom: inserterTab === 'patterns' ? '4px solid #2271b1' : 'none',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: inserterTab === 'patterns' ? 600 : 400,
+            color: inserterTab === 'patterns' ? '#1e1e1e' : '#757575',
+          }}
+        >
+          Patterns
+        </button>
+      </div>
 
-              {/* Content */}
-              {inserterTab === 'blocks'
-                ? renderBlocksContent()
-                : renderPatternsContent()}
-            </div>
-          )}
-        </TabPanel>
+      {/* Custom Scrollable Content Container */}
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* Search */}
+        <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+          <SearchControl
+            value={searchTerm}
+            onChange={onSearchChange}
+            placeholder={
+              inserterTab === 'blocks' ? 'Search blocks...' : 'Search patterns...'
+            }
+            __nextHasNoMarginBottom
+          />
+        </div>
+
+        {/* Content - Scrollable */}
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {inserterTab === 'blocks'
+            ? renderBlocksContent()
+            : renderPatternsContent()}
+        </div>
       </div>
     </div>
   );
