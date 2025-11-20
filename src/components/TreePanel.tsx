@@ -367,17 +367,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
 		};
 
-		const handleNodeDoubleClick = (e: React.MouseEvent) => {
-			console.log("Double-click handler called on node:", node.id, node.name);
-			e.stopPropagation();
-			e.preventDefault();
-			if (node.id !== ROOT_VSTACK_ID) {
-				console.log("Setting editing node to:", node.id, node.name);
-				setEditingNodeId(node.id);
-				setEditingNodeName(node.name || "");
-			}
-		};
-
 		const [{ isDragging }, drag] = useDrag({
 			type: ITEM_TYPE,
 			item: { id: node.id, type: ITEM_TYPE } as DragItem,
@@ -505,7 +494,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							: "1px solid transparent",
 					}}
 					onClick={handleNodeClick}
-					onDoubleClick={handleNodeDoubleClick}
 					onMouseEnter={() => setIsHovered(true)}
 					onMouseLeave={() => setIsHovered(false)}
 				>
@@ -674,6 +662,14 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								textOverflow: "ellipsis",
 								cursor: node.id !== ROOT_VSTACK_ID ? "text" : "default",
 								userSelect: "none",
+							}}
+							onDoubleClick={(e) => {
+								console.log("Span double-click on:", node.id);
+								if (node.id !== ROOT_VSTACK_ID) {
+									e.stopPropagation();
+									setEditingNodeId(node.id);
+									setEditingNodeName(node.name || "");
+								}
 							}}
 						>
 							{node.id === ROOT_VSTACK_ID
