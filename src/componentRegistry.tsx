@@ -214,7 +214,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Button',
     component: Button,
     acceptsChildren: true,
-    defaultProps: { children: 'Button' },
+    defaultProps: { children: 'Button', variant: 'primary' },
     propDefinitions: [
       {
         name: 'text',
@@ -226,7 +226,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'variant',
         type: 'select',
         options: ['primary', 'secondary', 'tertiary', 'link'],
-        defaultValue: 'secondary',
+        defaultValue: 'primary',
         description: 'Button style variant'
       },
       {
