@@ -170,6 +170,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	const [editingPageName, setEditingPageName] = useState("");
 	const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
 	const [editingNodeName, setEditingNodeName] = useState("");
+
 	const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
 		new Set([ROOT_VSTACK_ID])
 	);
@@ -300,6 +301,24 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		[]
 	);
 
+	// Helper to find node recursively in tree
+	const findNodeInTree = useCallback(
+		(nodeId: string): any => {
+			const search = (nodes: ComponentNode[]): any => {
+				for (const node of nodes) {
+					if (node.id === nodeId) return node;
+					if (node.children) {
+						const found = search(node.children);
+						if (found) return found;
+					}
+				}
+				return null;
+			};
+			return search(tree);
+		},
+		[tree]
+	);
+
 	// Create a handler factory for layer double-click detection
 	const createLayerNameClickHandler = useCallback(
 		(nodeId: string) => (e: React.MouseEvent) => {
@@ -307,29 +326,29 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
 			const count = (layerClickCountRef.current.get(nodeId) || 0) + 1;
 			layerClickCountRef.current.set(nodeId, count);
-			console.log("Click count for", nodeId, ":", count);
 
 			if (count === 1) {
-				// First click - start timer
+				// First click - start timer (350ms allows normal double-click timing)
 				const timeout = setTimeout(() => {
 					layerClickCountRef.current.set(nodeId, 0);
-					console.log("Double-click timeout for", nodeId);
-				}, 300);
+				}, 350);
 				layerClickTimeoutRef.current.set(nodeId, timeout);
 			} else if (count === 2) {
-				// Second click within 300ms - trigger edit (selection still happens via parent onClick)
+				// Second click within 350ms - trigger edit mode
+				e.stopPropagation();
 				const timeout = layerClickTimeoutRef.current.get(nodeId);
 				if (timeout) {
 					clearTimeout(timeout);
 					layerClickTimeoutRef.current.delete(nodeId);
 				}
 				layerClickCountRef.current.set(nodeId, 0);
-				console.log("Double-click detected for", nodeId, "- entering edit mode");
 				setEditingNodeId(nodeId);
-				setEditingNodeName(tree.find((n: any) => n.id === nodeId)?.name || "");
+				const node = findNodeInTree(nodeId);
+				const nodeName = node?.name || "";
+				setEditingNodeName(nodeName);
 			}
 		},
-		[tree]
+		[tree, setEditingNodeId, setEditingNodeName, findNodeInTree]
 	);
 
 	const findNodePath = useCallback(
@@ -534,7 +553,14 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							? "1px solid #2271b1"
 							: "1px solid transparent",
 					}}
-					onClick={handleNodeClick}
+					onClick={(e) => {
+						// Don't trigger selection if we're editing the name - prevents re-renders
+						if (editingNodeId === node.id) {
+							e.stopPropagation();
+							return;
+						}
+						handleNodeClick(e);
+					}}
 					onMouseEnter={() => setIsHovered(true)}
 					onMouseLeave={() => setIsHovered(false)}
 				>
@@ -582,6 +608,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							onClick={(e) => {
 								e.stopPropagation();
 								toggleExpand(node.id);
+							}}
+							onMouseDown={(e) => {
+								e.stopPropagation();
 							}}
 							style={{
 								background: "none",
@@ -634,6 +663,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 									setEditingNodeId(null);
 								}
 							}}
+							onMouseDown={(e) => e.stopPropagation()}
 							onClick={(e) => e.stopPropagation()}
 							autoFocus
 							style={{
@@ -672,6 +702,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 					{!isRootVStack && (
 						<div
 							onClick={(e) => e.stopPropagation()}
+							onMouseDown={(e) => e.stopPropagation()}
 							style={{
 								opacity: isHovered || isSelected ? 1 : 0,
 								transition: "opacity 0.1s ease",
@@ -785,7 +816,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								borderRadius: "2px",
 								fontSize: "13px",
 							}}
-							onClick={() => {
+							onMouseDown={() => {
 								if (editingPageId !== page.id) {
 									setCurrentPage(page.id);
 								}
@@ -837,17 +868,15 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 											pageClickCountRef.current[page.id] = 0;
 										}
 										pageClickCountRef.current[page.id] += 1;
-										console.log("Page click count for", page.id, ":", pageClickCountRef.current[page.id]);
 
 										if (pageClickCountRef.current[page.id] === 1) {
 											pageClickTimeoutRef.current[page.id] = setTimeout(() => {
 												pageClickCountRef.current[page.id] = 0;
-												console.log("Page double-click timeout for", page.id);
-											}, 300);
+											}, 350);
 										} else if (pageClickCountRef.current[page.id] === 2) {
+											e.stopPropagation();
 											clearTimeout(pageClickTimeoutRef.current[page.id]);
 											pageClickCountRef.current[page.id] = 0;
-											console.log("Page double-click detected for", page.id, "- entering edit mode");
 											setEditingPageId(page.id);
 											setEditingPageName(page.name);
 										}
@@ -856,7 +885,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 									{page.name}
 								</span>
 							)}
-							<div onClick={(e) => e.stopPropagation()}>
+							<div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
 								<DropdownMenu
 									icon={moreVertical}
 									label="Page options"

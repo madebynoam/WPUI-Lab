@@ -125,7 +125,7 @@ export const Canvas: React.FC = () => {
           display: 'flex',
           justifyContent: 'center',
         }}
-        onClick={(e) => {
+        onMouseDown={(e) => {
           // Deselect when clicking canvas background
           if (e.target === e.currentTarget) {
             toggleNodeSelection(ROOT_VSTACK_ID, false);

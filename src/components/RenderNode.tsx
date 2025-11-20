@@ -50,7 +50,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
-        onClick={(e) => {
+        onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
           const rangeSelect = e.shiftKey;
@@ -70,7 +70,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
-        onClick={(e) => {
+        onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
           const rangeSelect = e.shiftKey;
@@ -91,7 +91,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
-        onClick={(e) => {
+        onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
           const rangeSelect = e.shiftKey;
@@ -111,7 +111,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       // Render Modal content directly without the blocking overlay
       return (
         <div
-          onClick={(e) => {
+          onMouseDown={(e) => {
             e.stopPropagation();
             const multiSelect = e.metaKey || e.ctrlKey;
             const rangeSelect = e.shiftKey;
@@ -151,7 +151,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     const mergedProps = { ...definition.defaultProps, ...props };
     return (
       <div
-        onClick={(e) => {
+        onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
           const rangeSelect = e.shiftKey;
@@ -243,7 +243,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
       return (
         <div
-          onClick={(e) => {
+          onMouseDown={(e) => {
             e.stopPropagation();
             const multiSelect = e.metaKey || e.ctrlKey;
             const rangeSelect = e.shiftKey;
@@ -258,7 +258,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       console.error('DataViews rendering error:', error);
       return (
         <div
-          onClick={(e) => {
+          onMouseDown={(e) => {
             e.stopPropagation();
             const multiSelect = e.metaKey || e.ctrlKey;
             const rangeSelect = e.shiftKey;
@@ -309,7 +309,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
-        onClick={(e) => {
+        onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
           const rangeSelect = e.shiftKey;
@@ -330,7 +330,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
   return (
     <div
-      onClick={(e) => {
+      onMouseDown={(e) => {
         e.stopPropagation();
         const multiSelect = e.metaKey || e.ctrlKey;
         const rangeSelect = e.shiftKey;
