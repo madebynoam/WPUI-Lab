@@ -386,7 +386,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 					clickCountRef.current = 0;
 				}, 300);
 			} else if (clickCountRef.current === 2) {
-				// Second click within 300ms - trigger edit
+				// Second click within 300ms - trigger edit and stop propagation
 				e.stopPropagation();
 				clearTimeout(clickTimeoutRef.current);
 				clickCountRef.current = 0;
