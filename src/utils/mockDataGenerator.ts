@@ -4,16 +4,16 @@
  */
 
 interface MockDataItem {
-  [key: string]: string | number | boolean | Date;
+  [key: string]: string | number | boolean;
 }
 
-// Sample blog post data
+// Sample blog post data (all dates as ISO strings for DataViews compatibility)
 const sampleBlogPosts: MockDataItem[] = [
   {
     id: 1,
     title: 'Getting Started with WordPress',
     author: 'Sarah Johnson',
-    date: new Date('2024-01-15'),
+    date: '2024-01-15',
     status: 'published',
     category: 'WordPress',
   },
@@ -21,7 +21,7 @@ const sampleBlogPosts: MockDataItem[] = [
     id: 2,
     title: 'Advanced Block Editor Tips',
     author: 'Mike Chen',
-    date: new Date('2024-01-20'),
+    date: '2024-01-20',
     status: 'published',
     category: 'Tutorial',
   },
@@ -29,7 +29,7 @@ const sampleBlogPosts: MockDataItem[] = [
     id: 3,
     title: 'Building Custom Blocks',
     author: 'Emma Rodriguez',
-    date: new Date('2024-01-25'),
+    date: '2024-01-25',
     status: 'draft',
     category: 'Development',
   },
@@ -37,7 +37,7 @@ const sampleBlogPosts: MockDataItem[] = [
     id: 4,
     title: 'Performance Optimization Guide',
     author: 'John Smith',
-    date: new Date('2024-02-01'),
+    date: '2024-02-01',
     status: 'published',
     category: 'Performance',
   },
@@ -45,7 +45,7 @@ const sampleBlogPosts: MockDataItem[] = [
     id: 5,
     title: 'Security Best Practices',
     author: 'Lisa Wang',
-    date: new Date('2024-02-05'),
+    date: '2024-02-05',
     status: 'published',
     category: 'Security',
   },
@@ -53,7 +53,7 @@ const sampleBlogPosts: MockDataItem[] = [
     id: 6,
     title: 'REST API Fundamentals',
     author: 'James Davis',
-    date: new Date('2024-02-10'),
+    date: '2024-02-10',
     status: 'scheduled',
     category: 'API',
   },
@@ -61,7 +61,7 @@ const sampleBlogPosts: MockDataItem[] = [
     id: 7,
     title: 'Theme Development 101',
     author: 'Ana Garcia',
-    date: new Date('2024-02-15'),
+    date: '2024-02-15',
     status: 'draft',
     category: 'Development',
   },
@@ -69,7 +69,7 @@ const sampleBlogPosts: MockDataItem[] = [
     id: 8,
     title: 'Multisite Configuration',
     author: 'Tom Wilson',
-    date: new Date('2024-02-20'),
+    date: '2024-02-20',
     status: 'published',
     category: 'WordPress',
   },

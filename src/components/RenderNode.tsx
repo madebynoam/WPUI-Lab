@@ -170,54 +170,89 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
   // DataViews component - special handling for data-driven component
   if (node.type === 'DataViews') {
-    const dataSource = (props.dataSource || 'blog') as DataSetType;
-    const viewType = props.viewType || 'table';
-    const itemsPerPage = props.itemsPerPage || 10;
+    try {
+      const dataSource = (props.dataSource || 'blog') as DataSetType;
+      const viewType = props.viewType || 'table';
+      const itemsPerPage = props.itemsPerPage || 10;
 
-    const mockData = getMockData(dataSource);
-    const fields = getFieldDefinitions(dataSource);
+      const mockData = getMockData(dataSource);
+      const fields = getFieldDefinitions(dataSource);
 
-    const mergedProps = {
-      data: mockData,
-      fields: fields,
-      view: {
-        type: viewType,
-        perPage: itemsPerPage,
-        page: 1,
-        filters: [],
-        search: '',
-        sort: {
-          field: fields[0]?.id || 'id',
-          direction: 'asc',
+      // Validate data and fields exist
+      if (!mockData || !Array.isArray(mockData) || mockData.length === 0) {
+        console.warn(`DataViews: No data available for source "${dataSource}"`);
+      }
+      if (!fields || !Array.isArray(fields) || fields.length === 0) {
+        console.warn(`DataViews: No field definitions available for source "${dataSource}"`);
+      }
+
+      // Ensure valid sort field
+      const sortField = fields && fields.length > 0 ? fields[0].id : 'id';
+
+      const mergedProps = {
+        data: mockData || [],
+        fields: fields || [],
+        view: {
+          type: viewType,
+          perPage: itemsPerPage,
+          page: 1,
+          filters: [],
+          search: '',
+          sort: {
+            field: sortField,
+            direction: 'asc',
+          },
         },
-      },
-      paginationInfo: {
-        offset: 0,
-        pageSize: itemsPerPage,
-        totalItems: mockData.length,
-        totalPages: Math.ceil(mockData.length / itemsPerPage),
-      },
-      onChangeView: () => {}, // Stub callback
-      onChangeSelection: () => {}, // Stub callback
-      isLoading: false,
-      getItemId: (item: any) => item.id || JSON.stringify(item),
-      actions: [], // Empty actions array
-      selection: [], // Empty selection array
-    };
+        paginationInfo: {
+          offset: 0,
+          pageSize: itemsPerPage,
+          totalItems: (mockData || []).length,
+          totalPages: Math.ceil((mockData || []).length / itemsPerPage),
+        },
+        onChangeView: () => {}, // Stub callback
+        onChangeSelection: () => {}, // Stub callback
+        isLoading: false,
+        getItemId: (item: any) => item?.id || `item-${Math.random()}`,
+        actions: [], // Empty actions array
+        selection: [], // Empty selection array
+      };
 
-    return (
-      <div
-        onClick={(e) => {
-          e.stopPropagation();
-          const multiSelect = e.metaKey || e.ctrlKey;
-          const rangeSelect = e.shiftKey;
-          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-        }}
-        style={getWrapperStyle()}
-      >
-        <Component {...mergedProps} />
-      </div>
-    );
+      return (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            const multiSelect = e.metaKey || e.ctrlKey;
+            const rangeSelect = e.shiftKey;
+            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          }}
+          style={getWrapperStyle()}
+        >
+          <Component {...mergedProps} />
+        </div>
+      );
+    } catch (error) {
+      console.error('DataViews rendering error:', error);
+      return (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            const multiSelect = e.metaKey || e.ctrlKey;
+            const rangeSelect = e.shiftKey;
+            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          }}
+          style={{
+            ...getWrapperStyle(),
+            padding: '16px',
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffc107',
+            borderRadius: '4px',
+            color: '#856404',
+          }}
+        >
+          <strong>DataViews Error:</strong> Failed to render component. Check console for details.
+        </div>
+      );
+    }
   }
 
   // Form controls and self-contained components (don't accept children)
