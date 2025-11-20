@@ -303,41 +303,44 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
         display: 'flex',
         flexDirection: 'column',
         borderTop: '1px solid #e0e0e0',
+        overflow: 'hidden',
       }}
     >
-      <TabPanel
-        className="wp-designer-inserter-tabs"
-        activeClass="is-active"
-        onSelect={(tab) => onTabChange(tab as 'blocks' | 'patterns')}
-        tabs={[
-          { name: 'blocks', title: 'Blocks' },
-          { name: 'patterns', title: 'Patterns' },
-        ]}
-        initialTabName={inserterTab}
-      >
-        {() => (
-          <>
-            {/* Search */}
-            <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
-              <SearchControl
-                value={searchTerm}
-                onChange={onSearchChange}
-                placeholder={
-                  inserterTab === 'blocks'
-                    ? 'Search blocks...'
-                    : 'Search patterns...'
-                }
-                __nextHasNoMarginBottom
-              />
-            </div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+        <TabPanel
+          className="wp-designer-inserter-tabs"
+          activeClass="is-active"
+          onSelect={(tab) => onTabChange(tab as 'blocks' | 'patterns')}
+          tabs={[
+            { name: 'blocks', title: 'Blocks' },
+            { name: 'patterns', title: 'Patterns' },
+          ]}
+          initialTabName={inserterTab}
+        >
+          {() => (
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+              {/* Search */}
+              <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+                <SearchControl
+                  value={searchTerm}
+                  onChange={onSearchChange}
+                  placeholder={
+                    inserterTab === 'blocks'
+                      ? 'Search blocks...'
+                      : 'Search patterns...'
+                  }
+                  __nextHasNoMarginBottom
+                />
+              </div>
 
-            {/* Content */}
-            {inserterTab === 'blocks'
-              ? renderBlocksContent()
-              : renderPatternsContent()}
-          </>
-        )}
-      </TabPanel>
+              {/* Content */}
+              {inserterTab === 'blocks'
+                ? renderBlocksContent()
+                : renderPatternsContent()}
+            </div>
+          )}
+        </TabPanel>
+      </div>
     </div>
   );
 };

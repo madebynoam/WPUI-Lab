@@ -1223,12 +1223,6 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: 10,
         description: 'Items per page',
       },
-      {
-        name: 'enableSearch',
-        type: 'boolean',
-        defaultValue: true,
-        description: 'Show search input',
-      },
     ],
   },
 };

@@ -173,7 +173,6 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     const dataSource = (props.dataSource || 'blog') as DataSetType;
     const viewType = props.viewType || 'table';
     const itemsPerPage = props.itemsPerPage || 10;
-    const enableSearch = props.enableSearch !== false;
 
     const mockData = getMockData(dataSource);
     const fields = getFieldDefinitions(dataSource);
@@ -184,10 +183,18 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       view: {
         type: viewType,
         perPage: itemsPerPage,
+        page: 1,
+      },
+      paginationInfo: {
+        offset: 0,
+        pagSize: itemsPerPage,
+        totalItems: mockData.length,
+        infiniteScrollHandler: () => {}, // Stub for infinite scroll
       },
       onChangeView: () => {}, // Stub callback
       onChangeSelection: () => {}, // Stub callback
-      search: enableSearch,
+      isLoading: false,
+      getItemId: (item: any) => item.id || JSON.stringify(item),
     };
 
     return (
