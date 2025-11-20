@@ -148,6 +148,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		removeComponent,
 		duplicateComponent,
 		moveComponent,
+		updateComponentName,
 		pages,
 		currentPageId,
 		setCurrentPage,
@@ -166,6 +167,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	const [searchTerm, setSearchTerm] = useState("");
 	const [editingPageId, setEditingPageId] = useState<string | null>(null);
 	const [editingPageName, setEditingPageName] = useState("");
+	const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+	const [editingNodeName, setEditingNodeName] = useState("");
 	const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
 		new Set([ROOT_VSTACK_ID])
 	);
@@ -613,22 +616,65 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 					</div>
 
 					{/* Component Name */}
-					<span
-						style={{
-							flex: 1,
-							fontSize: "13px",
-							fontWeight: 400,
-							whiteSpace: "nowrap",
-							overflow: "hidden",
-							textOverflow: "ellipsis",
-						}}
-					>
-						{node.id === ROOT_VSTACK_ID
-							? "Page"
-							: node.name
-							? `${node.name} (${node.type})`
-							: node.type}
-					</span>
+					{editingNodeId === node.id ? (
+						<input
+							type="text"
+							value={editingNodeName}
+							onChange={(e) => setEditingNodeName(e.target.value)}
+							onBlur={() => {
+								if (editingNodeName.trim()) {
+									updateComponentName(node.id, editingNodeName.trim());
+								}
+								setEditingNodeId(null);
+							}}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									if (editingNodeName.trim()) {
+										updateComponentName(node.id, editingNodeName.trim());
+									}
+									setEditingNodeId(null);
+								} else if (e.key === "Escape") {
+									setEditingNodeId(null);
+								}
+							}}
+							onClick={(e) => e.stopPropagation()}
+							autoFocus
+							style={{
+								flex: 1,
+								fontSize: "13px",
+								padding: "2px 4px",
+								border: "1px solid #007cba",
+								borderRadius: "2px",
+								outline: "none",
+								backgroundColor: "#fff",
+							}}
+						/>
+					) : (
+						<span
+							style={{
+								flex: 1,
+								fontSize: "13px",
+								fontWeight: 400,
+								whiteSpace: "nowrap",
+								overflow: "hidden",
+								textOverflow: "ellipsis",
+								cursor: node.id !== ROOT_VSTACK_ID ? "text" : "default",
+								userSelect: "none",
+							}}
+							onDoubleClick={() => {
+								if (node.id !== ROOT_VSTACK_ID) {
+									setEditingNodeId(node.id);
+									setEditingNodeName(node.name || "");
+								}
+							}}
+						>
+							{node.id === ROOT_VSTACK_ID
+								? "Page"
+								: node.name
+								? `${node.name} (${node.type})`
+								: node.type}
+						</span>
+					)}
 
 					{/* Options Menu */}
 					{!isRootVStack && (
@@ -790,6 +836,12 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 									style={{
 										flex: 1,
 										fontWeight: currentPageId === page.id ? 500 : 400,
+										cursor: "text",
+										userSelect: "none",
+									}}
+									onDoubleClick={() => {
+										setEditingPageId(page.id);
+										setEditingPageName(page.name);
 									}}
 								>
 									{page.name}
