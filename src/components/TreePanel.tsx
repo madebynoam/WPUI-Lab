@@ -174,6 +174,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	);
 	const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+	// Get the current page object from the pages array
+	const currentPage = pages.find((page) => page.id === currentPageId);
+
 	const toggleExpand = (nodeId: string) => {
 		setExpandedNodes((prev) => {
 			const next = new Set(prev);
