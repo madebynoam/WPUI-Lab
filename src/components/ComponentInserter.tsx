@@ -211,7 +211,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                       justifyContent: 'center',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#0073aa';
+                      e.currentTarget.style.borderColor = '#3858e9';
                       e.currentTarget.style.boxShadow =
                         '0 2px 4px rgba(0, 0, 0, 0.1)';
                       e.currentTarget.style.backgroundColor = '#f9f9f9';
@@ -289,7 +289,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                       transition: 'all 0.2s',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#2271b1';
+                      e.currentTarget.style.borderColor = '#3858e9';
                       e.currentTarget.style.boxShadow =
                         '0 2px 4px rgba(0, 0, 0, 0.1)';
                     }}

@@ -36,7 +36,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   const isRootVStack = node.id === ROOT_VSTACK_ID;
   const isSelected = selectedNodeIds.includes(node.id);
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => ({
-    outline: isSelected && !isRootVStack ? '2px solid #0073aa' : 'none',
+    outline: isSelected && !isRootVStack ? '2px solid #3858e9' : 'none',
     cursor: 'default',
     ...(gridColumn && { gridColumn }),
     ...(gridRow && { gridRow }),
@@ -389,7 +389,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
                       y="0"
                       width={`${gapPx}px`}
                       height="100%"
-                      fill="#007cba"
+                      fill="#3858e9"
                       opacity="0.15"
                     />
                   );
@@ -402,7 +402,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
                       y1="0"
                       x2={`${gutterXPercent}%`}
                       y2="100%"
-                      stroke="#007cba"
+                      stroke="#3858e9"
                       strokeWidth="1"
                       strokeDasharray="4 4"
                       opacity="0.5"
@@ -418,7 +418,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
                       y1="0"
                       x2={`${xPercent}%`}
                       y2="100%"
-                      stroke="#007cba"
+                      stroke="#3858e9"
                       strokeWidth="1"
                       strokeDasharray="4 4"
                       opacity="0.5"

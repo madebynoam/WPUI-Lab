@@ -117,7 +117,7 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
         <Button
           variant="primary"
           style={{
-            backgroundColor: '#2271b1',
+            backgroundColor: '#3858e9',
             color: '#fff',
             border: 'none',
             borderRadius: '2px',
