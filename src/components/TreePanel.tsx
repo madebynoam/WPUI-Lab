@@ -24,6 +24,7 @@ import {
 	plus,
 	blockDefault,
 	table,
+	page,
 } from "@wordpress/icons";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import type { DropTargetMonitor } from "react-dnd";
@@ -548,7 +549,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								alignItems: "center",
 								justifyContent: "center",
 								opacity: isHovered || isDragging ? 0.6 : 0,
-								cursor: "grab",
 								transition: "opacity 0.1s ease",
 								marginRight: "2px",
 							}}
@@ -585,7 +585,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								display: "flex",
 								alignItems: "center",
 								justifyContent: "center",
-								cursor: "pointer",
 								color: "inherit",
 								marginRight: "4px",
 								transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
@@ -663,11 +662,10 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								whiteSpace: "nowrap",
 								overflow: "hidden",
 								textOverflow: "ellipsis",
-								cursor: node.id !== ROOT_VSTACK_ID ? "text" : "default",
 								userSelect: "none",
 							}}
-							onDoubleClick={(e) => {
-								if (node.id !== ROOT_VSTACK_ID) {
+							onMouseDown={(e: React.MouseEvent) => {
+								if (node.id !== ROOT_VSTACK_ID && (e as any).detail === 2) {
 									e.stopPropagation();
 									setEditingNodeId(node.id);
 									setEditingNodeName(node.name || "");
@@ -675,7 +673,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							}}
 						>
 							{node.id === ROOT_VSTACK_ID
-								? `📄 ${currentPage?.name || "Untitled"}`
+								? <><Icon icon={page} size={16} style={{ marginRight: "4px" }} />{currentPage?.name || "Untitled"}</>
 								: node.name
 								? `${node.name} (${node.type})`
 								: node.type}
@@ -795,7 +793,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 									currentPageId === page.id ? "#e5f5fa" : "transparent",
 								color: "#1e1e1e",
 								borderRadius: "2px",
-								cursor: "pointer",
 								fontSize: "13px",
 							}}
 							onClick={() => {
@@ -842,12 +839,14 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 									style={{
 										flex: 1,
 										fontWeight: currentPageId === page.id ? 500 : 400,
-										cursor: "text",
 										userSelect: "none",
 									}}
-									onDoubleClick={() => {
-										setEditingPageId(page.id);
-										setEditingPageName(page.name);
+									onMouseDown={(e: React.MouseEvent) => {
+										if ((e as any).detail === 2) {
+											e.stopPropagation();
+											setEditingPageId(page.id);
+											setEditingPageName(page.name);
+										}
 									}}
 								>
 									{page.name}
