@@ -661,7 +661,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								cursor: node.id !== ROOT_VSTACK_ID ? "text" : "default",
 								userSelect: "none",
 							}}
-							onDoubleClick={() => {
+							onDoubleClick={(e) => {
+								e.stopPropagation();
 								if (node.id !== ROOT_VSTACK_ID) {
 									setEditingNodeId(node.id);
 									setEditingNodeName(node.name || "");
