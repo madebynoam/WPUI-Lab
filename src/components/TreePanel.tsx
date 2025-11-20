@@ -537,36 +537,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							}}
 						/>
 					)}
-					{/* Drag Handle */}
-					{!isRootVStack && (
-						<div
-							style={{
-								padding: "4px",
-								width: "20px",
-								height: "20px",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								opacity: isHovered || isDragging ? 0.6 : 0,
-								transition: "opacity 0.1s ease",
-								marginRight: "2px",
-							}}
-						>
-							<svg
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M5 4v3h5.5v12h3V7H19V4z" />
-								<path
-									fillRule="evenodd"
-									d="M11 14H6v-1h5v1zm8-1h-5v1h5v-1zm-8 4H6v-1h5v1zm8-1h-5v1h5v-1z"
-									clipRule="evenodd"
-								/>
-							</svg>
-						</div>
-					)}
 
 					{/* Expander chevron */}
 					{hasChildren ? (
