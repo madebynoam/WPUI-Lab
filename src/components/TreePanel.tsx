@@ -386,8 +386,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 					clickCountRef.current = 0;
 				}, 300);
 			} else if (clickCountRef.current === 2) {
-				// Second click within 300ms - trigger edit and stop propagation
-				e.stopPropagation();
+				// Second click within 300ms - trigger edit (selection still happens via parent onClick)
 				clearTimeout(clickTimeoutRef.current);
 				clickCountRef.current = 0;
 				setEditingNodeId(node.id);
@@ -829,7 +828,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 												pageClickCountRef.current[page.id] = 0;
 											}, 300);
 										} else if (pageClickCountRef.current[page.id] === 2) {
-											e.stopPropagation();
 											clearTimeout(pageClickTimeoutRef.current[page.id]);
 											pageClickCountRef.current[page.id] = 0;
 											setEditingPageId(page.id);
