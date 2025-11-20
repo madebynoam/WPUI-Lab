@@ -353,6 +353,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		const [isHovered, setIsHovered] = useState(false);
 		const [dropPosition, setDropPosition] = useState<DropPosition | null>(null);
 		const ref = useRef<HTMLDivElement>(null);
+		const lastClickTimeRef = useRef<number>(0);
+		const lastClickNodeRef = useRef<string | null>(null);
 
 		const isSelected = selectedNodeIds.includes(node.id);
 		const hasChildren = node.children && node.children.length > 0;
@@ -360,6 +362,26 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		const isExpanded = expandedNodes.has(node.id);
 		const canDropInside =
 			componentRegistry[node.type]?.acceptsChildren !== false || isRootVStack;
+
+		const handleNodeClick = (e: React.MouseEvent) => {
+			const now = Date.now();
+			const isDoubleClick =
+				lastClickNodeRef.current === node.id &&
+				now - lastClickTimeRef.current < 300;
+
+			lastClickTimeRef.current = now;
+			lastClickNodeRef.current = node.id;
+
+			if (isDoubleClick && node.id !== ROOT_VSTACK_ID) {
+				e.stopPropagation();
+				setEditingNodeId(node.id);
+				setEditingNodeName(node.name || "");
+			} else {
+				const multiSelect = e.metaKey || e.ctrlKey;
+				const rangeSelect = e.shiftKey;
+				toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+			}
+		};
 
 		const [{ isDragging }, drag] = useDrag({
 			type: ITEM_TYPE,
@@ -487,11 +509,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							? "1px solid #2271b1"
 							: "1px solid transparent",
 					}}
-					onClick={(e) => {
-						const multiSelect = e.metaKey || e.ctrlKey;
-						const rangeSelect = e.shiftKey;
-						toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-					}}
+					onClick={handleNodeClick}
 					onMouseEnter={() => setIsHovered(true)}
 					onMouseLeave={() => setIsHovered(false)}
 				>
@@ -660,13 +678,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								textOverflow: "ellipsis",
 								cursor: node.id !== ROOT_VSTACK_ID ? "text" : "default",
 								userSelect: "none",
-							}}
-							onDoubleClick={(e) => {
-								e.stopPropagation();
-								if (node.id !== ROOT_VSTACK_ID) {
-									setEditingNodeId(node.id);
-									setEditingNodeName(node.name || "");
-								}
 							}}
 						>
 							{node.id === ROOT_VSTACK_ID
