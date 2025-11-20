@@ -376,7 +376,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		};
 
 		const handleNameClick = (e: React.MouseEvent) => {
-			e.stopPropagation();
 			if (node.id === ROOT_VSTACK_ID) return;
 
 			clickCountRef.current += 1;
@@ -388,6 +387,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 				}, 300);
 			} else if (clickCountRef.current === 2) {
 				// Second click within 300ms - trigger edit
+				e.stopPropagation();
 				clearTimeout(clickTimeoutRef.current);
 				clickCountRef.current = 0;
 				setEditingNodeId(node.id);
@@ -819,7 +819,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 										pointerEvents: "auto",
 									}}
 									onClick={(e: React.MouseEvent) => {
-										e.stopPropagation();
 										if (!pageClickCountRef.current[page.id]) {
 											pageClickCountRef.current[page.id] = 0;
 										}
@@ -830,6 +829,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 												pageClickCountRef.current[page.id] = 0;
 											}, 300);
 										} else if (pageClickCountRef.current[page.id] === 2) {
+											e.stopPropagation();
 											clearTimeout(pageClickTimeoutRef.current[page.id]);
 											pageClickCountRef.current[page.id] = 0;
 											setEditingPageId(page.id);
