@@ -489,7 +489,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							? "#f0f0f1"
 							: "transparent",
 						color: isSelected ? "#fff" : "#1e1e1e",
-						cursor: "pointer",
 						borderRadius: "2px",
 						margin: "0 4px",
 						transition: "background-color 0.05s ease",
@@ -604,20 +603,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 						<div style={{ width: "20px", marginRight: "4px" }} />
 					)}
 
-					{/* Block icon */}
-					<div
-						style={{
-							width: "24px",
-							height: "24px",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							marginRight: "8px",
-							opacity: 0.8,
-						}}
-					>
-						<Icon icon={blockDefault} size={20} />
-					</div>
 
 					{/* Component Name */}
 					{editingNodeId === node.id ? (
@@ -663,9 +648,11 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								overflow: "hidden",
 								textOverflow: "ellipsis",
 								userSelect: "none",
+								pointerEvents: "auto",
 							}}
-							onMouseDown={(e: React.MouseEvent) => {
-								if (node.id !== ROOT_VSTACK_ID && (e as any).detail === 2) {
+							onDoubleClick={(e: React.MouseEvent) => {
+								if (node.id !== ROOT_VSTACK_ID) {
+									e.preventDefault();
 									e.stopPropagation();
 									setEditingNodeId(node.id);
 									setEditingNodeName(node.name || "");
@@ -840,13 +827,13 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 										flex: 1,
 										fontWeight: currentPageId === page.id ? 500 : 400,
 										userSelect: "none",
+										pointerEvents: "auto",
 									}}
-									onMouseDown={(e: React.MouseEvent) => {
-										if ((e as any).detail === 2) {
-											e.stopPropagation();
-											setEditingPageId(page.id);
-											setEditingPageName(page.name);
-										}
+									onDoubleClick={(e: React.MouseEvent) => {
+										e.preventDefault();
+										e.stopPropagation();
+										setEditingPageId(page.id);
+										setEditingPageName(page.name);
 									}}
 								>
 									{page.name}
