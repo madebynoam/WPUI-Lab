@@ -368,10 +368,11 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		};
 
 		const handleNodeDoubleClick = (e: React.MouseEvent) => {
+			console.log("Double-click handler called on node:", node.id, node.name);
 			e.stopPropagation();
 			e.preventDefault();
 			if (node.id !== ROOT_VSTACK_ID) {
-				console.log("Double-click detected on node:", node.id);
+				console.log("Setting editing node to:", node.id, node.name);
 				setEditingNodeId(node.id);
 				setEditingNodeName(node.name || "");
 			}
