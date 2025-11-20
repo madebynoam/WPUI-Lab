@@ -537,9 +537,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 						paddingLeft: `${indentPx}px`,
 						paddingRight: "8px",
 						backgroundColor: isSelected
-							? "#2271b1"
+							? "#3858e9"
 							: showInsideIndicator
-							? "rgba(34, 113, 177, 0.12)"
+							? "rgba(56, 88, 233, 0.12)"
 							: isOver && canDrop
 							? "#e5f5fa"
 							: isHovered
@@ -550,7 +550,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 						margin: "0 4px",
 						transition: "background-color 0.05s ease",
 						border: showInsideIndicator
-							? "1px solid #2271b1"
+							? "1px solid #3858e9"
 							: "1px solid transparent",
 					}}
 					onClick={(e) => {
@@ -670,7 +670,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								flex: 1,
 								fontSize: "13px",
 								padding: "2px 4px",
-								border: "1px solid #007cba",
+								border: "1px solid #3858e9",
 								borderRadius: "2px",
 								outline: "none",
 								backgroundColor: "#fff",
@@ -811,8 +811,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								paddingRight: "8px",
 								paddingLeft: "8px",
 								backgroundColor:
-									currentPageId === page.id ? "#e5f5fa" : "transparent",
-								color: "#1e1e1e",
+									currentPageId === page.id ? "#7b90ff" : "transparent",
+								color: currentPageId === page.id ? "#fff" : "#1e1e1e",
 								borderRadius: "2px",
 								fontSize: "13px",
 							}}
@@ -848,7 +848,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 										flex: 1,
 										fontSize: "13px",
 										padding: "2px 4px",
-										border: "1px solid #007cba",
+										border: "1px solid #3858e9",
 										borderRadius: "2px",
 										outline: "none",
 										backgroundColor: "#fff",

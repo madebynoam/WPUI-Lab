@@ -17,6 +17,7 @@ export const colors = {
   primaryLighter: 'var(--wp--preset--color--blueberry-4, #eff2ff)',
   primaryDark: 'var(--wp-admin-theme-color-darker-20, #213fd4)',
   primaryDarker: 'var(--wp--preset--color--dark-blueberry, #1d35b4)',
+  pageActive: '#7b90ff', // Light blue for active page indicator
 
   // Semantic colors
   surface: '#fff',
@@ -48,12 +49,12 @@ export const colors = {
   info: '#0c5460',
 
   // Grid and visualization
-  gridLine: '#007cba',
-  gridLineLight: 'rgba(0, 124, 186, 0.15)',
-  gridGutter: 'rgba(0, 124, 186, 0.15)',
+  gridLine: '#3858e9',
+  gridLineLight: 'rgba(56, 88, 233, 0.15)',
+  gridGutter: 'rgba(56, 88, 233, 0.15)',
   selectionOutline: '#3858e9',
-  dropIndicator: '#2271b1',
-  dropBackground: 'rgba(34, 113, 177, 0.12)',
+  dropIndicator: '#3858e9',
+  dropBackground: 'rgba(56, 88, 233, 0.12)',
   hoverBackground: '#e5f5fa',
 } as const;
 
