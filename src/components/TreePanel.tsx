@@ -664,7 +664,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								userSelect: "none",
 							}}
 							onDoubleClick={(e) => {
-								console.log("Span double-click on:", node.id);
 								if (node.id !== ROOT_VSTACK_ID) {
 									e.stopPropagation();
 									setEditingNodeId(node.id);
@@ -673,7 +672,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							}}
 						>
 							{node.id === ROOT_VSTACK_ID
-								? "Page"
+								? `📄 ${currentPage?.name || "Untitled"}`
 								: node.name
 								? `${node.name} (${node.type})`
 								: node.type}
