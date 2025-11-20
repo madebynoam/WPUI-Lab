@@ -8,6 +8,14 @@ export interface ComponentNode {
   children?: ComponentNode[];
 }
 
+// Pattern node - same as ComponentNode but without id (assigned on insert)
+export interface PatternNode {
+  type: string;
+  name?: string;
+  props: Record<string, any>;
+  children?: PatternNode[];
+}
+
 export interface Page {
   id: string;
   name: string;

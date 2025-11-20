@@ -31,7 +31,6 @@ import {
   __experimentalTruncate as Truncate,
   Modal,
   Popover,
-  Dropdown,
   MenuGroup,
   MenuItem,
   TabPanel,

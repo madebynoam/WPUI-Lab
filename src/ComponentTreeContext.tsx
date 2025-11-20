@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect, useRef, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useRef, useCallback } from 'react';
 import { ComponentNode, Page, HistoryState } from './types';
 
 const STORAGE_KEY = 'wp-designer-pages';
@@ -131,7 +131,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   // History management
   const MAX_HISTORY_SIZE = 50;
   const isRestoring = useRef(false);
-  const debounceTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const [history, setHistory] = useState<{
     past: HistoryState[];

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { componentRegistry } from '../componentRegistry';
+import { findParent } from '../utils/treeHelpers';
 import {
   TextControl,
   SelectControl,
@@ -13,7 +14,7 @@ export const PropertiesPanel: React.FC = () => {
   const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
-    return selectedNodeIds.map(id => getNodeById(id)).filter(Boolean) as ReturnType<typeof getNodeById>[];
+    return selectedNodeIds.map(id => getNodeById(id)).filter((n): n is NonNullable<ReturnType<typeof getNodeById>> => n !== null);
   }, [selectedNodeIds, getNodeById]);
 
   const isMultiSelect = selectedNodes.length > 1;
@@ -154,19 +155,6 @@ export const PropertiesPanel: React.FC = () => {
   if (!definition) return null;
 
   // Find parent to check if it's a Grid (only for single select)
-  const findParent = (nodes: any[], targetId: string): any => {
-    for (const n of nodes) {
-      if (n.children) {
-        if (n.children.find((c: any) => c.id === targetId)) {
-          return n;
-        }
-        const found = findParent(n.children, targetId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
   const parent = !isMultiSelect ? findParent(tree, selectedNodeIds[0]) : null;
   const isChildOfGrid = parent?.type === 'Grid';
 
