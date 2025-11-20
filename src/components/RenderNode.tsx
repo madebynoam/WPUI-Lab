@@ -218,6 +218,15 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         getItemId: (item: any) => item?.id || `item-${Math.random()}`,
       };
 
+      // Debug logging
+      console.log('DataViews props:', {
+        dataCount: mergedProps.data.length,
+        fieldCount: mergedProps.fields.length,
+        fieldIds: mergedProps.fields.map(f => f.id),
+        sampleData: mergedProps.data.slice(0, 1),
+        view: mergedProps.view,
+      });
+
       return (
         <div
           onClick={(e) => {
