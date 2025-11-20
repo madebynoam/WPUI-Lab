@@ -63,6 +63,10 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
           size="compact"
           icon={showInserter ? closeIcon : plusIcon}
           label={showInserter ? 'Close inserter' : 'Open inserter'}
+          style={{
+            backgroundColor: '#3858e9',
+            color: '#fff',
+          }}
         />
 
         {/* Undo button */}
@@ -73,6 +77,9 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
           size="compact"
           icon={undoIcon}
           label="Undo"
+          style={{
+            color: canUndo ? '#3858e9' : '#ccc',
+          }}
         />
 
         {/* Redo button */}
@@ -83,6 +90,9 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
           size="compact"
           icon={redoIcon}
           label="Redo"
+          style={{
+            color: canRedo ? '#3858e9' : '#ccc',
+          }}
         />
       </div>
 
