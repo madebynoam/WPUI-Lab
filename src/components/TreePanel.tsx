@@ -174,6 +174,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		new Set([ROOT_VSTACK_ID])
 	);
 	const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+	const pageClickCountRef = useRef<Record<string, number>>({});
+	const pageClickTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
 
 	// Get the current page object from the pages array
 	const currentPage = pages.find((page) => page.id === currentPageId);
@@ -357,6 +359,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		const [isHovered, setIsHovered] = useState(false);
 		const [dropPosition, setDropPosition] = useState<DropPosition | null>(null);
 		const ref = useRef<HTMLDivElement>(null);
+		const clickCountRef = useRef(0);
+		const clickTimeoutRef = useRef<NodeJS.Timeout>();
 
 		const isSelected = selectedNodeIds.includes(node.id);
 		const hasChildren = node.children && node.children.length > 0;
@@ -369,6 +373,26 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			const multiSelect = e.metaKey || e.ctrlKey;
 			const rangeSelect = e.shiftKey;
 			toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+		};
+
+		const handleNameClick = (e: React.MouseEvent) => {
+			e.stopPropagation();
+			if (node.id === ROOT_VSTACK_ID) return;
+
+			clickCountRef.current += 1;
+
+			if (clickCountRef.current === 1) {
+				// First click - start timer
+				clickTimeoutRef.current = setTimeout(() => {
+					clickCountRef.current = 0;
+				}, 300);
+			} else if (clickCountRef.current === 2) {
+				// Second click within 300ms - trigger edit
+				clearTimeout(clickTimeoutRef.current);
+				clickCountRef.current = 0;
+				setEditingNodeId(node.id);
+				setEditingNodeName(node.name || "");
+			}
 		};
 
 		const [{ isDragging }, drag] = useDrag({
@@ -620,14 +644,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								userSelect: "none",
 								pointerEvents: "auto",
 							}}
-							onDoubleClick={(e: React.MouseEvent) => {
-								if (node.id !== ROOT_VSTACK_ID) {
-									e.preventDefault();
-									e.stopPropagation();
-									setEditingNodeId(node.id);
-									setEditingNodeName(node.name || "");
-								}
-							}}
+							onClick={handleNameClick}
 						>
 							{node.id === ROOT_VSTACK_ID
 								? <><Icon icon={page} size={16} style={{ marginRight: "4px" }} />{currentPage?.name || "Untitled"}</>
@@ -745,7 +762,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							style={{
 								display: "flex",
 								alignItems: "center",
-								padding: "6px 8px",
+								height: "36px",
+								paddingRight: "8px",
+								paddingLeft: "8px",
 								backgroundColor:
 									currentPageId === page.id ? "#e5f5fa" : "transparent",
 								color: "#1e1e1e",
@@ -799,11 +818,23 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 										userSelect: "none",
 										pointerEvents: "auto",
 									}}
-									onDoubleClick={(e: React.MouseEvent) => {
-										e.preventDefault();
+									onClick={(e: React.MouseEvent) => {
 										e.stopPropagation();
-										setEditingPageId(page.id);
-										setEditingPageName(page.name);
+										if (!pageClickCountRef.current[page.id]) {
+											pageClickCountRef.current[page.id] = 0;
+										}
+										pageClickCountRef.current[page.id] += 1;
+
+										if (pageClickCountRef.current[page.id] === 1) {
+											pageClickTimeoutRef.current[page.id] = setTimeout(() => {
+												pageClickCountRef.current[page.id] = 0;
+											}, 300);
+										} else if (pageClickCountRef.current[page.id] === 2) {
+											clearTimeout(pageClickTimeoutRef.current[page.id]);
+											pageClickCountRef.current[page.id] = 0;
+											setEditingPageId(page.id);
+											setEditingPageName(page.name);
+										}
 									}}
 								>
 									{page.name}
