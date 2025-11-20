@@ -136,7 +136,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
   };
 
   const renderBlocksContent = () => (
-    <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '16px' }}>
       {filteredGroups.length === 0 ? (
         <div
           style={{
@@ -218,7 +218,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
   );
 
   const renderPatternsContent = () => (
-    <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '16px' }}>
       {filteredPatternCategories.length === 0 ? (
         <div
           style={{
@@ -306,7 +306,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
         overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <TabPanel
           className="wp-designer-inserter-tabs"
           activeClass="is-active"
@@ -318,7 +318,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
           initialTabName={inserterTab}
         >
           {() => (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
               {/* Search */}
               <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
                 <SearchControl

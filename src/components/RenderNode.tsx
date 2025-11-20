@@ -184,17 +184,25 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         type: viewType,
         perPage: itemsPerPage,
         page: 1,
+        filters: {},
+        search: '',
+        sort: {
+          field: fields[0]?.id || 'id',
+          direction: 'asc',
+        },
       },
       paginationInfo: {
         offset: 0,
-        pagSize: itemsPerPage,
+        pageSize: itemsPerPage,
         totalItems: mockData.length,
-        infiniteScrollHandler: () => {}, // Stub for infinite scroll
+        totalPages: Math.ceil(mockData.length / itemsPerPage),
       },
       onChangeView: () => {}, // Stub callback
       onChangeSelection: () => {}, // Stub callback
       isLoading: false,
       getItemId: (item: any) => item.id || JSON.stringify(item),
+      actions: [], // Empty actions array
+      selection: [], // Empty selection array
     };
 
     return (
