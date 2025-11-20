@@ -1,7 +1,77 @@
 import React from 'react';
-import { SearchControl } from '@wordpress/components';
+import { SearchControl, Icon } from '@wordpress/components';
+import {
+  paragraph,
+  heading,
+  table,
+  column,
+  button as buttonIcon,
+  box,
+  tag,
+  brush,
+  settings,
+  blockDefault,
+  pages,
+} from '@wordpress/icons';
 import { patterns, patternCategories } from '../patterns';
 import { componentGroups } from './TreePanel';
+
+// Map component types to WordPress icons
+const componentIconMap: Record<string, any> = {
+  // Layout
+  VStack: column,
+  HStack: column,
+  Grid: table,
+  Flex: column,
+  FlexBlock: column,
+  FlexItem: column,
+  // Containers
+  Card: box,
+  CardBody: box,
+  CardHeader: box,
+  Panel: box,
+  PanelBody: box,
+  PanelRow: box,
+  // Content
+  Text: paragraph,
+  Heading: heading,
+  Button: buttonIcon,
+  Icon: pages,
+  // Form Inputs
+  TextControl: tag,
+  TextareaControl: tag,
+  SelectControl: tag,
+  NumberControl: tag,
+  SearchControl: tag,
+  ToggleControl: tag,
+  CheckboxControl: tag,
+  RadioControl: tag,
+  RangeControl: tag,
+  DateTimePicker: tag,
+  FontSizePicker: tag,
+  AnglePickerControl: tag,
+  // Color
+  ColorPicker: brush,
+  ColorPalette: brush,
+  // Advanced
+  BoxControl: settings,
+  BorderControl: settings,
+  FormTokenField: settings,
+  TabPanel: settings,
+  // Interactive
+  Modal: pages,
+  Popover: pages,
+  Dropdown: settings,
+  MenuGroup: settings,
+  MenuItem: settings,
+  Tooltip: pages,
+  Notice: pages,
+  // Utilities
+  Spacer: blockDefault,
+  Divider: blockDefault,
+  Spinner: blockDefault,
+  Truncate: blockDefault,
+};
 
 interface ComponentInserterProps {
   showInserter: boolean;
@@ -78,12 +148,12 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
         borderTop: '1px solid #e0e0e0',
       }}
     >
-      {/* Tabs */}
+      {/* Tabs - WordPress style */}
       <div
         style={{
           display: 'flex',
-          borderBottom: '1px solid #e0e0e0',
-          backgroundColor: '#f9f9f9',
+          borderBottom: '1px solid #ddd',
+          backgroundColor: '#fff',
         }}
       >
         <button
@@ -92,16 +162,25 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
             flex: 1,
             padding: '12px 16px',
             border: 'none',
-            backgroundColor: inserterTab === 'blocks' ? '#fff' : 'transparent',
+            backgroundColor: 'transparent',
             borderBottom:
               inserterTab === 'blocks'
-                ? '2px solid #2271b1'
-                : '2px solid transparent',
+                ? '4px solid #2271b1'
+                : '4px solid transparent',
             cursor: 'pointer',
             fontSize: '13px',
             fontWeight: inserterTab === 'blocks' ? 600 : 400,
-            color: inserterTab === 'blocks' ? '#1e1e1e' : '#666',
+            color: inserterTab === 'blocks' ? '#1e1e1e' : '#757575',
             fontFamily: 'inherit',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (inserterTab !== 'blocks') {
+              e.currentTarget.style.backgroundColor = '#f5f5f5';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
           Blocks
@@ -112,17 +191,25 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
             flex: 1,
             padding: '12px 16px',
             border: 'none',
-            backgroundColor:
-              inserterTab === 'patterns' ? '#fff' : 'transparent',
+            backgroundColor: 'transparent',
             borderBottom:
               inserterTab === 'patterns'
-                ? '2px solid #2271b1'
-                : '2px solid transparent',
+                ? '4px solid #2271b1'
+                : '4px solid transparent',
             cursor: 'pointer',
             fontSize: '13px',
             fontWeight: inserterTab === 'patterns' ? 600 : 400,
-            color: inserterTab === 'patterns' ? '#1e1e1e' : '#666',
+            color: inserterTab === 'patterns' ? '#1e1e1e' : '#757575',
             fontFamily: 'inherit',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (inserterTab !== 'patterns') {
+              e.currentTarget.style.backgroundColor = '#f5f5f5';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
           Patterns
@@ -164,21 +251,23 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
+                    gap: '8px',
                     marginBottom: '12px',
-                    color: '#757575',
-                    fontSize: '12px',
+                    color: '#1e1e1e',
+                    fontSize: '11px',
                     fontWeight: 600,
                     textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
                   }}
                 >
-                  {typeof group.icon === 'string' ? group.icon : ''}
+                  <Icon icon={group.icon} size={16} />
                   {group.name}
                 </div>
                 <div
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '12px',
+                    gap: '8px',
                   }}
                 >
                   {group.components.map((comp) => (
@@ -186,26 +275,35 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                       key={comp}
                       onClick={() => handleAddComponent(comp)}
                       style={{
-                        padding: '12px',
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '4px',
+                        padding: '12px 8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '2px',
                         backgroundColor: '#fff',
                         cursor: 'pointer',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         textAlign: 'center',
-                        transition: 'all 0.2s',
+                        transition: 'all 0.1s',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '6px',
+                        minHeight: '64px',
+                        justifyContent: 'center',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#2271b1';
+                        e.currentTarget.style.borderColor = '#0073aa';
                         e.currentTarget.style.boxShadow =
                           '0 2px 4px rgba(0, 0, 0, 0.1)';
+                        e.currentTarget.style.backgroundColor = '#f9f9f9';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#e0e0e0';
+                        e.currentTarget.style.borderColor = '#ddd';
                         e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.backgroundColor = '#fff';
                       }}
                     >
-                      {comp}
+                      <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
+                      <span style={{ wordBreak: 'break-word' }}>{comp}</span>
                     </button>
                   ))}
                 </div>

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Button } from '@wordpress/components';
+import { undo as undoIcon, redo as redoIcon } from '@wordpress/icons';
+import { Icon } from '@wordpress/components';
 import { useComponentTree } from '../ComponentTreeContext';
 
 interface TopBarProps {
@@ -8,7 +10,7 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }) => {
-  const { pages, currentPageId } = useComponentTree();
+  const { pages, currentPageId, canUndo, canRedo, undo, redo } = useComponentTree();
   const currentPage = pages.find(p => p.id === currentPageId);
 
   return (
@@ -48,10 +50,13 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
         </svg>
       </div>
 
-      {/* Inserter button next to logo */}
+      {/* Inserter button and undo/redo */}
       <div style={{
         gridColumn: '2 / 3',
         paddingLeft: '16px',
+        display: 'flex',
+        gap: '4px',
+        alignItems: 'center',
       }}>
         <button
           onClick={onToggleInserter}
@@ -87,6 +92,66 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
               <path d="M18 11.2h-5.2V6h-1.6v5.2H6v1.6h5.2V18h1.6v-5.2H18z" />
             </svg>
           )}
+        </button>
+
+        {/* Undo button */}
+        <button
+          onClick={undo}
+          disabled={!canUndo}
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '2px',
+            border: 'none',
+            backgroundColor: canUndo ? '#f5f5f5' : '#f0f0f0',
+            color: canUndo ? '#1e1e1e' : '#999',
+            cursor: canUndo ? 'pointer' : 'not-allowed',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.1s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (canUndo) {
+              e.currentTarget.style.backgroundColor = '#e0e0e0';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = canUndo ? '#f5f5f5' : '#f0f0f0';
+          }}
+          aria-label="Undo"
+        >
+          <Icon icon={undoIcon} size={20} />
+        </button>
+
+        {/* Redo button */}
+        <button
+          onClick={redo}
+          disabled={!canRedo}
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '2px',
+            border: 'none',
+            backgroundColor: canRedo ? '#f5f5f5' : '#f0f0f0',
+            color: canRedo ? '#1e1e1e' : '#999',
+            cursor: canRedo ? 'pointer' : 'not-allowed',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.1s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (canRedo) {
+              e.currentTarget.style.backgroundColor = '#e0e0e0';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = canRedo ? '#f5f5f5' : '#f0f0f0';
+          }}
+          aria-label="Redo"
+        >
+          <Icon icon={redoIcon} size={20} />
         </button>
       </div>
 
