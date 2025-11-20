@@ -379,6 +379,11 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       gridColumnSpan: 12,
     };
 
+    // Set default dataSource for DataViews to 'blog'
+    if (componentType === 'DataViews') {
+      props.dataSource = 'blog';
+    }
+
     const newNode: ComponentNode = {
       id: generateId(),
       type: componentType,

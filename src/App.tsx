@@ -6,6 +6,7 @@ import { Canvas } from './components/Canvas';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import '@wordpress/components/build-style/style.css';
 import '@wordpress/block-editor/build-style/style.css';
+import '@wordpress/dataviews/build-style/style.css';
 
 function App() {
   const [showPanels, setShowPanels] = useState(true);

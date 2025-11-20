@@ -196,6 +196,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.name,
+          render: ({ item }: any) => item.name,
         },
         {
           id: 'price',
@@ -204,6 +205,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.price,
+          render: ({ item }: any) => `$${item.price}`,
         },
         {
           id: 'stock',
@@ -212,6 +214,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.stock,
+          render: ({ item }: any) => item.stock,
         },
         {
           id: 'category',
@@ -220,6 +223,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.category,
+          render: ({ item }: any) => item.category,
         },
         {
           id: 'rating',
@@ -228,6 +232,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.rating,
+          render: ({ item }: any) => `${item.rating}★`,
         },
       ];
     case 'users':
@@ -239,6 +244,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.name,
+          render: ({ item }: any) => item.name,
         },
         {
           id: 'email',
@@ -247,6 +253,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.email,
+          render: ({ item }: any) => item.email,
         },
         {
           id: 'role',
@@ -255,6 +262,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.role,
+          render: ({ item }: any) => item.role,
         },
         {
           id: 'status',
@@ -263,6 +271,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.status,
+          render: ({ item }: any) => item.status,
         },
       ];
     case 'blog':
@@ -275,6 +284,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.title,
+          render: ({ item }: any) => item.title,
         },
         {
           id: 'author',
@@ -283,6 +293,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.author,
+          render: ({ item }: any) => item.author,
         },
         {
           id: 'date',
@@ -291,6 +302,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.date,
+          render: ({ item }: any) => item.date,
         },
         {
           id: 'status',
@@ -299,6 +311,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.status,
+          render: ({ item }: any) => item.status,
         },
         {
           id: 'category',
@@ -307,6 +320,7 @@ export function getFieldDefinitions(type: DataSetType = 'blog') {
           enableSorting: true,
           enableHiding: true,
           getValue: (item: any) => item.category,
+          render: ({ item }: any) => item.category,
         },
       ];
   }

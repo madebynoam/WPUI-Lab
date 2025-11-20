@@ -186,8 +186,9 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         console.warn(`DataViews: No field definitions available for source "${dataSource}"`);
       }
 
-      // Ensure valid sort field
+      // Ensure valid sort field and visible fields
       const sortField = fields && fields.length > 0 ? fields[0].id : 'id';
+      const visibleFieldIds = fields ? fields.map(f => f.id) : [];
 
       const mergedProps = {
         data: mockData || [],
@@ -198,6 +199,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
           page: 1,
           filters: [],
           search: '',
+          fields: visibleFieldIds,
           sort: {
             field: sortField,
             direction: 'asc',
@@ -223,9 +225,21 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         dataCount: mergedProps.data.length,
         fieldCount: mergedProps.fields.length,
         fieldIds: mergedProps.fields.map(f => f.id),
+        fields: mergedProps.fields,
         sampleData: mergedProps.data.slice(0, 1),
         view: mergedProps.view,
+        paginationInfo: mergedProps.paginationInfo,
+        defaultLayouts: mergedProps.defaultLayouts,
       });
+
+      // Test getValue functions on sample data
+      if (mergedProps.data.length > 0) {
+        const testItem = mergedProps.data[0];
+        console.log('Testing getValue on first item:', {
+          item: testItem,
+          titleValue: mergedProps.fields[0]?.getValue?.(testItem),
+        });
+      }
 
       return (
         <div
@@ -235,7 +249,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
             const rangeSelect = e.shiftKey;
             toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
           }}
-          style={getWrapperStyle()}
+          style={getWrapperStyle({ minHeight: '400px', height: '100%' })}
         >
           <Component {...mergedProps} />
         </div>
