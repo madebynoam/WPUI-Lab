@@ -379,16 +379,19 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			if (node.id === ROOT_VSTACK_ID) return;
 
 			clickCountRef.current += 1;
+			console.log("Click count for", node.id, ":", clickCountRef.current);
 
 			if (clickCountRef.current === 1) {
 				// First click - start timer
 				clickTimeoutRef.current = setTimeout(() => {
 					clickCountRef.current = 0;
+					console.log("Double-click timeout for", node.id);
 				}, 300);
 			} else if (clickCountRef.current === 2) {
 				// Second click within 300ms - trigger edit (selection still happens via parent onClick)
 				clearTimeout(clickTimeoutRef.current);
 				clickCountRef.current = 0;
+				console.log("Double-click detected for", node.id, "- entering edit mode");
 				setEditingNodeId(node.id);
 				setEditingNodeName(node.name || "");
 			}
@@ -822,14 +825,17 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 											pageClickCountRef.current[page.id] = 0;
 										}
 										pageClickCountRef.current[page.id] += 1;
+										console.log("Page click count for", page.id, ":", pageClickCountRef.current[page.id]);
 
 										if (pageClickCountRef.current[page.id] === 1) {
 											pageClickTimeoutRef.current[page.id] = setTimeout(() => {
 												pageClickCountRef.current[page.id] = 0;
+												console.log("Page double-click timeout for", page.id);
 											}, 300);
 										} else if (pageClickCountRef.current[page.id] === 2) {
 											clearTimeout(pageClickTimeoutRef.current[page.id]);
 											pageClickCountRef.current[page.id] = 0;
+											console.log("Page double-click detected for", page.id, "- entering edit mode");
 											setEditingPageId(page.id);
 											setEditingPageName(page.name);
 										}
