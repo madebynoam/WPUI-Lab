@@ -9,6 +9,48 @@
   --wp--preset--color--dark-blueberry: #1d35b4;
 }
 
+/* Override WordPress Button component colors */
+.wp-components-button.is-primary {
+  background-color: #3858e9 !important;
+  border-color: #3858e9 !important;
+  color: #fff !important;
+}
+
+.wp-components-button.is-primary:hover,
+.wp-components-button.is-primary:focus {
+  background-color: #213fd4 !important;
+  border-color: #213fd4 !important;
+}
+
+.wp-components-button.is-primary:active {
+  background-color: #1d35b4 !important;
+  border-color: #1d35b4 !important;
+}
+
+/* Override secondary button */
+.wp-components-button.is-secondary {
+  color: #3858e9 !important;
+  border-color: #3858e9 !important;
+}
+
+.wp-components-button.is-secondary:hover,
+.wp-components-button.is-secondary:focus {
+  background-color: rgba(56, 88, 233, 0.04) !important;
+  color: #213fd4 !important;
+  border-color: #213fd4 !important;
+}
+
+/* Override tertiary button */
+.wp-components-button.is-tertiary {
+  color: #3858e9 !important;
+}
+
+.wp-components-button.is-tertiary:hover,
+.wp-components-button.is-tertiary:focus {
+  color: #213fd4 !important;
+  background-color: rgba(56, 88, 233, 0.04) !important;
+}
+
 * {
   box-sizing: border-box;
 }
