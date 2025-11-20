@@ -204,17 +204,18 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
           },
         },
         paginationInfo: {
-          offset: 0,
-          pageSize: itemsPerPage,
           totalItems: (mockData || []).length,
           totalPages: Math.ceil((mockData || []).length / itemsPerPage),
         },
-        onChangeView: () => {}, // Stub callback
-        onChangeSelection: () => {}, // Stub callback
-        isLoading: false,
+        // REQUIRED: defaultLayouts tells DataViews which layout types are available
+        // Without this, DataViews crashes with "Cannot convert undefined or null to object"
+        defaultLayouts: {
+          table: {},
+          grid: {},
+          list: {},
+        },
+        onChangeView: () => {}, // Required callback
         getItemId: (item: any) => item?.id || `item-${Math.random()}`,
-        actions: [], // Empty actions array
-        selection: [], // Empty selection array
       };
 
       return (
