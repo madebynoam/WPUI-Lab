@@ -184,7 +184,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         type: viewType,
         perPage: itemsPerPage,
         page: 1,
-        filters: {},
+        filters: [],
         search: '',
         sort: {
           field: fields[0]?.id || 'id',
