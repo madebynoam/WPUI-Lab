@@ -1,5 +1,5 @@
 import React from 'react';
-import { SearchControl, Icon } from '@wordpress/components';
+import { SearchControl, Icon, TabPanel } from '@wordpress/components';
 import {
   paragraph,
   heading,
@@ -133,6 +133,161 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
     onSearchChange('');
   };
 
+  const renderBlocksContent = () => (
+    <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+      {filteredGroups.length === 0 ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '24px',
+            color: '#757575',
+            fontSize: '13px',
+          }}
+        >
+          No blocks found
+        </div>
+      ) : (
+        filteredGroups.map((group) => (
+          <div key={group.name} style={{ marginBottom: '24px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                color: '#1e1e1e',
+                fontSize: '11px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              <Icon icon={group.icon} size={16} />
+              {group.name}
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '8px',
+              }}
+            >
+              {group.components.map((comp) => (
+                <button
+                  key={comp}
+                  onClick={() => handleAddComponent(comp)}
+                  style={{
+                    padding: '12px 8px',
+                    border: '1px solid #ddd',
+                    borderRadius: '2px',
+                    backgroundColor: '#fff',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    textAlign: 'center',
+                    transition: 'all 0.1s',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    minHeight: '64px',
+                    justifyContent: 'center',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#0073aa';
+                    e.currentTarget.style.boxShadow =
+                      '0 2px 4px rgba(0, 0, 0, 0.1)';
+                    e.currentTarget.style.backgroundColor = '#f9f9f9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#ddd';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.backgroundColor = '#fff';
+                  }}
+                >
+                  <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
+                  <span style={{ wordBreak: 'break-word' }}>{comp}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
+  const renderPatternsContent = () => (
+    <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+      {filteredPatternCategories.length === 0 ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '24px',
+            color: '#757575',
+            fontSize: '13px',
+          }}
+        >
+          No patterns found
+        </div>
+      ) : (
+        filteredPatternCategories.map((cat) => (
+          <div key={cat.category} style={{ marginBottom: '24px' }}>
+            <div
+              style={{
+                marginBottom: '12px',
+                color: '#757575',
+                fontSize: '12px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+              }}
+            >
+              {cat.category}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {cat.patterns.map((pattern) => (
+                <button
+                  key={pattern.id}
+                  onClick={() => handleAddPattern(pattern.id)}
+                  style={{
+                    padding: '12px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '4px',
+                    backgroundColor: '#fff',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#2271b1';
+                    e.currentTarget.style.boxShadow =
+                      '0 2px 4px rgba(0, 0, 0, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#e0e0e0';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 500,
+                      color: '#1e1e1e',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    {pattern.name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    {pattern.description}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
   return (
     <div
       style={{
@@ -148,237 +303,39 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
         borderTop: '1px solid #e0e0e0',
       }}
     >
-      {/* Tabs - WordPress style */}
-      <div
-        style={{
-          display: 'flex',
-          borderBottom: '1px solid #ddd',
-          backgroundColor: '#fff',
-        }}
+      <TabPanel
+        className="wp-designer-inserter-tabs"
+        activeClass="is-active"
+        onSelect={(tab) => onTabChange(tab as 'blocks' | 'patterns')}
+        tabs={[
+          { name: 'blocks', title: 'Blocks' },
+          { name: 'patterns', title: 'Patterns' },
+        ]}
+        initialTabName={inserterTab}
       >
-        <button
-          onClick={() => onTabChange('blocks')}
-          style={{
-            flex: 1,
-            padding: '12px 16px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            borderBottom:
-              inserterTab === 'blocks'
-                ? '4px solid #2271b1'
-                : '4px solid transparent',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: inserterTab === 'blocks' ? 600 : 400,
-            color: inserterTab === 'blocks' ? '#1e1e1e' : '#757575',
-            fontFamily: 'inherit',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            if (inserterTab !== 'blocks') {
-              e.currentTarget.style.backgroundColor = '#f5f5f5';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          Blocks
-        </button>
-        <button
-          onClick={() => onTabChange('patterns')}
-          style={{
-            flex: 1,
-            padding: '12px 16px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            borderBottom:
-              inserterTab === 'patterns'
-                ? '4px solid #2271b1'
-                : '4px solid transparent',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: inserterTab === 'patterns' ? 600 : 400,
-            color: inserterTab === 'patterns' ? '#1e1e1e' : '#757575',
-            fontFamily: 'inherit',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            if (inserterTab !== 'patterns') {
-              e.currentTarget.style.backgroundColor = '#f5f5f5';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          Patterns
-        </button>
-      </div>
-
-      {/* Search */}
-      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
-        <SearchControl
-          value={searchTerm}
-          onChange={onSearchChange}
-          placeholder={
-            inserterTab === 'blocks'
-              ? 'Search blocks...'
-              : 'Search patterns...'
-          }
-          __nextHasNoMarginBottom
-        />
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-        {inserterTab === 'blocks' ? (
-          filteredGroups.length === 0 ? (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '24px',
-                color: '#757575',
-                fontSize: '13px',
-              }}
-            >
-              No blocks found
+        {() => (
+          <>
+            {/* Search */}
+            <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
+              <SearchControl
+                value={searchTerm}
+                onChange={onSearchChange}
+                placeholder={
+                  inserterTab === 'blocks'
+                    ? 'Search blocks...'
+                    : 'Search patterns...'
+                }
+                __nextHasNoMarginBottom
+              />
             </div>
-          ) : (
-            filteredGroups.map((group) => (
-              <div key={group.name} style={{ marginBottom: '24px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '12px',
-                    color: '#1e1e1e',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  <Icon icon={group.icon} size={16} />
-                  {group.name}
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '8px',
-                  }}
-                >
-                  {group.components.map((comp) => (
-                    <button
-                      key={comp}
-                      onClick={() => handleAddComponent(comp)}
-                      style={{
-                        padding: '12px 8px',
-                        border: '1px solid #ddd',
-                        borderRadius: '2px',
-                        backgroundColor: '#fff',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        textAlign: 'center',
-                        transition: 'all 0.1s',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '6px',
-                        minHeight: '64px',
-                        justifyContent: 'center',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#0073aa';
-                        e.currentTarget.style.boxShadow =
-                          '0 2px 4px rgba(0, 0, 0, 0.1)';
-                        e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#ddd';
-                        e.currentTarget.style.boxShadow = 'none';
-                        e.currentTarget.style.backgroundColor = '#fff';
-                      }}
-                    >
-                      <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
-                      <span style={{ wordBreak: 'break-word' }}>{comp}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))
-          )
-        ) : filteredPatternCategories.length === 0 ? (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '24px',
-              color: '#757575',
-              fontSize: '13px',
-            }}
-          >
-            No patterns found
-          </div>
-        ) : (
-          filteredPatternCategories.map((cat) => (
-            <div key={cat.category} style={{ marginBottom: '24px' }}>
-              <div
-                style={{
-                  marginBottom: '12px',
-                  color: '#757575',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                }}
-              >
-                {cat.category}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {cat.patterns.map((pattern) => (
-                  <button
-                    key={pattern.id}
-                    onClick={() => handleAddPattern(pattern.id)}
-                    style={{
-                      padding: '12px',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      textAlign: 'left',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#2271b1';
-                      e.currentTarget.style.boxShadow =
-                        '0 2px 4px rgba(0, 0, 0, 0.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#e0e0e0';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 500,
-                        color: '#1e1e1e',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      {pattern.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                      {pattern.description}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))
+
+            {/* Content */}
+            {inserterTab === 'blocks'
+              ? renderBlocksContent()
+              : renderPatternsContent()}
+          </>
         )}
-      </div>
+      </TabPanel>
     </div>
   );
 };

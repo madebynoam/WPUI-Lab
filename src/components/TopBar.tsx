@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from '@wordpress/components';
-import { undo as undoIcon, redo as redoIcon } from '@wordpress/icons';
-import { Icon } from '@wordpress/components';
+import { undo as undoIcon, redo as redoIcon, plus as plusIcon, close as closeIcon } from '@wordpress/icons';
 import { useComponentTree } from '../ComponentTreeContext';
 
 interface TopBarProps {
@@ -58,101 +57,33 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
         gap: '4px',
         alignItems: 'center',
       }}>
-        <button
+        <Button
           onClick={onToggleInserter}
-          style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '2px',
-            border: 'none',
-            backgroundColor: showInserter ? '#135e96' : '#2271b1',
-            color: '#fff',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background-color 0.1s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#135e96';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = showInserter ? '#135e96' : '#2271b1';
-          }}
-          aria-label={showInserter ? 'Close inserter' : 'Open inserter'}
-        >
-          {showInserter ? (
-            // X icon
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1-6.5-6.7z" />
-            </svg>
-          ) : (
-            // + icon
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18 11.2h-5.2V6h-1.6v5.2H6v1.6h5.2V18h1.6v-5.2H18z" />
-            </svg>
-          )}
-        </button>
+          variant="primary"
+          size="compact"
+          icon={showInserter ? closeIcon : plusIcon}
+          label={showInserter ? 'Close inserter' : 'Open inserter'}
+        />
 
         {/* Undo button */}
-        <button
+        <Button
           onClick={undo}
           disabled={!canUndo}
-          style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '2px',
-            border: 'none',
-            backgroundColor: canUndo ? '#f5f5f5' : '#f0f0f0',
-            color: canUndo ? '#1e1e1e' : '#999',
-            cursor: canUndo ? 'pointer' : 'not-allowed',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.1s ease',
-          }}
-          onMouseEnter={(e) => {
-            if (canUndo) {
-              e.currentTarget.style.backgroundColor = '#e0e0e0';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = canUndo ? '#f5f5f5' : '#f0f0f0';
-          }}
-          aria-label="Undo"
-        >
-          <Icon icon={undoIcon} size={20} />
-        </button>
+          variant="tertiary"
+          size="compact"
+          icon={undoIcon}
+          label="Undo"
+        />
 
         {/* Redo button */}
-        <button
+        <Button
           onClick={redo}
           disabled={!canRedo}
-          style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '2px',
-            border: 'none',
-            backgroundColor: canRedo ? '#f5f5f5' : '#f0f0f0',
-            color: canRedo ? '#1e1e1e' : '#999',
-            cursor: canRedo ? 'pointer' : 'not-allowed',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.1s ease',
-          }}
-          onMouseEnter={(e) => {
-            if (canRedo) {
-              e.currentTarget.style.backgroundColor = '#e0e0e0';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = canRedo ? '#f5f5f5' : '#f0f0f0';
-          }}
-          aria-label="Redo"
-        >
-          <Icon icon={redoIcon} size={20} />
-        </button>
+          variant="tertiary"
+          size="compact"
+          icon={redoIcon}
+          label="Redo"
+        />
       </div>
 
       {/* Center - Document Bar */}
