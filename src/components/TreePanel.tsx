@@ -353,8 +353,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		const [isHovered, setIsHovered] = useState(false);
 		const [dropPosition, setDropPosition] = useState<DropPosition | null>(null);
 		const ref = useRef<HTMLDivElement>(null);
-		const lastClickTimeRef = useRef<number>(0);
-		const lastClickNodeRef = useRef<string | null>(null);
 
 		const isSelected = selectedNodeIds.includes(node.id);
 		const hasChildren = node.children && node.children.length > 0;
@@ -364,22 +362,18 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			componentRegistry[node.type]?.acceptsChildren !== false || isRootVStack;
 
 		const handleNodeClick = (e: React.MouseEvent) => {
-			const now = Date.now();
-			const isDoubleClick =
-				lastClickNodeRef.current === node.id &&
-				now - lastClickTimeRef.current < 300;
+			const multiSelect = e.metaKey || e.ctrlKey;
+			const rangeSelect = e.shiftKey;
+			toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+		};
 
-			lastClickTimeRef.current = now;
-			lastClickNodeRef.current = node.id;
-
-			if (isDoubleClick && node.id !== ROOT_VSTACK_ID) {
-				e.stopPropagation();
+		const handleNodeDoubleClick = (e: React.MouseEvent) => {
+			e.stopPropagation();
+			e.preventDefault();
+			if (node.id !== ROOT_VSTACK_ID) {
+				console.log("Double-click detected on node:", node.id);
 				setEditingNodeId(node.id);
 				setEditingNodeName(node.name || "");
-			} else {
-				const multiSelect = e.metaKey || e.ctrlKey;
-				const rangeSelect = e.shiftKey;
-				toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
 			}
 		};
 
@@ -510,6 +504,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							: "1px solid transparent",
 					}}
 					onClick={handleNodeClick}
+					onDoubleClick={handleNodeDoubleClick}
 					onMouseEnter={() => setIsHovered(true)}
 					onMouseLeave={() => setIsHovered(false)}
 				>
