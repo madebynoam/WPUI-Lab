@@ -7,7 +7,7 @@ import { RenderNode } from './RenderNode';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 
 export const Canvas: React.FC = () => {
-  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo } = useComponentTree();
+  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent } = useComponentTree();
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
@@ -46,6 +46,19 @@ export const Canvas: React.FC = () => {
     return findInTree(tree);
   }, [tree]);
 
+  // Helper to check if we're in edit mode (text input, contenteditable, etc.)
+  const isInEditMode = useCallback(() => {
+    const activeElement = document.activeElement;
+    if (!activeElement) return false;
+
+    const isEditable =
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      (activeElement as HTMLElement).contentEditable === 'true';
+
+    return isEditable;
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -60,6 +73,39 @@ export const Canvas: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z' && canRedo) {
         e.preventDefault();
         redo();
+        return;
+      }
+
+      // Delete key to remove selected component (skip if in edit mode)
+      if (e.key === 'Delete' && selectedNodeIds.length > 0 && !isInEditMode()) {
+        e.preventDefault();
+        // Remove each selected component
+        selectedNodeIds.forEach(id => {
+          if (id !== ROOT_VSTACK_ID) { // Don't delete root
+            removeComponent(id);
+          }
+        });
+        return;
+      }
+
+      // Cmd/Ctrl+C for copy
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedNodeIds.length > 0 && !isInEditMode()) {
+        e.preventDefault();
+        copyComponent(selectedNodeIds[0]);
+        return;
+      }
+
+      // Cmd/Ctrl+V for paste
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && canPaste && !isInEditMode()) {
+        e.preventDefault();
+        pasteComponent();
+        return;
+      }
+
+      // Cmd/Ctrl+D for duplicate in same parent
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && selectedNodeIds.length > 0 && !isInEditMode()) {
+        e.preventDefault();
+        duplicateComponent(selectedNodeIds[0]);
         return;
       }
 
@@ -101,7 +147,7 @@ export const Canvas: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodeIds, tree, toggleNodeSelection, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo]);
+  }, [selectedNodeIds, tree, toggleNodeSelection, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isInEditMode]);
 
   // Check if selected node is an interactive component or a child of one
   const interactiveAncestor = selectedNodeIds.length > 0 ? findInteractiveAncestor(selectedNodeIds[0]) : null;

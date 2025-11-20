@@ -160,6 +160,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		setTree,
 		getParentById,
 		getNodeById,
+		copyComponent,
+		pasteComponent,
+		canPaste,
 	} = useComponentTree();
 
 	const [inserterTab, setInserterTab] = useState<"blocks" | "patterns">(
@@ -723,6 +726,12 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 										</MenuItem>
 										<MenuItem onClick={() => duplicateComponent(node.id)}>
 											Duplicate
+										</MenuItem>
+										<MenuItem onClick={() => copyComponent(node.id)}>
+											Copy
+										</MenuItem>
+										<MenuItem onClick={() => pasteComponent(node.id)} disabled={!canPaste}>
+											Paste
 										</MenuItem>
 										<MenuItem
 											onClick={() => removeComponent(node.id)}

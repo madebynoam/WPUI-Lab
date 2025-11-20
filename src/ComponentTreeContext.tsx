@@ -24,6 +24,12 @@ interface ComponentTreeContextType {
   gridLinesVisible: Set<string>;
   toggleGridLines: (id: string) => void;
 
+  // Copy/Paste management
+  clipboard: ComponentNode | null;
+  copyComponent: (id: string) => void;
+  pasteComponent: (parentId?: string) => void;
+  canPaste: boolean;
+
   // Pages management
   pages: Page[];
   currentPageId: string;
@@ -127,6 +133,9 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([ROOT_VSTACK_ID]);
   const [gridLinesVisible, setGridLinesVisible] = useState<Set<string>>(new Set());
+
+  // Copy/Paste management
+  const [clipboard, setClipboard] = useState<ComponentNode | null>(null);
 
   // History management
   const MAX_HISTORY_SIZE = 50;
@@ -615,6 +624,58 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     setTree(newTree);
   };
 
+  const deepClone = (node: ComponentNode): ComponentNode => ({
+    ...node,
+    id: generateId(),
+    children: node.children?.map(deepClone),
+  });
+
+  const copyComponent = (id: string) => {
+    const node = getNodeById(id);
+    if (node) {
+      setClipboard(deepClone(node));
+    }
+  };
+
+  const pasteComponent = (parentId?: string) => {
+    if (!clipboard) return;
+
+    const targetParentId = parentId || selectedNodeIds[0] || ROOT_VSTACK_ID;
+    const targetNode = getNodeById(targetParentId);
+
+    // If target is not a container, find its parent
+    let actualParentId = targetParentId;
+    if (targetNode && !componentRegistry[targetNode.type]?.acceptsChildren && targetParentId !== ROOT_VSTACK_ID) {
+      const parent = getParentById(targetParentId);
+      if (parent) {
+        actualParentId = parent.id;
+      }
+    }
+
+    // Clone the clipboard content
+    const cloned = deepClone(clipboard);
+
+    // Insert into parent
+    const insertIntoParent = (nodes: ComponentNode[]): ComponentNode[] => {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === actualParentId) {
+          if (!nodes[i].children) {
+            nodes[i].children = [];
+          }
+          nodes[i].children!.push(cloned);
+          setSelectedNodeIds([cloned.id]);
+          return nodes;
+        }
+        if (nodes[i].children) {
+          nodes[i].children = insertIntoParent(nodes[i].children);
+        }
+      }
+      return nodes;
+    };
+
+    setTree([...insertIntoParent([...tree])]);
+  };
+
   const resetTree = () => {
     // Reset to a single clean default page
     const defaultPage = createInitialPage('page-1', 'Page 1');
@@ -724,6 +785,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         getParentById: (id) => getParentById(id),
         gridLinesVisible,
         toggleGridLines,
+        clipboard,
+        copyComponent,
+        pasteComponent,
+        canPaste: clipboard !== null,
         pages,
         currentPageId,
         setCurrentPage,
