@@ -37,7 +37,7 @@ function App() {
         )}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {showPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
-          <Canvas />
+          <Canvas showBreadcrumb={showHeader} />
           {showPanels && <PropertiesPanel />}
         </div>
       </div>

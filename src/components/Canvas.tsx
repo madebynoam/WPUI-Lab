@@ -6,7 +6,11 @@ import { findParent } from '../utils/treeHelpers';
 import { RenderNode } from './RenderNode';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 
-export const Canvas: React.FC = () => {
+interface CanvasProps {
+  showBreadcrumb?: boolean;
+}
+
+export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent } = useComponentTree();
 
   // Get page-level properties from root VStack
@@ -221,7 +225,7 @@ export const Canvas: React.FC = () => {
           )}
         </div>
       </div>
-      <Breadcrumb />
+      {showBreadcrumb && <Breadcrumb />}
     </div>
   );
 };
