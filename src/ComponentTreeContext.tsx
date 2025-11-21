@@ -401,6 +401,17 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       children: [],
     };
 
+    // Add CardBody as default child for Card component
+    if (componentType === 'Card') {
+      const cardBodyNode: ComponentNode = {
+        id: generateId(),
+        type: 'CardBody',
+        props: {},
+        children: [],
+      };
+      newNode.children = [cardBodyNode];
+    }
+
     if (!parentId) {
       setTree([...tree, newNode]);
     } else {
