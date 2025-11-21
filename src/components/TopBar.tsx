@@ -92,9 +92,9 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
             onClick={onToggleInserter}
             title={showInserter ? 'Close inserter' : 'Open inserter'}
             style={{
-              backgroundColor: showInserter ? 'rgba(56, 88, 233, 0.15)' : 'transparent',
-              color: showInserter ? '#3858e9' : '#666',
-              border: showInserter ? '1px solid #3858e9' : 'none',
+              backgroundColor: showInserter ? '#1e1e1e' : 'transparent',
+              color: showInserter ? '#fff' : '#666',
+              border: 'none',
               borderRadius: '2px',
               cursor: 'pointer',
             }}
@@ -106,9 +106,9 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
             onClick={onToggleTreePanel}
             title={showTreePanel ? 'Close layers' : 'Open layers'}
             style={{
-              backgroundColor: showTreePanel ? 'rgba(56, 88, 233, 0.15)' : 'transparent',
-              color: showTreePanel ? '#3858e9' : '#666',
-              border: showTreePanel ? '1px solid #3858e9' : 'none',
+              backgroundColor: showTreePanel ? '#1e1e1e' : 'transparent',
+              color: showTreePanel ? '#fff' : '#666',
+              border: 'none',
               borderRadius: '2px',
               cursor: 'pointer',
             }}
@@ -153,9 +153,9 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
             onClick={() => onToggleRightPanel(rightPanel === 'props' ? 'none' : 'props')}
             title="Toggle properties panel"
             style={{
-              backgroundColor: rightPanel === 'props' ? 'rgba(56, 88, 233, 0.15)' : 'transparent',
-              color: rightPanel === 'props' ? '#3858e9' : '#666',
-              border: rightPanel === 'props' ? '1px solid #3858e9' : 'none',
+              backgroundColor: rightPanel === 'props' ? '#1e1e1e' : 'transparent',
+              color: rightPanel === 'props' ? '#fff' : '#666',
+              border: 'none',
               borderRadius: '2px',
               cursor: 'pointer',
             }}
@@ -167,9 +167,9 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
             onClick={() => onToggleRightPanel(rightPanel === 'code' ? 'none' : 'code')}
             title="Toggle code panel"
             style={{
-              backgroundColor: rightPanel === 'code' ? 'rgba(56, 88, 233, 0.15)' : 'transparent',
-              color: rightPanel === 'code' ? '#3858e9' : '#666',
-              border: rightPanel === 'code' ? '1px solid #3858e9' : 'none',
+              backgroundColor: rightPanel === 'code' ? '#1e1e1e' : 'transparent',
+              color: rightPanel === 'code' ? '#fff' : '#666',
+              border: 'none',
               borderRadius: '2px',
               cursor: 'pointer',
             }}
