@@ -23,7 +23,12 @@ export const generateComponentCode = (
 /**
  * Generate code for a single node
  */
-function generateNodeCode(node: ComponentNode, indent: number, includeInteractions: boolean): string {
+function generateNodeCode(
+  node: ComponentNode,
+  indent: number,
+  includeInteractions: boolean,
+  handlerMap?: Record<string, string>
+): string {
   const indentStr = '  '.repeat(indent);
   const componentName = node.type;
 
@@ -36,12 +41,18 @@ function generateNodeCode(node: ComponentNode, indent: number, includeInteractio
 
   // Generate props string
   const propEntries = Object.entries(props).filter(([, value]) => value !== undefined);
-  const propsStr = propEntries.length > 0 ? ` ${generatePropsString(propEntries)}` : '';
+  let propsStr = propEntries.length > 0 ? ` ${generatePropsString(propEntries)}` : '';
+
+  // Add onClick handler if node has interactions and handler map provided
+  if (handlerMap && node.id in handlerMap && node.interactions && node.interactions.length > 0) {
+    const handlerName = handlerMap[node.id];
+    propsStr += ` onClick={${handlerName}}`;
+  }
 
   // Handle components with children
   if (node.children && node.children.length > 0) {
     const childrenCode = node.children
-      .map((child) => generateNodeCode(child, indent + 1, includeInteractions))
+      .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap))
       .join('\n');
 
     return `${indentStr}<${componentName}${propsStr}>\n${childrenCode}\n${indentStr}</${componentName}>`;
@@ -91,7 +102,7 @@ function generatePropsString(entries: [string, any][]): string {
 }
 
 /**
- * Generate full page component code with imports
+ * Generate full page component code with imports and handlers
  */
 export const generatePageCode = (nodes: ComponentNode[]): string => {
   // Collect all unique component types used
@@ -103,6 +114,28 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
     }
   };
   nodes.forEach(collectComponents);
+
+  // Collect all interactions and create handler map
+  const handlerMap: Record<string, string> = {};
+  const handlers: string[] = [];
+  const collectInteractions = (node: ComponentNode) => {
+    if (node.interactions && node.interactions.length > 0) {
+      node.interactions.forEach((interaction) => {
+        const handlerName = `handle${interaction.id.charAt(0).toUpperCase()}${interaction.id.slice(1)}`;
+        handlerMap[node.id] = handlerName;
+
+        if (interaction.trigger === 'onClick' && interaction.action === 'navigate') {
+          handlers.push(
+            `  const ${handlerName} = () => {\n    window.location.hash = '/${interaction.targetId}';\n  };`
+          );
+        }
+      });
+    }
+    if (node.children) {
+      node.children.forEach(collectInteractions);
+    }
+  };
+  nodes.forEach(collectInteractions);
 
   // Generate imports
   const imports: string[] = [];
@@ -116,13 +149,18 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
 
   imports.push('');
 
-  // Generate component code
-  const componentCode = generateComponentCode(nodes, { indent: 0 });
+  // Generate component code with handlers
+  const componentCode = nodes
+    .map((n) => generateNodeCode(n, 0, true, handlerMap))
+    .join('\n');
+
+  // Build handler section
+  const handlersSection = handlers.length > 0 ? `${handlers.join('\n\n')}\n\n` : '';
 
   // Wrap in a component
   const fullCode = `${imports.join('\n')}
 export default function Page() {
-  return (
+${handlersSection}  return (
     <>
 ${componentCode
   .split('\n')
@@ -143,33 +181,25 @@ export const generateComponentWithInteractions = (node: ComponentNode): string =
     return generateComponentCode(node);
   }
 
-  const indentStr = '  ';
-  const componentName = node.type;
+  // Create handler map for this node
+  const handlerMap: Record<string, string> = {};
+  const handlers: string[] = [];
 
-  // Generate interaction handlers
-  const handlers = node.interactions
-    .map((interaction) => {
-      if (interaction.trigger === 'onClick' && interaction.action === 'navigate') {
-        return `const navigate${interaction.id} = () => {\n${indentStr}${indentStr}// Navigate to page ${interaction.targetId}\n${indentStr}${indentStr}window.location.hash = '/${interaction.targetId}';\n${indentStr}};`;
-      }
-      return '';
-    })
-    .filter((h) => h.length > 0)
-    .join('\n\n');
+  node.interactions.forEach((interaction) => {
+    const handlerName = `handle${interaction.id.charAt(0).toUpperCase()}${interaction.id.slice(1)}`;
+    handlerMap[node.id] = handlerName;
 
-  // Generate onClick handler
-  const onClickHandler = node.interactions
-    .map((i) => `navigate${i.id}`)
-    .join(' || ');
+    if (interaction.trigger === 'onClick' && interaction.action === 'navigate') {
+      handlers.push(
+        `  const ${handlerName} = () => {\n    window.location.hash = '/${interaction.targetId}';\n  };`
+      );
+    }
+  });
 
-  const props = { ...node.props };
-  delete props.content;
-  delete props.text;
+  // Generate component code with handler
+  const componentCode = generateNodeCode(node, 0, true, handlerMap);
 
-  const propsStr = generatePropsString(Object.entries(props));
-  const finalProps = onClickHandler ? `${propsStr} onClick={${onClickHandler}}` : propsStr;
+  const handlersSection = handlers.length > 0 ? `${handlers.join('\n\n')}\n\n` : '';
 
-  const code = `${handlers}\n\nreturn <${node.type} ${finalProps} />;`;
-
-  return code;
+  return `${handlersSection}${componentCode}`;
 };
