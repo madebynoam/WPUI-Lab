@@ -9,9 +9,9 @@ import {
   __experimentalNumberControl as NumberControl,
   ColorPicker,
   Button,
-  Icon,
+  TabPanel,
 } from '@wordpress/components';
-import { plus as plusIcon, trash as trashIcon, settings as settingsIcon, connection as connectionIcon } from '@wordpress/icons';
+import { plus as plusIcon, trash as trashIcon } from '@wordpress/icons';
 import { IconPicker } from './IconPicker';
 
 export const PropertiesPanel: React.FC = () => {
@@ -436,44 +436,32 @@ export const PropertiesPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab buttons */}
+      {/* WordPress TabPanel */}
       {!isMultiSelect && (
-        <div style={{
-          display: 'flex',
-          borderBottom: '1px solid #e0e0e0',
-          backgroundColor: '#fafafa',
-        }}>
-          <Button
-            onClick={() => setActiveTab('styles')}
-            icon={settingsIcon}
-            style={{
-              flex: 1,
-              backgroundColor: activeTab === 'styles' ? '#fff' : 'transparent',
-              borderRight: '1px solid #e0e0e0',
-              borderRadius: 0,
-              color: activeTab === 'styles' ? '#1e1e1e' : '#999',
-              fontSize: '12px',
-            }}
-            title="Styles"
-          />
-          <Button
-            onClick={() => setActiveTab('interactions')}
-            icon={connectionIcon}
-            style={{
-              flex: 1,
-              backgroundColor: activeTab === 'interactions' ? '#fff' : 'transparent',
-              borderRadius: 0,
-              color: activeTab === 'interactions' ? '#1e1e1e' : '#999',
-              fontSize: '12px',
-            }}
-            title="Interactions"
-          />
-        </div>
+        <TabPanel
+          className="wp-designer-properties__tabs"
+          tabs={[
+            {
+              name: 'styles',
+              title: 'Styles',
+              className: 'wp-designer-tab-styles',
+            },
+            {
+              name: 'interactions',
+              title: 'Interactions',
+              className: 'wp-designer-tab-interactions',
+            },
+          ]}
+          onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
+          selectedTab={activeTab}
+        >
+          {activeTab === 'styles' && renderStylesTab()}
+          {activeTab === 'interactions' && renderInteractionsTab()}
+        </TabPanel>
       )}
 
-      {/* Tab content */}
-      {activeTab === 'styles' && renderStylesTab()}
-      {activeTab === 'interactions' && !isMultiSelect && renderInteractionsTab()}
+      {/* For multi-select, just show styles */}
+      {isMultiSelect && renderStylesTab()}
     </div>
   );
 };
