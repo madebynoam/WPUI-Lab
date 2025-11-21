@@ -22,8 +22,6 @@ import {
   sliders,
   calendar,
   color,
-  borders,
-  textContent,
 } from '@wordpress/icons';
 import { patterns, patternCategories } from '../patterns';
 import { componentGroups } from './TreePanel';
@@ -70,7 +68,7 @@ const componentIconMap: Record<string, any> = {
   ColorPalette: color,
   // Advanced
   BoxControl: box,
-  BorderControl: borders,
+  BorderControl: tag,
   FormTokenField: settings,
   TabPanel: settings,
   // Interactive
