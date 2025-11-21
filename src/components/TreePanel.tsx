@@ -226,9 +226,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		} else {
 			addComponent(componentType, parentId);
 		}
-		onCloseInserter();
-		setSearchTerm("");
-	};
+	setSearchTerm("");
+};
 
 	// Handle adding pattern
 	const handleAddPattern = (patternId: string) => {
@@ -288,9 +287,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		};
 		setTree(addToParent(tree));
 
-		onCloseInserter();
 		setSearchTerm("");
-	};
+};
 
 
 	const registerNodeRef = useCallback(
