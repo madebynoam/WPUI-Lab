@@ -34,6 +34,7 @@ export interface ComponentDefinition {
   name: string;
   component: React.ComponentType<any>;
   acceptsChildren: boolean;
+  description?: string;
   defaultProps?: Record<string, any>;
   propDefinitions: PropDefinition[];
 }

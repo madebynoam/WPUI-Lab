@@ -404,7 +404,7 @@ export const PropertiesPanel: React.FC = () => {
       }}
     >
       {/* Header with component icon, name, and description */}
-      <div style={{ padding: '16px' }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
           <div style={{ width: '32px', height: '32px', flexShrink: 0 }}>
             {/* Placeholder for component icon - could be enhanced later */}
@@ -427,9 +427,9 @@ export const PropertiesPanel: React.FC = () => {
             <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1e1e1e' }}>
               {firstNode.type}
             </h3>
-            {definition.propDefinitions.length > 0 && (
+            {definition.description && (
               <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                {definition.propDefinitions.length} properties
+                {definition.description}
               </div>
             )}
           </div>
@@ -438,32 +438,30 @@ export const PropertiesPanel: React.FC = () => {
 
       {/* WordPress TabPanel */}
       {!isMultiSelect && (
-        <div style={{ borderTop: '1px solid #e0e0e0' }}>
-          <TabPanel
-            className="wp-designer-properties__tabs"
-            tabs={[
-              {
-                name: 'styles',
-                title: 'Styles',
-                className: 'wp-designer-tab-styles',
-              },
-              {
-                name: 'interactions',
-                title: 'Interactions',
-                className: 'wp-designer-tab-interactions',
-              },
-            ]}
-            onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
-            selectedTab={activeTab}
-          >
-            {(tab) => (
-              <>
-                {tab.name === 'styles' && renderStylesTab()}
-                {tab.name === 'interactions' && renderInteractionsTab()}
-              </>
-            )}
-          </TabPanel>
-        </div>
+        <TabPanel
+          className="wp-designer-properties__tabs"
+          tabs={[
+            {
+              name: 'styles',
+              title: 'Styles',
+              className: 'wp-designer-tab-styles',
+            },
+            {
+              name: 'interactions',
+              title: 'Interactions',
+              className: 'wp-designer-tab-interactions',
+            },
+          ]}
+          onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
+          selectedTab={activeTab}
+        >
+          {(tab) => (
+            <>
+              {tab.name === 'styles' && renderStylesTab()}
+              {tab.name === 'interactions' && renderInteractionsTab()}
+            </>
+          )}
+        </TabPanel>
       )}
 
       {/* For multi-select, just show styles */}

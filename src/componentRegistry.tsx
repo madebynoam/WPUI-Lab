@@ -215,6 +215,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Button',
     component: Button,
     acceptsChildren: true,
+    description: 'Interactive element for triggering actions or navigation.',
     defaultProps: { children: 'Button', variant: 'primary', placeholder: 'Button' },
     propDefinitions: [
       {
@@ -361,6 +362,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Text',
     component: Text,
     acceptsChildren: false,
+    description: 'Display text content with optional variant styling.',
     defaultProps: { children: 'Text content', placeholder: 'Text content' },
     propDefinitions: [
       {
@@ -381,6 +383,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Heading',
     component: Heading,
     acceptsChildren: false,
+    description: 'Displays the title of a post, page, or any other content-type.',
     defaultProps: { children: 'Heading', level: 2, placeholder: 'Heading' },
     propDefinitions: [
       {
