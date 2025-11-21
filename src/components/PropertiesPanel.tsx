@@ -451,7 +451,6 @@ export const PropertiesPanel: React.FC = () => {
                 border: 'none',
                 cursor: 'pointer',
                 color: activeTab === 'styles' ? '#000' : '#999',
-                fontSize: '20px',
               }}
               title="Styles"
             >
@@ -469,7 +468,6 @@ export const PropertiesPanel: React.FC = () => {
                 border: 'none',
                 cursor: 'pointer',
                 color: activeTab === 'interactions' ? '#000' : '#999',
-                fontSize: '20px',
               }}
               title="Interactions"
             >
