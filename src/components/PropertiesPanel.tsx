@@ -13,6 +13,7 @@ import {
 } from '@wordpress/components';
 import { plus as plusIcon, trash as trashIcon, settings as settingsIcon, connection as connectionIcon } from '@wordpress/icons';
 import { IconPicker } from './IconPicker';
+import { TabContainer } from './TabContainer';
 
 export const PropertiesPanel: React.FC = () => {
   const PANEL_WIDTH = 280;
@@ -393,7 +394,7 @@ export const PropertiesPanel: React.FC = () => {
     >
       {/* Header with component icon, name, description and tabs */}
       {!isMultiSelect && (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
               <div style={{ width: '32px', height: '32px', flexShrink: 0 }}>
@@ -426,55 +427,26 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* Custom tabs with labels - 50% width each */}
-          <div style={{ display: 'flex', borderBottom: '3px solid #3858e9' }}>
-            <button
-              onClick={() => setActiveTab('styles')}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                backgroundColor: activeTab === 'styles' ? '#fff' : 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: activeTab === 'styles' ? '#000' : '#999',
-                fontSize: '13px',
-                fontWeight: activeTab === 'styles' ? 500 : 400,
-              }}
-              title="Styles"
-            >
-              {settingsIcon}
-              Styles
-            </button>
-            <button
-              onClick={() => setActiveTab('interactions')}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                backgroundColor: activeTab === 'interactions' ? '#fff' : 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: activeTab === 'interactions' ? '#000' : '#999',
-                fontSize: '13px',
-                fontWeight: activeTab === 'interactions' ? 500 : 400,
-              }}
-              title="Interactions"
-            >
-              {connectionIcon}
-              Interactions
-            </button>
-          </div>
-
-          {/* Tab content */}
-          {activeTab === 'styles' && renderStylesTab()}
-          {activeTab === 'interactions' && renderInteractionsTab()}
+          {/* TabContainer with icon-only tabs */}
+          <TabContainer
+            tabs={[
+              {
+                name: 'styles',
+                title: 'Styles',
+                icon: settingsIcon,
+                panel: renderStylesTab(),
+              },
+              {
+                name: 'interactions',
+                title: 'Interactions',
+                icon: connectionIcon,
+                panel: renderInteractionsTab(),
+              },
+            ]}
+            selectedTab={activeTab}
+            onSelect={setActiveTab}
+            iconSize={24}
+          />
         </div>
       )}
 
