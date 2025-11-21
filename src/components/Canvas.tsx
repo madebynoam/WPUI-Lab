@@ -11,7 +11,7 @@ interface CanvasProps {
 }
 
 export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
-  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent } = useComponentTree();
+  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isPlayMode } = useComponentTree();
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
@@ -66,6 +66,19 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // In play mode, most shortcuts are disabled except Escape
+      // (Escape is handled below to allow exiting play mode if needed)
+      if (isPlayMode) {
+        // Allow escaping play mode with Escape key
+        if (e.key === 'Escape') {
+          // This will be handled by the play mode exit logic in TopBar
+          // For now, just allow the event to propagate
+        } else {
+          // Block all other keyboard shortcuts in play mode
+          return;
+        }
+      }
+
       // Cmd/Ctrl+Z for undo
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && canUndo) {
         e.preventDefault();
@@ -162,7 +175,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     // Attach to document to catch events earlier
     document.addEventListener('keydown', handleKeyDown, true);
     return () => document.removeEventListener('keydown', handleKeyDown, true);
-  }, [selectedNodeIds, tree, toggleNodeSelection, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isInEditMode]);
+  }, [selectedNodeIds, tree, toggleNodeSelection, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isInEditMode, isPlayMode]);
 
   // Check if selected node is an interactive component or a child of one
   const interactiveAncestor = selectedNodeIds.length > 0 ? findInteractiveAncestor(selectedNodeIds[0]) : null;

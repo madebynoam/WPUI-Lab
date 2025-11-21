@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ComponentTreeProvider } from './ComponentTreeContext';
+import { ComponentTreeProvider, useComponentTree } from './ComponentTreeContext';
 import { TopBar } from './components/TopBar';
 import { TreePanel } from './components/TreePanel';
 import { Canvas } from './components/Canvas';
@@ -8,7 +8,8 @@ import '@wordpress/components/build-style/style.css';
 import '@wordpress/block-editor/build-style/style.css';
 import '@wordpress/dataviews/build-style/style.css';
 
-function App() {
+function AppContent() {
+  const { isPlayMode } = useComponentTree();
   const [showPanels, setShowPanels] = useState(true);
   const [showInserter, setShowInserter] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
@@ -27,20 +28,29 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Hide panels when in play mode, even if showPanels is true
+  const shouldShowPanels = showPanels && !isPlayMode;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      {showHeader && (
+        <div style={{ height: '60px' }}>
+          <TopBar showInserter={showInserter} onToggleInserter={() => setShowInserter(!showInserter)} />
+        </div>
+      )}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {shouldShowPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
+        <Canvas showBreadcrumb={showHeader} />
+        {shouldShowPanels && <PropertiesPanel />}
+      </div>
+    </div>
+  );
+}
+
+function App() {
   return (
     <ComponentTreeProvider>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        {showHeader && (
-          <div style={{ height: '60px' }}>
-            <TopBar showInserter={showInserter} onToggleInserter={() => setShowInserter(!showInserter)} />
-          </div>
-        )}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {showPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
-          <Canvas showBreadcrumb={showHeader} />
-          {showPanels && <PropertiesPanel />}
-        </div>
-      </div>
+      <AppContent />
     </ComponentTreeProvider>
   );
 }

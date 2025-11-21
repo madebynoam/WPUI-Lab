@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useRef, useCallback } from 'react';
-import { ComponentNode, Page, HistoryState } from './types';
+import { ComponentNode, Page, HistoryState, Interaction } from './types';
 import { componentRegistry } from './componentRegistry';
 
 const STORAGE_KEY = 'wp-designer-pages';
@@ -46,6 +46,15 @@ interface ComponentTreeContextType {
   undo: () => void;
   redo: () => void;
   clearHistory: () => void;
+
+  // Play mode
+  isPlayMode: boolean;
+  setPlayMode: (isPlay: boolean) => void;
+
+  // Interactions
+  addInteraction: (nodeId: string, interaction: Omit<Interaction, 'id'>) => void;
+  removeInteraction: (nodeId: string, interactionId: string) => void;
+  updateInteraction: (nodeId: string, interactionId: string, interaction: Omit<Interaction, 'id'>) => void;
 }
 
 const ComponentTreeContext = createContext<ComponentTreeContextType | undefined>(undefined);
@@ -134,6 +143,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([ROOT_VSTACK_ID]);
   const [gridLinesVisible, setGridLinesVisible] = useState<Set<string>>(new Set());
+  const [isPlayMode, setPlayMode] = useState<boolean>(false);
 
   // Copy/Paste management
   const [clipboard, setClipboard] = useState<ComponentNode | null>(null);
@@ -711,6 +721,65 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     });
   };
 
+  // Interaction management functions
+  const addInteraction = (nodeId: string, interaction: Omit<Interaction, 'id'>) => {
+    const newInteraction: Interaction = {
+      id: `interaction-${Date.now()}`,
+      ...interaction,
+    };
+
+    const updateNode = (node: ComponentNode): ComponentNode => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          interactions: [...(node.interactions || []), newInteraction],
+        };
+      }
+      return {
+        ...node,
+        children: node.children?.map(updateNode),
+      };
+    };
+
+    setTree(tree.map(updateNode));
+  };
+
+  const removeInteraction = (nodeId: string, interactionId: string) => {
+    const updateNode = (node: ComponentNode): ComponentNode => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          interactions: (node.interactions || []).filter(i => i.id !== interactionId),
+        };
+      }
+      return {
+        ...node,
+        children: node.children?.map(updateNode),
+      };
+    };
+
+    setTree(tree.map(updateNode));
+  };
+
+  const updateInteraction = (nodeId: string, interactionId: string, interaction: Omit<Interaction, 'id'>) => {
+    const updateNode = (node: ComponentNode): ComponentNode => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          interactions: (node.interactions || []).map(i =>
+            i.id === interactionId ? { ...i, ...interaction } : i
+          ),
+        };
+      }
+      return {
+        ...node,
+        children: node.children?.map(updateNode),
+      };
+    };
+
+    setTree(tree.map(updateNode));
+  };
+
   // Page management functions
   const setCurrentPage = (pageId: string) => {
     setCurrentPageIdWithHistory(pageId);
@@ -813,6 +882,11 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         undo,
         redo,
         clearHistory,
+        isPlayMode,
+        setPlayMode,
+        addInteraction,
+        removeInteraction,
+        updateInteraction,
       }}
     >
       {children}

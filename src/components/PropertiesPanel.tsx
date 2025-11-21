@@ -8,10 +8,12 @@ import {
   ToggleControl,
   __experimentalNumberControl as NumberControl,
   ColorPicker,
+  Button,
 } from '@wordpress/components';
+import { plus as plusIcon, trash as trashIcon } from '@wordpress/icons';
 
 export const PropertiesPanel: React.FC = () => {
-  const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines } = useComponentTree();
+  const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines, pages, addInteraction, removeInteraction, updateInteraction } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
     return selectedNodeIds.map(id => getNodeById(id)).filter((n): n is NonNullable<ReturnType<typeof getNodeById>> => n !== null);
@@ -307,6 +309,74 @@ export const PropertiesPanel: React.FC = () => {
               />
             </div>
           </>
+        )}
+
+        {/* Interactions section - only for single select */}
+        {!isMultiSelect && (
+          <div style={{
+            marginTop: (definition.propDefinitions.length > 0 || isChildOfGrid) ? '24px' : '0',
+            paddingTop: (definition.propDefinitions.length > 0 || isChildOfGrid) ? '16px' : '0',
+            borderTop: (definition.propDefinitions.length > 0 || isChildOfGrid) ? '1px solid #e0e0e0' : 'none',
+          }}>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#666' }}>
+                Interactions
+              </div>
+            </div>
+
+            {/* List existing interactions */}
+            <div style={{ marginBottom: '12px' }}>
+              {(firstNode.interactions || []).map((interaction) => (
+                <div
+                  key={interaction.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: '2px',
+                    marginBottom: '8px',
+                    fontSize: '12px',
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 500 }}>
+                      {interaction.trigger === 'onClick' ? 'On Click' : interaction.trigger}
+                    </div>
+                    <div style={{ color: '#666', fontSize: '11px', marginTop: '2px' }}>
+                      {interaction.action === 'navigate' ? 'Navigate' : interaction.action}
+                      {interaction.action === 'navigate' && ` → ${pages.find(p => p.id === interaction.targetId)?.name || 'Unknown'}`}
+                    </div>
+                  </div>
+                  <Button
+                    icon={trashIcon}
+                    iconSize={16}
+                    onClick={() => removeInteraction(selectedNodeIds[0], interaction.id)}
+                    style={{ flexShrink: 0 }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Add interaction button */}
+            <Button
+              variant="secondary"
+              size="small"
+              icon={plusIcon}
+              onClick={() => {
+                // Add default navigate interaction to first page excluding current
+                const targetPageId = pages.find(p => p.id !== selectedNodeIds[0])?.id || pages[0].id;
+                addInteraction(selectedNodeIds[0], {
+                  trigger: 'onClick',
+                  action: 'navigate',
+                  targetId: targetPageId,
+                });
+              }}
+            >
+              Add Interaction
+            </Button>
+          </div>
         )}
 
         {definition.propDefinitions.length === 0 && !isChildOfGrid && (

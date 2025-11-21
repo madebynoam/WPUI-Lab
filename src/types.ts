@@ -1,10 +1,18 @@
 import React from 'react';
 
+export interface Interaction {
+  id: string;
+  trigger: 'onClick'; // Future: 'onHover', 'onFocus', etc.
+  action: 'navigate' | 'showModal'; // Expandable
+  targetId: string; // Page ID for navigate, Modal node ID for showModal
+}
+
 export interface ComponentNode {
   id: string;
   type: string;
   name?: string;
   props: Record<string, any>;
+  interactions?: Interaction[];
   children?: ComponentNode[];
 }
 

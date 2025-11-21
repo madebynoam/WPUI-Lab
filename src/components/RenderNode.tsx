@@ -7,12 +7,33 @@ import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
 
 export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, setPlayMode, updateComponentProps, setCurrentPage } = useComponentTree();
   const definition = componentRegistry[node.type];
 
   if (!definition) {
     return <div>Unknown component: {node.type}</div>;
   }
+
+  // Execute interactions on a component
+  const executeInteractions = (nodeInteractions: any[] | undefined) => {
+    if (!nodeInteractions || nodeInteractions.length === 0) return;
+
+    nodeInteractions.forEach((interaction) => {
+      if (interaction.trigger === 'onClick') {
+        if (interaction.action === 'navigate') {
+          // Navigate to the target page
+          const targetPage = pages.find(p => p.id === interaction.targetId);
+          if (targetPage) {
+            setCurrentPage(interaction.targetId);
+          }
+        } else if (interaction.action === 'showModal') {
+          // Find the target component (modal) and show it
+          console.log('Show modal:', interaction.targetId);
+          // This would require a more complex state management for modal visibility
+        }
+      }
+    });
+  };
 
   // Skip rendering interactive components unless explicitly allowed
   if (INTERACTIVE_COMPONENT_TYPES.includes(node.type) && !renderInteractive) {
@@ -36,8 +57,8 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   const isRootVStack = node.id === ROOT_VSTACK_ID;
   const isSelected = selectedNodeIds.includes(node.id);
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => ({
-    outline: isSelected && !isRootVStack ? '2px solid #3858e9' : 'none',
-    cursor: 'default',
+    outline: isSelected && !isRootVStack && !isPlayMode ? '2px solid #3858e9' : 'none',
+    cursor: isPlayMode && node.interactions && node.interactions.length > 0 ? 'pointer' : 'default',
     ...(gridColumn && { gridColumn }),
     ...(gridRow && { gridRow }),
     ...additionalStyles,
@@ -53,9 +74,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
-          const multiSelect = e.metaKey || e.ctrlKey;
-          const rangeSelect = e.shiftKey;
-          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          if (isPlayMode) {
+            executeInteractions(node.interactions);
+          } else {
+            const multiSelect = e.metaKey || e.ctrlKey;
+            const rangeSelect = e.shiftKey;
+            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          }
         }}
         style={getWrapperStyle()}
       >
@@ -74,9 +99,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
-          const multiSelect = e.metaKey || e.ctrlKey;
-          const rangeSelect = e.shiftKey;
-          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          if (isPlayMode) {
+            executeInteractions(node.interactions);
+          } else {
+            const multiSelect = e.metaKey || e.ctrlKey;
+            const rangeSelect = e.shiftKey;
+            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          }
         }}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
@@ -97,9 +126,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
-          const multiSelect = e.metaKey || e.ctrlKey;
-          const rangeSelect = e.shiftKey;
-          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          if (isPlayMode) {
+            executeInteractions(node.interactions);
+          } else {
+            const multiSelect = e.metaKey || e.ctrlKey;
+            const rangeSelect = e.shiftKey;
+            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          }
         }}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
@@ -118,9 +151,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
           data-component-id={node.id}
           onMouseDown={(e) => {
             e.stopPropagation();
-            const multiSelect = e.metaKey || e.ctrlKey;
-            const rangeSelect = e.shiftKey;
-            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+            if (isPlayMode) {
+              executeInteractions(node.interactions);
+            } else {
+              const multiSelect = e.metaKey || e.ctrlKey;
+              const rangeSelect = e.shiftKey;
+              toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+            }
           }}
           style={{
             ...getWrapperStyle(),
@@ -159,9 +196,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
-          const multiSelect = e.metaKey || e.ctrlKey;
-          const rangeSelect = e.shiftKey;
-          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          if (isPlayMode) {
+            executeInteractions(node.interactions);
+          } else {
+            const multiSelect = e.metaKey || e.ctrlKey;
+            const rangeSelect = e.shiftKey;
+            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          }
         }}
         style={getWrapperStyle()}
       >
@@ -252,9 +293,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
           data-component-id={node.id}
           onMouseDown={(e) => {
             e.stopPropagation();
-            const multiSelect = e.metaKey || e.ctrlKey;
-            const rangeSelect = e.shiftKey;
-            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+            if (isPlayMode) {
+              executeInteractions(node.interactions);
+            } else {
+              const multiSelect = e.metaKey || e.ctrlKey;
+              const rangeSelect = e.shiftKey;
+              toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+            }
           }}
           style={getWrapperStyle({ minHeight: '400px', height: '100%' })}
         >
@@ -268,9 +313,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
           data-component-id={node.id}
           onMouseDown={(e) => {
             e.stopPropagation();
-            const multiSelect = e.metaKey || e.ctrlKey;
-            const rangeSelect = e.shiftKey;
-            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+            if (isPlayMode) {
+              executeInteractions(node.interactions);
+            } else {
+              const multiSelect = e.metaKey || e.ctrlKey;
+              const rangeSelect = e.shiftKey;
+              toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+            }
           }}
           style={{
             ...getWrapperStyle(),
@@ -320,9 +369,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
-          const multiSelect = e.metaKey || e.ctrlKey;
-          const rangeSelect = e.shiftKey;
-          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          if (isPlayMode) {
+            executeInteractions(node.interactions);
+          } else {
+            const multiSelect = e.metaKey || e.ctrlKey;
+            const rangeSelect = e.shiftKey;
+            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+          }
         }}
         style={getWrapperStyle({ padding: '4px' })}
       >
@@ -342,9 +395,13 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       data-component-id={node.id}
       onMouseDown={(e) => {
         e.stopPropagation();
-        const multiSelect = e.metaKey || e.ctrlKey;
-        const rangeSelect = e.shiftKey;
-        toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+        if (isPlayMode) {
+          executeInteractions(node.interactions);
+        } else {
+          const multiSelect = e.metaKey || e.ctrlKey;
+          const rangeSelect = e.shiftKey;
+          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
+        }
       }}
       style={{ ...getWrapperStyle(), position: showGridLines ? 'relative' : undefined }}
     >
