@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { generatePageCode, generateComponentCode, generateComponentWithInteractions } from '../utils/codeGenerator';
+import { highlightCode } from '../utils/syntaxHighlighter';
 import { Button } from '@wordpress/components';
 import { copy as copyIcon } from '@wordpress/icons';
 
@@ -110,7 +111,28 @@ export const CodePanel: React.FC<CodePanelProps> = ({ width = 280, onResizeStart
             maxHeight: '100%',
           }}
         >
-          <code>{code}</code>
+          <code>
+            {useMemo(() => {
+              const tokens = highlightCode(code);
+              return tokens.map((token, index) => {
+                const colorMap: Record<string, string> = {
+                  keyword: '#3858e9',
+                  string: '#a65e75',
+                  tag: '#3858e9',
+                  attribute: '#a65e75',
+                  comment: '#858585',
+                  function: '#3858e9',
+                  number: '#a65e75',
+                  text: '#1e1e1e',
+                };
+                return (
+                  <span key={index} style={{ color: colorMap[token.type] || '#1e1e1e' }}>
+                    {token.content}
+                  </span>
+                );
+              });
+            }, [code])}
+          </code>
         </pre>
       </div>
     </div>
