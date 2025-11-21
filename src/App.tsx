@@ -73,9 +73,23 @@ function AppContent() {
         <div style={{ height: '60px' }}>
           <TopBar
             showInserter={showInserter}
-            onToggleInserter={() => setShowInserter(!showInserter)}
+            onToggleInserter={() => {
+              if (showInserter) {
+                setShowInserter(false);
+              } else {
+                setShowInserter(true);
+                setShowTreePanel(false);
+              }
+            }}
             showTreePanel={showTreePanel}
-            onToggleTreePanel={() => setShowTreePanel(!showTreePanel)}
+            onToggleTreePanel={() => {
+              if (showTreePanel) {
+                setShowTreePanel(false);
+              } else {
+                setShowTreePanel(true);
+                setShowInserter(false);
+              }
+            }}
             rightPanel={rightPanel}
             onToggleRightPanel={setRightPanel}
           />

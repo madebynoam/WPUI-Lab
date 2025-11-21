@@ -22,7 +22,7 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
       backgroundColor: '#fff',
       borderBottom: '1px solid rgba(0, 0, 0, 0.133)',
       display: 'grid',
-      gridTemplateColumns: '60px 1fr auto 260px',
+      gridTemplateColumns: '60px auto 1fr auto 260px',
       alignItems: 'center',
       flexShrink: 0,
     }}>
@@ -117,6 +117,7 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
       {/* Center - Document Bar */}
       <div className="editor-header__center" style={{
         gridColumn: '3 / 4',
+        justifySelf: 'center',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
@@ -137,7 +138,7 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
       {/* Right side - Settings - hidden in play mode */}
       {!isPlayMode && (
         <div className="editor-header__settings" style={{
-          gridColumn: '4 / -1',
+          gridColumn: '4 / 5',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
