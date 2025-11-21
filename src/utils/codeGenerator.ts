@@ -120,18 +120,13 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
   const handlers: string[] = [];
   const collectInteractions = (node: ComponentNode) => {
     if (node.interactions && node.interactions.length > 0) {
-      node.interactions.forEach((interaction, index) => {
+      node.interactions.forEach((interaction) => {
         // Generate semantic handler name from trigger type
         const triggerBase = interaction.trigger.replace('on', '');
 
-        // If multiple interactions with same trigger, add a number suffix
-        const sameTrigggerCount = node.interactions!
-          .slice(0, index)
-          .filter(i => i.trigger === interaction.trigger)
-          .length;
-
-        const suffix = sameTrigggerCount > 0 ? `${sameTrigggerCount + 1}` : '';
-        const handlerName = `handle${triggerBase}${suffix}`;
+        // Add short unique ID suffix for uniqueness (first 4 chars of interaction ID, alphanumeric)
+        const uniqueSuffix = interaction.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4);
+        const handlerName = `handle${triggerBase}${uniqueSuffix}`;
 
         handlerMap[node.id] = handlerName;
 
@@ -196,18 +191,13 @@ export const generateComponentWithInteractions = (node: ComponentNode): string =
   const handlerMap: Record<string, string> = {};
   const handlers: string[] = [];
 
-  node.interactions.forEach((interaction, index) => {
+  node.interactions.forEach((interaction) => {
     // Generate semantic handler name from trigger type
     const triggerBase = interaction.trigger.replace('on', '');
 
-    // If multiple interactions with same trigger, add a number suffix
-    const sameTrigggerCount = node.interactions
-      .slice(0, index)
-      .filter(i => i.trigger === interaction.trigger)
-      .length;
-
-    const suffix = sameTrigggerCount > 0 ? `${sameTrigggerCount + 1}` : '';
-    const handlerName = `handle${triggerBase}${suffix}`;
+    // Add short unique ID suffix for uniqueness (first 4 chars of interaction ID, alphanumeric)
+    const uniqueSuffix = interaction.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4);
+    const handlerName = `handle${triggerBase}${uniqueSuffix}`;
 
     handlerMap[node.id] = handlerName;
 
