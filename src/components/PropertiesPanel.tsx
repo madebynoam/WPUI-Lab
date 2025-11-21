@@ -11,6 +11,7 @@ import {
   Button,
 } from '@wordpress/components';
 import { plus as plusIcon, trash as trashIcon } from '@wordpress/icons';
+import { IconPicker } from './IconPicker';
 
 export const PropertiesPanel: React.FC = () => {
   const PANEL_WIDTH = 280;
@@ -246,7 +247,15 @@ export const PropertiesPanel: React.FC = () => {
                 />
               )}
 
-              {propDef.type === 'select' && propDef.options && (
+              {propDef.type === 'select' && propDef.name === 'icon' && (
+                <IconPicker
+                  label={propDef.name}
+                  value={currentValue}
+                  onChange={(value) => handlePropChange(propDef.name, value)}
+                />
+              )}
+
+              {propDef.type === 'select' && propDef.name !== 'icon' && propDef.options && (
                 <SelectControl
                   label={propDef.name}
                   value={currentValue}
