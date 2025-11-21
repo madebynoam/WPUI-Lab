@@ -9,7 +9,6 @@ import {
   __experimentalNumberControl as NumberControl,
   ColorPicker,
   Button,
-  TabPanel,
 } from '@wordpress/components';
 import { plus as plusIcon, trash as trashIcon, settings as settingsIcon, connection as connectionIcon } from '@wordpress/icons';
 import { IconPicker } from './IconPicker';
@@ -438,33 +437,49 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* WordPress TabPanel - part of header section */}
-          <TabPanel
-            className="wp-designer-properties__tabs"
-            tabs={[
-              {
-                name: 'styles',
-                title: 'Styles',
-                icon: settingsIcon,
-                className: 'wp-designer-tab-styles',
-              },
-              {
-                name: 'interactions',
-                title: 'Interactions',
-                icon: connectionIcon,
-                className: 'wp-designer-tab-interactions',
-              },
-            ]}
-            onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
-            selectedTab={activeTab}
-          >
-            {(tab) => (
-              <>
-                {tab.name === 'styles' && renderStylesTab()}
-                {tab.name === 'interactions' && renderInteractionsTab()}
-              </>
-            )}
-          </TabPanel>
+          {/* Custom tabs - 50% width each, icons only */}
+          <div style={{ display: 'flex', borderBottom: '3px solid #3858e9' }}>
+            <button
+              onClick={() => setActiveTab('styles')}
+              style={{
+                flex: 1,
+                padding: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: activeTab === 'styles' ? '#fff' : 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: activeTab === 'styles' ? '#000' : '#999',
+                fontSize: '20px',
+              }}
+              title="Styles"
+            >
+              {settingsIcon}
+            </button>
+            <button
+              onClick={() => setActiveTab('interactions')}
+              style={{
+                flex: 1,
+                padding: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: activeTab === 'interactions' ? '#fff' : 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: activeTab === 'interactions' ? '#000' : '#999',
+                fontSize: '20px',
+              }}
+              title="Interactions"
+            >
+              {connectionIcon}
+            </button>
+          </div>
+
+          {/* Tab content */}
+          {activeTab === 'styles' && renderStylesTab()}
+          {activeTab === 'interactions' && renderInteractionsTab()}
         </div>
       )}
 
