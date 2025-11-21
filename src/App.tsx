@@ -96,7 +96,7 @@ function AppContent() {
         </div>
       )}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {shouldShowPanels && showTreePanel && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
+        {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
         <Canvas showBreadcrumb={showHeader} />
         {shouldShowPanels && rightPanel === 'props' && (
           <PropertiesPanel />

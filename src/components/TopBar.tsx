@@ -19,12 +19,14 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
   return (
     <div className="editor-header" style={{
       height: '60px',
+      width: '100%',
       backgroundColor: '#fff',
       borderBottom: '1px solid rgba(0, 0, 0, 0.133)',
       display: 'grid',
       gridTemplateColumns: '60px auto 1fr auto 260px',
       alignItems: 'center',
       flexShrink: 0,
+      boxSizing: 'border-box',
     }}>
       {/* Left side - Site icon hub or back button (play mode) */}
       {isPlayMode ? (
@@ -138,7 +140,7 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
       {/* Right side - Settings - hidden in play mode */}
       {!isPlayMode && (
         <div className="editor-header__settings" style={{
-          gridColumn: '4 / 5',
+          gridColumn: '4 / -1',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
