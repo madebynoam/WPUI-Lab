@@ -18,7 +18,7 @@ const ICON_GROUPS = {
   'Format': ['formatBold', 'formatItalic', 'formatUnderline', 'formatStrikethrough', 'formatListBullets', 'formatListNumbered'],
   'Communication': ['envelope', 'send', 'share', 'comment', 'mobile'],
   'Action': ['trash', 'pencil', 'create', 'copy', 'plus', 'download', 'upload', 'update', 'redo', 'undo'],
-  'Status': ['check', 'close', 'error', 'warning', 'info', 'published'],
+  'Status': ['check', 'close', 'error', 'caution', 'info', 'published'],
   'Tools': ['settings', 'cog', 'plugins', 'brush', 'link', 'linkOff', 'lock', 'unlock', 'search', 'filter'],
   'Other': [],
 };
