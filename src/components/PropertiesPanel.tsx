@@ -455,8 +455,12 @@ export const PropertiesPanel: React.FC = () => {
           onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
           selectedTab={activeTab}
         >
-          {activeTab === 'styles' && renderStylesTab()}
-          {activeTab === 'interactions' && renderInteractionsTab()}
+          {(tab) => (
+            <>
+              {tab.name === 'styles' && renderStylesTab()}
+              {tab.name === 'interactions' && renderInteractionsTab()}
+            </>
+          )}
         </TabPanel>
       )}
 
