@@ -16,8 +16,17 @@ function AppContent() {
   const [showTreePanel, setShowTreePanel] = useState(true);
   const [showHeader, setShowHeader] = useState(true);
   const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'none'>('props');
-  const [rightPanelWidth, setRightPanelWidth] = useState(280);
+  const [rightPanelWidth, setRightPanelWidth] = useState(() => {
+    // Load saved width from localStorage, default to 280
+    const saved = localStorage.getItem('wp-designer-code-panel-width');
+    return saved ? parseInt(saved, 10) : 280;
+  });
   const [isResizing, setIsResizing] = useState(false);
+
+  // Save code panel width to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('wp-designer-code-panel-width', rightPanelWidth.toString());
+  }, [rightPanelWidth]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
