@@ -36,10 +36,15 @@ function generateNodeCode(
   const hasTextContent = node.props.content !== undefined || node.props.text !== undefined;
   const textContent = node.props.content !== undefined ? node.props.content : node.props.text;
 
+  // Check for placeholder content if no text content exists
+  const hasPlaceholder = !hasTextContent && node.props.placeholder !== undefined;
+  const placeholderContent = hasPlaceholder ? node.props.placeholder : null;
+
   // Filter out special props that shouldn't be included
   const props = { ...node.props };
   delete props.content;
   delete props.text;
+  delete props.placeholder;
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
 
@@ -69,6 +74,11 @@ function generateNodeCode(
   // Handle Text/Heading/Button with text content
   if (hasTextContent) {
     return `${indentStr}<${componentName}${propsStr}>${textContent}</${componentName}>`;
+  }
+
+  // Handle container components with placeholder content
+  if (hasPlaceholder) {
+    return `${indentStr}<${componentName}${propsStr}>${placeholderContent}</${componentName}>`;
   }
 
   // For container components without content, render with empty opening/closing tags
