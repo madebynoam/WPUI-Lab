@@ -18,7 +18,7 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
       backgroundColor: '#fff',
       borderBottom: '1px solid rgba(0, 0, 0, 0.133)',
       display: 'grid',
-      gridTemplateColumns: '60px minmax(0, max-content) minmax(0, 1fr) auto',
+      gridTemplateColumns: '60px minmax(75px, auto) minmax(0, 1fr) minmax(75px, auto)',
       alignItems: 'center',
       flexShrink: 0,
     }}>
