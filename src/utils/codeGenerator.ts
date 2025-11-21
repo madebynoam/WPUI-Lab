@@ -32,6 +32,10 @@ function generateNodeCode(
   const indentStr = '  '.repeat(indent);
   const componentName = node.type;
 
+  // Check for text content BEFORE deleting from props
+  const hasTextContent = node.props.content !== undefined || node.props.text !== undefined;
+  const textContent = node.props.content !== undefined ? node.props.content : node.props.text;
+
   // Filter out special props that shouldn't be included
   const props = { ...node.props };
   delete props.content;
@@ -58,15 +62,9 @@ function generateNodeCode(
     return `${indentStr}<${componentName}${propsStr}>\n${childrenCode}\n${indentStr}</${componentName}>`;
   }
 
-  // Handle Text/Heading with content
-  if ((componentName === 'Text' || componentName === 'Heading') && props.content !== undefined) {
-    const content = JSON.stringify(node.props.content);
-    return `${indentStr}<${componentName}${propsStr}>${node.props.content}</${componentName}>`;
-  }
-
-  // Handle Button with text
-  if (componentName === 'Button' && node.props.text !== undefined) {
-    return `${indentStr}<${componentName}${propsStr}>${node.props.text}</${componentName}>`;
+  // Handle Text/Heading/Button with text content
+  if (hasTextContent) {
+    return `${indentStr}<${componentName}${propsStr}>${textContent}</${componentName}>`;
   }
 
   // Self-closing component
