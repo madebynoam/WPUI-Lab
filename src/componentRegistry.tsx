@@ -47,6 +47,7 @@ import {
 import { DataViews } from '@wordpress/dataviews';
 import { ComponentDefinition } from './types';
 import { getMockData, getFieldDefinitions } from './utils/mockDataGenerator';
+import { WORDPRESS_ICON_NAMES } from './utils/iconNames';
 
 export const componentRegistry: Record<string, ComponentDefinition> = {
   Grid: {
@@ -521,6 +522,13 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     acceptsChildren: false,
     defaultProps: { icon: 'wordpress', size: 24 },
     propDefinitions: [
+      {
+        name: 'icon',
+        type: 'select',
+        options: [...WORDPRESS_ICON_NAMES],
+        defaultValue: 'wordpress',
+        description: 'Icon name from @wordpress/icons library',
+      },
       {
         name: 'size',
         type: 'number',

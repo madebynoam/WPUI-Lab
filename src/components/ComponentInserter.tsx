@@ -21,6 +21,8 @@ import {
   calendar,
   color,
   border,
+  published,
+  chevronDown,
 } from '@wordpress/icons';
 import { patterns, patternCategories } from '../patterns';
 import { componentGroups } from './TreePanel';
@@ -52,12 +54,12 @@ const componentIconMap: Record<string, any> = {
   // Form Inputs
   TextControl: textColor,
   TextareaControl: quote,
-  SelectControl: tag,
+  SelectControl: chevronDown,
   NumberControl: tag,
   SearchControl: search,
   ToggleControl: shield,
   CheckboxControl: check,
-  RadioControl: check,
+  RadioControl: published,
   RangeControl: tag,
   DateTimePicker: calendar,
   FontSizePicker: textColor,

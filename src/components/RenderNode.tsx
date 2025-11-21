@@ -2,7 +2,7 @@ import React from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
-import { wordpress } from '@wordpress/icons';
+import * as wpIcons from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
 
@@ -87,8 +87,9 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
   // Handle Icon component - needs icon prop from @wordpress/icons
   if (node.type === 'Icon') {
-    // Use wordpress icon as default
-    const iconProp = wordpress;
+    // Get icon name from props and map to actual icon object
+    const iconName = props.icon || 'wordpress';
+    const iconProp = (wpIcons as Record<string, any>)[iconName] || (wpIcons as Record<string, any>).wordpress;
     delete props.icon;
 
     return (
