@@ -195,7 +195,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                     key={comp}
                     onClick={() => handleAddComponent(comp)}
                     style={{
-                      padding: '10px',
+                      padding: '8px 4px',
                       border: 'none',
                       backgroundColor: '#fff',
                       cursor: 'pointer',
@@ -205,7 +205,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '4px',
                       minHeight: '64px',
                       justifyContent: 'center',
                       color: '#1e1e1e',
@@ -213,18 +213,27 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = '#3858e9';
                       e.currentTarget.style.backgroundColor = 'rgba(56, 88, 233, 0.04)';
-                      // Change icon color via CSS variable
-                      const icon = e.currentTarget.querySelector('svg');
-                      if (icon) {
-                        icon.style.color = '#3858e9';
+                      // Change icon color by updating SVG fill
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) {
+                        svg.style.fill = '#3858e9';
+                        svg.style.color = '#3858e9';
+                        // Also update any path elements inside
+                        svg.querySelectorAll('path').forEach(path => {
+                          path.style.fill = '#3858e9';
+                        });
                       }
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = '#1e1e1e';
                       e.currentTarget.style.backgroundColor = '#fff';
-                      const icon = e.currentTarget.querySelector('svg');
-                      if (icon) {
-                        icon.style.color = 'inherit';
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) {
+                        svg.style.fill = 'currentColor';
+                        svg.style.color = 'currentColor';
+                        svg.querySelectorAll('path').forEach(path => {
+                          path.style.fill = '';
+                        });
                       }
                     }}
                     onFocus={(e) => {
@@ -236,7 +245,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                     }}
                   >
                     <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
-                    <span style={{ wordBreak: 'break-word' }}>{comp}</span>
+                    <span style={{ whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2 }}>{comp}</span>
                   </button>
                 ))}
               </div>
