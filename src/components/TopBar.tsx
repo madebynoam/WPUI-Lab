@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@wordpress/components';
-import { undo as undoIcon, redo as redoIcon, plus as plusIcon, close as closeIcon } from '@wordpress/icons';
+import { plus as plusIcon, close as closeIcon } from '@wordpress/icons';
 import { useComponentTree } from '../ComponentTreeContext';
 
 interface TopBarProps {
@@ -9,7 +9,7 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }) => {
-  const { pages, currentPageId, canUndo, canRedo, undo, redo } = useComponentTree();
+  const { pages, currentPageId } = useComponentTree();
   const currentPage = pages.find(p => p.id === currentPageId);
 
   return (
@@ -69,31 +69,6 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
           }}
         />
 
-        {/* Undo button */}
-        <Button
-          onClick={undo}
-          disabled={!canUndo}
-          variant="tertiary"
-          size="compact"
-          icon={undoIcon}
-          label="Undo"
-          style={{
-            color: canUndo ? '#3858e9' : '#ccc',
-          }}
-        />
-
-        {/* Redo button */}
-        <Button
-          onClick={redo}
-          disabled={!canRedo}
-          variant="tertiary"
-          size="compact"
-          icon={redoIcon}
-          label="Redo"
-          style={{
-            color: canRedo ? '#3858e9' : '#ccc',
-          }}
-        />
       </div>
 
       {/* Center - Document Bar */}
