@@ -120,8 +120,19 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
   const handlers: string[] = [];
   const collectInteractions = (node: ComponentNode) => {
     if (node.interactions && node.interactions.length > 0) {
-      node.interactions.forEach((interaction) => {
-        const handlerName = `handle${interaction.id.charAt(0).toUpperCase()}${interaction.id.slice(1)}`;
+      node.interactions.forEach((interaction, index) => {
+        // Generate semantic handler name from trigger type
+        const triggerBase = interaction.trigger.replace('on', '');
+
+        // If multiple interactions with same trigger, add a number suffix
+        const sameTrigggerCount = node.interactions!
+          .slice(0, index)
+          .filter(i => i.trigger === interaction.trigger)
+          .length;
+
+        const suffix = sameTrigggerCount > 0 ? `${sameTrigggerCount + 1}` : '';
+        const handlerName = `handle${triggerBase}${suffix}`;
+
         handlerMap[node.id] = handlerName;
 
         if (interaction.trigger === 'onClick' && interaction.action === 'navigate') {
@@ -185,8 +196,19 @@ export const generateComponentWithInteractions = (node: ComponentNode): string =
   const handlerMap: Record<string, string> = {};
   const handlers: string[] = [];
 
-  node.interactions.forEach((interaction) => {
-    const handlerName = `handle${interaction.id.charAt(0).toUpperCase()}${interaction.id.slice(1)}`;
+  node.interactions.forEach((interaction, index) => {
+    // Generate semantic handler name from trigger type
+    const triggerBase = interaction.trigger.replace('on', '');
+
+    // If multiple interactions with same trigger, add a number suffix
+    const sameTrigggerCount = node.interactions
+      .slice(0, index)
+      .filter(i => i.trigger === interaction.trigger)
+      .length;
+
+    const suffix = sameTrigggerCount > 0 ? `${sameTrigggerCount + 1}` : '';
+    const handlerName = `handle${triggerBase}${suffix}`;
+
     handlerMap[node.id] = handlerName;
 
     if (interaction.trigger === 'onClick' && interaction.action === 'navigate') {
