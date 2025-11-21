@@ -96,6 +96,7 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
         gridColumn: '4 / -1',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'flex-end',
         gap: '8px',
         paddingRight: '8px',
       }}>
