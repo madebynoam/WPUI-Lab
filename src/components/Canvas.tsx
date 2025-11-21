@@ -78,8 +78,8 @@ export const Canvas: React.FC = () => {
         return;
       }
 
-      // Delete key to remove selected component (skip if in edit mode)
-      if (e.key === 'Delete' && selectedNodeIds.length > 0 && !isInEditMode()) {
+      // Backspace to remove selected component (skip if in edit mode)
+      if (e.key === 'Backspace' && selectedNodeIds.length > 0 && !isInEditMode()) {
         e.preventDefault();
         e.stopPropagation();
         // Remove each selected component
