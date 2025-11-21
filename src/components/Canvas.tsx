@@ -107,8 +107,8 @@ export const Canvas: React.FC = () => {
         return;
       }
 
-      // Cmd/Ctrl+Shift+D for duplicate in same parent (Shift avoids Arc browser conflict)
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D' && selectedNodeIds.length > 0 && !isInEditMode()) {
+      // Cmd/Ctrl+D for duplicate in same parent
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && selectedNodeIds.length > 0 && !isInEditMode()) {
         e.preventDefault();
         e.stopPropagation();
         duplicateComponent(selectedNodeIds[0]);
