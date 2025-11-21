@@ -195,31 +195,44 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                     key={comp}
                     onClick={() => handleAddComponent(comp)}
                     style={{
-                      padding: '12px 8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '2px',
+                      padding: '10px',
+                      border: 'none',
                       backgroundColor: '#fff',
                       cursor: 'pointer',
                       fontSize: '11px',
                       textAlign: 'center',
-                      transition: 'all 0.1s',
+                      transition: 'all 0.05s ease-in-out',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: '6px',
                       minHeight: '64px',
                       justifyContent: 'center',
+                      color: '#1e1e1e',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#3858e9';
-                      e.currentTarget.style.boxShadow =
-                        '0 2px 4px rgba(0, 0, 0, 0.1)';
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.color = '#3858e9';
+                      e.currentTarget.style.backgroundColor = 'rgba(56, 88, 233, 0.04)';
+                      // Change icon color via CSS variable
+                      const icon = e.currentTarget.querySelector('svg');
+                      if (icon) {
+                        icon.style.color = '#3858e9';
+                      }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#ddd';
-                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.color = '#1e1e1e';
                       e.currentTarget.style.backgroundColor = '#fff';
+                      const icon = e.currentTarget.querySelector('svg');
+                      if (icon) {
+                        icon.style.color = 'inherit';
+                      }
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #3858e9';
+                      e.currentTarget.style.outline = 'none';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
                     <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
@@ -280,21 +293,32 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                     onClick={() => handleAddPattern(pattern.id)}
                     style={{
                       padding: '12px',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '4px',
+                      border: 'none',
                       backgroundColor: '#fff',
                       cursor: 'pointer',
                       fontSize: '13px',
                       textAlign: 'left',
-                      transition: 'all 0.2s',
+                      transition: 'all 0.05s ease-in-out',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#3858e9';
-                      e.currentTarget.style.boxShadow =
-                        '0 2px 4px rgba(0, 0, 0, 0.1)';
+                      const title = e.currentTarget.querySelector('div:first-child') as HTMLElement;
+                      if (title) {
+                        title.style.color = '#3858e9';
+                      }
+                      e.currentTarget.style.backgroundColor = 'rgba(56, 88, 233, 0.04)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#e0e0e0';
+                      const title = e.currentTarget.querySelector('div:first-child') as HTMLElement;
+                      if (title) {
+                        title.style.color = '#1e1e1e';
+                      }
+                      e.currentTarget.style.backgroundColor = '#fff';
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #3858e9';
+                      e.currentTarget.style.outline = 'none';
+                    }}
+                    onBlur={(e) => {
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
