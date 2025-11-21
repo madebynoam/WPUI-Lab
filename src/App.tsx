@@ -15,6 +15,8 @@ function AppContent() {
   const [showInserter, setShowInserter] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'none'>('props');
+  const [rightPanelWidth, setRightPanelWidth] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -29,6 +31,37 @@ function AppContent() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Handle panel resize
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const viewport = window.innerWidth;
+      const newWidth = viewport - e.clientX;
+
+      // Constrain between 200px and 600px
+      if (newWidth >= 200 && newWidth <= 600) {
+        setRightPanelWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = 'auto';
+      document.body.style.cursor = 'auto';
+    };
+  }, [isResizing]);
 
   // Hide panels when in play mode, even if showPanels is true
   const shouldShowPanels = showPanels && !isPlayMode;
@@ -48,8 +81,12 @@ function AppContent() {
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {shouldShowPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
         <Canvas showBreadcrumb={showHeader} />
-        {shouldShowPanels && rightPanel === 'props' && <PropertiesPanel />}
-        {shouldShowPanels && rightPanel === 'code' && <CodePanel />}
+        {shouldShowPanels && rightPanel === 'props' && (
+          <PropertiesPanel width={rightPanelWidth} onResizeStart={() => setIsResizing(true)} />
+        )}
+        {shouldShowPanels && rightPanel === 'code' && (
+          <CodePanel width={rightPanelWidth} onResizeStart={() => setIsResizing(true)} />
+        )}
       </div>
     </div>
   );

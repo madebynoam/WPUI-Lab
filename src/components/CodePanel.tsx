@@ -1,9 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { generatePageCode, generateComponentCode, generateComponentWithInteractions } from '../utils/codeGenerator';
+import { Button } from '@wordpress/components';
+import { copy as copyIcon } from '@wordpress/icons';
 
-export const CodePanel: React.FC = () => {
+interface CodePanelProps {
+  width?: number;
+  onResizeStart?: () => void;
+}
+
+export const CodePanel: React.FC<CodePanelProps> = ({ width = 280, onResizeStart }) => {
   const { selectedNodeIds, getNodeById, tree } = useComponentTree();
+  const [copied, setCopied] = useState(false);
 
   const code = useMemo(() => {
     // If no selection or root page selected, show entire page code
@@ -25,22 +33,59 @@ export const CodePanel: React.FC = () => {
     return generateComponentCode(node, { indent: 0 });
   }, [selectedNodeIds, getNodeById, tree]);
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
+  };
+
   return (
     <div
       style={{
-        width: '280px',
+        width: `${width}px`,
         borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
         backgroundColor: '#fff',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
-      <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
-        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Code</h3>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-          {selectedNodeIds.length === 0 || selectedNodeIds[0] === ROOT_VSTACK_ID ? 'Page' : 'Component'} Code
+      <div
+        onMouseDown={onResizeStart}
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '4px',
+          cursor: 'col-resize',
+          backgroundColor: 'transparent',
+        }}
+      />
+      <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Code</h3>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+            {selectedNodeIds.length === 0 || selectedNodeIds[0] === ROOT_VSTACK_ID ? 'Page' : 'Component'} Code
+          </div>
         </div>
+        <Button
+          icon={copyIcon}
+          onClick={handleCopy}
+          title={copied ? 'Copied!' : 'Copy code'}
+          style={{
+            color: copied ? '#3858e9' : '#666',
+            backgroundColor: 'transparent',
+            border: 'none',
+            padding: '4px',
+            cursor: 'pointer',
+          }}
+        />
       </div>
 
       <div
