@@ -9,6 +9,7 @@ import {
   __experimentalNumberControl as NumberControl,
   ColorPicker,
   Button,
+  PanelBody,
 } from '@wordpress/components';
 import { plus as plusIcon, trash as trashIcon, settings as settingsIcon, connection as connectionIcon } from '@wordpress/icons';
 import { IconPicker } from './IconPicker';
@@ -16,6 +17,7 @@ import { IconPicker } from './IconPicker';
 export const PropertiesPanel: React.FC = () => {
   const PANEL_WIDTH = 280;
   const [activeTab, setActiveTab] = useState<'styles' | 'interactions'>('styles');
+  const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({ settings: true, gridLayout: true });
   const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines, pages, addInteraction, removeInteraction, updateInteraction } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
@@ -180,116 +182,104 @@ export const PropertiesPanel: React.FC = () => {
   }
 
   const renderStylesTab = () => (
-    <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+    <div style={{ flex: 1, overflow: 'auto' }}>
       {/* Layer Name - only for single select */}
       {!isMultiSelect && (
-        <div style={{ marginBottom: '16px' }}>
+        <PanelBody title="Layer Name" initialOpen={true}>
           <TextControl
-            label="Layer Name"
             value={firstNode.name || ''}
             onChange={(value) => updateComponentName(selectedNodeIds[0], value)}
-            help="Custom name for this layer"
             placeholder={firstNode.type}
           />
-        </div>
+        </PanelBody>
       )}
 
-      {definition.propDefinitions.map((propDef) => {
-        // For multi-select, show shared value if available, otherwise show first node's value
-        // This allows setting properties even when they differ across selected nodes
-        const currentValue = isMultiSelect
-          ? (getSharedProps[propDef.name] !== undefined
-              ? getSharedProps[propDef.name]
-              : firstNode.props[propDef.name] ?? propDef.defaultValue)
-          : firstNode.props[propDef.name] ?? propDef.defaultValue;
+      {/* Properties */}
+      {definition.propDefinitions.length > 0 && (
+        <PanelBody
+          title="Settings"
+          initialOpen={openPanels['settings']}
+          onToggle={() => setOpenPanels({...openPanels, settings: !openPanels['settings']})}
+        >
+          {definition.propDefinitions.map((propDef) => {
+            const currentValue = isMultiSelect
+              ? (getSharedProps[propDef.name] !== undefined
+                  ? getSharedProps[propDef.name]
+                  : firstNode.props[propDef.name] ?? propDef.defaultValue)
+              : firstNode.props[propDef.name] ?? propDef.defaultValue;
 
-        // Show indicator if property is not shared in multi-select
-        const isShared = !isMultiSelect || (propDef.name in getSharedProps);
+            const isShared = !isMultiSelect || (propDef.name in getSharedProps);
 
-        return (
-          <div key={propDef.name} style={{ marginBottom: '16px' }}>
-            {propDef.type === 'string' && (
-              <TextControl
-                label={propDef.name}
-                value={currentValue || ''}
-                onChange={(value) => handlePropChange(propDef.name, value)}
-                help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
-                placeholder={isMultiSelect && !isShared ? 'Mixed values' : undefined}
-              />
-            )}
+            return (
+              <div key={propDef.name} style={{ marginBottom: '16px' }}>
+                {propDef.type === 'string' && (
+                  <TextControl
+                    label={propDef.name}
+                    value={currentValue || ''}
+                    onChange={(value) => handlePropChange(propDef.name, value)}
+                    help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+                    placeholder={isMultiSelect && !isShared ? 'Mixed values' : undefined}
+                  />
+                )}
 
-            {propDef.type === 'number' && (
-              <NumberControl
-                label={propDef.name}
-                value={currentValue}
-                onChange={(value) => handlePropChange(propDef.name, Number(value))}
-                help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
-              />
-            )}
+                {propDef.type === 'number' && (
+                  <NumberControl
+                    label={propDef.name}
+                    value={currentValue}
+                    onChange={(value) => handlePropChange(propDef.name, Number(value))}
+                    help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+                  />
+                )}
 
-            {propDef.type === 'boolean' && (
-              <ToggleControl
-                label={propDef.name}
-                checked={currentValue || false}
-                onChange={(value) => handlePropChange(propDef.name, value)}
-                help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
-              />
-            )}
+                {propDef.type === 'boolean' && (
+                  <ToggleControl
+                    label={propDef.name}
+                    checked={currentValue || false}
+                    onChange={(value) => handlePropChange(propDef.name, value)}
+                    help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+                  />
+                )}
 
-            {propDef.type === 'select' && propDef.name === 'icon' && (
-              <IconPicker
-                label={propDef.name}
-                value={currentValue}
-                onChange={(value) => handlePropChange(propDef.name, value)}
-              />
-            )}
+                {propDef.type === 'select' && propDef.name === 'icon' && (
+                  <IconPicker
+                    label={propDef.name}
+                    value={currentValue}
+                    onChange={(value) => handlePropChange(propDef.name, value)}
+                  />
+                )}
 
-            {propDef.type === 'select' && propDef.name !== 'icon' && propDef.options && (
-              <SelectControl
-                label={propDef.name}
-                value={currentValue}
-                options={propDef.options.map((opt) => ({ label: opt, value: opt }))}
-                onChange={(value) => handlePropChange(propDef.name, value)}
-                help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
-              />
-            )}
-          </div>
-        );
-      })}
+                {propDef.type === 'select' && propDef.name !== 'icon' && propDef.options && (
+                  <SelectControl
+                    label={propDef.name}
+                    value={currentValue}
+                    options={propDef.options.map((opt) => ({ label: opt, value: opt }))}
+                    onChange={(value) => handlePropChange(propDef.name, value)}
+                    help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+                  />
+                )}
+              </div>
+            );
+          })}
 
-      {/* Grid Lines Toggle - only for Grid components, single select */}
-      {!isMultiSelect && firstNode.type === 'Grid' && (
-        <>
-          <div style={{
-            marginTop: definition.propDefinitions.length > 0 ? '24px' : '0',
-            paddingTop: definition.propDefinitions.length > 0 ? '16px' : '0',
-            borderTop: definition.propDefinitions.length > 0 ? '1px solid #e0e0e0' : 'none',
-            marginBottom: '16px',
-          }}>
+          {/* Grid Lines Toggle - only for Grid components, single select */}
+          {!isMultiSelect && firstNode.type === 'Grid' && (
             <ToggleControl
               label="Show Grid Lines"
               checked={gridLinesVisible.has(selectedNodeIds[0])}
               onChange={() => toggleGridLines(selectedNodeIds[0])}
               help="Toggle grid overlay (Control+G)"
             />
-          </div>
-        </>
+          )}
+        </PanelBody>
       )}
 
       {/* Grid child properties - only for single select */}
       {!isMultiSelect && isChildOfGrid && (
-        <>
-          <div style={{
-            marginTop: '24px',
-            paddingTop: '16px',
-            borderTop: '1px solid #e0e0e0',
-            marginBottom: '12px',
-          }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#666' }}>
-              Grid Layout
-            </div>
-          </div>
-
+        <PanelBody
+          title="Grid Layout"
+          initialOpen={openPanels['gridLayout']}
+          onToggle={() => setOpenPanels({...openPanels, gridLayout: !openPanels['gridLayout']})}
+        >
           <div style={{ marginBottom: '16px' }}>
             <NumberControl
               label="Column Span"
@@ -309,11 +299,11 @@ export const PropertiesPanel: React.FC = () => {
               min={1}
             />
           </div>
-        </>
+        </PanelBody>
       )}
 
       {definition.propDefinitions.length === 0 && !isChildOfGrid && (
-        <div style={{ color: '#999', fontSize: '13px', textAlign: 'center' }}>
+        <div style={{ color: '#999', fontSize: '13px', textAlign: 'center', padding: '16px' }}>
           No editable properties
         </div>
       )}
@@ -321,9 +311,8 @@ export const PropertiesPanel: React.FC = () => {
   );
 
   const renderInteractionsTab = () => (
-    <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-      {/* List existing interactions */}
-      <div style={{ marginBottom: '12px' }}>
+    <div style={{ flex: 1, overflow: 'auto' }}>
+      <PanelBody title="Interactions" initialOpen={true}>
         {(firstNode.interactions || []).map((interaction) => (
           <div
             key={interaction.id}
@@ -369,25 +358,25 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </div>
         ))}
-      </div>
 
-      {/* Add interaction button */}
-      <Button
-        variant="secondary"
-        size="small"
-        icon={plusIcon}
-        onClick={() => {
-          // Add default navigate interaction - use first page if available
-          const targetPageId = pages.length > 0 ? pages[0].id : 'unknown';
-          addInteraction(selectedNodeIds[0], {
-            trigger: 'onClick',
-            action: 'navigate',
-            targetId: targetPageId,
-          });
-        }}
-      >
-        Add Interaction
-      </Button>
+        {/* Add interaction button */}
+        <Button
+          variant="secondary"
+          size="small"
+          icon={plusIcon}
+          onClick={() => {
+            // Add default navigate interaction - use first page if available
+            const targetPageId = pages.length > 0 ? pages[0].id : 'unknown';
+            addInteraction(selectedNodeIds[0], {
+              trigger: 'onClick',
+              action: 'navigate',
+              targetId: targetPageId,
+            });
+          }}
+        >
+          Add Interaction
+        </Button>
+      </PanelBody>
     </div>
   );
 
