@@ -53,6 +53,10 @@ function generateNodeCode(
     propsStr += ` onClick={${handlerName}}`;
   }
 
+  // Components that should always render with opening/closing tags
+  const containerComponents = ['Text', 'Heading', 'Button', 'Label', 'Paragraph', 'Div', 'Span'];
+  const isContainerComponent = containerComponents.includes(componentName);
+
   // Handle components with children
   if (node.children && node.children.length > 0) {
     const childrenCode = node.children
@@ -65,6 +69,11 @@ function generateNodeCode(
   // Handle Text/Heading/Button with text content
   if (hasTextContent) {
     return `${indentStr}<${componentName}${propsStr}>${textContent}</${componentName}>`;
+  }
+
+  // For container components without content, render with empty opening/closing tags
+  if (isContainerComponent) {
+    return `${indentStr}<${componentName}${propsStr}></${componentName}>`;
   }
 
   // Self-closing component
