@@ -139,6 +139,11 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
     onSearchChange('');
   };
 
+  // Format component name for display (strip "Control" suffix)
+  const formatComponentName = (name: string): string => {
+    return name.endsWith('Control') ? name.slice(0, -7) : name;
+  };
+
   const renderBlocksContent = () => (
     <>
       {/* Search */}
@@ -245,7 +250,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                     }}
                   >
                     <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
-                    <span style={{ whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2 }}>{comp}</span>
+                    <span style={{ whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2 }}>{formatComponentName(comp)}</span>
                   </button>
                 ))}
               </div>
