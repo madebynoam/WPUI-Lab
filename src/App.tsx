@@ -15,10 +15,11 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl+\ to toggle header with animation
+      // Cmd/Ctrl+\ to toggle header and sidebars with animation
       if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
         e.preventDefault();
         setShowHeader(prev => !prev);
+        setShowPanels(prev => !prev);
       }
     };
 
@@ -32,7 +33,7 @@ function App() {
         <div
           style={{
             transform: showHeader ? 'translateY(0)' : 'translateY(-100%)',
-            transition: 'transform 0.3s ease-in-out',
+            transition: 'transform 0.2s ease-in-out',
             height: '60px',
           }}
         >
