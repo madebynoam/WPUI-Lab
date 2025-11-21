@@ -820,8 +820,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 								paddingRight: "8px",
 								paddingLeft: "8px",
 								backgroundColor:
-									currentPageId === page.id ? "#7b90ff" : "transparent",
-								color: currentPageId === page.id ? "#fff" : "#1e1e1e",
+									currentPageId === page.id ? "#f0f0f0" : "transparent",
+								color: currentPageId === page.id ? "#1e1e1e" : "#1e1e1e",
 								borderRadius: "2px",
 								fontSize: "13px",
 							}}
