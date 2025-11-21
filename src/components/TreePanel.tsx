@@ -974,9 +974,15 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			{/* Tree */}
 			<div style={{ flex: 1, overflow: "auto" }}>
 				<DndProvider backend={HTML5Backend}>
-					{tree.map((node) => (
-						<TreeNode key={node.id} node={node} level={0} />
-					))}
+					{tree.map((node) => {
+						// Skip rendering the root page node itself, but render its children
+						if (node.id === ROOT_VSTACK_ID && node.children) {
+							return node.children.map((child) => (
+								<TreeNode key={child.id} node={child} level={0} />
+							));
+						}
+						return <TreeNode key={node.id} node={node} level={0} />;
+					})}
 				</DndProvider>
 			</div>
 

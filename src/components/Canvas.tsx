@@ -183,8 +183,22 @@ export const Canvas: React.FC = () => {
           justifyContent: 'center',
         }}
         onMouseDown={(e) => {
-          // Deselect when clicking canvas background
-          if (e.target === e.currentTarget) {
+          // Check if the click was on empty space (not on a component)
+          const isClickOnComponent = (target: EventTarget | null): boolean => {
+            if (!target || !(target instanceof HTMLElement)) return false;
+            // Traverse up the DOM to see if we're inside a component wrapper
+            let current: HTMLElement | null = target as HTMLElement;
+            while (current) {
+              if (current.hasAttribute('data-component-id')) {
+                return true;
+              }
+              current = current.parentElement;
+            }
+            return false;
+          };
+
+          // If clicked on empty space, select the page
+          if (!isClickOnComponent(e.target)) {
             toggleNodeSelection(ROOT_VSTACK_ID, false);
           }
         }}

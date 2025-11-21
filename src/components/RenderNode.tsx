@@ -50,6 +50,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
@@ -70,6 +71,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
@@ -91,6 +93,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
@@ -111,6 +114,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       // Render Modal content directly without the blocking overlay
       return (
         <div
+          data-component-id={node.id}
           onMouseDown={(e) => {
             e.stopPropagation();
             const multiSelect = e.metaKey || e.ctrlKey;
@@ -151,6 +155,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     const mergedProps = { ...definition.defaultProps, ...props };
     return (
       <div
+        data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
@@ -243,6 +248,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
       return (
         <div
+          data-component-id={node.id}
           onMouseDown={(e) => {
             e.stopPropagation();
             const multiSelect = e.metaKey || e.ctrlKey;
@@ -258,6 +264,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       console.error('DataViews rendering error:', error);
       return (
         <div
+          data-component-id={node.id}
           onMouseDown={(e) => {
             e.stopPropagation();
             const multiSelect = e.metaKey || e.ctrlKey;
@@ -309,6 +316,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        data-component-id={node.id}
         onMouseDown={(e) => {
           e.stopPropagation();
           const multiSelect = e.metaKey || e.ctrlKey;
@@ -330,6 +338,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
   return (
     <div
+      data-component-id={node.id}
       onMouseDown={(e) => {
         e.stopPropagation();
         const multiSelect = e.metaKey || e.ctrlKey;
