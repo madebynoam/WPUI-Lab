@@ -30,15 +30,11 @@ function App() {
   return (
     <ComponentTreeProvider>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <div
-          style={{
-            transform: showHeader ? 'translateY(0)' : 'translateY(-100%)',
-            transition: 'transform 0.2s ease-in-out',
-            height: '60px',
-          }}
-        >
-          <TopBar showInserter={showInserter} onToggleInserter={() => setShowInserter(!showInserter)} />
-        </div>
+        {showHeader && (
+          <div style={{ height: '60px' }}>
+            <TopBar showInserter={showInserter} onToggleInserter={() => setShowInserter(!showInserter)} />
+          </div>
+        )}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {showPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
           <Canvas />
