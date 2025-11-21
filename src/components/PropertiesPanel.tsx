@@ -404,7 +404,7 @@ export const PropertiesPanel: React.FC = () => {
       }}
     >
       {/* Header with component icon, name, and description */}
-      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
+      <div style={{ padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
           <div style={{ width: '32px', height: '32px', flexShrink: 0 }}>
             {/* Placeholder for component icon - could be enhanced later */}
@@ -438,30 +438,32 @@ export const PropertiesPanel: React.FC = () => {
 
       {/* WordPress TabPanel */}
       {!isMultiSelect && (
-        <TabPanel
-          className="wp-designer-properties__tabs"
-          tabs={[
-            {
-              name: 'styles',
-              title: 'Styles',
-              className: 'wp-designer-tab-styles',
-            },
-            {
-              name: 'interactions',
-              title: 'Interactions',
-              className: 'wp-designer-tab-interactions',
-            },
-          ]}
-          onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
-          selectedTab={activeTab}
-        >
-          {(tab) => (
-            <>
-              {tab.name === 'styles' && renderStylesTab()}
-              {tab.name === 'interactions' && renderInteractionsTab()}
-            </>
-          )}
-        </TabPanel>
+        <div style={{ borderTop: '1px solid #e0e0e0' }}>
+          <TabPanel
+            className="wp-designer-properties__tabs"
+            tabs={[
+              {
+                name: 'styles',
+                title: 'Styles',
+                className: 'wp-designer-tab-styles',
+              },
+              {
+                name: 'interactions',
+                title: 'Interactions',
+                className: 'wp-designer-tab-interactions',
+              },
+            ]}
+            onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
+            selectedTab={activeTab}
+          >
+            {(tab) => (
+              <>
+                {tab.name === 'styles' && renderStylesTab()}
+                {tab.name === 'interactions' && renderInteractionsTab()}
+              </>
+            )}
+          </TabPanel>
+        </div>
       )}
 
       {/* For multi-select, just show styles */}
