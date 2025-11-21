@@ -82,7 +82,7 @@ function AppContent() {
         {shouldShowPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
         <Canvas showBreadcrumb={showHeader} />
         {shouldShowPanels && rightPanel === 'props' && (
-          <PropertiesPanel width={rightPanelWidth} onResizeStart={() => setIsResizing(true)} />
+          <PropertiesPanel />
         )}
         {shouldShowPanels && rightPanel === 'code' && (
           <CodePanel width={rightPanelWidth} onResizeStart={() => setIsResizing(true)} />

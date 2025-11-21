@@ -12,12 +12,8 @@ import {
 } from '@wordpress/components';
 import { plus as plusIcon, trash as trashIcon } from '@wordpress/icons';
 
-interface PropertiesPanelProps {
-  width?: number;
-  onResizeStart?: () => void;
-}
-
-export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ width = 280, onResizeStart }) => {
+export const PropertiesPanel: React.FC = () => {
+  const PANEL_WIDTH = 280;
   const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines, pages, addInteraction, removeInteraction, updateInteraction } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
@@ -55,32 +51,17 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ width = 280, o
     return (
       <div
         style={{
-          width: `${width}px`,
+          width: `${PANEL_WIDTH}px`,
           borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
           backgroundColor: '#fff',
           padding: '16px',
           display: 'flex',
           flexDirection: 'column',
-          position: 'relative',
         }}
       >
         <div style={{ color: '#999', fontSize: '13px', textAlign: 'center' }}>
           Select a component to edit properties
         </div>
-        {/* Resize handle */}
-        <div
-          onMouseDown={onResizeStart}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: '4px',
-            cursor: 'col-resize',
-            backgroundColor: 'transparent',
-            '&:hover': { backgroundColor: '#3858e9' },
-          }}
-        />
       </div>
     );
   }
@@ -96,27 +77,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ width = 280, o
     return (
       <div
         style={{
-          width: `${width}px`,
+          width: `${PANEL_WIDTH}px`,
           borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
           backgroundColor: '#fff',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          position: 'relative',
         }}
       >
-        <div
-          onMouseDown={onResizeStart}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: '4px',
-            cursor: 'col-resize',
-            backgroundColor: 'transparent',
-          }}
-        />
         <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Page Settings</h3>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Canvas Layout</div>
@@ -165,27 +133,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ width = 280, o
     return (
       <div
         style={{
-          width: `${width}px`,
+          width: `${PANEL_WIDTH}px`,
           borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
           backgroundColor: '#fff',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          position: 'relative',
         }}
       >
-        <div
-          onMouseDown={onResizeStart}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: '4px',
-            cursor: 'col-resize',
-            backgroundColor: 'transparent',
-          }}
-        />
         <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Properties</h3>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
@@ -220,27 +175,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ width = 280, o
   return (
     <div
       style={{
-        width: `${width}px`,
+        width: `${PANEL_WIDTH}px`,
         borderLeft: '1px solid rgba(0, 0, 0, 0.133)',
         backgroundColor: '#fff',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        position: 'relative',
       }}
     >
-      <div
-        onMouseDown={onResizeStart}
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: '4px',
-          cursor: 'col-resize',
-          backgroundColor: 'transparent',
-        }}
-      />
       <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
         <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Properties</h3>
         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
