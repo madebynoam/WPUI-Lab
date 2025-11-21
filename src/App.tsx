@@ -11,13 +11,14 @@ import '@wordpress/dataviews/build-style/style.css';
 function App() {
   const [showPanels, setShowPanels] = useState(true);
   const [showInserter, setShowInserter] = useState(false);
+  const [showHeader, setShowHeader] = useState(true);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl+\ to toggle UI panels
+      // Cmd/Ctrl+\ to toggle header with animation
       if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
         e.preventDefault();
-        setShowPanels(prev => !prev);
+        setShowHeader(prev => !prev);
       }
     };
 
@@ -28,7 +29,15 @@ function App() {
   return (
     <ComponentTreeProvider>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <TopBar showInserter={showInserter} onToggleInserter={() => setShowInserter(!showInserter)} />
+        <div
+          style={{
+            transform: showHeader ? 'translateY(0)' : 'translateY(-100%)',
+            transition: 'transform 0.3s ease-in-out',
+            height: '60px',
+          }}
+        >
+          <TopBar showInserter={showInserter} onToggleInserter={() => setShowInserter(!showInserter)} />
+        </div>
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {showPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
           <Canvas />
