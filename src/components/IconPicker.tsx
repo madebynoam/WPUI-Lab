@@ -11,15 +11,15 @@ interface IconPickerProps {
 
 // Group icons logically
 const ICON_GROUPS = {
-  'Navigation': ['chevronDown', 'chevronUp', 'chevronLeft', 'chevronRight'],
-  'Content': ['paragraph', 'heading', 'quote', 'code', 'html', 'list', 'listItem', 'columns'],
-  'Media': ['image', 'imageAlt', 'gallery', 'video', 'audio', 'media'],
-  'UI Elements': ['button', 'box', 'tag', 'pages', 'blockDefault', 'grid', 'columns', 'column', 'table'],
-  'Format': ['formatBold', 'formatItalic', 'formatUnderline', 'formatStrikethrough', 'formatClear'],
-  'Communication': ['mail', 'phone', 'user', 'users', 'userAdd', 'userGroup', 'team', 'share'],
-  'Action': ['trash', 'edit', 'create', 'clipboardCopy', 'paste', 'refresh', 'update', 'save', 'export', 'download', 'upload'],
-  'Status': ['check', 'close', 'success', 'warning', 'error', 'info', 'noticeSuccess', 'noticeWarning', 'noticeError', 'noticeInfo'],
-  'Tools': ['settings', 'cog', 'customize', 'customizer', 'plugins', 'brush', 'link', 'linkOff', 'lock', 'unlock', 'eye', 'eyeOff'],
+  'Navigation': ['arrowUp', 'arrowDown', 'arrowLeft', 'arrowRight', 'chevronUp', 'chevronDown', 'chevronLeft', 'chevronRight'],
+  'Content': ['paragraph', 'heading', 'quote', 'code', 'html', 'list', 'listItem', 'columns', 'table'],
+  'Media': ['image', 'gallery', 'video', 'audio', 'media', 'file'],
+  'UI Elements': ['button', 'box', 'tag', 'pages', 'blockDefault', 'grid', 'column', 'layout', 'group'],
+  'Format': ['formatBold', 'formatItalic', 'formatUnderline', 'formatStrikethrough', 'formatListBullets', 'formatListNumbered'],
+  'Communication': ['mail', 'phone', 'share', 'envelope', 'comment', 'commentContent'],
+  'Action': ['trash', 'pencil', 'create', 'copy', 'plus', 'download', 'upload', 'update', 'refresh', 'undo', 'redo'],
+  'Status': ['check', 'close', 'error', 'warning', 'info', 'published'],
+  'Tools': ['settings', 'cog', 'plugins', 'brush', 'link', 'linkOff', 'lock', 'unlock', 'eye', 'search', 'filter'],
   'Other': [],
 };
 
