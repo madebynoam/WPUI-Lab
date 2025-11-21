@@ -30,8 +30,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
 
   // Get the icon component from WordPress icons
   const getIconComponent = (iconName: string) => {
-    const iconKey = iconName.charAt(0).toUpperCase() + iconName.slice(1);
-    return (WordPressIcons as any)[iconKey] || null;
+    return (WordPressIcons as any)[iconName] || null;
   };
 
   // Group and filter icons
@@ -73,7 +72,6 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
         {label || 'Icon'}
       </label>
 
-      {/* Trigger Button */}
       <Button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
@@ -107,7 +105,6 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
               maxHeight: '600px',
             }}
           >
-            {/* Search */}
             <div style={{ padding: '12px' }}>
               <SearchControl
                 value={searchTerm}
@@ -117,7 +114,6 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
               />
             </div>
 
-            {/* Icon Grid */}
             <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
               {Object.entries(groupedIcons).map(([groupName, icons]) => (
                 <div key={groupName} style={{ marginBottom: '20px' }}>
