@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useRef, useCallback } from 'react';
 import { ComponentNode, Page, HistoryState } from './types';
+import { componentRegistry } from './componentRegistry';
 
 const STORAGE_KEY = 'wp-designer-pages';
 

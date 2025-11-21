@@ -65,6 +65,7 @@ export const Canvas: React.FC = () => {
       // Cmd/Ctrl+Z for undo
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && canUndo) {
         e.preventDefault();
+        e.stopPropagation();
         undo();
         return;
       }
@@ -72,6 +73,7 @@ export const Canvas: React.FC = () => {
       // Cmd/Ctrl+Shift+Z for redo
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z' && canRedo) {
         e.preventDefault();
+        e.stopPropagation();
         redo();
         return;
       }
@@ -79,6 +81,7 @@ export const Canvas: React.FC = () => {
       // Delete key to remove selected component (skip if in edit mode)
       if (e.key === 'Delete' && selectedNodeIds.length > 0 && !isInEditMode()) {
         e.preventDefault();
+        e.stopPropagation();
         // Remove each selected component
         selectedNodeIds.forEach(id => {
           if (id !== ROOT_VSTACK_ID) { // Don't delete root
@@ -91,6 +94,7 @@ export const Canvas: React.FC = () => {
       // Cmd/Ctrl+C for copy
       if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedNodeIds.length > 0 && !isInEditMode()) {
         e.preventDefault();
+        e.stopPropagation();
         copyComponent(selectedNodeIds[0]);
         return;
       }
@@ -98,13 +102,15 @@ export const Canvas: React.FC = () => {
       // Cmd/Ctrl+V for paste
       if ((e.ctrlKey || e.metaKey) && e.key === 'v' && canPaste && !isInEditMode()) {
         e.preventDefault();
+        e.stopPropagation();
         pasteComponent();
         return;
       }
 
-      // Cmd/Ctrl+D for duplicate in same parent
-      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && selectedNodeIds.length > 0 && !isInEditMode()) {
+      // Cmd/Ctrl+Shift+D for duplicate in same parent (Shift avoids Arc browser conflict)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D' && selectedNodeIds.length > 0 && !isInEditMode()) {
         e.preventDefault();
+        e.stopPropagation();
         duplicateComponent(selectedNodeIds[0]);
         return;
       }
@@ -112,12 +118,14 @@ export const Canvas: React.FC = () => {
       // Cmd/Ctrl+Enter to go to page settings (select root VStack)
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
+        e.stopPropagation();
         toggleNodeSelection(ROOT_VSTACK_ID, false);
       }
 
       // Shift+Enter to select parent
       if (e.shiftKey && e.key === 'Enter' && selectedNodeIds.length > 0) {
         e.preventDefault();
+        e.stopPropagation();
         const parent = findParent(tree, selectedNodeIds[0]);
         if (parent) {
           toggleNodeSelection(parent.id, false);
@@ -130,6 +138,7 @@ export const Canvas: React.FC = () => {
         const ancestor = findInteractiveAncestor(selectedNodeIds[0]);
         if (ancestor) {
           e.preventDefault();
+          e.stopPropagation();
           // Return to root VStack to show full page view
           toggleNodeSelection(ROOT_VSTACK_ID, false);
         }
@@ -140,13 +149,15 @@ export const Canvas: React.FC = () => {
         const selectedNode = getNodeById(selectedNodeIds[0]);
         if (selectedNode && selectedNode.type === 'Grid') {
           e.preventDefault();
+          e.stopPropagation();
           toggleGridLines(selectedNodeIds[0]);
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Attach to document to catch events earlier
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [selectedNodeIds, tree, toggleNodeSelection, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isInEditMode]);
 
   // Check if selected node is an interactive component or a child of one
