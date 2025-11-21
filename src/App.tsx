@@ -4,6 +4,7 @@ import { TopBar } from './components/TopBar';
 import { TreePanel } from './components/TreePanel';
 import { Canvas } from './components/Canvas';
 import { PropertiesPanel } from './components/PropertiesPanel';
+import { CodePanel } from './components/CodePanel';
 import '@wordpress/components/build-style/style.css';
 import '@wordpress/block-editor/build-style/style.css';
 import '@wordpress/dataviews/build-style/style.css';
@@ -13,6 +14,7 @@ function AppContent() {
   const [showPanels, setShowPanels] = useState(true);
   const [showInserter, setShowInserter] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
+  const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'none'>('props');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -35,13 +37,19 @@ function AppContent() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {showHeader && (
         <div style={{ height: '60px' }}>
-          <TopBar showInserter={showInserter} onToggleInserter={() => setShowInserter(!showInserter)} />
+          <TopBar
+            showInserter={showInserter}
+            onToggleInserter={() => setShowInserter(!showInserter)}
+            rightPanel={rightPanel}
+            onToggleRightPanel={setRightPanel}
+          />
         </div>
       )}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {shouldShowPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
         <Canvas showBreadcrumb={showHeader} />
-        {shouldShowPanels && <PropertiesPanel />}
+        {shouldShowPanels && rightPanel === 'props' && <PropertiesPanel />}
+        {shouldShowPanels && rightPanel === 'code' && <CodePanel />}
       </div>
     </div>
   );

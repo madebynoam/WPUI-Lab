@@ -1,14 +1,16 @@
 import React from 'react';
 import { Button } from '@wordpress/components';
-import { plus as plusIcon, close as closeIcon, chevronLeft } from '@wordpress/icons';
+import { plus as plusIcon, close as closeIcon, chevronLeft, drawerRight, code } from '@wordpress/icons';
 import { useComponentTree } from '../ComponentTreeContext';
 
 interface TopBarProps {
   showInserter: boolean;
   onToggleInserter: () => void;
+  rightPanel: 'props' | 'code' | 'none';
+  onToggleRightPanel: (panel: 'props' | 'code' | 'none') => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }) => {
+export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, rightPanel, onToggleRightPanel }) => {
   const { pages, currentPageId, isPlayMode, setPlayMode } = useComponentTree();
   const currentPage = pages.find(p => p.id === currentPageId);
 
@@ -125,6 +127,34 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter }
           gap: '8px',
           paddingRight: '8px',
         }}>
+          {/* Sidebar toggle button */}
+          <Button
+            icon={drawerRight}
+            onClick={() => onToggleRightPanel(rightPanel === 'props' ? 'none' : 'props')}
+            title="Toggle properties panel"
+            style={{
+              backgroundColor: rightPanel === 'props' ? 'rgba(56, 88, 233, 0.15)' : 'transparent',
+              color: rightPanel === 'props' ? '#3858e9' : '#666',
+              border: rightPanel === 'props' ? '1px solid #3858e9' : 'none',
+              borderRadius: '2px',
+              cursor: 'pointer',
+            }}
+          />
+
+          {/* Code panel toggle button */}
+          <Button
+            icon={code}
+            onClick={() => onToggleRightPanel(rightPanel === 'code' ? 'none' : 'code')}
+            title="Toggle code panel"
+            style={{
+              backgroundColor: rightPanel === 'code' ? 'rgba(56, 88, 233, 0.15)' : 'transparent',
+              color: rightPanel === 'code' ? '#3858e9' : '#666',
+              border: rightPanel === 'code' ? '1px solid #3858e9' : 'none',
+              borderRadius: '2px',
+              cursor: 'pointer',
+            }}
+          />
+
           <Button
             onClick={() => setPlayMode(true)}
             variant="primary"
