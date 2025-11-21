@@ -437,41 +437,49 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* Custom tabs - 50% width each, icons only */}
+          {/* Custom tabs with labels - 50% width each */}
           <div style={{ display: 'flex', borderBottom: '3px solid #3858e9' }}>
             <button
               onClick={() => setActiveTab('styles')}
               style={{
                 flex: 1,
-                padding: '12px',
+                padding: '12px 16px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                gap: '8px',
                 backgroundColor: activeTab === 'styles' ? '#fff' : 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 color: activeTab === 'styles' ? '#000' : '#999',
+                fontSize: '13px',
+                fontWeight: activeTab === 'styles' ? 500 : 400,
               }}
               title="Styles"
             >
               {settingsIcon}
+              Styles
             </button>
             <button
               onClick={() => setActiveTab('interactions')}
               style={{
                 flex: 1,
-                padding: '12px',
+                padding: '12px 16px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                gap: '8px',
                 backgroundColor: activeTab === 'interactions' ? '#fff' : 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 color: activeTab === 'interactions' ? '#000' : '#999',
+                fontSize: '13px',
+                fontWeight: activeTab === 'interactions' ? 500 : 400,
               }}
               title="Interactions"
             >
               {connectionIcon}
+              Interactions
             </button>
           </div>
 
