@@ -139,14 +139,10 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
 
   const handleAddComponent = (componentType: string) => {
     onAddComponent(componentType);
-    onCloseInserter();
-    onSearchChange('');
   };
 
   const handleAddPattern = (patternId: string) => {
     onAddPattern(patternId);
-    onCloseInserter();
-    onSearchChange('');
   };
 
   // Format component name for display (strip "Control" suffix)
