@@ -124,9 +124,9 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
         // Generate semantic handler name from trigger type
         const triggerBase = interaction.trigger.replace('on', '');
 
-        // Add short unique ID suffix for uniqueness (first 4 chars of interaction ID, alphanumeric)
-        const uniqueSuffix = interaction.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4);
-        const handlerName = `handle${triggerBase}${uniqueSuffix}`;
+        // Add short unique ID suffix for uniqueness (last 4 chars of interaction ID, alphanumeric)
+        const uniqueSuffix = interaction.id.replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+        const handlerName = `handle${triggerBase}-${uniqueSuffix}`;
 
         handlerMap[node.id] = handlerName;
 
@@ -195,9 +195,9 @@ export const generateComponentWithInteractions = (node: ComponentNode): string =
     // Generate semantic handler name from trigger type
     const triggerBase = interaction.trigger.replace('on', '');
 
-    // Add short unique ID suffix for uniqueness (first 4 chars of interaction ID, alphanumeric)
-    const uniqueSuffix = interaction.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4);
-    const handlerName = `handle${triggerBase}${uniqueSuffix}`;
+    // Add short unique ID suffix for uniqueness (last 4 chars of interaction ID, alphanumeric)
+    const uniqueSuffix = interaction.id.replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+    const handlerName = `handle${triggerBase}-${uniqueSuffix}`;
 
     handlerMap[node.id] = handlerName;
 
