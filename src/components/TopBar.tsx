@@ -1,16 +1,18 @@
 import React from 'react';
 import { Button } from '@wordpress/components';
-import { plus as plusIcon, close as closeIcon, chevronLeft, drawerRight, code } from '@wordpress/icons';
+import { plus as plusIcon, chevronLeft, drawerRight, code, listView } from '@wordpress/icons';
 import { useComponentTree } from '../ComponentTreeContext';
 
 interface TopBarProps {
   showInserter: boolean;
   onToggleInserter: () => void;
+  showTreePanel: boolean;
+  onToggleTreePanel: () => void;
   rightPanel: 'props' | 'code' | 'none';
   onToggleRightPanel: (panel: 'props' | 'code' | 'none') => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, rightPanel, onToggleRightPanel }) => {
+export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, showTreePanel, onToggleTreePanel, rightPanel, onToggleRightPanel }) => {
   const { pages, currentPageId, isPlayMode, setPlayMode } = useComponentTree();
   const currentPage = pages.find(p => p.id === currentPageId);
 
@@ -20,7 +22,7 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
       backgroundColor: '#fff',
       borderBottom: '1px solid rgba(0, 0, 0, 0.133)',
       display: 'grid',
-      gridTemplateColumns: '60px 200px auto 260px',
+      gridTemplateColumns: '60px 1fr auto 260px',
       alignItems: 'center',
       flexShrink: 0,
     }}>
@@ -73,27 +75,42 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
         </div>
       )}
 
-      {/* Inserter button and undo/redo - hidden in play mode */}
+      {/* Left panel toggles - Inserter and Layers - hidden in play mode */}
       {!isPlayMode && (
         <div style={{
           gridColumn: '2 / 3',
           paddingLeft: '16px',
           display: 'flex',
-          gap: '4px',
+          gap: '8px',
           alignItems: 'center',
         }}>
+          {/* Inserter toggle button */}
           <Button
+            icon={plusIcon}
             onClick={onToggleInserter}
-            variant="primary"
-            size="compact"
-            icon={showInserter ? closeIcon : plusIcon}
-            label={showInserter ? 'Close inserter' : 'Open inserter'}
+            title={showInserter ? 'Close inserter' : 'Open inserter'}
             style={{
-              backgroundColor: '#3858e9',
-              color: '#fff',
+              backgroundColor: showInserter ? 'rgba(56, 88, 233, 0.15)' : 'transparent',
+              color: showInserter ? '#3858e9' : '#666',
+              border: showInserter ? '1px solid #3858e9' : 'none',
+              borderRadius: '2px',
+              cursor: 'pointer',
             }}
           />
 
+          {/* Layers/Tree panel toggle button */}
+          <Button
+            icon={listView}
+            onClick={onToggleTreePanel}
+            title={showTreePanel ? 'Close layers' : 'Open layers'}
+            style={{
+              backgroundColor: showTreePanel ? 'rgba(56, 88, 233, 0.15)' : 'transparent',
+              color: showTreePanel ? '#3858e9' : '#666',
+              border: showTreePanel ? '1px solid #3858e9' : 'none',
+              borderRadius: '2px',
+              cursor: 'pointer',
+            }}
+          />
         </div>
       )}
 

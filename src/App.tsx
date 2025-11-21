@@ -13,6 +13,7 @@ function AppContent() {
   const { isPlayMode } = useComponentTree();
   const [showPanels, setShowPanels] = useState(true);
   const [showInserter, setShowInserter] = useState(false);
+  const [showTreePanel, setShowTreePanel] = useState(true);
   const [showHeader, setShowHeader] = useState(true);
   const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'none'>('props');
   const [rightPanelWidth, setRightPanelWidth] = useState(280);
@@ -73,13 +74,15 @@ function AppContent() {
           <TopBar
             showInserter={showInserter}
             onToggleInserter={() => setShowInserter(!showInserter)}
+            showTreePanel={showTreePanel}
+            onToggleTreePanel={() => setShowTreePanel(!showTreePanel)}
             rightPanel={rightPanel}
             onToggleRightPanel={setRightPanel}
           />
         </div>
       )}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {shouldShowPanels && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
+        {shouldShowPanels && showTreePanel && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
         <Canvas showBreadcrumb={showHeader} />
         {shouldShowPanels && rightPanel === 'props' && (
           <PropertiesPanel />
