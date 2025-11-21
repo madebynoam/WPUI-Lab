@@ -403,65 +403,101 @@ export const PropertiesPanel: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      {/* Header with component icon, name, and description */}
-      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
-          <div style={{ width: '32px', height: '32px', flexShrink: 0 }}>
-            {/* Placeholder for component icon - could be enhanced later */}
-            <div style={{
-              width: '32px',
-              height: '32px',
-              backgroundColor: '#f0f0f0',
-              borderRadius: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#666'
-            }}>
-              {firstNode.type.substring(0, 2).toUpperCase()}
+      {/* Header with component icon, name, description and tabs */}
+      {!isMultiSelect && (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
+              <div style={{ width: '32px', height: '32px', flexShrink: 0 }}>
+                {/* Placeholder for component icon - could be enhanced later */}
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  backgroundColor: '#f0f0f0',
+                  borderRadius: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#666'
+                }}>
+                  {firstNode.type.substring(0, 2).toUpperCase()}
+                </div>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1e1e1e' }}>
+                  {firstNode.type}
+                </h3>
+                {definition.description && (
+                  <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                    {definition.description}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1e1e1e' }}>
-              {firstNode.type}
-            </h3>
-            {definition.description && (
-              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                {definition.description}
-              </div>
+
+          {/* WordPress TabPanel - part of header section */}
+          <TabPanel
+            className="wp-designer-properties__tabs"
+            tabs={[
+              {
+                name: 'styles',
+                title: 'Styles',
+                className: 'wp-designer-tab-styles',
+              },
+              {
+                name: 'interactions',
+                title: 'Interactions',
+                className: 'wp-designer-tab-interactions',
+              },
+            ]}
+            onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
+            selectedTab={activeTab}
+          >
+            {(tab) => (
+              <>
+                {tab.name === 'styles' && renderStylesTab()}
+                {tab.name === 'interactions' && renderInteractionsTab()}
+              </>
             )}
+          </TabPanel>
+        </div>
+      )}
+
+      {/* Header for multi-select (no tabs) */}
+      {isMultiSelect && (
+        <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
+            <div style={{ width: '32px', height: '32px', flexShrink: 0 }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                backgroundColor: '#f0f0f0',
+                borderRadius: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#666'
+              }}>
+                {firstNode.type.substring(0, 2).toUpperCase()}
+              </div>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1e1e1e' }}>
+                {firstNode.type}
+              </h3>
+              {definition.description && (
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  {definition.description}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* WordPress TabPanel */}
-      {!isMultiSelect && (
-        <TabPanel
-          className="wp-designer-properties__tabs"
-          tabs={[
-            {
-              name: 'styles',
-              title: 'Styles',
-              className: 'wp-designer-tab-styles',
-            },
-            {
-              name: 'interactions',
-              title: 'Interactions',
-              className: 'wp-designer-tab-interactions',
-            },
-          ]}
-          onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
-          selectedTab={activeTab}
-        >
-          {(tab) => (
-            <>
-              {tab.name === 'styles' && renderStylesTab()}
-              {tab.name === 'interactions' && renderInteractionsTab()}
-            </>
-          )}
-        </TabPanel>
       )}
 
       {/* For multi-select, just show styles */}
