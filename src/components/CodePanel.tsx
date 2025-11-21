@@ -97,11 +97,15 @@ export const CodePanel: React.FC<CodePanelProps> = ({ width = 280, onResizeStart
           backgroundColor: '#f5f5f5',
         }}
         onKeyDown={(e) => {
-          // Allow native copy when text is selected in the code panel
+          // Handle copy of selected text in code panel
           if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
             const selection = window.getSelection();
             if (selection && selection.toString().length > 0) {
-              e.stopPropagation(); // Don't let Canvas intercept
+              e.preventDefault();
+              e.stopPropagation();
+              navigator.clipboard.writeText(selection.toString()).catch(err => {
+                console.error('Failed to copy:', err);
+              });
             }
           }
         }}
