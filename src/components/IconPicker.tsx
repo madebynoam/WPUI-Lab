@@ -16,10 +16,10 @@ const ICON_GROUPS = {
   'Media': ['image', 'gallery', 'video', 'audio', 'media', 'file'],
   'UI Elements': ['button', 'box', 'tag', 'pages', 'blockDefault', 'grid', 'column', 'layout', 'group'],
   'Format': ['formatBold', 'formatItalic', 'formatUnderline', 'formatStrikethrough', 'formatListBullets', 'formatListNumbered'],
-  'Communication': ['mail', 'phone', 'share', 'envelope', 'comment', 'commentContent'],
-  'Action': ['trash', 'pencil', 'create', 'copy', 'plus', 'download', 'upload', 'update', 'refresh', 'undo', 'redo'],
+  'Communication': ['envelope', 'send', 'share', 'comment', 'mobile'],
+  'Action': ['trash', 'pencil', 'create', 'copy', 'plus', 'download', 'upload', 'update', 'redo', 'undo'],
   'Status': ['check', 'close', 'error', 'warning', 'info', 'published'],
-  'Tools': ['settings', 'cog', 'plugins', 'brush', 'link', 'linkOff', 'lock', 'unlock', 'eye', 'search', 'filter'],
+  'Tools': ['settings', 'cog', 'plugins', 'brush', 'link', 'linkOff', 'lock', 'unlock', 'search', 'filter'],
   'Other': [],
 };
 
