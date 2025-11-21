@@ -11,7 +11,7 @@ import {
   Button,
   TabPanel,
 } from '@wordpress/components';
-import { plus as plusIcon, trash as trashIcon } from '@wordpress/icons';
+import { plus as plusIcon, trash as trashIcon, settings as settingsIcon, connection as connectionIcon } from '@wordpress/icons';
 import { IconPicker } from './IconPicker';
 
 export const PropertiesPanel: React.FC = () => {
@@ -445,11 +445,13 @@ export const PropertiesPanel: React.FC = () => {
               {
                 name: 'styles',
                 title: 'Styles',
+                icon: settingsIcon,
                 className: 'wp-designer-tab-styles',
               },
               {
                 name: 'interactions',
                 title: 'Interactions',
+                icon: connectionIcon,
                 className: 'wp-designer-tab-interactions',
               },
             ]}
