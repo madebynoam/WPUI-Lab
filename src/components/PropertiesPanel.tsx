@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { componentRegistry } from '../componentRegistry';
 import { findParent } from '../utils/treeHelpers';
@@ -9,12 +9,14 @@ import {
   __experimentalNumberControl as NumberControl,
   ColorPicker,
   Button,
+  Icon,
 } from '@wordpress/components';
-import { plus as plusIcon, trash as trashIcon } from '@wordpress/icons';
+import { plus as plusIcon, trash as trashIcon, settings as settingsIcon, connection as connectionIcon } from '@wordpress/icons';
 import { IconPicker } from './IconPicker';
 
 export const PropertiesPanel: React.FC = () => {
   const PANEL_WIDTH = 280;
+  const [activeTab, setActiveTab] = useState<'styles' | 'interactions'>('styles');
   const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines, pages, addInteraction, removeInteraction, updateInteraction } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
@@ -30,7 +32,7 @@ export const PropertiesPanel: React.FC = () => {
 
     const shared: Record<string, any> = {};
     const allPropNames = new Set<string>();
-    
+
     // Collect all prop names from all nodes
     selectedNodes.forEach(node => {
       Object.keys(node.props || {}).forEach(key => allPropNames.add(key));
@@ -173,6 +175,223 @@ export const PropertiesPanel: React.FC = () => {
     }
   };
 
+  // Reset tab to styles for multi-select since interactions are only single-select
+  if (isMultiSelect && activeTab === 'interactions') {
+    setActiveTab('styles');
+  }
+
+  const renderStylesTab = () => (
+    <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+      {/* Layer Name - only for single select */}
+      {!isMultiSelect && (
+        <div style={{ marginBottom: '16px' }}>
+          <TextControl
+            label="Layer Name"
+            value={firstNode.name || ''}
+            onChange={(value) => updateComponentName(selectedNodeIds[0], value)}
+            help="Custom name for this layer"
+            placeholder={firstNode.type}
+          />
+        </div>
+      )}
+
+      {definition.propDefinitions.map((propDef) => {
+        // For multi-select, show shared value if available, otherwise show first node's value
+        // This allows setting properties even when they differ across selected nodes
+        const currentValue = isMultiSelect
+          ? (getSharedProps[propDef.name] !== undefined
+              ? getSharedProps[propDef.name]
+              : firstNode.props[propDef.name] ?? propDef.defaultValue)
+          : firstNode.props[propDef.name] ?? propDef.defaultValue;
+
+        // Show indicator if property is not shared in multi-select
+        const isShared = !isMultiSelect || (propDef.name in getSharedProps);
+
+        return (
+          <div key={propDef.name} style={{ marginBottom: '16px' }}>
+            {propDef.type === 'string' && (
+              <TextControl
+                label={propDef.name}
+                value={currentValue || ''}
+                onChange={(value) => handlePropChange(propDef.name, value)}
+                help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+                placeholder={isMultiSelect && !isShared ? 'Mixed values' : undefined}
+              />
+            )}
+
+            {propDef.type === 'number' && (
+              <NumberControl
+                label={propDef.name}
+                value={currentValue}
+                onChange={(value) => handlePropChange(propDef.name, Number(value))}
+                help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+              />
+            )}
+
+            {propDef.type === 'boolean' && (
+              <ToggleControl
+                label={propDef.name}
+                checked={currentValue || false}
+                onChange={(value) => handlePropChange(propDef.name, value)}
+                help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+              />
+            )}
+
+            {propDef.type === 'select' && propDef.name === 'icon' && (
+              <IconPicker
+                label={propDef.name}
+                value={currentValue}
+                onChange={(value) => handlePropChange(propDef.name, value)}
+              />
+            )}
+
+            {propDef.type === 'select' && propDef.name !== 'icon' && propDef.options && (
+              <SelectControl
+                label={propDef.name}
+                value={currentValue}
+                options={propDef.options.map((opt) => ({ label: opt, value: opt }))}
+                onChange={(value) => handlePropChange(propDef.name, value)}
+                help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
+              />
+            )}
+          </div>
+        );
+      })}
+
+      {/* Grid Lines Toggle - only for Grid components, single select */}
+      {!isMultiSelect && firstNode.type === 'Grid' && (
+        <>
+          <div style={{
+            marginTop: definition.propDefinitions.length > 0 ? '24px' : '0',
+            paddingTop: definition.propDefinitions.length > 0 ? '16px' : '0',
+            borderTop: definition.propDefinitions.length > 0 ? '1px solid #e0e0e0' : 'none',
+            marginBottom: '16px',
+          }}>
+            <ToggleControl
+              label="Show Grid Lines"
+              checked={gridLinesVisible.has(selectedNodeIds[0])}
+              onChange={() => toggleGridLines(selectedNodeIds[0])}
+              help="Toggle grid overlay (Control+G)"
+            />
+          </div>
+        </>
+      )}
+
+      {/* Grid child properties - only for single select */}
+      {!isMultiSelect && isChildOfGrid && (
+        <>
+          <div style={{
+            marginTop: '24px',
+            paddingTop: '16px',
+            borderTop: '1px solid #e0e0e0',
+            marginBottom: '12px',
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: '#666' }}>
+              Grid Layout
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <NumberControl
+              label="Column Span"
+              value={firstNode.props.gridColumnSpan || 1}
+              onChange={(value) => handlePropChange('gridColumnSpan', Number(value))}
+              help="Number of columns to span"
+              min={1}
+            />
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <NumberControl
+              label="Row Span"
+              value={firstNode.props.gridRowSpan || 1}
+              onChange={(value) => handlePropChange('gridRowSpan', Number(value))}
+              help="Number of rows to span"
+              min={1}
+            />
+          </div>
+        </>
+      )}
+
+      {definition.propDefinitions.length === 0 && !isChildOfGrid && (
+        <div style={{ color: '#999', fontSize: '13px', textAlign: 'center' }}>
+          No editable properties
+        </div>
+      )}
+    </div>
+  );
+
+  const renderInteractionsTab = () => (
+    <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+      {/* List existing interactions */}
+      <div style={{ marginBottom: '12px' }}>
+        {(firstNode.interactions || []).map((interaction) => (
+          <div
+            key={interaction.id}
+            style={{
+              padding: '12px',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '2px',
+              marginBottom: '8px',
+              fontSize: '12px',
+            }}
+          >
+            <div style={{ fontWeight: 500, marginBottom: '8px' }}>
+              {interaction.trigger === 'onClick' ? 'On Click' : interaction.trigger}
+            </div>
+
+            {interaction.action === 'navigate' && (
+              <div style={{ marginBottom: '8px' }}>
+                <SelectControl
+                  label="Navigate to page"
+                  value={interaction.targetId}
+                  options={pages.map(page => ({
+                    label: page.name,
+                    value: page.id,
+                  }))}
+                  onChange={(newPageId) => {
+                    updateInteraction(selectedNodeIds[0], interaction.id, {
+                      trigger: interaction.trigger,
+                      action: interaction.action,
+                      targetId: newPageId,
+                    });
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                icon={trashIcon}
+                iconSize={16}
+                onClick={() => removeInteraction(selectedNodeIds[0], interaction.id)}
+                style={{ flexShrink: 0 }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add interaction button */}
+      <Button
+        variant="secondary"
+        size="small"
+        icon={plusIcon}
+        onClick={() => {
+          // Add default navigate interaction - use first page if available
+          const targetPageId = pages.length > 0 ? pages[0].id : 'unknown';
+          addInteraction(selectedNodeIds[0], {
+            trigger: 'onClick',
+            action: 'navigate',
+            targetId: targetPageId,
+          });
+        }}
+      >
+        Add Interaction
+      </Button>
+    </div>
+  );
+
   return (
     <div
       style={{
@@ -184,233 +403,77 @@ export const PropertiesPanel: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
-        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Properties</h3>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-          {isMultiSelect ? `${selectedNodes.length} × ${firstNode.type}` : firstNode.type}
+      {/* Header with component icon, name, and description */}
+      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
+          <div style={{ width: '32px', height: '32px', flexShrink: 0 }}>
+            {/* Placeholder for component icon - could be enhanced later */}
+            <div style={{
+              width: '32px',
+              height: '32px',
+              backgroundColor: '#f0f0f0',
+              borderRadius: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: '#666'
+            }}>
+              {firstNode.type.substring(0, 2).toUpperCase()}
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1e1e1e' }}>
+              {firstNode.type}
+            </h3>
+            {definition.propDefinitions.length > 0 && (
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                {definition.propDefinitions.length} properties
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-        {/* Layer Name - only for single select */}
-        {!isMultiSelect && (
-          <div style={{ marginBottom: '16px' }}>
-            <TextControl
-              label="Layer Name"
-              value={firstNode.name || ''}
-              onChange={(value) => updateComponentName(selectedNodeIds[0], value)}
-              help="Custom name for this layer"
-              placeholder={firstNode.type}
-            />
-          </div>
-        )}
+      {/* Tab buttons */}
+      {!isMultiSelect && (
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid #e0e0e0',
+          backgroundColor: '#fafafa',
+        }}>
+          <Button
+            onClick={() => setActiveTab('styles')}
+            icon={settingsIcon}
+            style={{
+              flex: 1,
+              backgroundColor: activeTab === 'styles' ? '#fff' : 'transparent',
+              borderRight: '1px solid #e0e0e0',
+              borderRadius: 0,
+              color: activeTab === 'styles' ? '#1e1e1e' : '#999',
+              fontSize: '12px',
+            }}
+            title="Styles"
+          />
+          <Button
+            onClick={() => setActiveTab('interactions')}
+            icon={connectionIcon}
+            style={{
+              flex: 1,
+              backgroundColor: activeTab === 'interactions' ? '#fff' : 'transparent',
+              borderRadius: 0,
+              color: activeTab === 'interactions' ? '#1e1e1e' : '#999',
+              fontSize: '12px',
+            }}
+            title="Interactions"
+          />
+        </div>
+      )}
 
-        {definition.propDefinitions.map((propDef) => {
-          // For multi-select, show shared value if available, otherwise show first node's value
-          // This allows setting properties even when they differ across selected nodes
-          const currentValue = isMultiSelect 
-            ? (getSharedProps[propDef.name] !== undefined 
-                ? getSharedProps[propDef.name] 
-                : firstNode.props[propDef.name] ?? propDef.defaultValue)
-            : firstNode.props[propDef.name] ?? propDef.defaultValue;
-          
-          // Show indicator if property is not shared in multi-select
-          const isShared = !isMultiSelect || (propDef.name in getSharedProps);
-
-          return (
-            <div key={propDef.name} style={{ marginBottom: '16px' }}>
-              {propDef.type === 'string' && (
-                <TextControl
-                  label={propDef.name}
-                  value={currentValue || ''}
-                  onChange={(value) => handlePropChange(propDef.name, value)}
-                  help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
-                  placeholder={isMultiSelect && !isShared ? 'Mixed values' : undefined}
-                />
-              )}
-
-              {propDef.type === 'number' && (
-                <NumberControl
-                  label={propDef.name}
-                  value={currentValue}
-                  onChange={(value) => handlePropChange(propDef.name, Number(value))}
-                  help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
-                />
-              )}
-
-              {propDef.type === 'boolean' && (
-                <ToggleControl
-                  label={propDef.name}
-                  checked={currentValue || false}
-                  onChange={(value) => handlePropChange(propDef.name, value)}
-                  help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
-                />
-              )}
-
-              {propDef.type === 'select' && propDef.name === 'icon' && (
-                <IconPicker
-                  label={propDef.name}
-                  value={currentValue}
-                  onChange={(value) => handlePropChange(propDef.name, value)}
-                />
-              )}
-
-              {propDef.type === 'select' && propDef.name !== 'icon' && propDef.options && (
-                <SelectControl
-                  label={propDef.name}
-                  value={currentValue}
-                  options={propDef.options.map((opt) => ({ label: opt, value: opt }))}
-                  onChange={(value) => handlePropChange(propDef.name, value)}
-                  help={isMultiSelect && !isShared ? `${propDef.description} (applying to all ${selectedNodes.length} items)` : propDef.description}
-                />
-              )}
-            </div>
-          );
-        })}
-
-        {/* Grid Lines Toggle - only for Grid components, single select */}
-        {!isMultiSelect && firstNode.type === 'Grid' && (
-          <>
-            <div style={{
-              marginTop: definition.propDefinitions.length > 0 ? '24px' : '0',
-              paddingTop: definition.propDefinitions.length > 0 ? '16px' : '0',
-              borderTop: definition.propDefinitions.length > 0 ? '1px solid #e0e0e0' : 'none',
-              marginBottom: '16px',
-            }}>
-              <ToggleControl
-                label="Show Grid Lines"
-                checked={gridLinesVisible.has(selectedNodeIds[0])}
-                onChange={() => toggleGridLines(selectedNodeIds[0])}
-                help="Toggle grid overlay (Control+G)"
-              />
-            </div>
-          </>
-        )}
-
-        {/* Grid child properties - only for single select */}
-        {!isMultiSelect && isChildOfGrid && (
-          <>
-            <div style={{
-              marginTop: '24px',
-              paddingTop: '16px',
-              borderTop: '1px solid #e0e0e0',
-              marginBottom: '12px',
-            }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: '#666' }}>
-                Grid Layout
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <NumberControl
-                label="Column Span"
-                value={firstNode.props.gridColumnSpan || 1}
-                onChange={(value) => handlePropChange('gridColumnSpan', Number(value))}
-                help="Number of columns to span"
-                min={1}
-              />
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <NumberControl
-                label="Row Span"
-                value={firstNode.props.gridRowSpan || 1}
-                onChange={(value) => handlePropChange('gridRowSpan', Number(value))}
-                help="Number of rows to span"
-                min={1}
-              />
-            </div>
-          </>
-        )}
-
-        {/* Interactions section - only for single select */}
-        {!isMultiSelect && (
-          <div style={{
-            marginTop: (definition.propDefinitions.length > 0 || isChildOfGrid) ? '24px' : '0',
-            paddingTop: (definition.propDefinitions.length > 0 || isChildOfGrid) ? '16px' : '0',
-            borderTop: (definition.propDefinitions.length > 0 || isChildOfGrid) ? '1px solid #e0e0e0' : 'none',
-          }}>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: '#666' }}>
-                Interactions
-              </div>
-            </div>
-
-            {/* List existing interactions */}
-            <div style={{ marginBottom: '12px' }}>
-              {(firstNode.interactions || []).map((interaction) => (
-                <div
-                  key={interaction.id}
-                  style={{
-                    padding: '12px',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: '2px',
-                    marginBottom: '8px',
-                    fontSize: '12px',
-                  }}
-                >
-                  <div style={{ fontWeight: 500, marginBottom: '8px' }}>
-                    {interaction.trigger === 'onClick' ? 'On Click' : interaction.trigger}
-                  </div>
-
-                  {interaction.action === 'navigate' && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <SelectControl
-                        label="Navigate to page"
-                        value={interaction.targetId}
-                        options={pages.map(page => ({
-                          label: page.name,
-                          value: page.id,
-                        }))}
-                        onChange={(newPageId) => {
-                          updateInteraction(selectedNodeIds[0], interaction.id, {
-                            trigger: interaction.trigger,
-                            action: interaction.action,
-                            targetId: newPageId,
-                          });
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
-                      icon={trashIcon}
-                      iconSize={16}
-                      onClick={() => removeInteraction(selectedNodeIds[0], interaction.id)}
-                      style={{ flexShrink: 0 }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Add interaction button */}
-            <Button
-              variant="secondary"
-              size="small"
-              icon={plusIcon}
-              onClick={() => {
-                // Add default navigate interaction - use first page if available
-                const targetPageId = pages.length > 0 ? pages[0].id : 'unknown';
-                addInteraction(selectedNodeIds[0], {
-                  trigger: 'onClick',
-                  action: 'navigate',
-                  targetId: targetPageId,
-                });
-              }}
-            >
-              Add Interaction
-            </Button>
-          </div>
-        )}
-
-        {definition.propDefinitions.length === 0 && !isChildOfGrid && (
-          <div style={{ color: '#999', fontSize: '13px', textAlign: 'center' }}>
-            No editable properties
-          </div>
-        )}
-      </div>
+      {/* Tab content */}
+      {activeTab === 'styles' && renderStylesTab()}
+      {activeTab === 'interactions' && !isMultiSelect && renderInteractionsTab()}
     </div>
   );
 };
