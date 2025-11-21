@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Popover, SearchControl, Icon, Button } from '@wordpress/components';
 import * as WordPressIcons from '@wordpress/icons';
 import { WORDPRESS_ICON_NAMES } from '../utils/iconNames';
@@ -26,6 +26,7 @@ const ICON_GROUPS = {
 export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Get the icon component from WordPress icons
   const getIconComponent = (iconName: string) => {
@@ -67,27 +68,45 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
   const currentIcon = getIconComponent(value);
 
   return (
-    <div style={{ marginBottom: '16px' }}>
+    <div style={{ marginBottom: '16px', position: 'relative' }}>
       <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '8px' }}>
         {label || 'Icon'}
       </label>
 
-      <Popover
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        anchor={{
-          side: 'bottom',
-          align: 'start',
+      {/* Trigger Button */}
+      <Button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        variant="secondary"
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          gap: '8px',
+          padding: '8px 12px',
         }}
       >
-        <div
-          style={{
-            width: '320px',
-            display: 'flex',
-            flexDirection: 'column',
-            maxHeight: '600px',
-          }}
+        {currentIcon && <Icon icon={currentIcon} size={20} />}
+        <span style={{ flex: 1, textAlign: 'left', fontSize: '13px' }}>
+          {value || 'Select an icon'}
+        </span>
+      </Button>
+
+      {isOpen && buttonRef.current && (
+        <Popover
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          anchorRect={buttonRef.current.getBoundingClientRect()}
         >
+          <div
+            style={{
+              width: '320px',
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: '600px',
+            }}
+          >
           {/* Search */}
           <div style={{ padding: '12px' }}>
             <SearchControl
@@ -166,25 +185,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
           </div>
         </div>
       </Popover>
-
-      {/* Trigger Button */}
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        variant="secondary"
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          gap: '8px',
-          padding: '8px 12px',
-        }}
-      >
-        {currentIcon && <Icon icon={currentIcon} size={20} />}
-        <span style={{ flex: 1, textAlign: 'left', fontSize: '13px' }}>
-          {value || 'Select an icon'}
-        </span>
-      </Button>
+      )}
     </div>
   );
 };
