@@ -11,13 +11,13 @@ interface IconPickerProps {
 
 // Group icons logically
 const ICON_GROUPS = {
-  'Navigation': ['chevronDown', 'chevronUp', 'chevronLeft', 'chevronRight', 'arrowLeft', 'arrowRight', 'arrowUp', 'arrowDown'],
+  'Navigation': ['chevronDown', 'chevronUp', 'chevronLeft', 'chevronRight'],
   'Content': ['paragraph', 'heading', 'quote', 'code', 'html', 'list', 'listItem', 'columns'],
   'Media': ['image', 'imageAlt', 'gallery', 'video', 'audio', 'media'],
   'UI Elements': ['button', 'box', 'tag', 'pages', 'blockDefault', 'grid', 'columns', 'column', 'table'],
-  'Format': ['bold', 'italic', 'underline', 'strikethrough', 'formatBold', 'formatItalic', 'formatUnderline', 'formatStrikethrough', 'formatClear'],
+  'Format': ['formatBold', 'formatItalic', 'formatUnderline', 'formatStrikethrough', 'formatClear'],
   'Communication': ['mail', 'phone', 'user', 'users', 'userAdd', 'userGroup', 'team', 'share'],
-  'Action': ['trash', 'delete', 'edit', 'create', 'copy', 'paste', 'refresh', 'update', 'save', 'export', 'download', 'upload'],
+  'Action': ['trash', 'edit', 'create', 'clipboardCopy', 'paste', 'refresh', 'update', 'save', 'export', 'download', 'upload'],
   'Status': ['check', 'close', 'success', 'warning', 'error', 'info', 'noticeSuccess', 'noticeWarning', 'noticeError', 'noticeInfo'],
   'Tools': ['settings', 'cog', 'customize', 'customizer', 'plugins', 'brush', 'link', 'linkOff', 'lock', 'unlock', 'eye', 'eyeOff'],
   'Other': [],
