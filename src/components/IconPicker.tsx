@@ -93,11 +93,11 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
         </span>
       </Button>
 
-      {isOpen && buttonRef.current && (
+      {isOpen && buttonRef.current ? (
         <Popover
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
-          anchorRect={buttonRef.current.getBoundingClientRect()}
+          anchorRect={buttonRef.current!.getBoundingClientRect()}
         >
           <div
             style={{
@@ -107,85 +107,85 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
               maxHeight: '600px',
             }}
           >
-          {/* Search */}
-          <div style={{ padding: '12px' }}>
-            <SearchControl
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Search icons..."
-              __nextHasNoMarginBottom
-            />
-          </div>
+            {/* Search */}
+            <div style={{ padding: '12px' }}>
+              <SearchControl
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Search icons..."
+                __nextHasNoMarginBottom
+              />
+            </div>
 
-          {/* Icon Grid */}
-          <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
-            {Object.entries(groupedIcons).map(([groupName, icons]) => (
-              <div key={groupName} style={{ marginBottom: '20px' }}>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    color: '#666',
-                    marginBottom: '8px',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  {groupName}
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(5, 1fr)',
-                    gap: '8px',
-                  }}
-                >
-                  {icons.map(iconName => {
-                    const iconComponent = getIconComponent(iconName);
-                    const isSelected = value === iconName;
+            {/* Icon Grid */}
+            <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
+              {Object.entries(groupedIcons).map(([groupName, icons]) => (
+                <div key={groupName} style={{ marginBottom: '20px' }}>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      color: '#666',
+                      marginBottom: '8px',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    {groupName}
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(5, 1fr)',
+                      gap: '8px',
+                    }}
+                  >
+                    {icons.map(iconName => {
+                      const iconComponent = getIconComponent(iconName);
+                      const isSelected = value === iconName;
 
-                    return (
-                      <button
-                        key={iconName}
-                        onClick={() => {
-                          onChange(iconName);
-                          setIsOpen(false);
-                          setSearchTerm('');
-                        }}
-                        title={iconName}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '48px',
-                          height: '48px',
-                          padding: '8px',
-                          border: isSelected ? '2px solid #3858e9' : '1px solid #e0e0e0',
-                          borderRadius: '2px',
-                          backgroundColor: isSelected ? 'rgba(56, 88, 233, 0.1)' : '#fff',
-                          cursor: 'pointer',
-                          transition: 'all 0.1s',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#3858e9';
-                          e.currentTarget.style.backgroundColor = 'rgba(56, 88, 233, 0.05)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = isSelected ? '#3858e9' : '#e0e0e0';
-                          e.currentTarget.style.backgroundColor = isSelected ? 'rgba(56, 88, 233, 0.1)' : '#fff';
-                        }}
-                      >
-                        {iconComponent && <Icon icon={iconComponent} size={24} />}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={iconName}
+                          onClick={() => {
+                            onChange(iconName);
+                            setIsOpen(false);
+                            setSearchTerm('');
+                          }}
+                          title={iconName}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '48px',
+                            height: '48px',
+                            padding: '8px',
+                            border: isSelected ? '2px solid #3858e9' : '1px solid #e0e0e0',
+                            borderRadius: '2px',
+                            backgroundColor: isSelected ? 'rgba(56, 88, 233, 0.1)' : '#fff',
+                            cursor: 'pointer',
+                            transition: 'all 0.1s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#3858e9';
+                            e.currentTarget.style.backgroundColor = 'rgba(56, 88, 233, 0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = isSelected ? '#3858e9' : '#e0e0e0';
+                            e.currentTarget.style.backgroundColor = isSelected ? 'rgba(56, 88, 233, 0.1)' : '#fff';
+                          }}
+                        >
+                          {iconComponent && <Icon icon={iconComponent} size={24} />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </Popover>
-      )}
+        </Popover>
+      ) : null}
     </div>
   );
 };
