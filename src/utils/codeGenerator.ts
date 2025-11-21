@@ -33,11 +33,13 @@ function generateNodeCode(
   const componentName = node.type;
 
   // Check for text content BEFORE deleting from props
-  const hasTextContent = node.props.content !== undefined || node.props.text !== undefined;
-  const textContent = node.props.content !== undefined ? node.props.content : node.props.text;
+  // Treat empty strings and null as no content
+  const contentValue = node.props.content !== undefined ? node.props.content : node.props.text;
+  const hasTextContent = contentValue !== undefined && contentValue !== null && contentValue !== '';
+  const textContent = contentValue;
 
   // Check for placeholder content if no text content exists
-  const hasPlaceholder = !hasTextContent && node.props.placeholder !== undefined;
+  const hasPlaceholder = !hasTextContent && node.props.placeholder !== undefined && node.props.placeholder !== '';
   const placeholderContent = hasPlaceholder ? node.props.placeholder : null;
 
   // Filter out special props that shouldn't be included
@@ -45,6 +47,7 @@ function generateNodeCode(
   delete props.content;
   delete props.text;
   delete props.placeholder;
+  delete props.children;
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
 

@@ -394,8 +394,13 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   }, [tree]);
 
   const addComponent = (componentType: string, parentId?: string) => {
+    // Get default props from component registry
+    const componentDef = componentRegistry[componentType];
+    const defaultProps = componentDef?.defaultProps || {};
+
     // Set default gridColumnSpan for all new components
     const props: Record<string, any> = {
+      ...defaultProps,
       gridColumnSpan: 12,
     };
 

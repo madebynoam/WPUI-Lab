@@ -215,7 +215,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Button',
     component: Button,
     acceptsChildren: true,
-    defaultProps: { children: 'Button', variant: 'primary' },
+    defaultProps: { children: 'Button', variant: 'primary', placeholder: 'Button' },
     propDefinitions: [
       {
         name: 'text',
@@ -361,7 +361,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Text',
     component: Text,
     acceptsChildren: false,
-    defaultProps: { children: 'Text content' },
+    defaultProps: { children: 'Text content', placeholder: 'Text content' },
     propDefinitions: [
       {
         name: 'content',
@@ -381,7 +381,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Heading',
     component: Heading,
     acceptsChildren: false,
-    defaultProps: { children: 'Heading', level: 2 },
+    defaultProps: { children: 'Heading', level: 2, placeholder: 'Heading' },
     propDefinitions: [
       {
         name: 'content',
