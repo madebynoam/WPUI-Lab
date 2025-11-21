@@ -330,31 +330,45 @@ export const PropertiesPanel: React.FC = () => {
                 <div
                   key={interaction.id}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px',
+                    padding: '12px',
                     backgroundColor: '#f5f5f5',
                     borderRadius: '2px',
                     marginBottom: '8px',
                     fontSize: '12px',
                   }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 500 }}>
-                      {interaction.trigger === 'onClick' ? 'On Click' : interaction.trigger}
-                    </div>
-                    <div style={{ color: '#666', fontSize: '11px', marginTop: '2px' }}>
-                      {interaction.action === 'navigate' ? 'Navigate' : interaction.action}
-                      {interaction.action === 'navigate' && ` → ${pages.find(p => p.id === interaction.targetId)?.name || 'Unknown'}`}
-                    </div>
+                  <div style={{ fontWeight: 500, marginBottom: '8px' }}>
+                    {interaction.trigger === 'onClick' ? 'On Click' : interaction.trigger}
                   </div>
-                  <Button
-                    icon={trashIcon}
-                    iconSize={16}
-                    onClick={() => removeInteraction(selectedNodeIds[0], interaction.id)}
-                    style={{ flexShrink: 0 }}
-                  />
+
+                  {interaction.action === 'navigate' && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <SelectControl
+                        label="Navigate to page"
+                        value={interaction.targetId}
+                        options={pages.map(page => ({
+                          label: page.name,
+                          value: page.id,
+                        }))}
+                        onChange={(newPageId) => {
+                          updateInteraction(selectedNodeIds[0], interaction.id, {
+                            trigger: interaction.trigger,
+                            action: interaction.action,
+                            targetId: newPageId,
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      icon={trashIcon}
+                      iconSize={16}
+                      onClick={() => removeInteraction(selectedNodeIds[0], interaction.id)}
+                      style={{ flexShrink: 0 }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -365,8 +379,8 @@ export const PropertiesPanel: React.FC = () => {
               size="small"
               icon={plusIcon}
               onClick={() => {
-                // Add default navigate interaction to first page excluding current
-                const targetPageId = pages.find(p => p.id !== selectedNodeIds[0])?.id || pages[0].id;
+                // Add default navigate interaction - use first page if available
+                const targetPageId = pages.length > 0 ? pages[0].id : 'unknown';
                 addInteraction(selectedNodeIds[0], {
                   trigger: 'onClick',
                   action: 'navigate',
