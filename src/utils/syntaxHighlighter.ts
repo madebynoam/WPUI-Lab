@@ -14,6 +14,57 @@ const KEYWORDS = new Set([
   'typeof', 'instanceof', 'true', 'false', 'null', 'undefined', 'this',
 ]);
 
+/**
+ * Parse JSX tag and break it down into tokens for attribute highlighting
+ */
+function parseJSXTag(tagContent: string): Token[] {
+  const tokens: Token[] = [];
+  let i = 0;
+
+  // Opening <
+  tokens.push({ type: 'text', content: '<' });
+  i++;
+
+  // Tag name (until whitespace or > or /)
+  let nameEnd = i;
+  while (nameEnd < tagContent.length && /[a-zA-Z0-9_$\-:/]/.test(tagContent[nameEnd])) nameEnd++;
+  if (nameEnd > i) {
+    tokens.push({ type: 'tag', content: tagContent.slice(i, nameEnd) });
+    i = nameEnd;
+  }
+
+  // Parse attributes and rest of tag
+  while (i < tagContent.length) {
+    const char = tagContent[i];
+
+    if (/\s/.test(char)) {
+      // Whitespace
+      tokens.push({ type: 'text', content: char });
+      i++;
+    } else if (/[a-zA-Z_$]/.test(char)) {
+      // Attribute name
+      let nameStart = i;
+      while (i < tagContent.length && /[a-zA-Z0-9_$\-:]/.test(tagContent[i])) i++;
+      tokens.push({ type: 'attribute', content: tagContent.slice(nameStart, i) });
+    } else if ((char === '/' || char === '>') && i === tagContent.length - 1) {
+      // Self-closing tag or closing bracket
+      if (char === '/' && tagContent[i + 1] === '>') {
+        tokens.push({ type: 'text', content: ' />' });
+        i += 2;
+      } else if (char === '>') {
+        tokens.push({ type: 'text', content: '>' });
+        i++;
+      }
+    } else {
+      // Everything else (=, quotes, braces, values)
+      tokens.push({ type: 'text', content: char });
+      i++;
+    }
+  }
+
+  return tokens;
+}
+
 export const highlightCode = (code: string): Token[] => {
   const tokens: Token[] = [];
   let i = 0;
@@ -72,7 +123,9 @@ export const highlightCode = (code: string): Token[] => {
       let end = i + 1;
       while (end < code.length && code[end] !== '>') end++;
       end++;
-      tokens.push({ type: 'tag', content: code.slice(i, end) });
+      const tagContent = code.slice(i, end);
+      const tagTokens = parseJSXTag(tagContent);
+      tokens.push(...tagTokens);
       i = end;
       continue;
     }
