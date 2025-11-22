@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ComponentTreeProvider, useComponentTree } from './ComponentTreeContext';
+import { ComponentTreeProvider, useComponentTree, ROOT_VSTACK_ID } from './ComponentTreeContext';
 import { TopBar } from './components/TopBar';
 import { TreePanel } from './components/TreePanel';
 import { Canvas } from './components/Canvas';
@@ -10,7 +10,7 @@ import '@wordpress/block-editor/build-style/style.css';
 import '@wordpress/dataviews/build-style/style.css';
 
 function AppContent() {
-  const { isPlayMode } = useComponentTree();
+  const { isPlayMode, setSelectedNodeIds } = useComponentTree();
   const [showPanels, setShowPanels] = useState(true);
   const [showInserter, setShowInserter] = useState(false);
   const [showTreePanel, setShowTreePanel] = useState(true);
@@ -36,11 +36,17 @@ function AppContent() {
         setShowHeader(prev => !prev);
         setShowPanels(prev => !prev);
       }
+
+      // Escape to deselect and select page (root vstack)
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSelectedNodeIds([ROOT_VSTACK_ID]);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [setSelectedNodeIds, ROOT_VSTACK_ID]);
 
   // Handle panel resize
   useEffect(() => {
