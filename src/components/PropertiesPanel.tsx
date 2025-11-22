@@ -10,10 +10,74 @@ import {
   ColorPicker,
   Button,
   PanelBody,
+  Popover,
 } from '@wordpress/components';
 import { plus as plusIcon, trash as trashIcon } from '@wordpress/icons';
 import { IconPicker } from './IconPicker';
 import { TabContainer } from './TabContainer';
+
+// Color swatch button with popover
+const ColorSwatchButton: React.FC<{
+  color: string;
+  label: string;
+  onChange: (color: string) => void;
+  help?: string;
+}> = ({ color, label, onChange, help }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div style={{ marginBottom: '16px' }}>
+      <div style={{ marginBottom: '8px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
+        {label}
+      </div>
+      <Button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          height: '40px',
+          padding: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          border: '1px solid #ddd',
+          borderRadius: '2px',
+          backgroundColor: '#fff',
+          cursor: 'pointer',
+        }}
+      >
+        <div
+          style={{
+            width: '24px',
+            height: '24px',
+            borderRadius: '2px',
+            backgroundColor: color,
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+          }}
+        />
+        <span style={{ fontSize: '13px', color: '#1e1e1e' }}>{color}</span>
+      </Button>
+      {isOpen && (
+        <Popover
+          placement="left-start"
+          onClose={() => setIsOpen(false)}
+        >
+          <div style={{ padding: '16px' }}>
+            <ColorPicker
+              color={color}
+              onChange={onChange}
+              enableAlpha
+            />
+          </div>
+        </Popover>
+      )}
+      {help && (
+        <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
+          {help}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const PropertiesPanel: React.FC = () => {
   const PANEL_WIDTH = 280;
@@ -105,30 +169,18 @@ export const PropertiesPanel: React.FC = () => {
             initialOpen={openPanels['theme']}
             onToggle={() => setOpenPanels({...openPanels, theme: !openPanels['theme']})}
           >
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ marginBottom: '8px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
-                Primary Color
-              </div>
-              <ColorPicker
-                color={pageTheme.primaryColor}
-                onChange={(color) => updatePageTheme(currentPageId, { primaryColor: color })}
-              />
-              <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
-                Theme primary color for buttons and interactive elements
-              </div>
-            </div>
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ marginBottom: '8px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
-                Theme Background Color
-              </div>
-              <ColorPicker
-                color={pageTheme.backgroundColor}
-                onChange={(color) => updatePageTheme(currentPageId, { backgroundColor: color })}
-              />
-              <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
-                Theme background color (affects foreground color calculations)
-              </div>
-            </div>
+            <ColorSwatchButton
+              color={pageTheme.primaryColor || '#3858e9'}
+              label="Primary Color"
+              onChange={(color) => updatePageTheme(currentPageId, { primaryColor: color })}
+              help="Theme primary color for buttons and interactive elements"
+            />
+            <ColorSwatchButton
+              color={pageTheme.backgroundColor || '#ffffff'}
+              label="Theme Background Color"
+              onChange={(color) => updatePageTheme(currentPageId, { backgroundColor: color })}
+              help="Theme background color (affects foreground color calculations)"
+            />
           </PanelBody>
 
           {/* Canvas Layout Section */}
@@ -146,19 +198,12 @@ export const PropertiesPanel: React.FC = () => {
               />
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ marginBottom: '8px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
-                Canvas Background Color
-              </div>
-              <ColorPicker
-                color={backgroundColor}
-                onChange={(color) => updateComponentProps(selectedNodeIds[0], { backgroundColor: color })}
-                enableAlpha
-              />
-              <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
-                Canvas background color
-              </div>
-            </div>
+            <ColorSwatchButton
+              color={backgroundColor}
+              label="Canvas Background Color"
+              onChange={(color) => updateComponentProps(selectedNodeIds[0], { backgroundColor: color })}
+              help="Canvas background color"
+            />
 
             <div style={{ marginBottom: '16px' }}>
               <NumberControl
