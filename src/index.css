@@ -16,3 +16,13 @@ body {
   height: 100vh;
   overflow: hidden;
 }
+
+/* Hide close button in TabContainer when onClose is not provided */
+#tab-container-no-close .block-editor-tabbed-sidebar__close-button,
+#tab-container-no-close .components-button.block-editor-tabbed-sidebar__close-button,
+#tab-container-no-close button.block-editor-tabbed-sidebar__close-button.is-compact.has-icon {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
