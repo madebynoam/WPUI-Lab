@@ -1,6 +1,5 @@
 import React from 'react';
 import { SearchControl, Icon } from '@wordpress/components';
-import { privateApis as blockEditorPrivateApis } from '@wordpress/block-editor';
 import {
   paragraph,
   heading,
@@ -26,9 +25,7 @@ import {
 } from '@wordpress/icons';
 import { patterns, patternCategories } from '../patterns';
 import { componentGroups } from './TreePanel';
-import { unlock } from '../utils/lock-unlock';
-
-const { TabbedSidebar } = unlock( blockEditorPrivateApis );
+import { TabContainer } from './TabContainer';
 
 // Map component types to WordPress icons
 const componentIconMap: Record<string, any> = {
@@ -402,7 +399,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
       }}
     >
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <TabbedSidebar
+        <TabContainer
           tabs={tabsConfig}
           onClose={onCloseInserter}
           onSelect={(tabId: string) => onTabChange(tabId as 'blocks' | 'patterns')}

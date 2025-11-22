@@ -11,15 +11,15 @@ import {
   Button,
   PanelBody,
 } from '@wordpress/components';
-import { plus as plusIcon, trash as trashIcon, settings as settingsIcon, connection as connectionIcon } from '@wordpress/icons';
+import { plus as plusIcon, trash as trashIcon } from '@wordpress/icons';
 import { IconPicker } from './IconPicker';
 import { TabContainer } from './TabContainer';
 
 export const PropertiesPanel: React.FC = () => {
   const PANEL_WIDTH = 280;
   const [activeTab, setActiveTab] = useState<'styles' | 'interactions'>('styles');
-  const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({ settings: true, gridLayout: true });
-  const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines, pages, addInteraction, removeInteraction, updateInteraction } = useComponentTree();
+  const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({ settings: true, gridLayout: true, theme: true });
+  const { selectedNodeIds, getNodeById, updateComponentProps, updateMultipleComponentProps, updateComponentName, tree, gridLinesVisible, toggleGridLines, pages, currentPageId, updatePageTheme, addInteraction, removeInteraction, updateInteraction } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
     return selectedNodeIds.map(id => getNodeById(id)).filter((n): n is NonNullable<ReturnType<typeof getNodeById>> => n !== null);
@@ -79,6 +79,10 @@ export const PropertiesPanel: React.FC = () => {
     const backgroundColor = firstNode.props.backgroundColor ?? 'rgb(249, 250, 251)';
     const padding = firstNode.props.padding ?? 20;
 
+    // Get current page theme
+    const currentPage = pages.find(p => p.id === currentPageId);
+    const pageTheme = currentPage?.theme ?? { primaryColor: '#3858e9', backgroundColor: '#ffffff' };
+
     return (
       <div
         style={{
@@ -92,41 +96,79 @@ export const PropertiesPanel: React.FC = () => {
       >
         <div style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Page Settings</h3>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Canvas Layout</div>
         </div>
 
-        <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <NumberControl
-              label="Max Width"
-              value={maxWidth}
-              onChange={(value) => updateComponentProps(selectedNodeIds[0], { maxWidth: Number(value) })}
-              help="Maximum width of the page content (px)"
-            />
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ marginBottom: '8px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
-              Background Color
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {/* Page Theme Section */}
+          <PanelBody
+            title="Page Theme"
+            initialOpen={openPanels['theme']}
+            onToggle={() => setOpenPanels({...openPanels, theme: !openPanels['theme']})}
+          >
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '8px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
+                Primary Color
+              </div>
+              <ColorPicker
+                color={pageTheme.primaryColor}
+                onChange={(color) => updatePageTheme(currentPageId, { primaryColor: color })}
+              />
+              <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
+                Theme primary color for buttons and interactive elements
+              </div>
             </div>
-            <ColorPicker
-              color={backgroundColor}
-              onChange={(color) => updateComponentProps(selectedNodeIds[0], { backgroundColor: color })}
-              enableAlpha
-            />
-            <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
-              Page background color
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '8px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
+                Theme Background Color
+              </div>
+              <ColorPicker
+                color={pageTheme.backgroundColor}
+                onChange={(color) => updatePageTheme(currentPageId, { backgroundColor: color })}
+              />
+              <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
+                Theme background color (affects foreground color calculations)
+              </div>
             </div>
-          </div>
+          </PanelBody>
 
-          <div style={{ marginBottom: '16px' }}>
-            <NumberControl
-              label="Padding"
-              value={padding}
-              onChange={(value) => updateComponentProps(selectedNodeIds[0], { padding: Number(value) })}
-              help="Padding around the page content (px)"
-            />
-          </div>
+          {/* Canvas Layout Section */}
+          <PanelBody
+            title="Canvas Layout"
+            initialOpen={openPanels['layout']}
+            onToggle={() => setOpenPanels({...openPanels, layout: !openPanels['layout']})}
+          >
+            <div style={{ marginBottom: '16px' }}>
+              <NumberControl
+                label="Max Width"
+                value={maxWidth}
+                onChange={(value) => updateComponentProps(selectedNodeIds[0], { maxWidth: Number(value) })}
+                help="Maximum width of the page content (px)"
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '8px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
+                Canvas Background Color
+              </div>
+              <ColorPicker
+                color={backgroundColor}
+                onChange={(color) => updateComponentProps(selectedNodeIds[0], { backgroundColor: color })}
+                enableAlpha
+              />
+              <div style={{ fontSize: '11px', color: '#757575', marginTop: '4px' }}>
+                Canvas background color
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <NumberControl
+                label="Padding"
+                value={padding}
+                onChange={(value) => updateComponentProps(selectedNodeIds[0], { padding: Number(value) })}
+                help="Padding around the page content (px)"
+              />
+            </div>
+          </PanelBody>
         </div>
       </div>
     );
@@ -182,20 +224,21 @@ export const PropertiesPanel: React.FC = () => {
     setActiveTab('styles');
   }
 
-  const renderStylesTab = () => (
-    <div style={{ flex: 1, overflow: 'auto' }}>
-      {/* Layer Name - only for single select */}
-      {!isMultiSelect && (
-        <PanelBody title="Layer Name" initialOpen={true}>
-          <TextControl
-            value={firstNode.name || ''}
-            onChange={(value) => updateComponentName(selectedNodeIds[0], value)}
-            placeholder={firstNode.type}
-          />
-        </PanelBody>
-      )}
+  const renderStylesTab = () => {
+    return (
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {/* Layer Name - only for single select */}
+        {!isMultiSelect && (
+          <PanelBody title="Layer Name" initialOpen={true}>
+            <TextControl
+              value={firstNode.name || ''}
+              onChange={(value) => updateComponentName(selectedNodeIds[0], value)}
+              placeholder={firstNode.type}
+            />
+          </PanelBody>
+        )}
 
-      {/* Properties */}
+        {/* Properties */}
       {definition.propDefinitions.length > 0 && (
         <PanelBody
           title="Settings"
@@ -309,7 +352,8 @@ export const PropertiesPanel: React.FC = () => {
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   const renderInteractionsTab = () => (
     <div style={{ flex: 1, overflow: 'auto' }}>
@@ -427,25 +471,22 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* TabContainer with icon-only tabs */}
+          {/* TabContainer */}
           <TabContainer
             tabs={[
               {
                 name: 'styles',
                 title: 'Styles',
-                icon: settingsIcon,
                 panel: renderStylesTab(),
               },
               {
                 name: 'interactions',
                 title: 'Interactions',
-                icon: connectionIcon,
                 panel: renderInteractionsTab(),
               },
             ]}
             selectedTab={activeTab}
-            onSelect={setActiveTab}
-            iconSize={24}
+            onSelect={(tabName) => setActiveTab(tabName as 'styles' | 'interactions')}
           />
         </div>
       )}

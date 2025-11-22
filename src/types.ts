@@ -28,6 +28,10 @@ export interface Page {
   id: string;
   name: string;
   tree: ComponentNode[];
+  theme?: {
+    primaryColor?: string;
+    backgroundColor?: string;
+  };
 }
 
 export interface ComponentDefinition {

@@ -5,19 +5,27 @@ import { Breadcrumb } from './Breadcrumb';
 import { findParent } from '../utils/treeHelpers';
 import { RenderNode } from './RenderNode';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
+import { privateApis as themePrivateApis } from '@wordpress/theme';
+import { unlock } from '../utils/lock-unlock';
+
+const { ThemeProvider } = unlock(themePrivateApis);
 
 interface CanvasProps {
   showBreadcrumb?: boolean;
 }
 
 export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
-  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isPlayMode } = useComponentTree();
+  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isPlayMode, pages, currentPageId } = useComponentTree();
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
   const pageMaxWidth = rootVStack?.props.maxWidth ?? 1440;
   const pageBackgroundColor = rootVStack?.props.backgroundColor ?? 'rgb(249, 250, 251)';
   const pagePadding = rootVStack?.props.padding ?? 20;
+
+  // Get current page theme
+  const currentPage = pages.find(p => p.id === currentPageId);
+  const pageTheme = currentPage?.theme ?? { primaryColor: '#3858e9', backgroundColor: '#ffffff' };
 
   // Find if a node is inside an interactive component
   const findInteractiveAncestor = useCallback((nodeId: string): ComponentNode | null => {
@@ -220,23 +228,25 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
           }
         }}
       >
-        <div style={{ width: '100%', maxWidth: `${pageMaxWidth}px` }}>
-          {isInteractiveSelected && interactiveAncestor ? (
-            // Render only the interactive component in isolation
-            <div style={{
-              padding: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '100%',
-            }}>
-              <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
-            </div>
-          ) : (
-            // Render full page tree for normal components (skip interactive components)
-            tree.map((node) => <RenderNode key={node.id} node={node} renderInteractive={false} />)
-          )}
-        </div>
+        <ThemeProvider color={{ primary: pageTheme.primaryColor, bg: pageTheme.backgroundColor }}>
+          <div style={{ width: '100%', maxWidth: `${pageMaxWidth}px` }}>
+            {isInteractiveSelected && interactiveAncestor ? (
+              // Render only the interactive component in isolation
+              <div style={{
+                padding: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '100%',
+              }}>
+                <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
+              </div>
+            ) : (
+              // Render full page tree for normal components (skip interactive components)
+              tree.map((node) => <RenderNode key={node.id} node={node} renderInteractive={false} />)
+            )}
+          </div>
+        </ThemeProvider>
       </div>
       {showBreadcrumb && <Breadcrumb />}
     </div>

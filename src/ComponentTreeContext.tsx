@@ -39,6 +39,7 @@ interface ComponentTreeContextType {
   deletePage: (pageId: string) => void;
   renamePage: (pageId: string, name: string) => void;
   duplicatePage: (pageId: string) => void;
+  updatePageTheme: (pageId: string, theme: { primaryColor?: string; backgroundColor?: string }) => void;
 
   // History management
   canUndo: boolean;
@@ -75,6 +76,10 @@ const createInitialPage = (id: string, name: string): Page => ({
       children: [],
     }],
   }],
+  theme: {
+    primaryColor: '#3858e9',
+    backgroundColor: '#ffffff',
+  },
 });
 
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
@@ -842,12 +847,19 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       id: `page-${Date.now()}`,
       name: `${pageToDuplicate.name} Copy`,
       tree: clonedTree,
+      theme: pageToDuplicate.theme,
     };
 
     setPagesWithHistory([...pages, newPage], 'duplicatePage');
     setCurrentPageIdWithHistory(newPage.id);
     setSelectedNodeIds([ROOT_VSTACK_ID]);
     setGridLinesVisible(new Set());
+  };
+
+  const updatePageTheme = (pageId: string, theme: { primaryColor?: string; backgroundColor?: string }) => {
+    setPagesWithHistory(pages.map(page =>
+      page.id === pageId ? { ...page, theme: { ...page.theme, ...theme } } : page
+    ), 'updatePageTheme');
   };
 
   return (
@@ -882,6 +894,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
         deletePage,
         renamePage,
         duplicatePage,
+        updatePageTheme,
         canUndo,
         canRedo,
         undo,
