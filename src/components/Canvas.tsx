@@ -248,7 +248,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
           </div>
         </ThemeProvider>
       </div>
-      {showBreadcrumb && <Breadcrumb />}
+      {showBreadcrumb && !isPlayMode && <Breadcrumb />}
     </div>
   );
 };
