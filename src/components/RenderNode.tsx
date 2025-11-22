@@ -421,6 +421,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
                 color: '#666',
                 fontSize: '14px',
                 borderRadius: '2px',
+                gridColumn: `1 / -1`, // Span all columns
               }}>
                 Add items to the grid
               </div>
