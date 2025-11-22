@@ -390,6 +390,9 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   // Check if this is a Grid with grid lines enabled
   const showGridLines = node.type === 'Grid' && gridLinesVisible.has(node.id);
 
+  // Check if Grid is empty
+  const isEmptyGrid = node.type === 'Grid' && (!node.children || node.children.length === 0);
+
   return (
     <div
       data-component-id={node.id}
@@ -408,7 +411,20 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       <Component {...mergedProps}>
         {node.children && node.children.length > 0
           ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
-          : null}
+          : isEmptyGrid && !isPlayMode ? (
+              <div style={{
+                minHeight: '120px',
+                backgroundColor: '#f0f0f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+                fontSize: '14px',
+                borderRadius: '2px',
+              }}>
+                Add items to the grid
+              </div>
+            ) : null}
       </Component>
 
       {/* Grid Lines Overlay */}
