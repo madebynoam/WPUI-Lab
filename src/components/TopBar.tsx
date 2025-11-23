@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@wordpress/components';
 import { plus as plusIcon, chevronLeft, drawerRight, code, listView } from '@wordpress/icons';
 import { useComponentTree } from '../ComponentTreeContext';
+import { usePlayModeState } from '../PlayModeContext';
 
 interface TopBarProps {
   showInserter: boolean;
@@ -14,6 +15,7 @@ interface TopBarProps {
 
 export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, showTreePanel, onToggleTreePanel, rightPanel, onToggleRightPanel }) => {
   const { pages, currentPageId, isPlayMode, setPlayMode } = useComponentTree();
+  const playModeState = usePlayModeState();
   const currentPage = pages.find(p => p.id === currentPageId);
 
   return (
@@ -40,7 +42,10 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
             justifyContent: 'center',
             cursor: 'pointer',
           }}
-          onClick={() => setPlayMode(false)}
+          onClick={() => {
+            playModeState.resetAllState();
+            setPlayMode(false);
+          }}
           title="Exit play mode"
         >
           <Button

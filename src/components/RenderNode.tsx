@@ -1,5 +1,6 @@
 import React from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
+import { usePlayModeState } from '../PlayModeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import * as wpIcons from '@wordpress/icons';
@@ -8,6 +9,7 @@ import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockData
 
 export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
   const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, setPlayMode, updateComponentProps, setCurrentPage } = useComponentTree();
+  const playModeState = usePlayModeState();
   const definition = componentRegistry[node.type];
 
   if (!definition) {
@@ -237,24 +239,122 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       const sortField = fields && fields.length > 0 ? fields[0].id : 'id';
       const visibleFieldIds = fields ? fields.map(f => f.id) : [];
 
-      const mergedProps = {
-        data: mockData || [],
-        fields: fields || [],
-        view: {
-          type: viewType,
-          perPage: itemsPerPage,
-          page: 1,
-          filters: [],
-          search: '',
-          fields: visibleFieldIds,
-          sort: {
-            field: sortField,
-            direction: 'asc',
-          },
+      // Default view state based on design-time props
+      const defaultView = {
+        type: viewType,
+        perPage: itemsPerPage,
+        page: 1,
+        filters: [],
+        search: '',
+        fields: visibleFieldIds,
+        sort: {
+          field: sortField,
+          direction: 'asc' as const,
         },
+      };
+
+      // In play mode, use runtime view state; in design mode, use default
+      const currentView = isPlayMode
+        ? (playModeState.getState(node.id, 'view') ?? defaultView)
+        : defaultView;
+
+      // Apply search, filters, and sort to the data
+      let processedData = mockData || [];
+
+      // Apply search filter
+      if (currentView.search) {
+        const searchLower = currentView.search.toLowerCase();
+        processedData = processedData.filter((item: any) => {
+          // Search across all fields
+          return fields.some((field: any) => {
+            const value = field.getValue?.(item) ?? item[field.id];
+            return String(value).toLowerCase().includes(searchLower);
+          });
+        });
+      }
+
+      // Apply filters
+      if (currentView.filters && currentView.filters.length > 0) {
+        try {
+          processedData = processedData.filter((item: any) => {
+            return currentView.filters.every((filter: any) => {
+              try {
+                // Get the field definition to use getValue if available
+                const field = fields.find((f: any) => f.id === filter.field);
+                const value = field?.getValue?.(item) ?? item[filter.field];
+                const filterValue = filter.value;
+
+                switch (filter.operator) {
+                  // Equality operators
+                  case 'is':
+                    return value === filterValue;
+                  case 'isNot':
+                    return value !== filterValue;
+
+                  // Array operators
+                  case 'isAny':
+                    return Array.isArray(filterValue) && filterValue.includes(value);
+                  case 'isNone':
+                    return Array.isArray(filterValue) && !filterValue.includes(value);
+                  case 'isAll':
+                    return Array.isArray(filterValue) && filterValue.every((v: any) => value.includes(v));
+
+                  // Numerical comparison operators (without 'is' prefix)
+                  case 'greaterThan':
+                    return Number(value) > Number(filterValue);
+                  case 'greaterThanOrEqual':
+                    return Number(value) >= Number(filterValue);
+                  case 'lessThan':
+                    return Number(value) < Number(filterValue);
+                  case 'lessThanOrEqual':
+                    return Number(value) <= Number(filterValue);
+
+                  // Text operators
+                  case 'contains':
+                    return String(value).toLowerCase().includes(String(filterValue).toLowerCase());
+                  case 'notContains':
+                    return !String(value).toLowerCase().includes(String(filterValue).toLowerCase());
+                  case 'startsWith':
+                    return String(value).toLowerCase().startsWith(String(filterValue).toLowerCase());
+
+                  // Default: pass filter if unknown operator
+                  default:
+                    console.warn(`Unknown filter operator: ${filter.operator}`);
+                    return true;
+                }
+              } catch (error) {
+                console.error('Error applying filter:', error, filter);
+                return true; // Pass through on error to avoid crash
+              }
+            });
+          });
+        } catch (error) {
+          console.error('Error in filter processing:', error);
+          // Keep original data if filtering fails
+        }
+      }
+
+      // Apply sorting
+      if (currentView.sort) {
+        const { field: sortField, direction } = currentView.sort;
+        processedData = [...processedData].sort((a: any, b: any) => {
+          const aValue = a[sortField];
+          const bValue = b[sortField];
+
+          if (aValue === bValue) return 0;
+
+          const comparison = aValue < bValue ? -1 : 1;
+          return direction === 'asc' ? comparison : -comparison;
+        });
+      }
+
+      const mergedProps = {
+        data: processedData,
+        fields: fields || [],
+        view: currentView,
         paginationInfo: {
-          totalItems: (mockData || []).length,
-          totalPages: Math.ceil((mockData || []).length / itemsPerPage),
+          totalItems: processedData.length,
+          totalPages: Math.ceil(processedData.length / (currentView.perPage || itemsPerPage)),
         },
         // REQUIRED: defaultLayouts tells DataViews which layout types are available
         // Without this, DataViews crashes with "Cannot convert undefined or null to object"
@@ -263,7 +363,9 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
           grid: {},
           list: {},
         },
-        onChangeView: () => {}, // Required callback
+        onChangeView: isPlayMode
+          ? (newView: any) => playModeState.setState(node.id, 'view', newView)
+          : () => {}, // Disabled in design mode
         getItemId: (item: any) => item?.id || `item-${Math.random()}`,
       };
 
@@ -362,7 +464,25 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   ];
 
   if (formControls.includes(node.type)) {
-    const mergedProps = { ...definition.defaultProps, ...props, onChange: () => {} };
+    const mergedProps = { ...definition.defaultProps, ...props };
+
+    if (isPlayMode) {
+      // In play mode: enable real interaction with runtime state
+      // Determine the state prop name based on component type
+      const statePropName = ['ToggleControl', 'CheckboxControl'].includes(node.type) ? 'checked' : 'value';
+
+      // Get runtime value or fall back to design-time default
+      const runtimeValue = playModeState.getState(node.id, statePropName) ?? props[statePropName];
+      mergedProps[statePropName] = runtimeValue;
+
+      // Wire up real onChange handler
+      mergedProps.onChange = (newValue: any) => {
+        playModeState.setState(node.id, statePropName, newValue);
+      };
+    } else {
+      // In design mode: disable interaction
+      mergedProps.onChange = () => {};
+    }
 
     return (
       <div

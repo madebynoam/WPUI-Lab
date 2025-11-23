@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ComponentTreeProvider, useComponentTree, ROOT_VSTACK_ID } from './ComponentTreeContext';
+import { PlayModeProvider } from './PlayModeContext';
 import { TopBar } from './components/TopBar';
 import { TreePanel } from './components/TreePanel';
 import { Canvas } from './components/Canvas';
@@ -112,7 +113,7 @@ function AppContent() {
       )}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
-        <Canvas showBreadcrumb={showHeader} />
+        <Canvas showBreadcrumb={showHeader && !isPlayMode} />
         {shouldShowPanels && rightPanel === 'props' && (
           <PropertiesPanel />
         )}
@@ -127,7 +128,9 @@ function AppContent() {
 function App() {
   return (
     <ComponentTreeProvider>
-      <AppContent />
+      <PlayModeProvider>
+        <AppContent />
+      </PlayModeProvider>
     </ComponentTreeProvider>
   );
 }
