@@ -272,8 +272,162 @@ export async function handleUserMessage(
       console.warn('[Agent] Max iterations reached, stopping tool execution loop');
     }
 
-    // Return agent response
-    return {
+    // === REFLECTION STEP ===
+    // After executing actions, critique the result and fix issues if needed
+    console.log('[Agent] Checking reflection conditions:', { isActionRequest, iterationCount });
+
+    if (isActionRequest && iterationCount > 0) {
+      console.log('[Agent] Starting reflection step...');
+
+      try {
+
+      // Get current page components for review
+      const getPageComponentsTool = getTool('getPageComponents');
+      if (getPageComponentsTool) {
+        const componentsResult = await getPageComponentsTool.execute({}, context);
+
+        // Create critic prompt
+        const criticPrompt = `Review the components that were just created/modified:
+
+${JSON.stringify(componentsResult.data, null, 2)}
+
+Check for these common issues:
+1. Generic placeholder text (like "Card Title", "Lorem ipsum", "Click Me", "Text content") in the ACTUAL CONTENT (props.children)
+2. Empty or missing content in Cards, Text, or Headings
+3. Poor layout choices (too many nested containers, incorrect spacing)
+4. Components that don't match the user's request
+
+IMPORTANT:
+- For Text components: The actual text is in props.children, NOT the component name
+- For Heading components: The heading text is in props.children, NOT the component name
+- For Card components: Check the Heading inside CardHeader and Text inside CardBody
+
+If you find ANY issues, respond with a JSON object:
+{
+  "hasIssues": true,
+  "issues": ["description of issue 1", "description of issue 2"],
+  "suggestedFixes": "Use updateComponent to change props.children for Text/Heading components, or use updateComponent on the nested Heading/Text inside Cards"
+}
+
+If everything looks good (meaningful content, appropriate layout, matches request), respond with:
+{
+  "hasIssues": false
+}`;
+
+        // Add critic message
+        messages.push({
+          role: 'user',
+          content: criticPrompt,
+        });
+
+        // Get critique
+        const critiqueResponse = await llm.chat({
+          messages,
+          temperature: 0.3, // Lower temperature for consistent critique
+          max_tokens: 500,
+        });
+
+        console.log('[Agent] Critique response:', critiqueResponse.content);
+
+        // Parse critique
+        try {
+          const critique = JSON.parse(critiqueResponse.content || '{}');
+
+          if (critique.hasIssues) {
+            console.log('[Agent] Issues found, attempting fixes:', critique.issues);
+
+            // Add assistant's critique to messages
+            messages.push({
+              role: 'assistant',
+              content: critiqueResponse.content || '',
+            });
+
+            // Ask agent to fix the issues
+            messages.push({
+              role: 'user',
+              content: `Please fix these issues: ${critique.issues.join(', ')}. ${critique.suggestedFixes}`,
+            });
+
+            // Allow up to 2 fix iterations
+            let fixIterations = 0;
+            const MAX_FIX_ITERATIONS = 2;
+
+            let fixResponse = await llm.chat({
+              messages,
+              tools,
+              temperature: 0.7,
+              max_tokens: 1000,
+              tool_choice: 'required' as const,
+            });
+
+            while (fixResponse.tool_calls && fixResponse.tool_calls.length > 0 && fixIterations < MAX_FIX_ITERATIONS) {
+              fixIterations++;
+              console.log(`[Agent] Fix iteration ${fixIterations}`);
+
+              // Add assistant message with tool calls
+              messages.push({
+                role: 'assistant',
+                content: fixResponse.content || '',
+                tool_calls: fixResponse.tool_calls,
+              });
+
+              // Execute fix tools
+              for (const toolCall of fixResponse.tool_calls) {
+                const toolName = toolCall.function.name;
+                const toolArgs = JSON.parse(toolCall.function.arguments);
+
+                const tool = getTool(toolName);
+                if (tool) {
+                  try {
+                    const result = await tool.execute(toolArgs, context);
+                    messages.push({
+                      role: 'tool',
+                      tool_call_id: toolCall.id,
+                      content: JSON.stringify(result),
+                    });
+                  } catch (error) {
+                    messages.push({
+                      role: 'tool',
+                      tool_call_id: toolCall.id,
+                      content: JSON.stringify({
+                        success: false,
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                      }),
+                    });
+                  }
+                }
+              }
+
+              // Get final response after fixes
+              fixResponse = await llm.chat({
+                messages,
+                tools,
+                temperature: 0.7,
+                max_tokens: 1000,
+              });
+            }
+
+            // Update response with fixed version
+            response = fixResponse;
+            console.log('[Agent] Reflection fixes applied');
+          } else {
+            console.log('[Agent] No issues found in reflection');
+          }
+        } catch (parseError) {
+          console.warn('[Agent] Failed to parse critique, skipping reflection fixes:', parseError);
+        }
+      } else {
+        console.warn('[Agent] getPageComponents tool not found, skipping reflection');
+      }
+    } catch (reflectionError) {
+      console.error('[Agent] Error in reflection step:', reflectionError);
+    }
+  } else {
+    console.log('[Agent] Skipping reflection - conditions not met');
+  }
+
+  // Return agent response
+  return {
       id: `agent-${Date.now()}`,
       role: 'agent',
       content: [

@@ -23,7 +23,7 @@ function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNod
 // Create a new component
 export const createComponentTool: AgentTool = {
   name: 'createComponent',
-  description: 'Create a new component and add it to the tree',
+  description: 'Create a new component and add it to the tree. IMPORTANT: Always use the "content" parameter for Card and Panel components to set custom text instead of generic placeholders!',
   category: 'action',
   parameters: {
     type: {
@@ -39,7 +39,7 @@ export const createComponentTool: AgentTool = {
     },
     content: {
       type: 'object',
-      description: 'Content configuration for smart components. For Card: { title?: string, body?: string }. For Panel: { body?: string }.',
+      description: 'REQUIRED for Card and Panel components! Sets custom text content instead of generic defaults like "Card Title". For Card: { title: string, body: string }. For Panel: { body: string }. DO NOT create Cards or Panels without this parameter!',
       required: false,
     },
     parentId: {
@@ -64,6 +64,15 @@ export const createComponentTool: AgentTool = {
         success: false,
         message: `Unknown component type: "${params.type}". Use getAvailableComponentTypes to see available types.`,
         error: 'Invalid component type',
+      };
+    }
+
+    // ENFORCE content parameter for Card and Panel
+    if ((params.type === 'Card' || params.type === 'Panel') && !params.content) {
+      return {
+        success: false,
+        message: `ERROR: The "content" parameter is REQUIRED for ${params.type} components to set custom text. Without it, you'll create generic placeholders like "Card Title". Please provide: ${params.type === 'Card' ? '{ title: "Your Title", body: "Your content" }' : '{ body: "Your content" }'}`,
+        error: 'Missing required content parameter',
       };
     }
 
