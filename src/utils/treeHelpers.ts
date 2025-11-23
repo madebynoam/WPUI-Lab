@@ -164,22 +164,34 @@ export const deepCloneNode = (node: ComponentNode): ComponentNode => {
 export const duplicateNodeInTree = (tree: ComponentNode[], id: string): { tree: ComponentNode[]; newNodeId: string | null } => {
   let newNodeId: string | null = null;
 
-  const duplicate = (nodes: ComponentNode[], parentArray: ComponentNode[]): ComponentNode[] => {
+  const duplicate = (nodes: ComponentNode[]): ComponentNode[] => {
+    const result: ComponentNode[] = [];
+
     for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].id === id) {
-        const cloned = deepCloneNode(nodes[i]);
+      const node = nodes[i];
+
+      // Add the current node
+      result.push(node);
+
+      // If this is the node to duplicate, add the clone right after it
+      if (node.id === id) {
+        const cloned = deepCloneNode(node);
         newNodeId = cloned.id;
-        parentArray.splice(i + 1, 0, cloned);
-        return parentArray;
-      }
-      if (nodes[i].children) {
-        nodes[i].children = duplicate(nodes[i].children!, nodes[i].children!);
+        result.push(cloned);
+      } else if (node.children) {
+        // Recursively process children for other nodes
+        const processedChildren = duplicate(node.children);
+        // Only update if children changed (found the node to duplicate)
+        if (processedChildren !== node.children) {
+          result[result.length - 1] = { ...node, children: processedChildren };
+        }
       }
     }
-    return parentArray;
+
+    return result;
   };
 
-  const newTree = duplicate([...tree], [...tree]);
+  const newTree = duplicate(tree);
   return { tree: newTree, newNodeId };
 };
 

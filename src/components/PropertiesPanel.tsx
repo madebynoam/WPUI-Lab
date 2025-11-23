@@ -256,11 +256,16 @@ export const PropertiesPanel: React.FC = () => {
   const isChildOfGrid = parent?.type === 'Grid';
 
   const handlePropChange = (propName: string, value: any) => {
+    // Special case: For Text and Heading components, 'content' prop should update 'children'
+    const actualPropName = (firstNode.type === 'Text' || firstNode.type === 'Heading') && propName === 'content'
+      ? 'children'
+      : propName;
+
     // Apply to all selected nodes using batch update
     if (selectedNodeIds.length > 1) {
-      updateMultipleComponentProps(selectedNodeIds, { [propName]: value });
+      updateMultipleComponentProps(selectedNodeIds, { [actualPropName]: value });
     } else {
-      updateComponentProps(selectedNodeIds[0], { [propName]: value });
+      updateComponentProps(selectedNodeIds[0], { [actualPropName]: value });
     }
   };
 
@@ -291,13 +296,18 @@ export const PropertiesPanel: React.FC = () => {
           onToggle={() => setOpenPanels({...openPanels, settings: !openPanels['settings']})}
         >
           {definition.propDefinitions.map((propDef) => {
-            const currentValue = isMultiSelect
-              ? (getSharedProps[propDef.name] !== undefined
-                  ? getSharedProps[propDef.name]
-                  : firstNode.props[propDef.name] ?? propDef.defaultValue)
-              : firstNode.props[propDef.name] ?? propDef.defaultValue;
+            // Special case: For Text and Heading, read 'content' from 'children' prop
+            const actualPropToRead = (firstNode.type === 'Text' || firstNode.type === 'Heading') && propDef.name === 'content'
+              ? 'children'
+              : propDef.name;
 
-            const isShared = !isMultiSelect || (propDef.name in getSharedProps);
+            const currentValue = isMultiSelect
+              ? (getSharedProps[actualPropToRead] !== undefined
+                  ? getSharedProps[actualPropToRead]
+                  : firstNode.props[actualPropToRead] ?? propDef.defaultValue)
+              : firstNode.props[actualPropToRead] ?? propDef.defaultValue;
+
+            const isShared = !isMultiSelect || (actualPropToRead in getSharedProps);
 
             return (
               <div key={propDef.name} style={{ marginBottom: '16px' }}>
