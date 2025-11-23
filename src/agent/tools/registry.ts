@@ -47,6 +47,10 @@ export function getToolsForLLM(): LLMTool[] {
         if (paramDef.default !== undefined) {
           properties[paramName].default = paramDef.default;
         }
+
+        if (paramDef.items) {
+          properties[paramName].items = paramDef.items;
+        }
       }
     }
 
