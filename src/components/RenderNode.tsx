@@ -68,7 +68,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
   // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading') {
-    const content = props.content || definition.defaultProps?.children;
+    const content = props.children || props.content || definition.defaultProps?.children;
     delete props.content;
 
     return (

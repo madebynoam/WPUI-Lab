@@ -227,10 +227,15 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const insertComponent = (node: ComponentNode, parentId?: string, index?: number) => {
+    console.log('[insertComponent] Received node:', JSON.stringify(node, null, 2));
+    console.log('[insertComponent] Parent ID:', parentId, 'Index:', index);
+
     dispatch({
       type: 'INSERT_COMPONENT',
       payload: { node, parentId, index },
     });
+
+    console.log('[insertComponent] Dispatched INSERT_COMPONENT action');
   };
 
   const removeComponent = (id: string) => {

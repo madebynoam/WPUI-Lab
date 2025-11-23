@@ -37,6 +37,11 @@ export const createComponentTool: AgentTool = {
       required: false,
       default: {},
     },
+    content: {
+      type: 'object',
+      description: 'Content configuration for smart components. For Card: { title?: string, body?: string }. For Panel: { body?: string }.',
+      required: false,
+    },
     parentId: {
       type: 'string',
       description: 'ID of parent component to add this component to. If not provided, adds to root.',
@@ -49,7 +54,7 @@ export const createComponentTool: AgentTool = {
     },
   },
   execute: async (
-    params: { type: string; props?: any; parentId?: string; index?: number },
+    params: { type: string; props?: any; content?: any; parentId?: string; index?: number },
     context: ToolContext
   ): Promise<ToolResult> => {
     // Validate component type
@@ -63,9 +68,59 @@ export const createComponentTool: AgentTool = {
     }
 
     // Convert defaultChildren from PatternNode[] to ComponentNode[]
-    const children = definition.defaultChildren
+    let children = definition.defaultChildren
       ? patternNodesToComponentNodes(definition.defaultChildren)
       : [];
+
+    console.log('[createComponent] Initial children:', JSON.stringify(children, null, 2));
+    console.log('[createComponent] Content param:', params.content);
+
+    // Apply content customization for smart components using immutable updates
+    if (params.content) {
+      if (params.type === 'Card') {
+        // Customize Card content using immutable pattern
+        children = children.map(child => {
+          if (child.type === 'CardHeader' && params.content.title) {
+            return {
+              ...child,
+              children: child.children?.map(grandchild =>
+                grandchild.type === 'Heading'
+                  ? { ...grandchild, props: { ...grandchild.props, children: params.content.title } }
+                  : grandchild
+              ),
+            };
+          }
+          if (child.type === 'CardBody' && params.content.body) {
+            return {
+              ...child,
+              children: child.children?.map(grandchild =>
+                grandchild.type === 'Text'
+                  ? { ...grandchild, props: { ...grandchild.props, children: params.content.body } }
+                  : grandchild
+              ),
+            };
+          }
+          return child;
+        });
+      } else if (params.type === 'Panel') {
+        // Customize Panel content using immutable pattern
+        children = children.map(child => {
+          if (child.type === 'PanelBody' && params.content.body) {
+            return {
+              ...child,
+              children: child.children?.map(grandchild =>
+                grandchild.type === 'Text'
+                  ? { ...grandchild, props: { ...grandchild.props, children: params.content.body } }
+                  : grandchild
+              ),
+            };
+          }
+          return child;
+        });
+      }
+    }
+
+    console.log('[createComponent] Customized children:', JSON.stringify(children, null, 2));
 
     // Create new component node
     const newComponent: ComponentNode = {
@@ -77,9 +132,13 @@ export const createComponentTool: AgentTool = {
       interactions: [],
     };
 
+    console.log('[createComponent] Final component node:', JSON.stringify(newComponent, null, 2));
+
     try {
-      // Add component using context method
+      // Add the fully constructed component with customized children
       context.addComponent(newComponent, params.parentId, params.index);
+
+      console.log('[createComponent] Successfully added component to context');
 
       return {
         success: true,

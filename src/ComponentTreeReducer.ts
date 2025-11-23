@@ -145,9 +145,14 @@ export function componentTreeReducer(
 
     case 'INSERT_COMPONENT': {
       const { node, parentId, index } = action.payload;
+      console.log('[Reducer] INSERT_COMPONENT - Received node:', JSON.stringify(node, null, 2));
+      console.log('[Reducer] INSERT_COMPONENT - Parent ID:', parentId, 'Index:', index);
+
       const currentTree = getCurrentTree(state.pages, state.currentPageId);
 
       const newTree = insertNodeInTree(currentTree, node, parentId, index);
+      console.log('[Reducer] INSERT_COMPONENT - New tree after insertion:', JSON.stringify(newTree, null, 2));
+
       const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
 
       return {
