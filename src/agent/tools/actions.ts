@@ -1,11 +1,23 @@
 import { AgentTool, ToolContext, ToolResult } from '../types';
-import { ComponentNode } from '../../types';
+import { ComponentNode, PatternNode } from '../../types';
 import { componentRegistry } from '../../componentRegistry';
 import { ROOT_VSTACK_ID } from '../../ComponentTreeContext';
 
 // Generate unique ID for components
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Helper: Convert PatternNode to ComponentNode with IDs
+function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNode[] {
+  return patternNodes.map(patternNode => ({
+    id: generateId(),
+    type: patternNode.type,
+    name: patternNode.name || '',
+    props: { ...patternNode.props },
+    children: patternNode.children ? patternNodesToComponentNodes(patternNode.children) : [],
+    interactions: [],
+  }));
 }
 
 // Create a new component
@@ -50,13 +62,18 @@ export const createComponentTool: AgentTool = {
       };
     }
 
+    // Convert defaultChildren from PatternNode[] to ComponentNode[]
+    const children = definition.defaultChildren
+      ? patternNodesToComponentNodes(definition.defaultChildren)
+      : [];
+
     // Create new component node
     const newComponent: ComponentNode = {
       id: generateId(),
       type: params.type,
       name: '',
       props: { ...definition.defaultProps, ...(params.props || {}) },
-      children: [],
+      children,
       interactions: [],
     };
 

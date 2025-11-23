@@ -111,11 +111,22 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
     return null;
   }
 
-  // Filter components based on search term
+  // Primitive components to hide (auto-created by parent components)
+  const hiddenPrimitives = new Set([
+    'CardHeader',
+    'CardBody',
+    'PanelBody',
+    'PanelRow',
+    'FlexItem',
+    'FlexBlock',
+  ]);
+
+  // Filter components based on search term and hide primitives
   const filteredGroups = componentGroups
     .map((group) => ({
       ...group,
       components: group.components.filter((comp) =>
+        !hiddenPrimitives.has(comp) &&
         comp.toLowerCase().includes(searchTerm.toLowerCase())
       ),
     }))

@@ -40,6 +40,7 @@ export interface ComponentDefinition {
   acceptsChildren: boolean;
   description?: string;
   defaultProps?: Record<string, any>;
+  defaultChildren?: PatternNode[];
   propDefinitions: PropDefinition[];
 }
 

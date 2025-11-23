@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo } from 'react';
-import { ComponentNode, Page, Interaction } from './types';
+import { ComponentNode, Page, Interaction, PatternNode } from './types';
 import { componentRegistry } from './componentRegistry';
 import { componentTreeReducer, ComponentTreeState } from './ComponentTreeReducer';
 import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent, generateId } from './utils/treeHelpers';
@@ -146,6 +146,18 @@ function initializeState(): ComponentTreeState {
   };
 }
 
+// Helper: Convert PatternNode to ComponentNode with IDs
+function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNode[] {
+  return patternNodes.map(patternNode => ({
+    id: generateId(),
+    type: patternNode.type,
+    name: patternNode.name || '',
+    props: { ...patternNode.props },
+    children: patternNode.children ? patternNodesToComponentNodes(patternNode.children) : [],
+    interactions: [],
+  }));
+}
+
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(componentTreeReducer, undefined, initializeState);
 
@@ -194,12 +206,17 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     const definition = componentRegistry[componentType];
     if (!definition) return;
 
+    // Convert defaultChildren from PatternNode[] to ComponentNode[]
+    const children = definition.defaultChildren
+      ? patternNodesToComponentNodes(definition.defaultChildren)
+      : [];
+
     const newNode: ComponentNode = {
       id: generateId(),
       type: componentType,
       name: '',
       props: { ...definition.defaultProps },
-      children: [],
+      children,
       interactions: [],
     };
 

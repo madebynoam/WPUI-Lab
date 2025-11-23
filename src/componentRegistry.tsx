@@ -129,6 +129,28 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     component: Card,
     acceptsChildren: true,
     defaultProps: { size: 'medium' },
+    defaultChildren: [
+      {
+        type: 'CardHeader',
+        props: {},
+        children: [
+          {
+            type: 'Heading',
+            props: { children: 'Card Title', level: 3 },
+          },
+        ],
+      },
+      {
+        type: 'CardBody',
+        props: {},
+        children: [
+          {
+            type: 'Text',
+            props: { children: 'This is the card content. Add your text here.' },
+          },
+        ],
+      },
+    ],
     propDefinitions: [
       {
         name: 'size',
@@ -794,6 +816,18 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     component: Panel,
     acceptsChildren: true,
     defaultProps: { header: 'Panel Header' },
+    defaultChildren: [
+      {
+        type: 'PanelBody',
+        props: { title: 'Panel Section', initialOpen: true },
+        children: [
+          {
+            type: 'Text',
+            props: { children: 'Panel content goes here.' },
+          },
+        ],
+      },
+    ],
     propDefinitions: [
       {
         name: 'header',
