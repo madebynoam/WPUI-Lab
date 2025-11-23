@@ -9,8 +9,8 @@ interface TopBarProps {
   onToggleInserter: () => void;
   showTreePanel: boolean;
   onToggleTreePanel: () => void;
-  rightPanel: 'props' | 'code' | 'none';
-  onToggleRightPanel: (panel: 'props' | 'code' | 'none') => void;
+  rightPanel: 'props' | 'code' | 'agent' | 'none';
+  onToggleRightPanel: (panel: 'props' | 'code' | 'agent' | 'none') => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, showTreePanel, onToggleTreePanel, rightPanel, onToggleRightPanel }) => {
@@ -164,6 +164,26 @@ export const TopBar: React.FC<TopBarProps> = ({ showInserter, onToggleInserter, 
             style={{
               backgroundColor: rightPanel === 'props' ? '#1e1e1e' : 'transparent',
               color: rightPanel === 'props' ? '#fff' : '#666',
+              border: 'none',
+              outline: 'none',
+              boxShadow: 'none',
+              borderRadius: '2px',
+              cursor: 'pointer',
+            }}
+          />
+
+          {/* AI Agent panel toggle button */}
+          <Button
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.6611 11.5224L16.3782 10.39C15.0799 9.94388 14.0561 8.92011 13.61 7.62181L12.4776 4.33887C12.3231 3.88704 11.6769 3.88704 11.5224 4.33887L10.39 7.62181C9.94388 8.92011 8.92011 9.94388 7.62181 10.39L4.33887 11.5224C3.88704 11.6769 3.88704 12.3231 4.33887 12.4776L7.62181 13.61C8.92011 14.0561 9.94388 15.0799 10.39 16.3782L11.5224 19.6611C11.6769 20.113 12.3231 20.113 12.4776 19.6611L13.61 16.3782C14.0561 15.0799 15.0799 14.0561 16.3782 13.61L19.6611 12.4776C20.113 12.3231 20.113 11.6769 19.6611 11.5224ZM15.8291 12.2431L14.1877 12.8093C13.5357 13.0324 13.0266 13.5471 12.8036 14.1934L12.2374 15.8349C12.1573 16.0636 11.837 16.0636 11.7569 15.8349L11.1907 14.1934C10.9677 13.5414 10.4529 13.0324 9.80661 12.8093L8.16515 12.2431C7.93637 12.163 7.93637 11.8427 8.16515 11.7626L9.80661 11.1964C10.4586 10.9734 10.9677 10.4586 11.1907 9.81233L11.7569 8.17087C11.837 7.94209 12.1573 7.94209 12.2374 8.17087L12.8036 9.81233C13.0266 10.4643 13.5414 10.9734 14.1877 11.1964L15.8291 11.7626C16.0579 11.8427 16.0579 12.163 15.8291 12.2431Z" fill={rightPanel === 'agent' ? '#fff' : '#3858E9'}/>
+              </svg>
+            }
+            onClick={() => onToggleRightPanel(rightPanel === 'agent' ? 'none' : 'agent')}
+            title="Toggle AI assistant"
+            style={{
+              backgroundColor: rightPanel === 'agent' ? '#1e1e1e' : 'transparent',
+              color: rightPanel === 'agent' ? '#fff' : '#666',
               border: 'none',
               outline: 'none',
               boxShadow: 'none',

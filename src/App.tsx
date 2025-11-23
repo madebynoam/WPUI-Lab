@@ -6,6 +6,7 @@ import { TreePanel } from './components/TreePanel';
 import { Canvas } from './components/Canvas';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { CodePanel } from './components/CodePanel';
+import { AgentPanel } from './components/AgentPanel';
 import '@wordpress/components/build-style/style.css';
 import '@wordpress/block-editor/build-style/style.css';
 import '@wordpress/dataviews/build-style/style.css';
@@ -16,7 +17,7 @@ function AppContent() {
   const [showInserter, setShowInserter] = useState(false);
   const [showTreePanel, setShowTreePanel] = useState(true);
   const [showHeader, setShowHeader] = useState(true);
-  const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'none'>('props');
+  const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'agent' | 'none'>('props');
   const [rightPanelWidth, setRightPanelWidth] = useState(() => {
     // Load saved width from localStorage, default to 280
     const saved = localStorage.getItem('wp-designer-code-panel-width');
@@ -119,6 +120,9 @@ function AppContent() {
         )}
         {shouldShowPanels && rightPanel === 'code' && (
           <CodePanel width={rightPanelWidth} onResizeStart={() => setIsResizing(true)} />
+        )}
+        {shouldShowPanels && rightPanel === 'agent' && (
+          <AgentPanel />
         )}
       </div>
     </div>

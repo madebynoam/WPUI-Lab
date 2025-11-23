@@ -991,8 +991,10 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 						variant="secondary"
 						size="small"
 						onClick={() => {
-							if (confirm("Are you sure you want to reset the entire tree?")) {
+							if (confirm("Are you sure you want to reset the entire tree? This will also clear the AI assistant chat history.")) {
 								resetTree();
+								// Reload page to reset all component state including AgentPanel
+								window.location.reload();
 							}
 						}}
 						isDestructive
