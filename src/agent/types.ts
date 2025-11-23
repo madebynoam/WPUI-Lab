@@ -43,6 +43,9 @@ export interface AgentTool {
       description: string;
       required?: boolean;
       default?: any;
+      items?: {
+        type: string;
+      };
     };
   };
   execute: (params: any, context: ToolContext) => Promise<ToolResult>;

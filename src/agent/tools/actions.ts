@@ -397,6 +397,9 @@ export const updateMultipleComponentsTool: AgentTool = {
       type: 'array',
       description: 'Array of component IDs to update',
       required: true,
+      items: {
+        type: 'string',
+      },
     },
     props: {
       type: 'object',

@@ -137,13 +137,14 @@ export const insertNodeInTree = (
 export const removeNodeFromTree = (tree: ComponentNode[], id: string): ComponentNode[] => {
   if (id === ROOT_VSTACK_ID) return tree; // Prevent deletion of root
 
-  return tree.filter(node => {
-    if (node.id === id) return false;
-    if (node.children) {
-      node.children = removeNodeFromTree(node.children, id);
-    }
-    return true;
-  });
+  return tree
+    .filter(node => node.id !== id)
+    .map(node => {
+      if (node.children) {
+        return { ...node, children: removeNodeFromTree(node.children, id) };
+      }
+      return node;
+    });
 };
 
 /**
