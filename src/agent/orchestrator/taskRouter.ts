@@ -1,6 +1,8 @@
 import { AgentType, AgentConfig, AgentTask, UserIntent } from './types';
 import { contextAgentConfig } from './agents/contextAgent';
-import { builderAgentConfig } from './agents/builderAgent';
+import { creationAgentConfig } from './agents/creationAgent';
+import { modifierAgentConfig } from './agents/modifierAgent';
+import { deletionAgentConfig } from './agents/deletionAgent';
 import { layoutAgentConfig } from './agents/layoutAgent';
 import { copywriterAgentConfig } from './agents/copywriterAgent';
 
@@ -9,7 +11,9 @@ import { copywriterAgentConfig } from './agents/copywriterAgent';
  */
 const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
   context: contextAgentConfig,
-  builder: builderAgentConfig,
+  creation: creationAgentConfig,
+  modifier: modifierAgentConfig,
+  deletion: deletionAgentConfig,
   layout: layoutAgentConfig,
   copywriter: copywriterAgentConfig,
   // TODO: Add remaining agents when implemented
@@ -70,7 +74,7 @@ export function planTasks(intent: UserIntent): AgentTask[] {
       // Build components
       tasks.push({
         id: nextId(),
-        type: 'builder',
+        type: 'creation',
         description: `Create ${intent.quantity || ''} ${intent.target}`,
         input: {
           target: intent.target,
@@ -84,7 +88,7 @@ export function planTasks(intent: UserIntent): AgentTask[] {
         id: nextId(),
         type: 'layout',
         description: `Validate layout rules for ${intent.target}`,
-        dependencies: [tasks[tasks.length - 1].id], // Wait for builder
+        dependencies: [tasks[tasks.length - 1].id], // Wait for creation
       });
       break;
 
@@ -92,7 +96,7 @@ export function planTasks(intent: UserIntent): AgentTask[] {
       // Update existing components
       tasks.push({
         id: nextId(),
-        type: 'builder',
+        type: 'modifier',
         description: `Update ${intent.target}`,
         input: {
           action: 'update',
@@ -103,10 +107,10 @@ export function planTasks(intent: UserIntent): AgentTask[] {
       break;
 
     case 'delete':
-      // Delete components (builder handles this)
+      // Delete components
       tasks.push({
         id: nextId(),
-        type: 'builder',
+        type: 'deletion',
         description: `Delete ${intent.target}`,
         input: {
           action: 'delete',

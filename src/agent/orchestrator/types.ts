@@ -5,7 +5,9 @@ import { ToolContext, ToolResult, LLMMessage } from '../types';
  */
 export type AgentType =
   | 'context'        // Reads existing design state
-  | 'builder'        // Builds components via YAML/direct creation
+  | 'creation'       // Creates new components via YAML/direct creation
+  | 'modifier'       // Modifies existing component properties
+  | 'deletion'       // Deletes components safely
   | 'layout'         // Validates and enforces layout rules
   | 'copywriter'     // Generates text content
   | 'visual'         // Establishes visual hierarchy
@@ -72,6 +74,8 @@ export interface UserIntent {
   quantity?: number;               // How many (e.g., 3 cards)
   context?: Record<string, any>;   // Additional context
   tone?: 'professional' | 'casual' | 'playful'; // For copywriter
+  usesSelection?: boolean;         // NEW: True if referring to selected components
+  needsClarity?: boolean;          // NEW: True if ambiguous which components to affect
 }
 
 /**
