@@ -53,6 +53,33 @@ export async function executeAgent(
       // Handle tools with no parameters
       const parameters = tool.parameters || {};
 
+      // Helper to recursively process parameter definitions
+      const processParam = (param: any): any => {
+        const propDef: any = {
+          type: param.type,
+          description: param.description,
+        };
+
+        // For array types, include items schema
+        if (param.type === 'array' && param.items) {
+          propDef.items = processParam(param.items);
+        }
+
+        // For object types with properties, recursively process them
+        if (param.type === 'object' && param.properties) {
+          propDef.properties = Object.entries(param.properties).reduce((acc, [key, prop]: [string, any]) => {
+            acc[key] = processParam(prop);
+            return acc;
+          }, {} as Record<string, any>);
+
+          if (param.required) {
+            propDef.required = param.required;
+          }
+        }
+
+        return propDef;
+      };
+
       return {
         type: 'function',
         function: {
@@ -61,17 +88,7 @@ export async function executeAgent(
           parameters: {
             type: 'object',
             properties: Object.entries(parameters).reduce((acc, [key, param]: [string, any]) => {
-              const propDef: any = {
-                type: param.type,
-                description: param.description,
-              };
-
-              // For array types, include items schema
-              if (param.type === 'array' && param.items) {
-                propDef.items = param.items;
-              }
-
-              acc[key] = propDef;
+              acc[key] = processParam(param);
               return acc;
             }, {} as Record<string, any>),
             required: Object.entries(parameters)
