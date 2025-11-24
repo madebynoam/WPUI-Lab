@@ -54,6 +54,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Grid',
     component: Grid,
     acceptsChildren: true,
+    description: 'Arrange child elements in a flexible grid layout.',
     defaultProps: {
       columns: 3,
       gap: 4,
@@ -128,6 +129,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Card',
     component: Card,
     acceptsChildren: true,
+    description: 'Container for grouping related content with elevation.',
     defaultProps: { size: 'medium' },
     defaultChildren: [
       {
@@ -183,6 +185,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'CardBody',
     component: CardBody,
     acceptsChildren: true,
+    description: 'Main content area within a card component.',
     defaultProps: {},
     propDefinitions: [
       {
@@ -210,6 +213,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'CardHeader',
     component: CardHeader,
     acceptsChildren: true,
+    description: 'Header section at the top of a card.',
     defaultProps: {},
     propDefinitions: [
       {
@@ -290,6 +294,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'HStack',
     component: HStack,
     acceptsChildren: true,
+    description: 'Stack child elements horizontally with spacing control.',
     defaultProps: { spacing: 2 },
     propDefinitions: [
       {
@@ -337,6 +342,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'VStack',
     component: VStack,
     acceptsChildren: true,
+    description: 'Stack child elements vertically with spacing control.',
     defaultProps: { spacing: 2 },
     propDefinitions: [
       {
@@ -428,6 +434,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'TextControl',
     component: TextControl,
     acceptsChildren: false,
+    description: 'Single-line text input field for user text entry.',
     defaultProps: { label: 'Text Field', value: '' },
     propDefinitions: [
       {
@@ -467,6 +474,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'TextareaControl',
     component: TextareaControl,
     acceptsChildren: false,
+    description: 'Multi-line text input field for longer content.',
     defaultProps: { label: 'Textarea', value: '' },
     propDefinitions: [
       {
@@ -512,6 +520,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'SelectControl',
     component: SelectControl,
     acceptsChildren: false,
+    description: 'Dropdown menu for selecting from a list of options.',
     defaultProps: { label: 'Select', value: '', options: [{ label: 'Option 1', value: 'option1' }, { label: 'Option 2', value: 'option2' }] },
     propDefinitions: [
       {
@@ -545,6 +554,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Icon',
     component: Icon,
     acceptsChildren: false,
+    description: 'Display an icon from the WordPress icon library.',
     defaultProps: { icon: 'wordpress', size: 24 },
     propDefinitions: [
       {
@@ -568,6 +578,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'ToggleControl',
     component: ToggleControl,
     acceptsChildren: false,
+    description: 'Switch control for toggling between on and off states.',
     defaultProps: { label: 'Toggle', checked: false },
     propDefinitions: [
       {
@@ -601,6 +612,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'CheckboxControl',
     component: CheckboxControl,
     acceptsChildren: false,
+    description: 'Checkbox input for boolean selections and choices.',
     defaultProps: { label: 'Checkbox', checked: false },
     propDefinitions: [
       {
@@ -634,6 +646,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'SearchControl',
     component: SearchControl,
     acceptsChildren: false,
+    description: 'Text input optimized for search with clear button.',
     defaultProps: { label: 'Search', value: '' },
     propDefinitions: [
       {
@@ -667,6 +680,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'NumberControl',
     component: NumberControl,
     acceptsChildren: false,
+    description: 'Numeric input field with increment and decrement buttons.',
     defaultProps: { label: 'Number', value: 0 },
     propDefinitions: [
       {
@@ -712,6 +726,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'RadioControl',
     component: RadioControl,
     acceptsChildren: false,
+    description: 'Radio button group for selecting one option from many.',
     defaultProps: { label: 'Radio', selected: 'option1', options: [{ label: 'Option 1', value: 'option1' }, { label: 'Option 2', value: 'option2' }] },
     propDefinitions: [
       {
@@ -739,6 +754,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'RangeControl',
     component: RangeControl,
     acceptsChildren: false,
+    description: 'Slider control for selecting a value within a range.',
     defaultProps: { label: 'Range', value: 50 },
     propDefinitions: [
       {
@@ -784,6 +800,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'ColorPicker',
     component: ColorPicker,
     acceptsChildren: false,
+    description: 'Color selection tool with hue and saturation controls.',
     defaultProps: { color: '#000000' },
     propDefinitions: [
       {
@@ -799,6 +816,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'ColorPalette',
     component: ColorPalette,
     acceptsChildren: false,
+    description: 'Predefined color swatches for quick color selection.',
     defaultProps: { value: '#000000', colors: [{ name: 'Black', color: '#000000' }, { name: 'White', color: '#ffffff' }, { name: 'Red', color: '#ff0000' }, { name: 'Blue', color: '#0000ff' }] },
     propDefinitions: [
       {
@@ -815,6 +833,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Panel',
     component: Panel,
     acceptsChildren: true,
+    description: 'Collapsible sections container with header and body areas.',
     defaultProps: { header: 'Panel Header' },
     defaultChildren: [
       {
@@ -842,6 +861,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'PanelBody',
     component: PanelBody,
     acceptsChildren: true,
+    description: 'Collapsible section within a panel container.',
     defaultProps: { title: 'Panel Section', initialOpen: true },
     propDefinitions: [
       {
@@ -869,6 +889,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'PanelRow',
     component: PanelRow,
     acceptsChildren: true,
+    description: 'Row container for aligning items within panel sections.',
     defaultProps: {},
     propDefinitions: [],
   },
@@ -877,6 +898,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Flex',
     component: Flex,
     acceptsChildren: true,
+    description: 'Flexible container using CSS flexbox for layout control.',
     defaultProps: { gap: 2 },
     propDefinitions: [
       {
@@ -913,6 +935,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'FlexBlock',
     component: FlexBlock,
     acceptsChildren: true,
+    description: 'Flex item that automatically fills available space.',
     defaultProps: {},
     propDefinitions: [],
   },
@@ -921,6 +944,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'FlexItem',
     component: FlexItem,
     acceptsChildren: true,
+    description: 'Individual item within a flex container layout.',
     defaultProps: {},
     propDefinitions: [
       {
@@ -937,6 +961,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Spacer',
     component: Spacer,
     acceptsChildren: false,
+    description: 'Invisible element for adding spacing between components.',
     defaultProps: { margin: 2 },
     propDefinitions: [
       {
@@ -970,6 +995,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Divider',
     component: Divider,
     acceptsChildren: false,
+    description: 'Horizontal line for visually separating content sections.',
     defaultProps: { margin: 2 },
     propDefinitions: [
       {
@@ -985,6 +1011,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Truncate',
     component: Truncate,
     acceptsChildren: true,
+    description: 'Truncate long text with ellipsis after specified lines.',
     defaultProps: { numberOfLines: 1 },
     propDefinitions: [
       {
@@ -1000,6 +1027,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Tooltip',
     component: Tooltip,
     acceptsChildren: true,
+    description: 'Display helpful text when hovering over child elements.',
     defaultProps: { text: 'Tooltip text' },
     propDefinitions: [
       {
@@ -1023,6 +1051,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Modal',
     component: Modal,
     acceptsChildren: true,
+    description: 'Overlay dialog for displaying content above the page.',
     defaultProps: { title: 'Modal Title', isDismissible: true },
     propDefinitions: [
       {
@@ -1051,6 +1080,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Popover',
     component: Popover,
     acceptsChildren: true,
+    description: 'Floating container anchored to a target element.',
     defaultProps: {},
     propDefinitions: [
       {
@@ -1067,6 +1097,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'TabPanel',
     component: TabPanel,
     acceptsChildren: false,
+    description: 'Tabbed interface for organizing content into sections.',
     defaultProps: { tabs: [{ name: 'tab1', title: 'Tab 1' }, { name: 'tab2', title: 'Tab 2' }] },
     propDefinitions: [
       {
@@ -1082,6 +1113,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'MenuGroup',
     component: MenuGroup,
     acceptsChildren: true,
+    description: 'Container for grouping related menu items together.',
     defaultProps: { label: 'Menu Group' },
     propDefinitions: [
       {
@@ -1097,6 +1129,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'MenuItem',
     component: MenuItem,
     acceptsChildren: true,
+    description: 'Individual clickable item within a menu or dropdown.',
     defaultProps: {},
     propDefinitions: [
       {
@@ -1112,6 +1145,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Spinner',
     component: Spinner,
     acceptsChildren: false,
+    description: 'Animated loading indicator for asynchronous operations.',
     defaultProps: {},
     propDefinitions: [],
   },
@@ -1120,6 +1154,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'Notice',
     component: Notice,
     acceptsChildren: true,
+    description: 'Alert banner for displaying messages and notifications.',
     defaultProps: { status: 'info', isDismissible: true },
     propDefinitions: [
       {
@@ -1143,6 +1178,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'DateTimePicker',
     component: DateTimePicker,
     acceptsChildren: false,
+    description: 'Calendar interface for selecting dates and times.',
     defaultProps: { currentDate: new Date().toISOString() },
     propDefinitions: [
       {
@@ -1158,6 +1194,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'FontSizePicker',
     component: FontSizePicker,
     acceptsChildren: false,
+    description: 'Control for selecting and adjusting text font sizes.',
     defaultProps: { value: 16 },
     propDefinitions: [
       {
@@ -1173,6 +1210,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'AnglePickerControl',
     component: AnglePickerControl,
     acceptsChildren: false,
+    description: 'Circular control for selecting rotation angles and degrees.',
     defaultProps: { value: 0, label: 'Angle' },
     propDefinitions: [
       {
@@ -1194,6 +1232,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'BoxControl',
     component: BoxControl,
     acceptsChildren: false,
+    description: 'Control for setting padding and margin on all sides.',
     defaultProps: { label: 'Box Control' },
     propDefinitions: [
       {
@@ -1209,6 +1248,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'BorderControl',
     component: BorderControl,
     acceptsChildren: false,
+    description: 'Control for configuring border width, style, and color.',
     defaultProps: { label: 'Border' },
     propDefinitions: [
       {
@@ -1224,6 +1264,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'FormTokenField',
     component: FormTokenField,
     acceptsChildren: false,
+    description: 'Input field for entering tags or tokens with autocomplete.',
     defaultProps: { label: 'Tags', value: [] },
     propDefinitions: [
       {
@@ -1239,6 +1280,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'DataViews',
     component: DataViews,
     acceptsChildren: false,
+    description: 'Display tabular data with sorting, filtering, and pagination.',
     defaultProps: {
       data: getMockData('blog'),
       fields: getFieldDefinitions('blog'),

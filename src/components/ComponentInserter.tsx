@@ -1,5 +1,5 @@
-import React from 'react';
-import { SearchControl, Icon } from '@wordpress/components';
+import React from "react";
+import { SearchControl, Icon } from "@wordpress/components";
 import {
   paragraph,
   heading,
@@ -22,13 +22,13 @@ import {
   border,
   published,
   chevronDown,
-} from '@wordpress/icons';
-import { patterns, patternCategories } from '../patterns';
-import { componentGroups } from './TreePanel';
-import { TabContainer } from './TabContainer';
+} from "@wordpress/icons";
+import { patterns, patternCategories } from "../patterns";
+import { componentGroups } from "./TreePanel";
+import { TabContainer } from "./TabContainer";
 
 // Map component types to WordPress icons
-const componentIconMap: Record<string, any> = {
+export const componentIconMap: Record<string, any> = {
   // Layout
   VStack: column,
   HStack: column,
@@ -93,8 +93,8 @@ interface ComponentInserterProps {
   onAddPattern: (patternId: string) => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
-  inserterTab: 'blocks' | 'patterns';
-  onTabChange: (tab: 'blocks' | 'patterns') => void;
+  inserterTab: "blocks" | "patterns";
+  onTabChange: (tab: "blocks" | "patterns") => void;
 }
 
 export const ComponentInserter: React.FC<ComponentInserterProps> = ({
@@ -113,21 +113,22 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
 
   // Primitive components to hide (auto-created by parent components)
   const hiddenPrimitives = new Set([
-    'CardHeader',
-    'CardBody',
-    'PanelBody',
-    'PanelRow',
-    'FlexItem',
-    'FlexBlock',
+    "CardHeader",
+    "CardBody",
+    "PanelBody",
+    "PanelRow",
+    "FlexItem",
+    "FlexBlock",
   ]);
 
   // Filter components based on search term and hide primitives
   const filteredGroups = componentGroups
     .map((group) => ({
       ...group,
-      components: group.components.filter((comp) =>
-        !hiddenPrimitives.has(comp) &&
-        comp.toLowerCase().includes(searchTerm.toLowerCase())
+      components: group.components.filter(
+        (comp) =>
+          !hiddenPrimitives.has(comp) &&
+          comp.toLowerCase().includes(searchTerm.toLowerCase())
       ),
     }))
     .filter((group) => group.components.length > 0);
@@ -155,13 +156,19 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
 
   // Format component name for display (strip "Control" suffix)
   const formatComponentName = (name: string): string => {
-    return name.endsWith('Control') ? name.slice(0, -7) : name;
+    return name.endsWith("Control") ? name.slice(0, -7) : name;
   };
 
   const renderBlocksContent = () => (
     <>
       {/* Search */}
-      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+      <div
+        style={{
+          padding: "16px",
+          borderBottom: "1px solid #e0e0e0",
+          flexShrink: 0,
+        }}
+      >
         <SearchControl
           value={searchTerm}
           onChange={onSearchChange}
@@ -171,42 +178,42 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
       </div>
 
       {/* Scrollable blocks */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '16px' }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "16px" }}>
         {filteredGroups.length === 0 ? (
           <div
             style={{
-              textAlign: 'center',
-              padding: '24px',
-              color: '#757575',
-              fontSize: '13px',
+              textAlign: "center",
+              padding: "24px",
+              color: "#757575",
+              fontSize: "13px",
             }}
           >
             No blocks found
           </div>
         ) : (
           filteredGroups.map((group) => (
-            <div key={group.name} style={{ marginBottom: '24px' }}>
+            <div key={group.name} style={{ marginBottom: "24px" }}>
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '12px',
-                  color: '#1e1e1e',
-                  fontSize: '11px',
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "12px",
+                  color: "#757575",
+                  fontSize: "11px",
                   fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
                 }}
               >
-                <Icon icon={group.icon} size={16} />
+                {/* <Icon icon={group.icon} size={16} /> */}
                 {group.name}
               </div>
               <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '8px',
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "8px",
                 }}
               >
                 {group.components.map((comp) => (
@@ -214,57 +221,72 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
                     key={comp}
                     onClick={() => handleAddComponent(comp)}
                     style={{
-                      padding: '8px 4px',
-                      border: 'none',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                      textAlign: 'center',
-                      transition: 'all 0.05s ease-in-out',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '4px',
-                      minHeight: '64px',
-                      justifyContent: 'center',
-                      color: '#1e1e1e',
+                      padding: "8px 4px",
+                      border: "none",
+                      backgroundColor: "#fff",
+                      cursor: "pointer",
+                      fontSize: "11px",
+                      textAlign: "center",
+                      transition: "all 0.05s ease-in-out",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "4px",
+                      minHeight: "64px",
+                      justifyContent: "center",
+                      color: "#1e1e1e",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = '#3858e9';
-                      e.currentTarget.style.backgroundColor = 'rgba(56, 88, 233, 0.04)';
+                      e.currentTarget.style.color = "#3858e9";
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(56, 88, 233, 0.04)";
                       // Change icon color by updating SVG fill
-                      const svg = e.currentTarget.querySelector('svg');
+                      const svg = e.currentTarget.querySelector("svg");
                       if (svg) {
-                        svg.style.fill = '#3858e9';
-                        svg.style.color = '#3858e9';
+                        svg.style.fill = "#3858e9";
+                        svg.style.color = "#3858e9";
                         // Also update any path elements inside
-                        svg.querySelectorAll('path').forEach(path => {
-                          path.style.fill = '#3858e9';
+                        svg.querySelectorAll("path").forEach((path) => {
+                          path.style.fill = "#3858e9";
                         });
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '#1e1e1e';
-                      e.currentTarget.style.backgroundColor = '#fff';
-                      const svg = e.currentTarget.querySelector('svg');
+                      e.currentTarget.style.color = "#1e1e1e";
+                      e.currentTarget.style.backgroundColor = "#fff";
+                      const svg = e.currentTarget.querySelector("svg");
                       if (svg) {
-                        svg.style.fill = 'currentColor';
-                        svg.style.color = 'currentColor';
-                        svg.querySelectorAll('path').forEach(path => {
-                          path.style.fill = '';
+                        svg.style.fill = "currentColor";
+                        svg.style.color = "currentColor";
+                        svg.querySelectorAll("path").forEach((path) => {
+                          path.style.fill = "";
                         });
                       }
                     }}
                     onFocus={(e) => {
-                      e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #3858e9';
-                      e.currentTarget.style.outline = 'none';
+                      e.currentTarget.style.boxShadow =
+                        "inset 0 0 0 2px #3858e9";
+                      e.currentTarget.style.outline = "none";
                     }}
                     onBlur={(e) => {
-                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    <Icon icon={componentIconMap[comp] || blockDefault} size={24} />
-                    <span style={{ whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2 }}>{formatComponentName(comp)}</span>
+                    <Icon
+                      icon={componentIconMap[comp] || blockDefault}
+                      size={24}
+                    />
+                    <span
+                      style={{
+                        whiteSpace: "normal",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                      }}
+                    >
+                      {formatComponentName(comp)}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -278,7 +300,13 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
   const renderPatternsContent = () => (
     <>
       {/* Search */}
-      <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+      <div
+        style={{
+          padding: "16px",
+          borderBottom: "1px solid #e0e0e0",
+          flexShrink: 0,
+        }}
+      >
         <SearchControl
           value={searchTerm}
           onChange={onSearchChange}
@@ -288,78 +316,86 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
       </div>
 
       {/* Scrollable patterns */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '16px' }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "16px" }}>
         {filteredPatternCategories.length === 0 ? (
           <div
             style={{
-              textAlign: 'center',
-              padding: '24px',
-              color: '#757575',
-              fontSize: '13px',
+              textAlign: "center",
+              padding: "24px",
+              color: "#757575",
+              fontSize: "13px",
             }}
           >
             No patterns found
           </div>
         ) : (
           filteredPatternCategories.map((cat) => (
-            <div key={cat.category} style={{ marginBottom: '24px' }}>
+            <div key={cat.category} style={{ marginBottom: "24px" }}>
               <div
                 style={{
-                  marginBottom: '12px',
-                  color: '#757575',
-                  fontSize: '12px',
+                  marginBottom: "12px",
+                  color: "#757575",
+                  fontSize: "12px",
                   fontWeight: 600,
-                  textTransform: 'uppercase',
+                  textTransform: "uppercase",
                 }}
               >
                 {cat.category}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              >
                 {cat.patterns.map((pattern) => (
                   <button
                     key={pattern.id}
                     onClick={() => handleAddPattern(pattern.id)}
                     style={{
-                      padding: '12px',
-                      border: 'none',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      textAlign: 'left',
-                      transition: 'all 0.05s ease-in-out',
+                      padding: "12px",
+                      border: "none",
+                      backgroundColor: "#fff",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      textAlign: "left",
+                      transition: "all 0.05s ease-in-out",
                     }}
                     onMouseEnter={(e) => {
-                      const title = e.currentTarget.querySelector('div:first-child') as HTMLElement;
+                      const title = e.currentTarget.querySelector(
+                        "div:first-child"
+                      ) as HTMLElement;
                       if (title) {
-                        title.style.color = '#3858e9';
+                        title.style.color = "#3858e9";
                       }
-                      e.currentTarget.style.backgroundColor = 'rgba(56, 88, 233, 0.04)';
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(56, 88, 233, 0.04)";
                     }}
                     onMouseLeave={(e) => {
-                      const title = e.currentTarget.querySelector('div:first-child') as HTMLElement;
+                      const title = e.currentTarget.querySelector(
+                        "div:first-child"
+                      ) as HTMLElement;
                       if (title) {
-                        title.style.color = '#1e1e1e';
+                        title.style.color = "#1e1e1e";
                       }
-                      e.currentTarget.style.backgroundColor = '#fff';
+                      e.currentTarget.style.backgroundColor = "#fff";
                     }}
                     onFocus={(e) => {
-                      e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #3858e9';
-                      e.currentTarget.style.outline = 'none';
+                      e.currentTarget.style.boxShadow =
+                        "inset 0 0 0 2px #3858e9";
+                      e.currentTarget.style.outline = "none";
                     }}
                     onBlur={(e) => {
-                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
                     <div
                       style={{
                         fontWeight: 500,
-                        color: '#1e1e1e',
-                        marginBottom: '4px',
+                        color: "#1e1e1e",
+                        marginBottom: "4px",
                       }}
                     >
                       {pattern.name}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ fontSize: "12px", color: "#666" }}>
                       {pattern.description}
                     </div>
                   </button>
@@ -374,19 +410,23 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
 
   const tabsConfig = [
     {
-      name: 'blocks',
-      title: 'Blocks',
+      name: "blocks",
+      title: "Blocks",
       panel: (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
           {renderBlocksContent()}
         </div>
       ),
     },
     {
-      name: 'patterns',
-      title: 'Patterns',
+      name: "patterns",
+      title: "Patterns",
       panel: (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
           {renderPatternsContent()}
         </div>
       ),
@@ -396,24 +436,33 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
   return (
     <div
       style={{
-        position: 'absolute',
+        position: "absolute",
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#fff',
+        backgroundColor: "#fff",
         zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        borderTop: '1px solid #e0e0e0',
+        display: "flex",
+        flexDirection: "column",
+        borderTop: "1px solid #e0e0e0",
         minHeight: 0,
       }}
     >
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <TabContainer
           tabs={tabsConfig}
           onClose={onCloseInserter}
-          onSelect={(tabId: string) => onTabChange(tabId as 'blocks' | 'patterns')}
+          onSelect={(tabId: string) =>
+            onTabChange(tabId as "blocks" | "patterns")
+          }
           selectedTab={inserterTab}
           defaultTabId="blocks"
           closeButtonLabel="Close inserter"
