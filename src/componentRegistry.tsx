@@ -1293,9 +1293,21 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'dataSource',
         type: 'select',
-        options: ['blog', 'products', 'users'],
+        options: ['blog', 'products', 'users', 'custom'],
         defaultValue: 'blog',
-        description: 'Sample data source to display',
+        description: 'Data source to display (use "custom" for inline data)',
+      },
+      {
+        name: 'data',
+        type: 'array',
+        defaultValue: [],
+        description: 'Custom data array (only used when dataSource is "custom"). Array of objects with consistent keys.',
+      },
+      {
+        name: 'columns',
+        type: 'array',
+        defaultValue: [],
+        description: 'Column definitions for custom data. Array of objects with {id, label} properties.',
       },
       {
         name: 'viewType',

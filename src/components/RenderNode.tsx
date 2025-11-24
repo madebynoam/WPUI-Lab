@@ -224,8 +224,49 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       const viewType = props.viewType || 'table';
       const itemsPerPage = props.itemsPerPage || 10;
 
-      const mockData = getMockData(dataSource);
-      const fields = getFieldDefinitions(dataSource);
+      // Handle custom data source
+      let mockData, fields;
+      if (dataSource === 'custom') {
+        // Use inline data and columns
+        mockData = props.data || [];
+
+        // Generate field definitions from columns prop
+        if (props.columns && Array.isArray(props.columns) && props.columns.length > 0) {
+          fields = props.columns.map((col: any) => ({
+            id: typeof col === 'string' ? col : (col.id || col),
+            label: typeof col === 'string' ? col : (col.label || col.id || col),
+            type: 'text',
+            enableSorting: true,
+            enableHiding: true,
+            getValue: (item: any) => {
+              const key = typeof col === 'string' ? col : (col.id || col);
+              return item[key];
+            },
+            render: ({ item }: any) => {
+              const key = typeof col === 'string' ? col : (col.id || col);
+              return String(item[key] || '');
+            },
+          }));
+        } else if (mockData.length > 0) {
+          // Auto-detect columns from first data item
+          const firstItem = mockData[0];
+          fields = Object.keys(firstItem).map(key => ({
+            id: key,
+            label: key.charAt(0).toUpperCase() + key.slice(1),
+            type: 'text',
+            enableSorting: true,
+            enableHiding: true,
+            getValue: (item: any) => item[key],
+            render: ({ item }: any) => String(item[key] || ''),
+          }));
+        } else {
+          fields = [];
+        }
+      } else {
+        // Use mock data lookup for predefined data sources
+        mockData = getMockData(dataSource);
+        fields = getFieldDefinitions(dataSource);
+      }
 
       // Validate data and fields exist
       if (!mockData || !Array.isArray(mockData) || mockData.length === 0) {

@@ -165,7 +165,7 @@ const sampleUsers: MockDataItem[] = [
   },
 ];
 
-export type DataSetType = 'blog' | 'products' | 'users';
+export type DataSetType = 'blog' | 'products' | 'users' | 'custom';
 
 /**
  * Get sample data for a given dataset type
