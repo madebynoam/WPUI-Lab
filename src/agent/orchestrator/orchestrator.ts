@@ -154,7 +154,7 @@ Example:
       description: t.description,
     })));
 
-    // STEP 3: Execute agents
+    // STEP 3: Execute agents in parallel where possible
     console.log('[Orchestrator] Executing agents...');
     onProgress?.({
       phase: 'executing',
@@ -164,11 +164,49 @@ Example:
 
     const agentResults: AgentResult[] = [];
     const completedTaskIds = new Set<string>();
+    const taskMap = new Map(tasks.map(t => [t.id, t]));
 
-    for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i];
+    // Group tasks by dependency level for parallel execution
+    const levels: AgentTask[][] = [];
+    const taskLevel = new Map<string, number>();
 
-      // Check if aborted before each agent
+    // Calculate dependency level for each task
+    const calculateLevel = (taskId: string, visited = new Set<string>()): number => {
+      if (taskLevel.has(taskId)) return taskLevel.get(taskId)!;
+      if (visited.has(taskId)) return 0; // Circular dependency, assign level 0
+
+      visited.add(taskId);
+      const task = taskMap.get(taskId);
+      if (!task) return 0;
+
+      if (!task.dependencies || task.dependencies.length === 0) {
+        taskLevel.set(taskId, 0);
+        return 0;
+      }
+
+      const maxDepLevel = Math.max(
+        ...task.dependencies.map(depId => calculateLevel(depId, new Set(visited)))
+      );
+      const level = maxDepLevel + 1;
+      taskLevel.set(taskId, level);
+      return level;
+    };
+
+    // Assign tasks to levels
+    for (const task of tasks) {
+      const level = calculateLevel(task.id);
+      if (!levels[level]) levels[level] = [];
+      levels[level].push(task);
+    }
+
+    console.log(`[Orchestrator] Organized ${tasks.length} tasks into ${levels.length} parallel level(s)`);
+
+    // Execute each level in parallel
+    let taskIndex = 0;
+    for (let levelIndex = 0; levelIndex < levels.length; levelIndex++) {
+      const levelTasks = levels[levelIndex];
+
+      // Check if aborted before each level
       if (signal?.aborted) {
         throw new Error('Request aborted');
       }
@@ -179,64 +217,70 @@ Example:
         break;
       }
 
-      // Check dependencies
-      if (task.dependencies && task.dependencies.length > 0) {
-        const allDepsCompleted = task.dependencies.every(depId =>
-          completedTaskIds.has(depId)
-        );
+      console.log(`[Orchestrator] Executing level ${levelIndex} with ${levelTasks.length} task(s) in parallel`);
 
-        if (!allDepsCompleted) {
-          console.warn(`[Orchestrator] Skipping task ${task.id} - dependencies not met`);
-          continue;
+      // Execute all tasks in this level in parallel
+      const levelPromises = levelTasks.map(async (task) => {
+        const config = getAgentConfig(task.type);
+        const currentIndex = taskIndex++;
+
+        console.log(`[Orchestrator] Starting ${task.type} agent for task ${task.id}...`);
+        onProgress?.({
+          phase: 'executing',
+          agent: `${config.type} agent`,
+          current: currentIndex + 1,
+          total: tasks.length,
+          message: `Running ${config.type} agent...`
+        });
+
+        // Execute agent
+        const result = await executeAgent({
+          task,
+          config,
+          context,
+          apiKey: openaiApiKey,
+          previousResults: agentResults.filter(r =>
+            task.dependencies?.includes(taskMap.get(r.taskId)?.id || '')
+          ),
+          signal,
+          onProgress: (message) => {
+            onProgress?.({
+              phase: 'executing',
+              agent: `${config.type} agent`,
+              current: currentIndex + 1,
+              total: tasks.length,
+              message,
+            });
+          },
+        });
+
+        console.log(`[Orchestrator] ${task.type} agent completed:`, {
+          success: result.success,
+          calls: result.callCount,
+          tokens: result.inputTokens + result.outputTokens,
+          cost: `$${result.cost.toFixed(4)}`,
+        });
+
+        return result;
+      });
+
+      // Wait for all tasks in this level to complete
+      const levelResults = await Promise.all(levelPromises);
+
+      // Add results and update completed tasks
+      for (let i = 0; i < levelResults.length; i++) {
+        const result = levelResults[i];
+        const task = levelTasks[i];
+
+        agentResults.push(result);
+        completedTaskIds.add(task.id);
+        totalCalls += result.callCount;
+
+        // Stop if context agent failed critically
+        if (!result.success && task.type === 'context') {
+          console.error('[Orchestrator] Context agent failed, aborting');
+          throw new Error('Context agent failed');
         }
-      }
-
-      // Get agent config
-      const config = getAgentConfig(task.type);
-
-      console.log(`[Orchestrator] Executing ${task.type} agent for task ${task.id}...`);
-      onProgress?.({
-        phase: 'executing',
-        agent: `${config.type} agent`,
-        current: i + 1,
-        total: tasks.length,
-        message: `Running ${config.type} agent...`
-      });
-
-      // Execute agent
-      const result = await executeAgent({
-        task,
-        config,
-        context,
-        apiKey: openaiApiKey,
-        previousResults: agentResults,
-        signal,
-        onProgress: (message) => {
-          onProgress?.({
-            phase: 'executing',
-            agent: `${config.type} agent`,
-            current: i + 1,
-            total: tasks.length,
-            message,
-          });
-        },
-      });
-
-      agentResults.push(result);
-      completedTaskIds.add(task.id);
-      totalCalls += result.callCount;
-
-      console.log(`[Orchestrator] ${task.type} agent completed:`, {
-        success: result.success,
-        calls: result.callCount,
-        tokens: result.inputTokens + result.outputTokens,
-        cost: `$${result.cost.toFixed(4)}`,
-      });
-
-      // Stop if agent failed critically
-      if (!result.success && task.type === 'context') {
-        console.error('[Orchestrator] Context agent failed, aborting');
-        break;
       }
     }
 

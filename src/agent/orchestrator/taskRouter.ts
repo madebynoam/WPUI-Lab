@@ -60,10 +60,14 @@ export function planTasks(intent: UserIntent): AgentTask[] {
   // STEP 2: Route based on action type
   switch (intent.action) {
     case 'create':
-      // Generate text content first (if needed)
+      const contextTaskId = tasks[0].id;
+      let copywriterTaskId: string | undefined;
+
+      // Generate text content (if needed) - can run in parallel with context
       if (needsCopywriting(intent.target)) {
+        copywriterTaskId = nextId();
         tasks.push({
-          id: nextId(),
+          id: copywriterTaskId,
           type: 'copywriter',
           description: `Generate text content for ${intent.target}`,
           input: {
@@ -71,20 +75,26 @@ export function planTasks(intent: UserIntent): AgentTask[] {
             tone: intent.tone || 'professional',
             quantity: intent.quantity,
           },
-          dependencies: [tasks[0].id], // Wait for context
+          // No dependencies - copywriter doesn't need context, can run in parallel
         });
       }
 
-      // Build components
+      // Build components - depends on both context and copywriter (if present)
+      const creationDeps = [contextTaskId];
+      if (copywriterTaskId) {
+        creationDeps.push(copywriterTaskId);
+      }
+
+      const creationTaskId = nextId();
       tasks.push({
-        id: nextId(),
+        id: creationTaskId,
         type: 'creation',
         description: `Create ${intent.quantity || ''} ${intent.target}`,
         input: {
           target: intent.target,
           quantity: intent.quantity,
         },
-        dependencies: tasks.length > 1 ? [tasks[tasks.length - 1].id] : [tasks[0].id],
+        dependencies: creationDeps,
       });
 
       // Validate layout
@@ -92,7 +102,7 @@ export function planTasks(intent: UserIntent): AgentTask[] {
         id: nextId(),
         type: 'layout',
         description: `Validate layout rules for ${intent.target}`,
-        dependencies: [tasks[tasks.length - 1].id], // Wait for creation
+        dependencies: [creationTaskId], // Wait for creation
       });
       break;
 

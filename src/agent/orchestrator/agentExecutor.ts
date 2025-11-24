@@ -61,8 +61,13 @@ export async function executeAgent(
         };
 
         // For array types, include items schema
-        if (param.type === 'array' && param.items) {
-          propDef.items = processParam(param.items);
+        if (param.type === 'array') {
+          if (param.items) {
+            propDef.items = processParam(param.items);
+          } else {
+            // Default to object type if no items specified (handles recursive structures)
+            propDef.items = { type: 'object' };
+          }
         }
 
         // For object types with properties, recursively process them
