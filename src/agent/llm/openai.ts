@@ -22,9 +22,14 @@ export class OpenAIProvider implements LLMProvider {
     const requestBody: any = {
       model: this.model,
       messages,
-      temperature,
-      max_tokens,
     };
+
+    // gpt-5-nano doesn't support custom temperature, only default (1)
+    // gpt-5-nano also doesn't support max_completion_tokens - let it use its default
+    if (this.model !== 'gpt-5-nano') {
+      requestBody.temperature = temperature;
+      requestBody.max_completion_tokens = max_tokens;
+    }
 
     // Add tools if provided
     if (tools && tools.length > 0) {

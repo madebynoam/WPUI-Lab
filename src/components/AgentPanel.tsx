@@ -15,6 +15,8 @@ export const AgentPanel: React.FC = () => {
 
   const [apiKey, setApiKey] = useState<string>("");
   const [showKey, setShowKey] = useState(false);
+  const [openaiApiKey, setOpenaiApiKey] = useState<string>("");
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
 
   // Default welcome message
   const defaultWelcomeMessage: AgentMessage = {
@@ -56,6 +58,14 @@ export const AgentPanel: React.FC = () => {
     }
   }, []);
 
+  // Load OpenAI API key from localStorage
+  useEffect(() => {
+    const savedKey = localStorage.getItem("wp-designer-openai-key");
+    if (savedKey) {
+      setOpenaiApiKey(savedKey);
+    }
+  }, []);
+
   // Save messages to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem(
@@ -68,6 +78,12 @@ export const AgentPanel: React.FC = () => {
   const handleKeyChange = (key: string) => {
     setApiKey(key);
     localStorage.setItem("wp-designer-claude-key", key);
+  };
+
+  // Save OpenAI API key to localStorage when it changes
+  const handleOpenaiKeyChange = (key: string) => {
+    setOpenaiApiKey(key);
+    localStorage.setItem("wp-designer-openai-key", key);
   };
 
   // Create tool context from component tree context - simple pass-through to use same code paths as UI
@@ -143,7 +159,8 @@ export const AgentPanel: React.FC = () => {
         const agentResponse = await handleUserMessage(
           userMessageText,
           toolContext,
-          apiKey
+          apiKey,
+          openaiApiKey
         );
 
         // Add agent response to chat
@@ -173,7 +190,7 @@ export const AgentPanel: React.FC = () => {
         setIsProcessing(false);
       }
     },
-    [createToolContext, apiKey]
+    [createToolContext, apiKey, openaiApiKey]
   );
 
   // Generate contextual suggestions
@@ -197,7 +214,7 @@ export const AgentPanel: React.FC = () => {
         </h3>
       </div>
 
-      {/* Claude API Key Input */}
+      {/* API Keys Input */}
       <div
         style={{
           padding: "12px",
@@ -205,48 +222,98 @@ export const AgentPanel: React.FC = () => {
           backgroundColor: "#f9fafb",
         }}
       >
-        <label
-          style={{
-            display: "block",
-            fontSize: "11px",
-            fontWeight: 500,
-            color: "#1e1e1e",
-            marginBottom: "6px",
-          }}
-        >
-          Claude API Key
-        </label>
-        <div style={{ display: "flex", gap: "4px" }}>
-          <input
-            type={showKey ? "text" : "password"}
-            value={apiKey}
-            onChange={(e) => handleKeyChange(e.target.value)}
-            placeholder="sk-ant-..."
+        {/* Claude API Key */}
+        <div style={{ marginBottom: "12px" }}>
+          <label
             style={{
-              flex: 1,
-              padding: "6px 8px",
-              fontSize: "12px",
-              border: "1px solid #ddd",
-              borderRadius: "2px",
-              outline: "none",
-              fontFamily: "monospace",
-            }}
-          />
-          <button
-            onClick={() => setShowKey(!showKey)}
-            style={{
-              padding: "6px 8px",
+              display: "block",
               fontSize: "11px",
-              border: "1px solid #ddd",
-              borderRadius: "2px",
-              backgroundColor: "#fff",
-              cursor: "pointer",
-              color: "#666",
+              fontWeight: 500,
+              color: "#1e1e1e",
+              marginBottom: "6px",
             }}
-            title={showKey ? "Hide key" : "Show key"}
           >
-            {showKey ? "👁️" : "👁️‍🗨️"}
-          </button>
+            Claude API Key
+          </label>
+          <div style={{ display: "flex", gap: "4px" }}>
+            <input
+              type={showKey ? "text" : "password"}
+              value={apiKey}
+              onChange={(e) => handleKeyChange(e.target.value)}
+              placeholder="sk-ant-..."
+              style={{
+                flex: 1,
+                padding: "6px 8px",
+                fontSize: "12px",
+                border: "1px solid #ddd",
+                borderRadius: "2px",
+                outline: "none",
+                fontFamily: "monospace",
+              }}
+            />
+            <button
+              onClick={() => setShowKey(!showKey)}
+              style={{
+                padding: "6px 8px",
+                fontSize: "11px",
+                border: "1px solid #ddd",
+                borderRadius: "2px",
+                backgroundColor: "#fff",
+                cursor: "pointer",
+                color: "#666",
+              }}
+              title={showKey ? "Hide key" : "Show key"}
+            >
+              {showKey ? "👁️" : "👁️‍🗨️"}
+            </button>
+          </div>
+        </div>
+
+        {/* OpenAI API Key */}
+        <div>
+          <label
+            style={{
+              display: "block",
+              fontSize: "11px",
+              fontWeight: 500,
+              color: "#1e1e1e",
+              marginBottom: "6px",
+            }}
+          >
+            OpenAI API Key
+          </label>
+          <div style={{ display: "flex", gap: "4px" }}>
+            <input
+              type={showOpenaiKey ? "text" : "password"}
+              value={openaiApiKey}
+              onChange={(e) => handleOpenaiKeyChange(e.target.value)}
+              placeholder="sk-proj-..."
+              style={{
+                flex: 1,
+                padding: "6px 8px",
+                fontSize: "12px",
+                border: "1px solid #ddd",
+                borderRadius: "2px",
+                outline: "none",
+                fontFamily: "monospace",
+              }}
+            />
+            <button
+              onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+              style={{
+                padding: "6px 8px",
+                fontSize: "11px",
+                border: "1px solid #ddd",
+                borderRadius: "2px",
+                backgroundColor: "#fff",
+                cursor: "pointer",
+                color: "#666",
+              }}
+              title={showOpenaiKey ? "Hide key" : "Show key"}
+            >
+              {showOpenaiKey ? "👁️" : "👁️‍🗨️"}
+            </button>
+          </div>
         </div>
       </div>
 

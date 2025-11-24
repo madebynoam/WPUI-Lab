@@ -31,9 +31,9 @@ const MODEL_PRICING = {
   },
 };
 
-// Current model pricing (for v2.0 single-agent system)
-const PRICE_PER_1K_INPUT = MODEL_PRICING['claude-sonnet-4-5'].input;
-const PRICE_PER_1K_OUTPUT = MODEL_PRICING['claude-sonnet-4-5'].output;
+// Current model pricing (for v2.0 single-agent system - using Haiku)
+const PRICE_PER_1K_INPUT = MODEL_PRICING['claude-haiku-4-5'].input;
+const PRICE_PER_1K_OUTPUT = MODEL_PRICING['claude-haiku-4-5'].output;
 
 // Feature flag: Enable v3.0 multi-agent orchestrator
 // Set to true to use multi-agent system, false for v2.0 single-agent YAML DSL
@@ -66,17 +66,35 @@ Be conversational and friendly!`;
 export async function handleUserMessage(
   userMessage: string,
   context: ToolContext,
-  apiKey?: string
+  claudeApiKey?: string,
+  openaiApiKey?: string
 ): Promise<AgentMessage> {
-  // If no API key, fall back to basic rule-based responses
-  if (!apiKey || !apiKey.trim()) {
+  // If no API keys, fall back to basic rule-based responses
+  if ((!claudeApiKey || !claudeApiKey.trim()) && (!openaiApiKey || !openaiApiKey.trim())) {
     return {
       id: `agent-${Date.now()}`,
       role: 'agent',
       content: [
         {
           type: 'text',
-          text: 'Please add your Claude API key to use the AI assistant. You can get one at https://console.anthropic.com/',
+          text: 'Please add your Claude and OpenAI API keys to use the AI assistant. Get Claude key at https://console.anthropic.com/ and OpenAI key at https://platform.openai.com/',
+        },
+      ],
+      timestamp: Date.now(),
+      archived: false,
+      showIcon: true,
+    };
+  }
+
+  // Check if we have both keys for orchestrator
+  if (USE_ORCHESTRATOR && ((!claudeApiKey || !claudeApiKey.trim()) || (!openaiApiKey || !openaiApiKey.trim()))) {
+    return {
+      id: `agent-${Date.now()}`,
+      role: 'agent',
+      content: [
+        {
+          type: 'text',
+          text: 'The multi-agent orchestrator requires both Claude and OpenAI API keys. Please add both keys to continue.',
         },
       ],
       timestamp: Date.now(),
@@ -93,7 +111,8 @@ export async function handleUserMessage(
       const result = await handleOrchestratedRequest(
         userMessage,
         context,
-        apiKey
+        claudeApiKey!,
+        openaiApiKey!
       );
 
       // Log cost breakdown
@@ -136,11 +155,11 @@ export async function handleUserMessage(
     console.log('[Agent] Using v2.0 single-agent YAML DSL');
 
     // Create LLM provider
-    // ACTIVE: Claude Sonnet 4.5
+    // ACTIVE: Claude Haiku 4.5 (cheaper alternative)
     const llm = createLLMProvider({
       provider: 'anthropic',
-      apiKey,
-      model: 'claude-sonnet-4-5',
+      apiKey: claudeApiKey!,
+      model: 'claude-haiku-4-5',
     });
 
     // FALLBACK: OpenAI (uncomment to switch back)
@@ -373,7 +392,7 @@ export async function handleUserMessage(
       estimatedInputCost: `$${estimatedInputCost.toFixed(4)}`,
       estimatedOutputCost: `$${estimatedOutputCost.toFixed(4)}`,
       totalEstimatedCost: `$${totalEstimatedCost.toFixed(4)}`,
-      pricing: 'Claude Sonnet 4.5: $1/1M input, $5/1M output',
+      pricing: 'Claude Haiku 4.5: $1/1M input, $5/1M output',
     });
 
     // Return agent response

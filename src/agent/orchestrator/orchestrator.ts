@@ -2,45 +2,122 @@ import { ToolContext } from '../types';
 import {
   OrchestratorResult,
   AgentResult,
-  TaskPlan,
+  UserIntent,
   MODEL_PRICING,
 } from './types';
 import { parseIntent, planTasks, getAgentConfig } from './taskRouter';
 import { executeAgent } from './agentExecutor';
+import { createLLMProvider } from '../llm/factory';
+
+// Token estimation utility
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
 
 /**
  * Main Orchestrator
  *
- * Uses Claude Haiku 4.5 to coordinate specialized agents.
+ * Uses Claude Haiku 4.5 to parse user intent and coordinate specialized agents.
  *
  * Flow:
- * 1. Parse user intent
- * 2. Plan task sequence
+ * 1. Parse user intent with Haiku (intelligent NLP, not rule-based)
+ * 2. Plan task sequence (rule-based task router)
  * 3. Execute agents in order (respecting dependencies)
- * 4. Aggregate results
+ * 4. Aggregate results (track costs per model)
  * 5. Generate friendly response
  */
 export async function handleOrchestratedRequest(
   userMessage: string,
   context: ToolContext,
-  apiKey: string
+  claudeApiKey: string,
+  openaiApiKey: string
 ): Promise<OrchestratorResult> {
   const startTime = Date.now();
   const MAX_CALLS = 25;
   let totalCalls = 1; // Orchestrator itself counts as 1
+  let orchestratorInputTokens = 0;
+  let orchestratorOutputTokens = 0;
+  let orchestratorCost = 0;
 
   console.log('[Orchestrator] Processing request:', userMessage);
 
   try {
-    // STEP 1: Parse user intent
-    console.log('[Orchestrator] Parsing intent...');
-    const intent = parseIntent(userMessage);
+    // STEP 1: Parse user intent with Haiku
+    console.log('[Orchestrator] Parsing intent with Haiku...');
+
+    const haiku = createLLMProvider({
+      provider: 'anthropic',
+      apiKey: claudeApiKey,
+      model: 'claude-haiku-4-5',
+    });
+
+    const intentSystemPrompt = `You are an intent parser for WP-Designer, a visual page builder tool.
+
+Your job is to parse user requests into structured intent.
+
+Available actions:
+- create: Add new components (cards, buttons, forms, etc.)
+- update: Modify existing components
+- delete: Remove components
+- query: Answer questions about current state
+- validate: Check layout rules
+
+Extract:
+1. action: The action type (create/update/delete/query/validate)
+2. target: What to act on (e.g., "pricing cards", "hero section", "contact form")
+3. quantity: Number of items (if specified)
+4. tone: Content tone (professional/casual/playful) - default: professional
+
+CRITICAL: Return ONLY valid JSON with no markdown, no code blocks, no explanation.
+Just the raw JSON object starting with { and ending with }.
+
+Example:
+{"action":"create","target":"pricing cards","quantity":3,"tone":"professional"}`;
+
+    const intentResponse = await haiku.chat({
+      messages: [
+        {
+          role: 'system',
+          content: intentSystemPrompt,
+        },
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 500,
+    });
+
+    // Track orchestrator costs
+    orchestratorInputTokens = estimateTokens(intentSystemPrompt + userMessage);
+    orchestratorOutputTokens = estimateTokens(intentResponse.content || '');
+
+    const pricing = MODEL_PRICING['claude-haiku-4-5'];
+    orchestratorCost = (orchestratorInputTokens / 1000000) * pricing.input +
+                       (orchestratorOutputTokens / 1000000) * pricing.output;
+
+    // Parse intent from Haiku response
+    let intent;
+    try {
+      // Extract JSON from response (handle markdown code blocks if present)
+      const content = intentResponse.content || '{}';
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : content;
+      intent = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error('[Orchestrator] Failed to parse Haiku intent response:', parseError);
+      // Fallback to rule-based
+      intent = parseIntent(userMessage);
+    }
 
     console.log('[Orchestrator] Parsed intent:', {
       action: intent.action,
       target: intent.target,
       quantity: intent.quantity,
       tone: intent.tone,
+      orchestratorTokens: orchestratorInputTokens + orchestratorOutputTokens,
+      orchestratorCost: `$${orchestratorCost.toFixed(4)}`,
     });
 
     // STEP 2: Plan tasks
@@ -86,7 +163,7 @@ export async function handleOrchestratedRequest(
         task,
         config,
         context,
-        apiKey,
+        apiKey: openaiApiKey,
         previousResults: agentResults,
       });
 
@@ -109,9 +186,9 @@ export async function handleOrchestratedRequest(
     }
 
     // STEP 4: Aggregate results
-    const totalInputTokens = agentResults.reduce((sum, r) => sum + r.inputTokens, 0);
-    const totalOutputTokens = agentResults.reduce((sum, r) => sum + r.outputTokens, 0);
-    const totalCost = agentResults.reduce((sum, r) => sum + r.cost, 0);
+    const totalInputTokens = agentResults.reduce((sum, r) => sum + r.inputTokens, 0) + orchestratorInputTokens;
+    const totalOutputTokens = agentResults.reduce((sum, r) => sum + r.outputTokens, 0) + orchestratorOutputTokens;
+    const totalCost = agentResults.reduce((sum, r) => sum + r.cost, 0) + orchestratorCost;
     const totalDuration = Date.now() - startTime;
 
     // Build model breakdown
@@ -121,6 +198,14 @@ export async function handleOrchestratedRequest(
       outputTokens: number;
       cost: number;
     }>();
+
+    // Add orchestrator (Haiku) to breakdown
+    modelBreakdown.set('claude-haiku-4-5', {
+      calls: 1,
+      inputTokens: orchestratorInputTokens,
+      outputTokens: orchestratorOutputTokens,
+      cost: orchestratorCost,
+    });
 
     for (const result of agentResults) {
       const config = getAgentConfig(result.agentType);
@@ -193,11 +278,10 @@ export async function handleOrchestratedRequest(
  * Generate friendly response based on agent results
  */
 function generateResponse(
-  intent: any,
+  intent: UserIntent,
   results: AgentResult[]
 ): string {
-  // Find builder result (if exists)
-  const builderResult = results.find(r => r.agentType === 'builder');
+  // Find relevant results
   const layoutResult = results.find(r => r.agentType === 'layout');
   const contextResult = results.find(r => r.agentType === 'context');
 
@@ -212,7 +296,7 @@ function generateResponse(
 
   // Generate response based on action
   switch (intent.action) {
-    case 'create':
+    case 'create': {
       let response = `I've created ${intent.quantity ? intent.quantity + ' ' : ''}${intent.target}`;
 
       // Add layout feedback
@@ -228,6 +312,7 @@ function generateResponse(
       }
 
       return response + '.';
+    }
 
     case 'update':
       return `I've updated ${intent.target}.`;
@@ -237,7 +322,7 @@ function generateResponse(
 
     case 'query':
       if (contextResult && contextResult.success) {
-        return contextResult.message || 'Here\\'s what I found.';
+        return contextResult.message || "Here's what I found.";
       }
       return 'Let me check that for you.';
 

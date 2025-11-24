@@ -125,7 +125,7 @@ export const CONTENT_TEMPLATES = {
     playful: {
       headline: 'Ready to Make Magic?',
       subheadline: 'Jump in and start building something awesome today',
-      primaryCTA: 'Let\\'s Go!',
+      primaryCTA: "Let's Go!",
       secondaryCTA: 'See Examples',
     },
   },
@@ -136,8 +136,8 @@ export const CONTENT_TEMPLATES = {
       cta: 'Send Message',
     },
     casual: {
-      headline: 'Let\\'s Talk',
-      body: 'Drop us a line and we\\'ll get back to you soon.',
+      headline: "Let's Talk",
+      body: "Drop us a line and we'll get back to you soon.",
       cta: 'Say Hello',
     },
   },

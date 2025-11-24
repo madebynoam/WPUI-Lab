@@ -49,6 +49,10 @@ export async function executeAgent(
         console.warn(`[AgentExecutor] Tool not found: ${name}`);
         return null;
       }
+
+      // Handle tools with no parameters
+      const parameters = tool.parameters || {};
+
       return {
         type: 'function',
         function: {
@@ -56,7 +60,7 @@ export async function executeAgent(
           description: tool.description,
           parameters: {
             type: 'object',
-            properties: Object.entries(tool.parameters).reduce((acc, [key, param]: [string, any]) => {
+            properties: Object.entries(parameters).reduce((acc, [key, param]: [string, any]) => {
               acc[key] = {
                 type: param.type,
                 description: param.description,
@@ -64,7 +68,7 @@ export async function executeAgent(
               };
               return acc;
             }, {} as Record<string, any>),
-            required: Object.entries(tool.parameters)
+            required: Object.entries(parameters)
               .filter(([_, param]: [string, any]) => param.required)
               .map(([key]) => key),
           },
@@ -101,12 +105,17 @@ export async function executeAgent(
     console.log(`[AgentExecutor] Allowed tools: ${allowedToolNames.join(', ')}`);
     console.log(`[AgentExecutor] Initial input tokens: ${totalInputTokens}`);
 
+    // Determine if we should force tool use
+    // Builder agents MUST use tools, so force it
+    const forceToolUse = config.type === 'builder' && tools.length > 0;
+
     // Call LLM
     let response = await llm.chat({
       messages,
       tools: tools as any,
       temperature: 0.7,
       max_tokens: 1000,
+      ...(forceToolUse ? { tool_choice: 'required' } : {}),
     });
 
     // Estimate output tokens
@@ -115,6 +124,8 @@ export async function executeAgent(
     totalOutputTokens += outputTokens;
 
     console.log(`[AgentExecutor] Initial response: ${response.tool_calls?.length || 0} tool calls`);
+    console.log(`[AgentExecutor] Response content:`, response.content);
+    console.log(`[AgentExecutor] Response finish_reason:`, response.finish_reason);
 
     // Remove system message after first call (token optimization)
     const systemIndex = messages.findIndex(m => m.role === 'system');
