@@ -2,15 +2,38 @@ import { AgentMessage, ToolContext, ToolResult } from './types';
 import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
+import { handleOrchestratedRequest } from './orchestrator/orchestrator';
 
 // Token estimation utility (rough estimate: 4 chars ≈ 1 token)
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-// Pricing for Claude Sonnet 4.5
-const PRICE_PER_1K_INPUT = 0.001; // $1 per million tokens
-const PRICE_PER_1K_OUTPUT = 0.005; // $5 per million tokens
+// Model pricing (per 1K tokens)
+const MODEL_PRICING = {
+  // Anthropic models
+  'claude-sonnet-4-5': {
+    input: 0.001,   // $1.00 per MTok
+    output: 0.005,  // $5.00 per MTok
+  },
+  'claude-haiku-4-5': {
+    input: 0.00025, // $0.25 per MTok
+    output: 0.00125, // $1.25 per MTok
+  },
+  // OpenAI models
+  'gpt-4o-mini': {
+    input: 0.00005, // $0.05 per MTok
+    output: 0.0004,  // $0.40 per MTok
+  },
+};
+
+// Current model pricing (for v2.0 single-agent system)
+const PRICE_PER_1K_INPUT = MODEL_PRICING['claude-sonnet-4-5'].input;
+const PRICE_PER_1K_OUTPUT = MODEL_PRICING['claude-sonnet-4-5'].output;
+
+// Feature flag: Enable v3.0 multi-agent orchestrator
+// Set to true to use multi-agent system, false for v2.0 single-agent YAML DSL
+const USE_ORCHESTRATOR = true;
 
 const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer.
 
@@ -59,6 +82,55 @@ export async function handleUserMessage(
   }
 
   try {
+    // === v3.0 MULTI-AGENT ORCHESTRATOR ===
+    if (USE_ORCHESTRATOR) {
+      console.log('[Agent] Using v3.0 multi-agent orchestrator');
+
+      const result = await handleOrchestratedRequest(
+        userMessage,
+        context,
+        apiKey
+      );
+
+      // Log cost breakdown
+      console.log('[Agent] 💰 Multi-Agent Summary:', {
+        totalCalls: result.totalCalls,
+        totalTokens: result.totalInputTokens + result.totalOutputTokens,
+        inputTokens: result.totalInputTokens,
+        outputTokens: result.totalOutputTokens,
+        totalCost: `$${result.totalCost.toFixed(4)}`,
+        duration: `${result.totalDuration}ms`,
+      });
+
+      console.log('[Agent] 📊 Model Breakdown:');
+      result.modelBreakdown.forEach(breakdown => {
+        const pricing = MODEL_PRICING[breakdown.model];
+        console.log(`  ${breakdown.model}:`, {
+          calls: breakdown.calls,
+          tokens: breakdown.inputTokens + breakdown.outputTokens,
+          cost: `$${breakdown.cost.toFixed(4)}`,
+          pricing: `$${pricing.input}/1K in, $${pricing.output}/1K out`,
+        });
+      });
+
+      return {
+        id: `agent-${Date.now()}`,
+        role: 'agent',
+        content: [
+          {
+            type: 'text',
+            text: result.message,
+          },
+        ],
+        timestamp: Date.now(),
+        archived: false,
+        showIcon: true,
+      };
+    }
+
+    // === v2.0 SINGLE-AGENT YAML DSL ===
+    console.log('[Agent] Using v2.0 single-agent YAML DSL');
+
     // Create LLM provider
     // ACTIVE: Claude Sonnet 4.5
     const llm = createLLMProvider({
