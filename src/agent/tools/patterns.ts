@@ -14,7 +14,7 @@ export const getPatternsTool: AgentTool = {
       required: false,
     },
   },
-  execute: async (params: { category?: string }, context: ToolContext): Promise<ToolResult> => {
+  execute: async (params: { category?: string }, _context: ToolContext): Promise<ToolResult> => {
     let filteredPatterns = patterns;
 
     // Filter by category if provided

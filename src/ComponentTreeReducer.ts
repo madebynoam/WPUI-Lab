@@ -14,6 +14,7 @@ import {
   flattenTree,
   generateId,
 } from './utils/treeHelpers';
+import { validateTree, formatValidationErrors } from './utils/treeValidation';
 
 // State managed by the reducer
 export interface ComponentTreeState {
@@ -213,6 +214,15 @@ export function componentTreeReducer(
 
     case 'SET_TREE': {
       const { tree } = action.payload;
+
+      // Validate tree structure before accepting
+      const validation = validateTree(tree);
+      if (!validation.valid) {
+        const errorMessage = formatValidationErrors(validation);
+        console.error('[Reducer] SET_TREE validation failed:', errorMessage);
+        throw new Error(`Invalid tree structure:\n${errorMessage}`);
+      }
+
       const newPages = updateTreeForPage(state.pages, state.currentPageId, tree);
       return updateHistory(state, newPages, state.currentPageId);
     }

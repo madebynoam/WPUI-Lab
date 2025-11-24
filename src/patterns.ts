@@ -31,12 +31,12 @@ export const patterns: Pattern[] = [
       children: [
         {
           type: 'Heading',
-          props: { level: 1, content: 'Welcome to Your Site' },
+          props: { level: 1, children: 'Welcome to Your Site' },
           children: [],
         },
         {
           type: 'Text',
-          props: { content: 'Create beautiful pages with ease using our intuitive design system.' },
+          props: { children: 'Create beautiful pages with ease using our intuitive design system.' },
           children: [],
         },
         {
@@ -62,12 +62,12 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'Heading',
-              props: { level: 1, content: 'Build Something Amazing' },
+              props: { level: 1, children: 'Build Something Amazing' },
               children: [],
             },
             {
               type: 'Text',
-              props: { content: 'Transform your ideas into reality with our powerful design tools and components.' },
+              props: { children: 'Transform your ideas into reality with our powerful design tools and components.' },
               children: [],
             },
             {
@@ -98,7 +98,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Text',
-                  props: { content: 'Image placeholder - Add your hero image here' },
+                  props: { children: 'Image placeholder - Add your hero image here' },
                   children: [],
                 },
               ],
@@ -129,7 +129,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Heading',
-                  props: { level: 3, content: 'Fast Performance' },
+                  props: { level: 3, children: 'Fast Performance' },
                   children: [],
                 },
               ],
@@ -140,7 +140,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Text',
-                  props: { content: 'Lightning-fast load times and optimized performance for the best user experience.' },
+                  props: { children: 'Lightning-fast load times and optimized performance for the best user experience.' },
                   children: [],
                 },
               ],
@@ -157,7 +157,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Heading',
-                  props: { level: 3, content: 'Easy to Use' },
+                  props: { level: 3, children: 'Easy to Use' },
                   children: [],
                 },
               ],
@@ -168,7 +168,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Text',
-                  props: { content: 'Intuitive interface that makes building beautiful pages a breeze.' },
+                  props: { children: 'Intuitive interface that makes building beautiful pages a breeze.' },
                   children: [],
                 },
               ],
@@ -185,7 +185,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Heading',
-                  props: { level: 3, content: 'Fully Responsive' },
+                  props: { level: 3, children: 'Fully Responsive' },
                   children: [],
                 },
               ],
@@ -196,7 +196,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Text',
-                  props: { content: 'Looks great on all devices, from mobile phones to desktop screens.' },
+                  props: { children: 'Looks great on all devices, from mobile phones to desktop screens.' },
                   children: [],
                 },
               ],
@@ -231,12 +231,12 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 3, content: 'Starter' },
+                      props: { level: 3, children: 'Starter' },
                       children: [],
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, content: '$9/mo' },
+                      props: { level: 2, children: '$9/mo' },
                       children: [],
                     },
                   ],
@@ -253,17 +253,17 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Text',
-                      props: { content: '✓ 5 Projects' },
+                      props: { children: '✓ 5 Projects' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { content: '✓ Basic Support' },
+                      props: { children: '✓ Basic Support' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { content: '✓ 1GB Storage' },
+                      props: { children: '✓ 1GB Storage' },
                       children: [],
                     },
                     {
@@ -291,12 +291,12 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 3, content: 'Pro' },
+                      props: { level: 3, children: 'Pro' },
                       children: [],
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, content: '$29/mo' },
+                      props: { level: 2, children: '$29/mo' },
                       children: [],
                     },
                   ],
@@ -313,17 +313,17 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Text',
-                      props: { content: '✓ Unlimited Projects' },
+                      props: { children: '✓ Unlimited Projects' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { content: '✓ Priority Support' },
+                      props: { children: '✓ Priority Support' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { content: '✓ 10GB Storage' },
+                      props: { children: '✓ 10GB Storage' },
                       children: [],
                     },
                     {
@@ -351,12 +351,12 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 3, content: 'Enterprise' },
+                      props: { level: 3, children: 'Enterprise' },
                       children: [],
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, content: '$99/mo' },
+                      props: { level: 2, children: '$99/mo' },
                       children: [],
                     },
                   ],
@@ -373,17 +373,17 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Text',
-                      props: { content: '✓ Unlimited Everything' },
+                      props: { children: '✓ Unlimited Everything' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { content: '✓ 24/7 Support' },
+                      props: { children: '✓ 24/7 Support' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { content: '✓ 100GB Storage' },
+                      props: { children: '✓ 100GB Storage' },
                       children: [],
                     },
                     {
@@ -417,7 +417,7 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'Heading',
-              props: { level: 2, content: 'Get in Touch' },
+              props: { level: 2, children: 'Get in Touch' },
               children: [],
             },
           ],
@@ -478,7 +478,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Text',
-                  props: { content: '"This product has transformed how we work. The interface is intuitive and the results are outstanding."' },
+                  props: { children: '"This product has transformed how we work. The interface is intuitive and the results are outstanding."' },
                   children: [],
                 },
                 {
@@ -496,12 +496,12 @@ export const patterns: Pattern[] = [
                       children: [
                         {
                           type: 'Text',
-                          props: { content: 'Sarah Johnson' },
+                          props: { children: 'Sarah Johnson' },
                           children: [],
                         },
                         {
                           type: 'Text',
-                          props: { content: 'CEO, TechCorp' },
+                          props: { children: 'CEO, TechCorp' },
                           children: [],
                         },
                       ],
@@ -540,12 +540,12 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 2, content: 'Ready to Get Started?' },
+                      props: { level: 2, children: 'Ready to Get Started?' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { content: 'Join thousands of users already building amazing experiences.' },
+                      props: { children: 'Join thousands of users already building amazing experiences.' },
                       children: [],
                     },
                   ],
@@ -579,12 +579,12 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'Heading',
-              props: { level: 1, content: '10K+' },
+              props: { level: 1, children: '10K+' },
               children: [],
             },
             {
               type: 'Text',
-              props: { content: 'Active Users' },
+              props: { children: 'Active Users' },
               children: [],
             },
           ],
@@ -595,12 +595,12 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'Heading',
-              props: { level: 1, content: '50+' },
+              props: { level: 1, children: '50+' },
               children: [],
             },
             {
               type: 'Text',
-              props: { content: 'Countries' },
+              props: { children: 'Countries' },
               children: [],
             },
           ],
@@ -611,12 +611,12 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'Heading',
-              props: { level: 1, content: '99.9%' },
+              props: { level: 1, children: '99.9%' },
               children: [],
             },
             {
               type: 'Text',
-              props: { content: 'Uptime' },
+              props: { children: 'Uptime' },
               children: [],
             },
           ],
@@ -627,12 +627,12 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'Heading',
-              props: { level: 1, content: '24/7' },
+              props: { level: 1, children: '24/7' },
               children: [],
             },
             {
               type: 'Text',
-              props: { content: 'Support' },
+              props: { children: 'Support' },
               children: [],
             },
           ],
@@ -666,12 +666,12 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Heading',
-                  props: { level: 4, content: 'Advanced Analytics' },
+                  props: { level: 4, children: 'Advanced Analytics' },
                   children: [],
                 },
                 {
                   type: 'Text',
-                  props: { content: 'Track and measure your performance with detailed insights.' },
+                  props: { children: 'Track and measure your performance with detailed insights.' },
                   children: [],
                 },
               ],
@@ -693,12 +693,12 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Heading',
-                  props: { level: 4, content: 'Team Collaboration' },
+                  props: { level: 4, children: 'Team Collaboration' },
                   children: [],
                 },
                 {
                   type: 'Text',
-                  props: { content: 'Work together seamlessly with your team members.' },
+                  props: { children: 'Work together seamlessly with your team members.' },
                   children: [],
                 },
               ],
@@ -720,12 +720,12 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'Heading',
-                  props: { level: 4, content: 'Secure & Reliable' },
+                  props: { level: 4, children: 'Secure & Reliable' },
                   children: [],
                 },
                 {
                   type: 'Text',
-                  props: { content: 'Enterprise-grade security and 99.9% uptime guarantee.' },
+                  props: { children: 'Enterprise-grade security and 99.9% uptime guarantee.' },
                   children: [],
                 },
               ],

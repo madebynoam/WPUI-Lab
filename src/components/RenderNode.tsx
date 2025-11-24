@@ -68,8 +68,8 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
   // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading') {
-    const content = props.children || props.content || definition.defaultProps?.children;
-    delete props.content;
+    // Data is normalized at the boundary, so content is always in props.children
+    const content = props.children || definition.defaultProps?.children;
 
     return (
       <div

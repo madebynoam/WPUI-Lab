@@ -2,6 +2,7 @@ import { AgentTool, ToolContext, ToolResult } from '../types';
 import { ComponentNode, PatternNode } from '../../types';
 import { componentRegistry } from '../../componentRegistry';
 import { ROOT_VSTACK_ID } from '../../ComponentTreeContext';
+import { normalizeComponentNodes } from '../../utils/normalizeComponent';
 
 // Generate unique ID for components
 function generateId(): string {
@@ -10,7 +11,7 @@ function generateId(): string {
 
 // Helper: Convert PatternNode to ComponentNode with IDs
 function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNode[] {
-  return patternNodes.map(patternNode => ({
+  const nodes = patternNodes.map(patternNode => ({
     id: generateId(),
     type: patternNode.type,
     name: patternNode.name || '',
@@ -18,6 +19,9 @@ function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNod
     children: patternNode.children ? patternNodesToComponentNodes(patternNode.children) : [],
     interactions: [],
   }));
+
+  // Normalize all nodes to ensure consistent data structure
+  return normalizeComponentNodes(nodes);
 }
 
 // Create a new component

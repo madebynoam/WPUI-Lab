@@ -1,0 +1,69 @@
+import { ComponentNode } from '../types';
+import { componentRegistry } from '../componentRegistry';
+
+/**
+ * Normalizes a component node to ensure consistent data structure.
+ *
+ * This function:
+ * - Converts props.content → props.children for Text/Heading components
+ * - Removes empty children arrays when they shouldn't exist
+ * - Recursively normalizes all child nodes
+ * - Validates component types exist in registry
+ * - Ensures all required fields are present
+ *
+ * This is the single source of truth for data transformation,
+ * ensuring all data entering the reducer is in a consistent format.
+ */
+export function normalizeComponentNode(node: ComponentNode): ComponentNode {
+  // Validate component type exists in registry
+  const definition = componentRegistry[node.type];
+  if (!definition) {
+    console.warn(`[normalizeComponent] Unknown component type: ${node.type}`);
+    // Return node as-is if type is unknown (defensive)
+    return node;
+  }
+
+  // Clone the node to avoid mutations
+  const normalized: ComponentNode = {
+    id: node.id,
+    type: node.type,
+    name: node.name || '',
+    props: { ...node.props },
+    children: node.children || [],
+    interactions: node.interactions || [],
+  };
+
+  // CRITICAL: Transform props.content → props.children for Text and Heading
+  if (node.type === 'Text' || node.type === 'Heading') {
+    const hasContent = 'content' in normalized.props && normalized.props.content;
+    const hasValidChildren = Array.isArray(normalized.children) && normalized.children.length > 0;
+    const hasChildrenProp = 'children' in normalized.props && normalized.props.children;
+
+    // Priority: props.children (if valid) > props.content > empty
+    if (!hasChildrenProp && hasContent) {
+      // Move content to children prop
+      normalized.props.children = normalized.props.content;
+      delete normalized.props.content;
+    } else if (hasChildrenProp) {
+      // Already has children prop, just remove content if it exists
+      delete normalized.props.content;
+    }
+
+    // Clear the children array for Text/Heading (they don't have child components)
+    normalized.children = [];
+  }
+
+  // Recursively normalize all children
+  if (Array.isArray(normalized.children) && normalized.children.length > 0) {
+    normalized.children = normalized.children.map(child => normalizeComponentNode(child));
+  }
+
+  return normalized;
+}
+
+/**
+ * Normalizes an array of component nodes
+ */
+export function normalizeComponentNodes(nodes: ComponentNode[]): ComponentNode[] {
+  return nodes.map(node => normalizeComponentNode(node));
+}

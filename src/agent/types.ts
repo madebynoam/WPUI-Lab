@@ -7,6 +7,7 @@ export interface ToolContext {
   currentPageId: string;
   selectedNodeIds: string[];
   getNodeById: (id: string) => ComponentNode | null;
+  setTree: (tree: ComponentNode[]) => void; // PRIMARY: Direct tree manipulation
   updateComponentProps: (id: string, props: any) => void;
   updateMultipleComponentProps: (ids: string[], props: any) => void;
   updateComponentName: (id: string, name: string) => void;

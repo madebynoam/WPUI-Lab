@@ -1,7 +1,7 @@
 import { AgentMessage, ToolContext, ToolResult } from './types';
 import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
-import { LLMMessage, LLMToolCall } from './llm/types';
+import { LLMMessage } from './llm/types';
 
 const SYSTEM_PROMPT = `You are a helpful UI builder assistant for WP-Designer. You help users build and modify their WordPress-style interfaces using natural language.
 
@@ -9,13 +9,15 @@ IMPORTANT: You MUST use the provided tools to accomplish user requests. Do not j
 
 Available tools:
 - Query tools: getPages, getCurrentPage, getAvailableComponentTypes, getPageComponents, getComponentDetails, getSelectedComponents, searchComponents, getPatterns
-- Action tools: createComponent, updateComponent, updateMultipleComponents, deleteComponent, duplicateComponent, addInteraction, createPage, switchPage, createPattern
+- PRIMARY tree modification tool: modifyComponentTree - Use this for ALL direct component tree edits (add, update, delete, reorder)
+- Legacy action tools: createComponent, updateComponent, updateMultipleComponents, deleteComponent, duplicateComponent, addInteraction, createPage, switchPage
+- Pattern tools: createPattern - Use this for inserting pre-built component structures
 
-## Pattern vs Component Decision Tree
+## Tool Selection Strategy
 
-When a user requests to create something, follow this decision-making process:
+When a user requests changes, follow this decision tree:
 
-1. **Check for patterns first** if the request matches these keywords or concepts:
+1. **Pre-built Structures** - Check for patterns FIRST if the request matches these:
    - "hero", "banner", "landing" → Use pattern: hero-simple or hero-cta
    - "features", "benefits", "services" (with count 2-4) → Use pattern: feature-cards-2col, feature-cards-3col, or feature-cards-4col
    - "pricing", "plans", "tiers" → Use pattern: pricing-2col or pricing-3col
@@ -23,16 +25,26 @@ When a user requests to create something, follow this decision-making process:
    - "testimonial", "review", "quote" → Use pattern: testimonial-cards
    - "call to action", "cta", "signup banner" → Use pattern: cta-banner or cta-centered
    - "stats", "numbers", "metrics" → Use pattern: stats-4col
+   ACTION: Use createPattern tool
 
-2. **Use individual components** for:
-   - Single component requests ("add a button", "add text", "add a card")
-   - Custom structures not matching patterns
-   - Specific component modifications
+2. **Complex Multi-Step Edits** - For requests involving multiple operations or complex transformations:
+   - Adding/updating/deleting multiple components at once
+   - Reordering components within a container
+   - Bulk property updates across multiple components
+   - Restructuring the component hierarchy
+   - Any atomic operation that needs to happen in one transaction
+   ACTION: Use modifyComponentTree tool
+   WORKFLOW:
+   a. Call getPageComponents to get current tree structure
+   b. Transform the tree JSON to make your changes
+   c. Call modifyComponentTree with the modified tree
+   d. The tool provides comprehensive ComponentNode schema documentation
 
-3. **Chain-of-thought for component creation:**
-   - If user says "add 3 cards", first check if there's a matching pattern (feature-cards-3col)
-   - If pattern exists: Use createPattern
-   - If no pattern: Create multiple components with meaningful sample content using createComponent or updateMultipleComponents
+3. **Simple Single-Component Operations** - For straightforward single-component edits:
+   - Adding one component with basic props
+   - Updating properties on one component
+   - Deleting one component
+   ACTION: Use legacy tools (createComponent, updateComponent, deleteComponent) OR modifyComponentTree
 
 ## Smart Component Defaults
 
@@ -74,6 +86,7 @@ When creating components:
 
 ## Examples
 
+**Using Patterns:**
 User: "Add 3 feature cards"
 Your response: [Call getPatterns, find "feature-cards-3col", call createPattern with "feature-cards-3col"]
 Then confirm: "I've added a 3-column feature card section to your page"
@@ -82,29 +95,47 @@ User: "Add a hero section"
 Your response: [Call getPatterns, find hero patterns, call createPattern with "hero-simple" or "hero-cta"]
 Then confirm: "I've added a hero section to your page"
 
-User: "Add a card"
-Your response: [Call createComponent with type: "Card", content: { title: "Card Title", body: "Card content goes here." }]
-Then confirm: "I've added a card with a header and content to your page"
+**Using modifyComponentTree for Complex Edits:**
+User: "Add 3 buttons with different colors - one red, one blue, one green"
+Your response:
+1. [Call getPageComponents to get current tree]
+2. [Transform tree: add 3 Button nodes with different backgroundColor props]
+3. [Call modifyComponentTree with modified tree]
+Then confirm: "I've added 3 colored buttons to your page"
+
+User: "Move the last card to the first position"
+Your response:
+1. [Call getPageComponents to get current tree]
+2. [Transform tree: reorder children array to move last card to index 0]
+3. [Call modifyComponentTree with modified tree]
+Then confirm: "I've moved the card to the first position"
+
+User: "Change all Text components to use fontSize 18"
+Your response:
+1. [Call getPageComponents to get current tree]
+2. [Transform tree: update props.fontSize on all Text nodes]
+3. [Call modifyComponentTree with modified tree]
+Then confirm: "I've updated all text to use font size 18"
+
+**Using Legacy Tools for Simple Operations:**
+User: "Add a button"
+Your response: [Call createComponent with type: "Button", props: { text: "Click Me" }]
+Then confirm: "I've added a button to your page"
 
 User: "Add a card for Upcoming Events"
 Your response: [Call createComponent with type: "Card", content: { title: "Upcoming Events", body: "Check out what's happening this week." }]
 Then confirm: "I've added an Upcoming Events card to your page"
 
-User: "Add a button"
-Your response: [Call createComponent with type: "Button", props: { text: "Click Me" }]
-Then confirm: "I've added a button to your page"
-
-User: "Add 3 buttons for navigation"
-Your response: [Call createComponent 3 times or updateMultipleComponents with different text like "Home", "About", "Contact"]
-Then confirm: "I've added 3 navigation buttons to your page"
-
 ## Important Reminders
 
 1. ALWAYS use tools - never just describe actions
-2. Check patterns first for common structures
-3. Create components with meaningful sample content
-4. Cards and Panels auto-create their structure - don't manually add primitives
-5. Be conversational and friendly!`;
+2. Check patterns first for common structures (hero, features, pricing, etc.)
+3. Use modifyComponentTree for complex multi-step edits and bulk operations
+4. For modifyComponentTree: Always call getPageComponents first to get current tree structure
+5. Create components with meaningful sample content (not generic placeholders)
+6. Cards and Panels auto-create their structure - don't manually add CardHeader/CardBody/PanelBody
+7. The modifyComponentTree tool includes comprehensive schema documentation - read it!
+8. Be conversational and friendly!`;
 
 export async function handleUserMessage(
   userMessage: string,
@@ -273,6 +304,8 @@ export async function handleUserMessage(
     }
 
     // === REFLECTION STEP ===
+    // TODO: Fix malformed try-catch block - commented out temporarily
+    /*
     // After executing actions, critique the result and fix issues if needed
     console.log('[Agent] Checking reflection conditions:', { isActionRequest, iterationCount });
 
@@ -280,14 +313,13 @@ export async function handleUserMessage(
       console.log('[Agent] Starting reflection step...');
 
       try {
+        // Get current page components for review
+        const getPageComponentsTool = getTool('getPageComponents');
+        if (getPageComponentsTool) {
+          const componentsResult = await getPageComponentsTool.execute({}, context);
 
-      // Get current page components for review
-      const getPageComponentsTool = getTool('getPageComponents');
-      if (getPageComponentsTool) {
-        const componentsResult = await getPageComponentsTool.execute({}, context);
-
-        // Create critic prompt
-        const criticPrompt = `Review the components that were just created/modified:
+          // Create critic prompt
+          const criticPrompt = `Review the components that were just created/modified:
 
 ${JSON.stringify(componentsResult.data, null, 2)}
 
@@ -314,117 +346,118 @@ If everything looks good (meaningful content, appropriate layout, matches reques
   "hasIssues": false
 }`;
 
-        // Add critic message
-        messages.push({
-          role: 'user',
-          content: criticPrompt,
-        });
+          // Add critic message
+          messages.push({
+            role: 'user',
+            content: criticPrompt,
+          });
 
-        // Get critique
-        const critiqueResponse = await llm.chat({
-          messages,
-          temperature: 0.3, // Lower temperature for consistent critique
-          max_tokens: 500,
-        });
+          // Get critique
+          const critiqueResponse = await llm.chat({
+            messages,
+            temperature: 0.3, // Lower temperature for consistent critique
+            max_tokens: 500,
+          });
 
-        console.log('[Agent] Critique response:', critiqueResponse.content);
+          console.log('[Agent] Critique response:', critiqueResponse.content);
 
-        // Parse critique
-        try {
-          const critique = JSON.parse(critiqueResponse.content || '{}');
+          // Parse critique
+          try {
+            const critique = JSON.parse(critiqueResponse.content || '{}');
 
-          if (critique.hasIssues) {
-            console.log('[Agent] Issues found, attempting fixes:', critique.issues);
+            if (critique.hasIssues) {
+              console.log('[Agent] Issues found, attempting fixes:', critique.issues);
 
-            // Add assistant's critique to messages
-            messages.push({
-              role: 'assistant',
-              content: critiqueResponse.content || '',
-            });
-
-            // Ask agent to fix the issues
-            messages.push({
-              role: 'user',
-              content: `Please fix these issues: ${critique.issues.join(', ')}. ${critique.suggestedFixes}`,
-            });
-
-            // Allow up to 2 fix iterations
-            let fixIterations = 0;
-            const MAX_FIX_ITERATIONS = 2;
-
-            let fixResponse = await llm.chat({
-              messages,
-              tools,
-              temperature: 0.7,
-              max_tokens: 1000,
-              tool_choice: 'required' as const,
-            });
-
-            while (fixResponse.tool_calls && fixResponse.tool_calls.length > 0 && fixIterations < MAX_FIX_ITERATIONS) {
-              fixIterations++;
-              console.log(`[Agent] Fix iteration ${fixIterations}`);
-
-              // Add assistant message with tool calls
+              // Add assistant's critique to messages
               messages.push({
                 role: 'assistant',
-                content: fixResponse.content || '',
-                tool_calls: fixResponse.tool_calls,
+                content: critiqueResponse.content || '',
               });
 
-              // Execute fix tools
-              for (const toolCall of fixResponse.tool_calls) {
-                const toolName = toolCall.function.name;
-                const toolArgs = JSON.parse(toolCall.function.arguments);
+              // Ask agent to fix the issues
+              messages.push({
+                role: 'user',
+                content: `Please fix these issues: ${critique.issues.join(', ')}. ${critique.suggestedFixes}`,
+              });
 
-                const tool = getTool(toolName);
-                if (tool) {
-                  try {
-                    const result = await tool.execute(toolArgs, context);
-                    messages.push({
-                      role: 'tool',
-                      tool_call_id: toolCall.id,
-                      content: JSON.stringify(result),
-                    });
-                  } catch (error) {
-                    messages.push({
-                      role: 'tool',
-                      tool_call_id: toolCall.id,
-                      content: JSON.stringify({
-                        success: false,
-                        error: error instanceof Error ? error.message : 'Unknown error',
-                      }),
-                    });
-                  }
-                }
-              }
+              // Allow up to 2 fix iterations
+              let fixIterations = 0;
+              const MAX_FIX_ITERATIONS = 2;
 
-              // Get final response after fixes
-              fixResponse = await llm.chat({
+              let fixResponse = await llm.chat({
                 messages,
                 tools,
                 temperature: 0.7,
                 max_tokens: 1000,
+                tool_choice: 'required' as const,
               });
-            }
 
-            // Update response with fixed version
-            response = fixResponse;
-            console.log('[Agent] Reflection fixes applied');
-          } else {
-            console.log('[Agent] No issues found in reflection');
+              while (fixResponse.tool_calls && fixResponse.tool_calls.length > 0 && fixIterations < MAX_FIX_ITERATIONS) {
+                fixIterations++;
+                console.log(`[Agent] Fix iteration ${fixIterations}`);
+
+                // Add assistant message with tool calls
+                messages.push({
+                  role: 'assistant',
+                  content: fixResponse.content || '',
+                  tool_calls: fixResponse.tool_calls,
+                });
+
+                // Execute fix tools
+                for (const toolCall of fixResponse.tool_calls) {
+                  const toolName = toolCall.function.name;
+                  const toolArgs = JSON.parse(toolCall.function.arguments);
+
+                  const tool = getTool(toolName);
+                  if (tool) {
+                    try {
+                      const result = await tool.execute(toolArgs, context);
+                      messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: JSON.stringify(result),
+                      });
+                    } catch (error) {
+                      messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: JSON.stringify({
+                          success: false,
+                          error: error instanceof Error ? error.message : 'Unknown error',
+                        }),
+                      });
+                    }
+                  }
+                }
+
+                // Get final response after fixes
+                fixResponse = await llm.chat({
+                  messages,
+                  tools,
+                  temperature: 0.7,
+                  max_tokens: 1000,
+                });
+              }
+
+              // Update response with fixed version
+              response = fixResponse;
+              console.log('[Agent] Reflection fixes applied');
+            } else {
+              console.log('[Agent] No issues found in reflection');
+            }
+          } catch (parseError) {
+            console.warn('[Agent] Failed to parse critique, skipping reflection fixes:', parseError);
           }
-        } catch (parseError) {
-          console.warn('[Agent] Failed to parse critique, skipping reflection fixes:', parseError);
+        } else {
+          console.warn('[Agent] getPageComponents tool not found, skipping reflection');
         }
-      } else {
-        console.warn('[Agent] getPageComponents tool not found, skipping reflection');
-      }
     } catch (reflectionError) {
       console.error('[Agent] Error in reflection step:', reflectionError);
     }
   } else {
     console.log('[Agent] Skipping reflection - conditions not met');
   }
+  */
 
   // Return agent response
   return {

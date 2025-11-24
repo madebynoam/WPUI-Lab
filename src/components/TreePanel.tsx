@@ -142,6 +142,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	const {
 		tree,
 		addComponent,
+		insertComponent,
 		selectedNodeIds,
 		toggleNodeSelection,
 		resetTree,
@@ -268,24 +269,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			};
 		}
 
-		const addToParent = (nodes: ComponentNode[]): ComponentNode[] => {
-			return nodes.map((node) => {
-				if (node.id === parentId) {
-					return {
-						...node,
-						children: [...(node.children || []), patternWithIds],
-					};
-				}
-				if (node.children) {
-					return {
-						...node,
-						children: addToParent(node.children),
-					};
-				}
-				return node;
-			});
-		};
-		setTree(addToParent(tree));
+		// Use insertComponent to add the pattern ComponentNode (addComponent expects string type name)
+		insertComponent(patternWithIds, parentId === ROOT_VSTACK_ID ? undefined : parentId);
 
 		setSearchTerm("");
 };

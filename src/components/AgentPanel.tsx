@@ -82,6 +82,7 @@ export const AgentPanel: React.FC = () => {
 
       // Direct pass-through - agent uses exact same code paths as UI
       getNodeById: componentTreeContext.getNodeById,
+      setTree: componentTreeContext.setTree, // PRIMARY: Direct tree manipulation for data structure approach
       updateComponentProps: componentTreeContext.updateComponentProps,
       updateMultipleComponentProps:
         componentTreeContext.updateMultipleComponentProps,
@@ -95,7 +96,7 @@ export const AgentPanel: React.FC = () => {
       removeInteraction: componentTreeContext.removeInteraction,
       updateInteraction: componentTreeContext.updateInteraction,
       createPage: (name: string, _route: string) => {
-        componentTreeContext.createPageWithId(name);
+        return componentTreeContext.createPageWithId(name);
       },
       setCurrentPage: componentTreeContext.setCurrentPage,
       updatePageTheme: componentTreeContext.updatePageTheme,

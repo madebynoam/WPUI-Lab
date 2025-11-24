@@ -7,17 +7,16 @@ export const getPagesTool: AgentTool = {
   name: 'getPages',
   description: 'Get list of all pages in the application with their IDs, names, and routes',
   category: 'context',
-  execute: async (params: {}, context: ToolContext): Promise<ToolResult> => {
+  execute: async (_params: {}, context: ToolContext): Promise<ToolResult> => {
     const pages = context.pages.map(p => ({
       id: p.id,
       name: p.name,
-      route: p.route,
       isCurrent: p.id === context.currentPageId,
     }));
 
     return {
       success: true,
-      message: `Found ${pages.length} page(s): ${pages.map(p => `"${p.name}" (${p.route})${p.isCurrent ? ' [current]' : ''}`).join(', ')}`,
+      message: `Found ${pages.length} page(s): ${pages.map(p => `"${p.name}"${p.isCurrent ? ' [current]' : ''}`).join(', ')}`,
       data: pages,
     };
   },
@@ -28,7 +27,7 @@ export const getCurrentPageTool: AgentTool = {
   name: 'getCurrentPage',
   description: 'Get details about the currently active page',
   category: 'context',
-  execute: async (params: {}, context: ToolContext): Promise<ToolResult> => {
+  execute: async (_params: {}, context: ToolContext): Promise<ToolResult> => {
     const currentPage = context.pages.find(p => p.id === context.currentPageId);
 
     if (!currentPage) {
@@ -41,7 +40,7 @@ export const getCurrentPageTool: AgentTool = {
 
     return {
       success: true,
-      message: `Current page is "${currentPage.name}" at route ${currentPage.route}`,
+      message: `Current page is "${currentPage.name}"`,
       data: currentPage,
     };
   },
@@ -52,28 +51,19 @@ export const getAvailableComponentTypesTool: AgentTool = {
   name: 'getAvailableComponentTypes',
   description: 'Get list of all available component types that can be created',
   category: 'context',
-  execute: async (params: {}, context: ToolContext): Promise<ToolResult> => {
+  execute: async (_params: {}, _context: ToolContext): Promise<ToolResult> => {
     const componentTypes = Object.entries(componentRegistry).map(([type, def]) => ({
       type,
       displayName: def.name,
-      category: def.category,
+      acceptsChildren: def.acceptsChildren,
       description: def.description || `A ${def.name} component`,
     }));
-
-    const byCategory = componentTypes.reduce((acc, comp) => {
-      if (!acc[comp.category]) {
-        acc[comp.category] = [];
-      }
-      acc[comp.category].push(comp);
-      return acc;
-    }, {} as Record<string, typeof componentTypes>);
 
     return {
       success: true,
       message: `Available component types: ${componentTypes.map(c => c.displayName).join(', ')}`,
       data: {
         all: componentTypes,
-        byCategory,
       },
     };
   },
@@ -197,7 +187,7 @@ export const getSelectedComponentsTool: AgentTool = {
   name: 'getSelectedComponents',
   description: 'Get list of currently selected components',
   category: 'context',
-  execute: async (params: {}, context: ToolContext): Promise<ToolResult> => {
+  execute: async (_params: {}, context: ToolContext): Promise<ToolResult> => {
     if (context.selectedNodeIds.length === 0) {
       return {
         success: true,

@@ -3,6 +3,7 @@ import { ComponentNode, Page, Interaction, PatternNode } from './types';
 import { componentRegistry } from './componentRegistry';
 import { componentTreeReducer, ComponentTreeState } from './ComponentTreeReducer';
 import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent, generateId } from './utils/treeHelpers';
+import { normalizeComponentNode, normalizeComponentNodes } from './utils/normalizeComponent';
 
 const STORAGE_KEY = 'wp-designer-pages';
 
@@ -13,7 +14,21 @@ interface ComponentTreeContextType {
   setTree: (tree: ComponentNode[]) => void;
   setSelectedNodeIds: (ids: string[] | ((prev: string[]) => string[])) => void;
   toggleNodeSelection: (id: string, multiSelect?: boolean, rangeSelect?: boolean, allNodes?: ComponentNode[]) => void;
+
+  /**
+   * Create a new component by type name from the component registry.
+   * @param componentType - The string name of the component type (e.g., "Button", "Text", "Card")
+   * @param parentId - Optional parent component ID to add to (defaults to root)
+   */
   addComponent: (componentType: string, parentId?: string) => void;
+
+  /**
+   * Insert an existing ComponentNode into the tree.
+   * Use this for patterns or pre-constructed component trees.
+   * @param node - The ComponentNode to insert (will be normalized before insertion)
+   * @param parentId - Optional parent component ID to add to (defaults to root)
+   * @param index - Optional position index within parent's children
+   */
   insertComponent: (node: ComponentNode, parentId?: string, index?: number) => void;
   removeComponent: (id: string) => void;
   updateComponentProps: (id: string, props: Record<string, any>) => void;
@@ -148,7 +163,7 @@ function initializeState(): ComponentTreeState {
 
 // Helper: Convert PatternNode to ComponentNode with IDs
 function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNode[] {
-  return patternNodes.map(patternNode => ({
+  const nodes = patternNodes.map(patternNode => ({
     id: generateId(),
     type: patternNode.type,
     name: patternNode.name || '',
@@ -156,6 +171,9 @@ function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNod
     children: patternNode.children ? patternNodesToComponentNodes(patternNode.children) : [],
     interactions: [],
   }));
+
+  // Normalize all nodes to ensure consistent data structure
+  return normalizeComponentNodes(nodes);
 }
 
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
@@ -220,9 +238,12 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       interactions: [],
     };
 
+    // Normalize before dispatching to ensure consistent data structure
+    const normalizedNode = normalizeComponentNode(newNode);
+
     dispatch({
       type: 'INSERT_COMPONENT',
-      payload: { node: newNode, parentId },
+      payload: { node: normalizedNode, parentId },
     });
   };
 
@@ -230,9 +251,13 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     console.log('[insertComponent] Received node:', JSON.stringify(node, null, 2));
     console.log('[insertComponent] Parent ID:', parentId, 'Index:', index);
 
+    // Normalize before dispatching to ensure consistent data structure
+    const normalizedNode = normalizeComponentNode(node);
+    console.log('[insertComponent] Normalized node:', JSON.stringify(normalizedNode, null, 2));
+
     dispatch({
       type: 'INSERT_COMPONENT',
-      payload: { node, parentId, index },
+      payload: { node: normalizedNode, parentId, index },
     });
 
     console.log('[insertComponent] Dispatched INSERT_COMPONENT action');

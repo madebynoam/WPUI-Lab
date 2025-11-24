@@ -24,6 +24,7 @@ import {
   updateInteractionTool,
   updatePageThemeTool,
 } from './tools/actions';
+import { modifyComponentTreeTool } from './tools/treeManipulation';
 import {
   getPatternsTool,
   createPatternTool,
@@ -38,7 +39,10 @@ registerTool(getComponentDetailsTool);
 registerTool(getSelectedComponentsTool);
 registerTool(searchComponentsTool);
 
-// Register action tools
+// Register PRIMARY tree manipulation tool (replaces most action tools)
+registerTool(modifyComponentTreeTool);
+
+// Register legacy action tools (for backward compatibility - will be deprecated)
 registerTool(createComponentTool);
 registerTool(updateComponentTool);
 registerTool(updateMultipleComponentsTool);
