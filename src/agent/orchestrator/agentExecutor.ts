@@ -135,6 +135,11 @@ export async function executeAgent(
     console.log(`[AgentExecutor] Response content:`, response.content);
     console.log(`[AgentExecutor] Response finish_reason:`, response.finish_reason);
 
+    // Show how many tools will be called
+    if (response.tool_calls && response.tool_calls.length > 0) {
+      onProgress?.(`${config.type} agent: calling ${response.tool_calls.length} tool(s)...`);
+    }
+
     // Remove system message after first call (token optimization)
     const systemIndex = messages.findIndex(m => m.role === 'system');
     if (systemIndex !== -1) {
@@ -203,6 +208,9 @@ export async function executeAgent(
       const iterationInputTokens = estimateTokens(JSON.stringify(messages)) + toolsTokens;
       totalInputTokens += iterationInputTokens;
 
+      // Show progress after tools complete
+      onProgress?.(`${config.type} agent: processing results...`);
+
       // Call LLM again
       response = await llm.chat({
         messages,
@@ -216,11 +224,19 @@ export async function executeAgent(
       outputTokens = estimateTokens(response.content || '') +
         estimateTokens(JSON.stringify(response.tool_calls || []));
       totalOutputTokens += outputTokens;
+
+      // Show if more tools need to be called
+      if (response.tool_calls && response.tool_calls.length > 0) {
+        onProgress?.(`${config.type} agent: calling ${response.tool_calls.length} more tool(s)...`);
+      }
     }
 
     if (iterationCount >= config.maxCalls) {
       console.warn(`[AgentExecutor] Max calls reached for ${config.type} agent`);
     }
+
+    // Show completion
+    onProgress?.(`${config.type} agent: completing...`);
 
     // Calculate cost
     const pricing = MODEL_PRICING[config.model.model];
