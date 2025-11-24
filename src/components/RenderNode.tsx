@@ -224,30 +224,34 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       const viewType = props.viewType || 'table';
       const itemsPerPage = props.itemsPerPage || 10;
 
-      // Handle custom data source
+      // Auto-detect custom data or use mock data
       let mockData, fields;
-      if (dataSource === 'custom') {
-        // Use inline data and columns
-        mockData = props.data || [];
 
-        // Generate field definitions from columns prop
-        if (props.columns && Array.isArray(props.columns) && props.columns.length > 0) {
-          fields = props.columns.map((col: any) => ({
-            id: typeof col === 'string' ? col : (col.id || col),
-            label: typeof col === 'string' ? col : (col.label || col.id || col),
-            type: 'text',
-            enableSorting: true,
-            enableHiding: true,
-            getValue: (item: any) => {
-              const key = typeof col === 'string' ? col : (col.id || col);
-              return item[key];
-            },
-            render: ({ item }: any) => {
-              const key = typeof col === 'string' ? col : (col.id || col);
-              return String(item[key] || '');
-            },
-          }));
-        } else if (mockData.length > 0) {
+      // SMART MODE: If data prop is provided, use it (regardless of dataSource)
+      if (props.data && Array.isArray(props.data) && props.data.length > 0) {
+        mockData = props.data;
+
+        // Accept both 'columns' and 'fields' props (LLM might use either)
+        const columnDefs = props.columns || props.fields;
+
+        if (columnDefs && Array.isArray(columnDefs) && columnDefs.length > 0) {
+          // Generate field definitions from column/field definitions
+          fields = columnDefs.map((col: any) => {
+            // Handle both string format and object format
+            const id = typeof col === 'string' ? col : (col.id || col.accessor || col);
+            const label = typeof col === 'string' ? col : (col.label || col.header || id);
+
+            return {
+              id,
+              label,
+              type: 'text',
+              enableSorting: true,
+              enableHiding: true,
+              getValue: (item: any) => item[id],
+              render: ({ item }: any) => String(item[id] || ''),
+            };
+          });
+        } else {
           // Auto-detect columns from first data item
           const firstItem = mockData[0];
           fields = Object.keys(firstItem).map(key => ({
@@ -259,11 +263,9 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
             getValue: (item: any) => item[key],
             render: ({ item }: any) => String(item[key] || ''),
           }));
-        } else {
-          fields = [];
         }
       } else {
-        // Use mock data lookup for predefined data sources
+        // Fall back to mock data based on dataSource
         mockData = getMockData(dataSource);
         fields = getFieldDefinitions(dataSource);
       }
