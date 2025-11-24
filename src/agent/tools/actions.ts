@@ -3,6 +3,7 @@ import { ComponentNode, PatternNode } from '../../types';
 import { componentRegistry } from '../../componentRegistry';
 import { ROOT_VSTACK_ID } from '../../ComponentTreeContext';
 import { normalizeComponentNodes } from '../../utils/normalizeComponent';
+import * as yaml from 'js-yaml';
 
 // Generate unique ID for components
 function generateId(): string {
@@ -932,6 +933,235 @@ export const updatePageThemeTool: AgentTool = {
       return {
         success: false,
         message: `Failed to update page theme: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error: String(error),
+      };
+    }
+  },
+};
+
+// Build component tree from YAML DSL (token-efficient bulk operations)
+export const buildFromYAMLTool: AgentTool = {
+  name: 'buildFromYAML',
+  description: 'Build component tree from YAML DSL. Use this for 3+ components! YAML is 20% more token-efficient than JSON for Claude. Format: component name as key, props as object, children as array. Example: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Basic\\n        children:\\n          - Text: Content here"',
+  category: 'action',
+  parameters: {
+    yaml: {
+      type: 'string',
+      description: 'YAML string defining component tree. Use natural YAML syntax with component names as keys.',
+      required: true,
+    },
+    parentId: {
+      type: 'string',
+      description: 'Parent component ID (optional, defaults to root)',
+      required: false,
+    },
+  },
+  execute: async (params: any, context: ToolContext): Promise<ToolResult> => {
+    console.log('[buildFromYAML] Received YAML:', params.yaml);
+
+    try {
+      // Parse YAML
+      const parsed = yaml.load(params.yaml);
+      console.log('[buildFromYAML] Parsed YAML:', JSON.stringify(parsed, null, 2));
+
+      if (!parsed) {
+        return {
+          success: false,
+          message: 'Empty YAML input',
+          error: 'YAML string is empty or invalid',
+        };
+      }
+
+      // Convert YAML structure to component nodes
+      const parseComponent = (data: any): PatternNode => {
+        // Handle different YAML structures
+        if (typeof data === 'string') {
+          // Simple text node
+          return {
+            type: 'Text',
+            props: { children: data },
+          };
+        }
+
+        if (Array.isArray(data)) {
+          // Array of components - wrap in VStack
+          return {
+            type: 'VStack',
+            props: {},
+            children: data.map(parseComponent),
+          };
+        }
+
+        if (typeof data === 'object') {
+          // Find the component type (first key)
+          const keys = Object.keys(data);
+          if (keys.length === 0) {
+            throw new Error('Empty component object');
+          }
+
+          const componentType = keys[0];
+          const componentData = data[componentType];
+
+          // Check if component exists
+          const definition = componentRegistry[componentType as keyof typeof componentRegistry];
+          if (!definition) {
+            throw new Error(`Unknown component type: "${componentType}"`);
+          }
+
+          const node: PatternNode = {
+            type: componentType,
+            props: {},
+          };
+
+          if (componentData) {
+            if (typeof componentData === 'string') {
+              // Shorthand: Card: "Text content"
+              node.props = { children: componentData };
+            } else if (typeof componentData === 'object' && !Array.isArray(componentData)) {
+              // Extract props and children
+              const { children, title, price, body, ...otherProps } = componentData;
+
+              // Handle Card/Panel content shortcuts
+              if (componentType === 'Card' && (title || price || body)) {
+                // Don't add to props - will be handled by default children customization below
+                node.props = { ...otherProps };
+              } else {
+                node.props = { ...otherProps };
+                if (children) {
+                  node.children = Array.isArray(children) ? children.map(parseComponent) : [parseComponent(children)];
+                }
+              }
+            } else if (Array.isArray(componentData)) {
+              // Array of children
+              node.children = componentData.map(parseComponent);
+            }
+          }
+
+          return node;
+        }
+
+        throw new Error(`Unsupported YAML structure: ${typeof data}`);
+      };
+
+      // Parse the root component(s)
+      let rootComponents: PatternNode[];
+      if (Array.isArray(parsed)) {
+        rootComponents = parsed.map(parseComponent);
+      } else {
+        rootComponents = [parseComponent(parsed)];
+      }
+
+      console.log('[buildFromYAML] Root components:', JSON.stringify(rootComponents, null, 2));
+
+      // Convert PatternNodes to ComponentNodes with IDs and default children
+      const createComponentNode = (pattern: PatternNode): ComponentNode => {
+        const definition = componentRegistry[pattern.type as keyof typeof componentRegistry];
+        if (!definition) {
+          throw new Error(`Unknown component type: "${pattern.type}"`);
+        }
+
+        const node: ComponentNode = {
+          id: generateId(),
+          type: pattern.type,
+          name: pattern.name || '',
+          props: { ...pattern.props },
+          children: [],
+          interactions: [],
+        };
+
+        // Handle Card/Panel content shortcuts from YAML
+        const componentData = Object.values(parsed)[0];
+        if (typeof componentData === 'object' && !Array.isArray(componentData)) {
+          if (pattern.type === 'Card' && (componentData.title || componentData.body)) {
+            // Add default children for Card
+            if (definition.defaultChildren) {
+              const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
+
+              // Customize with title/body
+              if (componentData.title) {
+                const cardHeader = defaultChildrenNodes.find(c => c.type === 'CardHeader');
+                if (cardHeader) {
+                  const heading = cardHeader.children.find(c => c.type === 'Heading');
+                  if (heading) {
+                    heading.props.children = componentData.title;
+                  }
+                }
+              }
+
+              if (componentData.body) {
+                const cardBody = defaultChildrenNodes.find(c => c.type === 'CardBody');
+                if (cardBody) {
+                  const text = cardBody.children.find(c => c.type === 'Text');
+                  if (text) {
+                    text.props.children = componentData.body;
+                  }
+                }
+              }
+
+              node.children = defaultChildrenNodes;
+            }
+          } else if (pattern.type === 'Panel' && componentData.body) {
+            // Add default children for Panel
+            if (definition.defaultChildren) {
+              const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
+
+              const panelBody = defaultChildrenNodes.find(c => c.type === 'PanelBody');
+              if (panelBody && componentData.body) {
+                const text = panelBody.children.find(c => c.type === 'Text');
+                if (text) {
+                  text.props.children = componentData.body;
+                }
+              }
+
+              node.children = defaultChildrenNodes;
+            }
+          } else {
+            // Add default children if no custom children provided
+            if (definition.defaultChildren && (!pattern.children || pattern.children.length === 0)) {
+              const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
+              node.children = defaultChildrenNodes;
+            }
+          }
+        }
+
+        // Add custom children
+        if (pattern.children && pattern.children.length > 0) {
+          const customChildren = pattern.children.map(createComponentNode);
+          node.children.push(...customChildren);
+        }
+
+        return node;
+      };
+
+      // Create component nodes from patterns
+      const componentNodes = rootComponents.map(createComponentNode);
+
+      // Normalize all nodes
+      const normalizedNodes = normalizeComponentNodes(componentNodes);
+
+      console.log('[buildFromYAML] Created component nodes:', normalizedNodes.length);
+
+      // Insert all nodes
+      for (const node of normalizedNodes) {
+        context.addComponent(node, params.parentId, undefined);
+      }
+
+      return {
+        success: true,
+        message: `Created ${normalizedNodes.length} component(s) from YAML`,
+        data: {
+          components: normalizedNodes.map(n => ({
+            id: n.id,
+            type: n.type,
+          })),
+        },
+      };
+
+    } catch (error) {
+      console.error('[buildFromYAML] Error:', error);
+      return {
+        success: false,
+        message: `Failed to parse YAML: ${error instanceof Error ? error.message : 'Unknown error'}`,
         error: String(error),
       };
     }

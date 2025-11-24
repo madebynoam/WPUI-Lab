@@ -12,6 +12,7 @@ import {
 import {
   createComponentTool,
   batchCreateComponentsTool,
+  buildFromYAMLTool,
   updateComponentTool,
   deleteComponentTool,
   duplicateComponentTool,
@@ -40,8 +41,9 @@ registerTool(getComponentDetailsTool);
 registerTool(getSelectedComponentsTool);
 registerTool(searchComponentsTool);
 
-// Register PRIMARY tree manipulation tool (replaces most action tools)
+// Register PRIMARY tree manipulation tools
 registerTool(modifyComponentTreeTool);
+registerTool(buildFromYAMLTool); // YAML DSL - most token-efficient for bulk operations (3+ items)
 
 // Register legacy action tools (for backward compatibility - will be deprecated)
 registerTool(createComponentTool);
