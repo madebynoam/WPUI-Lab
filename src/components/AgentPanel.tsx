@@ -247,6 +247,7 @@ export const AgentPanel: React.FC = () => {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
+          padding: "8px",
         }}
       >
         <AgentUI
