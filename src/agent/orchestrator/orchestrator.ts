@@ -51,14 +51,20 @@ export async function handleOrchestratedRequest(
       model: 'claude-haiku-4-5',
     });
 
+    const selectionCount = context.selectedNodeIds.length;
     const intentSystemPrompt = `You are an intent parser for WP-Designer, a visual page builder tool.
 
 Your job is to parse user requests into structured intent.
 
+Current context:
+- ${selectionCount} component(s) currently selected
+- If user says "add to it", "modify it", "update the table", "change the selected", they mean the selected component(s)
+- If selection exists and action would affect multiple components, set needsClarity: true if ambiguous
+
 Available actions:
 - create: Add new components (cards, buttons, forms, etc.)
-- update: Modify existing components
-- delete: Remove components
+- update: Modify existing components (prefer selected if available)
+- delete: Remove components (prefer selected if available)
 - query: Answer questions about current state
 - validate: Check layout rules
 
@@ -67,12 +73,14 @@ Extract:
 2. target: What to act on (e.g., "pricing cards", "hero section", "contact form")
 3. quantity: Number of items (if specified)
 4. tone: Content tone (professional/casual/playful) - default: professional
+5. usesSelection: true if referring to selected components
+6. needsClarity: true if ambiguous which components to affect
 
 CRITICAL: Return ONLY valid JSON with no markdown, no code blocks, no explanation.
 Just the raw JSON object starting with { and ending with }.
 
 Example:
-{"action":"create","target":"pricing cards","quantity":3,"tone":"professional"}`;
+{"action":"update","target":"table entries","quantity":null,"tone":"professional","usesSelection":true,"needsClarity":false}`;
 
     const intentResponse = await haiku.chat({
       messages: [

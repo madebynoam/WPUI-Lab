@@ -47,10 +47,14 @@ export function planTasks(intent: UserIntent): AgentTask[] {
   const nextId = () => `task-${taskId++}`;
 
   // STEP 1: Always start with context (understand current state)
+  // If usesSelection is true, context will check selected components
   tasks.push({
     id: nextId(),
     type: 'context',
-    description: `Check current page state and existing components`,
+    description: intent.usesSelection
+      ? `Check selected components and current state`
+      : `Check current page state and existing components`,
+    input: intent.usesSelection ? { useSelection: true } : undefined,
   });
 
   // STEP 2: Route based on action type

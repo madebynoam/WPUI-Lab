@@ -164,3 +164,14 @@ export interface AgentContext {
   previousResults: AgentResult[];
   task: AgentTask;
 }
+
+/**
+ * Progress update for UI
+ */
+export interface ProgressUpdate {
+  phase: 'intent' | 'planning' | 'executing';
+  agent?: string;
+  current?: number;
+  total?: number;
+  message: string;
+}
