@@ -67,7 +67,6 @@ export const AgentPanel: React.FC = () => {
     return [defaultWelcomeMessage];
   });
 
-  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load Claude API key from localStorage
@@ -192,6 +191,23 @@ export const AgentPanel: React.FC = () => {
       const controller = new AbortController();
       setAbortController(controller);
 
+      // Add temporary progress message
+      const progressMessageId = `progress-${Date.now()}`;
+      const progressMessage: AgentMessage = {
+        id: progressMessageId,
+        role: "agent",
+        content: [
+          {
+            type: "text",
+            text: "Starting...",
+          },
+        ],
+        timestamp: Date.now(),
+        archived: false,
+        showIcon: true,
+      };
+      setMessages((prev) => [...prev, progressMessage]);
+
       // Set initial progress state
       setProgressState({
         isProcessing: true,
@@ -211,6 +227,25 @@ export const AgentPanel: React.FC = () => {
           apiKey,
           openaiApiKey,
           (update) => {
+            console.log('[AgentPanel] Progress update:', update);
+
+            // Update progress message in chat
+            setMessages((prev) => prev.map(msg =>
+              msg.id === progressMessageId
+                ? {
+                    ...msg,
+                    content: [
+                      {
+                        type: "text",
+                        text: update.agent && update.total
+                          ? `${update.agent} (${update.current}/${update.total})`
+                          : update.message,
+                      },
+                    ],
+                  }
+                : msg
+            ));
+
             setProgressState({
               isProcessing: true,
               phase: update.phase,
@@ -223,9 +258,15 @@ export const AgentPanel: React.FC = () => {
           controller.signal
         );
 
+        // Remove progress message and add actual response
+        setMessages((prev) => prev.filter(msg => msg.id !== progressMessageId));
+
         // Add agent response to chat
         setMessages((prev) => [...prev, agentResponse]);
       } catch (err) {
+        // Remove progress message
+        setMessages((prev) => prev.filter(msg => msg.id !== progressMessageId));
+
         // Handle abort (user clicked stop) - don't show error
         if (err instanceof Error && err.name === 'AbortError') {
           console.log("Request aborted by user");
@@ -400,23 +441,6 @@ export const AgentPanel: React.FC = () => {
           padding: "8px",
         }}
       >
-        {/* Progress indicator */}
-        {progressState.isProcessing && progressState.message && (
-          <div style={{
-            padding: '8px 12px',
-            borderBottom: '1px solid #e0e0e0',
-            fontSize: '11px',
-            color: '#666',
-            backgroundColor: '#f9fafb'
-          }}>
-            {progressState.agent && progressState.total > 0 ? (
-              <span>{progressState.agent} ({progressState.current}/{progressState.total})</span>
-            ) : (
-              <span>{progressState.message}</span>
-            )}
-          </div>
-        )}
-
         <AgentUI
           messages={messages}
           isProcessing={progressState.isProcessing}
