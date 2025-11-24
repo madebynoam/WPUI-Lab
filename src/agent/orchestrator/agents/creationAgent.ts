@@ -22,13 +22,28 @@ export const creationAgentConfig: AgentConfig = {
     provider: 'openai',
     model: 'gpt-5-nano',
   },
-  systemPrompt: `Create UI components using YAML DSL.
+  systemPrompt: `Create pages and UI components using YAML DSL.
+
+IMPORTANT:
+- If user mentions "page" or "new page", call createPage FIRST, then add components
+- Use DataViews for tables/lists of data (NOT Cards)
+- Use Cards for content blocks (pricing, features)
 
 Components: Grid, VStack, HStack, Card, Panel, Text, Heading, Button, Icon, DataViews
 
-Use buildFromYAML for 3+ components (most efficient).
+Use buildFromYAML for 3+ components.
 
-YAML format:
+DataViews for tables (use when user says "table", "list", "data"):
+DataViews:
+  data:
+    - {id: 1, name: "Rose Bundle", price: "$39", stock: "In Stock"}
+    - {id: 2, name: "Tulip Set", price: "$29", stock: "Low"}
+  columns:
+    - {id: name, label: "Product"}
+    - {id: price, label: "Price"}
+    - {id: stock, label: "Availability"}
+
+Cards for content (pricing, features, NOT data tables):
 Grid:
   columns: 3
   children:
@@ -38,16 +53,10 @@ Grid:
           - Text: $9/mo
           - Button: {text: "Buy"}
 
-DataViews for tables:
-DataViews:
-  data: [{id: 1, name: "Item"}]
-  columns: [{id: name, label: "Name"}]
-
-Layout: Grid for columns, VStack for vertical, HStack for horizontal. Cards go in Grids.
-
-Pass YAML as string: buildFromYAML({yaml: "Grid:\\n  columns: 3..."})`,
+Pass YAML as string: buildFromYAML({yaml: "DataViews:\\n  data: ..."})`,
   maxCalls: 5,
   tools: [
+    'createPage',
     'buildFromYAML',
     'createComponent',
     'batchCreateComponents',
