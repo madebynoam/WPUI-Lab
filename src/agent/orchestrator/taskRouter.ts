@@ -97,13 +97,19 @@ export function planTasks(intent: UserIntent): AgentTask[] {
         dependencies: creationDeps,
       });
 
-      // Validate layout
-      tasks.push({
-        id: nextId(),
-        type: 'layout',
-        description: `Validate layout rules for ${intent.target}`,
-        dependencies: [creationTaskId], // Wait for creation
-      });
+      // Validate layout (skip for simple single-component creates)
+      const shouldValidateLayout = (intent.quantity || 1) >= 3 ||
+                                   intent.target.toLowerCase().includes('grid') ||
+                                   intent.target.toLowerCase().includes('layout');
+
+      if (shouldValidateLayout) {
+        tasks.push({
+          id: nextId(),
+          type: 'layout',
+          description: `Validate layout rules for ${intent.target}`,
+          dependencies: [creationTaskId], // Wait for creation
+        });
+      }
       break;
 
     case 'update':

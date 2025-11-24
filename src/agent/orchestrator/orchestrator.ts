@@ -50,48 +50,36 @@ export async function handleOrchestratedRequest(
       throw new Error('Request aborted');
     }
 
-    // STEP 1: Parse user intent with Haiku
-    console.log('[Orchestrator] Parsing intent with Haiku...');
+    // STEP 1: Parse user intent with gpt-5-nano
+    console.log('[Orchestrator] Parsing intent with gpt-5-nano...');
     onProgress?.({ phase: 'intent', message: 'Parsing intent...' });
 
-    const haiku = createLLMProvider({
-      provider: 'anthropic',
-      apiKey: claudeApiKey,
-      model: 'claude-haiku-4-5',
+    const intentParser = createLLMProvider({
+      provider: 'openai',
+      apiKey: openaiApiKey,
+      model: 'gpt-5-nano',
     });
 
     const selectionCount = context.selectedNodeIds.length;
-    const intentSystemPrompt = `You are an intent parser for WP-Designer, a visual page builder tool.
+    const intentSystemPrompt = `Parse user requests into JSON intent for WP-Designer.
 
-Your job is to parse user requests into structured intent.
+Context: ${selectionCount} component(s) selected
 
-Current context:
-- ${selectionCount} component(s) currently selected
-- If user says "add to it", "modify it", "update the table", "change the selected", they mean the selected component(s)
-- If selection exists and action would affect multiple components, set needsClarity: true if ambiguous
+Actions: create, update, delete, query, validate
 
-Available actions:
-- create: Add new components (cards, buttons, forms, etc.)
-- update: Modify existing components (prefer selected if available)
-- delete: Remove components (prefer selected if available)
-- query: Answer questions about current state
-- validate: Check layout rules
+Output JSON fields:
+- action: create/update/delete/query/validate
+- target: what to act on
+- quantity: number (if specified)
+- tone: professional/casual/playful (default: professional)
+- usesSelection: true if refers to selected components
+- needsClarity: true if ambiguous
 
-Extract:
-1. action: The action type (create/update/delete/query/validate)
-2. target: What to act on (e.g., "pricing cards", "hero section", "contact form")
-3. quantity: Number of items (if specified)
-4. tone: Content tone (professional/casual/playful) - default: professional
-5. usesSelection: true if referring to selected components
-6. needsClarity: true if ambiguous which components to affect
+Return ONLY raw JSON, no markdown.
 
-CRITICAL: Return ONLY valid JSON with no markdown, no code blocks, no explanation.
-Just the raw JSON object starting with { and ending with }.
+Example: {"action":"create","target":"pricing cards","quantity":3,"tone":"professional","usesSelection":false,"needsClarity":false}`;
 
-Example:
-{"action":"update","target":"table entries","quantity":null,"tone":"professional","usesSelection":true,"needsClarity":false}`;
-
-    const intentResponse = await haiku.chat({
+    const intentResponse = await intentParser.chat({
       messages: [
         {
           role: 'system',
@@ -111,11 +99,11 @@ Example:
     orchestratorInputTokens = estimateTokens(intentSystemPrompt + userMessage);
     orchestratorOutputTokens = estimateTokens(intentResponse.content || '');
 
-    const pricing = MODEL_PRICING['claude-haiku-4-5'];
+    const pricing = MODEL_PRICING['gpt-5-nano'];
     orchestratorCost = (orchestratorInputTokens / 1000000) * pricing.input +
                        (orchestratorOutputTokens / 1000000) * pricing.output;
 
-    // Parse intent from Haiku response
+    // Parse intent response
     let intent;
     try {
       // Extract JSON from response (handle markdown code blocks if present)
@@ -124,7 +112,7 @@ Example:
       const jsonStr = jsonMatch ? jsonMatch[0] : content;
       intent = JSON.parse(jsonStr);
     } catch (parseError) {
-      console.error('[Orchestrator] Failed to parse Haiku intent response:', parseError);
+      console.error('[Orchestrator] Failed to parse intent response:', parseError);
       // Fallback to rule-based
       intent = parseIntent(userMessage);
     }
@@ -298,13 +286,20 @@ Example:
       cost: number;
     }>();
 
-    // Add orchestrator (Haiku) to breakdown
-    modelBreakdown.set('claude-haiku-4-5', {
-      calls: 1,
-      inputTokens: orchestratorInputTokens,
-      outputTokens: orchestratorOutputTokens,
-      cost: orchestratorCost,
-    });
+    // Add orchestrator (gpt-5-nano) to breakdown
+    if (!modelBreakdown.has('gpt-5-nano')) {
+      modelBreakdown.set('gpt-5-nano', {
+        calls: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cost: 0,
+      });
+    }
+    const nanoBreakdown = modelBreakdown.get('gpt-5-nano')!;
+    nanoBreakdown.calls += 1;
+    nanoBreakdown.inputTokens += orchestratorInputTokens;
+    nanoBreakdown.outputTokens += orchestratorOutputTokens;
+    nanoBreakdown.cost += orchestratorCost;
 
     for (const result of agentResults) {
       const config = getAgentConfig(result.agentType);

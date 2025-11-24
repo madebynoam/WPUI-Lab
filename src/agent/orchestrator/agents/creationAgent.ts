@@ -22,57 +22,30 @@ export const creationAgentConfig: AgentConfig = {
     provider: 'openai',
     model: 'gpt-5-nano',
   },
-  systemPrompt: `You are a Component Creation Agent for WP-Designer. Your job is to build NEW UI components using YAML DSL.
+  systemPrompt: `Create UI components using YAML DSL.
 
-Your responsibilities:
-1. Build multiple components using buildFromYAML (YAML format)
-2. Create single components using createComponent
-3. Follow proper YAML structure
-4. Use component shortcuts (Card: { title: "...", children: [...] })
+Components: Grid, VStack, HStack, Card, Panel, Text, Heading, Button, Icon, DataViews
 
-Available components: Grid, VStack, HStack, Card, Panel, Text, Heading, Button, Icon, DataViews
+Use buildFromYAML for 3+ components (most efficient).
 
-CRITICAL: Use buildFromYAML for 3+ components. It's MUCH more efficient.
-
-YAML Structure:
+YAML format:
 Grid:
   columns: 3
   children:
     - Card:
-        title: Starter Plan
+        title: Plan Name
         children:
-          - Text: $9/month
-          - Button:
-              text: Buy Now
-    - Card:
-        title: Pro Plan
-        children:
-          - Text: $29/month
-          - Button:
-              text: Buy Now
-
-Component Shortcuts:
-- Card with title creates CardHeader + CardBody automatically
-- Card: { title: "Title", children: [...] } is shorthand for full structure
-- Panel: { body: "Content" } works similarly
+          - Text: $9/mo
+          - Button: {text: "Buy"}
 
 DataViews for tables:
 DataViews:
-  data:
-    - {id: 1, name: "Item 1", price: "$10"}
-    - {id: 2, name: "Item 2", price: "$20"}
-  columns:
-    - {id: name, label: "Name"}
-    - {id: price, label: "Price"}
+  data: [{id: 1, name: "Item"}]
+  columns: [{id: name, label: "Name"}]
 
-Layout Guidelines:
-- Use Grid for multi-column layouts
-- Use VStack for vertical stacking
-- Use HStack for horizontal alignment
-- Cards should be in Grids, not loose
+Layout: Grid for columns, VStack for vertical, HStack for horizontal. Cards go in Grids.
 
-IMPORTANT: Pass YAML as a string with proper escaping:
-buildFromYAML({ yaml: "Grid:\\n  columns: 3..." })`,
+Pass YAML as string: buildFromYAML({yaml: "Grid:\\n  columns: 3..."})`,
   maxCalls: 5,
   tools: [
     'buildFromYAML',
