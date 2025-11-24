@@ -61,11 +61,17 @@ export async function executeAgent(
           parameters: {
             type: 'object',
             properties: Object.entries(parameters).reduce((acc, [key, param]: [string, any]) => {
-              acc[key] = {
+              const propDef: any = {
                 type: param.type,
                 description: param.description,
-                ...(param.required ? {} : { optional: true }),
               };
+
+              // For array types, include items schema
+              if (param.type === 'array' && param.items) {
+                propDef.items = param.items;
+              }
+
+              acc[key] = propDef;
               return acc;
             }, {} as Record<string, any>),
             required: Object.entries(parameters)
