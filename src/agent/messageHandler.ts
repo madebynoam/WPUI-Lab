@@ -13,38 +13,73 @@ Available tools:
 - Legacy action tools: createComponent, updateComponent, updateMultipleComponents, deleteComponent, duplicateComponent, addInteraction, createPage, switchPage
 - Pattern tools: createPattern - Use this for inserting pre-built component structures
 
-## Tool Selection Strategy
+## Key Components
 
-When a user requests changes, follow this decision tree:
+LAYOUT: Grid, VStack, HStack, Flex
+CONTENT: Text, Heading, Button, Icon
+CONTAINERS: Card (auto-creates CardHeader + CardBody), Panel
+FORMS: TextControl, Button, SelectControl, etc.
+DATA: DataViews (props: dataSource='products'|'blog'|'users', viewType='table'|'grid'|'list')
 
-1. **Pre-built Structures** - Check for patterns FIRST if the request matches these:
-   - "hero", "banner", "landing" → Use pattern: hero-simple or hero-cta
-   - "features", "benefits", "services" (with count 2-4) → Use pattern: feature-cards-2col, feature-cards-3col, or feature-cards-4col
-   - "pricing", "plans", "tiers" → Use pattern: pricing-2col or pricing-3col
-   - "form", "contact", "signup", "subscribe" → Use pattern: contact-form or newsletter-signup
-   - "testimonial", "review", "quote" → Use pattern: testimonial-cards
-   - "call to action", "cta", "signup banner" → Use pattern: cta-banner or cta-centered
-   - "stats", "numbers", "metrics" → Use pattern: stats-4col
-   ACTION: Use createPattern tool
+Use getAvailableComponentTypes tool for full list.
 
-2. **Complex Multi-Step Edits** - For requests involving multiple operations or complex transformations:
-   - Adding/updating/deleting multiple components at once
-   - Reordering components within a container
-   - Bulk property updates across multiple components
-   - Restructuring the component hierarchy
-   - Any atomic operation that needs to happen in one transaction
-   ACTION: Use modifyComponentTree tool
-   WORKFLOW:
-   a. Call getPageComponents to get current tree structure
-   b. Transform the tree JSON to make your changes
-   c. Call modifyComponentTree with the modified tree
-   d. The tool provides comprehensive ComponentNode schema documentation
+## Patterns Available
 
-3. **Simple Single-Component Operations** - For straightforward single-component edits:
-   - Adding one component with basic props
-   - Updating properties on one component
-   - Deleting one component
-   ACTION: Use legacy tools (createComponent, updateComponent, deleteComponent) OR modifyComponentTree
+Use getPatterns tool to see available pre-built patterns (hero sections, forms, pricing tables, etc.)
+
+**IMPORTANT:** Patterns have fixed content. If user wants custom content, build it yourself with createComponent instead.
+
+## How to Build Things
+
+1. **Use patterns** for common layouts if they match exactly (hero, contact form, pricing, etc.) → createPattern tool
+2. **Build custom structures** with multiple createComponent calls (Grid → VStacks → Headings/Text)
+3. **Data tables** → DataViews component with dataSource prop
+4. **Edit existing** components → updateComponent or modifyComponentTree
+
+## Building Custom Structures
+
+When user wants custom content that doesn't match a pattern exactly (e.g., "3 stats" when stats-4col has 4, or custom labels):
+
+**Best Practice:** Use multiple createComponent calls sequentially
+
+**Example Use Cases:**
+
+1. **Custom Stats (3 columns):**
+   User: "Add stats showing: Income This Month, Last Month, Current Products Ordered"
+
+   Step 1: Create a Grid container
+   createComponent({ type: 'Grid', props: { columns: 3, gap: 6 } })
+
+   Step 2: Create first stat VStack inside the Grid
+   createComponent({ type: 'VStack', props: { spacing: 1, alignment: 'center' }, parentId: 'grid-id-from-step1' })
+
+   Step 3: Add Heading and Text inside first VStack
+   createComponent({ type: 'Heading', props: { level: 1, children: '$5,234' }, parentId: 'vstack-id-from-step2' })
+   createComponent({ type: 'Text', props: { children: 'Income This Month' }, parentId: 'vstack-id-from-step2' })
+
+   Step 4: Repeat for other 2 stats with different values
+
+   This approach is MUCH simpler and more reliable than trying to build complex nested structures.
+
+2. **Custom Feature Cards:**
+   User: "Add 3 feature cards for: Speed, Security, Support"
+
+   Step 1: Create Grid
+   createComponent({ type: 'Grid', props: { columns: 3, gap: 6 } })
+
+   Step 2-4: Create 3 Cards inside Grid (they auto-create CardHeader + CardBody)
+   createComponent({ type: 'Card', content: { title: 'Speed', body: 'Lightning fast performance' }, parentId: 'grid-id' })
+   createComponent({ type: 'Card', content: { title: 'Security', body: 'Enterprise-grade security' }, parentId: 'grid-id' })
+   createComponent({ type: 'Card', content: { title: 'Support', body: '24/7 customer support' }, parentId: 'grid-id' })
+
+3. **Data Tables:**
+   User: "Show product sales data in a table"
+   createComponent({ type: 'DataViews', props: { dataSource: 'products', viewType: 'table' } })
+
+**IMPORTANT:**
+- Use createComponent for building custom structures - it's simpler and more reliable
+- modifyComponentTree is ONLY for editing existing components or bulk operations
+- Each createComponent call returns the new component's ID - use it as parentId for children
 
 ## Smart Component Defaults
 
@@ -170,7 +205,83 @@ export async function handleUserMessage(
     // Get tools in LLM format
     const tools = getToolsForLLM();
 
-    // Build conversation messages
+    // === PROMPT REFINEMENT STEP ===
+    // Refine the user's prompt before execution to make it more specific and actionable
+    console.log('[Agent] Starting prompt refinement...');
+
+    const getCurrentPageTool = getTool('getCurrentPage');
+    const getPatternsTool = getTool('getPatterns');
+
+    let currentPageInfo = 'unknown page';
+    let availablePatterns = '';
+
+    if (getCurrentPageTool) {
+      try {
+        const pageResult = await getCurrentPageTool.execute({}, context);
+        if (pageResult.success && pageResult.data) {
+          currentPageInfo = `"${pageResult.data.name}" (${pageResult.data.componentCount || 0} components)`;
+        }
+      } catch (e) {
+        console.warn('[Agent] Failed to get current page:', e);
+      }
+    }
+
+    if (getPatternsTool) {
+      try {
+        const patternsResult = await getPatternsTool.execute({}, context);
+        if (patternsResult.success && patternsResult.data) {
+          availablePatterns = patternsResult.data.categories?.join(', ') || '';
+        }
+      } catch (e) {
+        console.warn('[Agent] Failed to get patterns:', e);
+      }
+    }
+
+    const refinementPrompt = `You are helping refine a user's request for a UI builder application.
+
+Context:
+- Current page: ${currentPageInfo}
+- Available component types: Grid, VStack, HStack, Card, Text, Heading, Button, DataViews, and 40+ more
+- Available pattern categories: ${availablePatterns || 'Heroes, Features, Pricing, Forms, Stats, etc.'}
+- DataViews component for tables (props: dataSource='products'|'blog'|'users', viewType='table'|'grid'|'list')
+
+User's original request: "${userMessage}"
+
+Your task: Refine this request to be MORE SPECIFIC and ACTIONABLE. Consider:
+
+1. **If user wants custom content** (specific labels, titles, text):
+   - Explicitly state "use createComponent" instead of patterns
+   - Example: "Add 3 stats" + user specifies labels → "Create a Grid with 3 columns, then create VStacks with custom Headings/Text for: Income This Month, Last Month, Current Products Ordered"
+
+2. **If user wants data tables** ("sales data", "product list", "table"):
+   - Explicitly mention: "Use DataViews component with dataSource='products' (or 'blog'/'users')"
+
+3. **If user request matches a pattern exactly**:
+   - Mention the pattern: "Use pricing-3col pattern" or "Use contact-form pattern"
+
+4. **Be specific about content**:
+   - Bad: "Add cards"
+   - Good: "Add 3 Cards with titles: Speed, Security, Support"
+
+Respond with ONLY the refined prompt, nothing else. Make it clear, specific, and actionable.`;
+
+    const refinementMessages: LLMMessage[] = [
+      {
+        role: 'user',
+        content: refinementPrompt,
+      },
+    ];
+
+    const refinementResponse = await llm.chat({
+      messages: refinementMessages,
+      temperature: 0.5,
+      max_tokens: 300,
+    });
+
+    const refinedPrompt = refinementResponse.content?.trim() || userMessage;
+    console.log('[Agent] Refined prompt:', refinedPrompt);
+
+    // Build conversation messages with refined prompt
     const messages: LLMMessage[] = [
       {
         role: 'system',
@@ -178,13 +289,13 @@ export async function handleUserMessage(
       },
       {
         role: 'user',
-        content: userMessage,
+        content: refinedPrompt,
       },
     ];
 
     // Determine if this is an action request (should force tool use)
     const actionKeywords = ['add', 'create', 'update', 'delete', 'remove', 'modify', 'change', 'make'];
-    const isActionRequest = actionKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
+    const isActionRequest = actionKeywords.some(keyword => refinedPrompt.toLowerCase().includes(keyword));
 
     // Call LLM
     const chatOptions = {
@@ -303,163 +414,7 @@ export async function handleUserMessage(
       console.warn('[Agent] Max iterations reached, stopping tool execution loop');
     }
 
-    // === REFLECTION STEP ===
-    // TODO: Fix malformed try-catch block - commented out temporarily
-    /*
-    // After executing actions, critique the result and fix issues if needed
-    console.log('[Agent] Checking reflection conditions:', { isActionRequest, iterationCount });
-
-    if (isActionRequest && iterationCount > 0) {
-      console.log('[Agent] Starting reflection step...');
-
-      try {
-        // Get current page components for review
-        const getPageComponentsTool = getTool('getPageComponents');
-        if (getPageComponentsTool) {
-          const componentsResult = await getPageComponentsTool.execute({}, context);
-
-          // Create critic prompt
-          const criticPrompt = `Review the components that were just created/modified:
-
-${JSON.stringify(componentsResult.data, null, 2)}
-
-Check for these common issues:
-1. Generic placeholder text (like "Card Title", "Lorem ipsum", "Click Me", "Text content") in the ACTUAL CONTENT (props.children)
-2. Empty or missing content in Cards, Text, or Headings
-3. Poor layout choices (too many nested containers, incorrect spacing)
-4. Components that don't match the user's request
-
-IMPORTANT:
-- For Text components: The actual text is in props.children, NOT the component name
-- For Heading components: The heading text is in props.children, NOT the component name
-- For Card components: Check the Heading inside CardHeader and Text inside CardBody
-
-If you find ANY issues, respond with a JSON object:
-{
-  "hasIssues": true,
-  "issues": ["description of issue 1", "description of issue 2"],
-  "suggestedFixes": "Use updateComponent to change props.children for Text/Heading components, or use updateComponent on the nested Heading/Text inside Cards"
-}
-
-If everything looks good (meaningful content, appropriate layout, matches request), respond with:
-{
-  "hasIssues": false
-}`;
-
-          // Add critic message
-          messages.push({
-            role: 'user',
-            content: criticPrompt,
-          });
-
-          // Get critique
-          const critiqueResponse = await llm.chat({
-            messages,
-            temperature: 0.3, // Lower temperature for consistent critique
-            max_tokens: 500,
-          });
-
-          console.log('[Agent] Critique response:', critiqueResponse.content);
-
-          // Parse critique
-          try {
-            const critique = JSON.parse(critiqueResponse.content || '{}');
-
-            if (critique.hasIssues) {
-              console.log('[Agent] Issues found, attempting fixes:', critique.issues);
-
-              // Add assistant's critique to messages
-              messages.push({
-                role: 'assistant',
-                content: critiqueResponse.content || '',
-              });
-
-              // Ask agent to fix the issues
-              messages.push({
-                role: 'user',
-                content: `Please fix these issues: ${critique.issues.join(', ')}. ${critique.suggestedFixes}`,
-              });
-
-              // Allow up to 2 fix iterations
-              let fixIterations = 0;
-              const MAX_FIX_ITERATIONS = 2;
-
-              let fixResponse = await llm.chat({
-                messages,
-                tools,
-                temperature: 0.7,
-                max_tokens: 1000,
-                tool_choice: 'required' as const,
-              });
-
-              while (fixResponse.tool_calls && fixResponse.tool_calls.length > 0 && fixIterations < MAX_FIX_ITERATIONS) {
-                fixIterations++;
-                console.log(`[Agent] Fix iteration ${fixIterations}`);
-
-                // Add assistant message with tool calls
-                messages.push({
-                  role: 'assistant',
-                  content: fixResponse.content || '',
-                  tool_calls: fixResponse.tool_calls,
-                });
-
-                // Execute fix tools
-                for (const toolCall of fixResponse.tool_calls) {
-                  const toolName = toolCall.function.name;
-                  const toolArgs = JSON.parse(toolCall.function.arguments);
-
-                  const tool = getTool(toolName);
-                  if (tool) {
-                    try {
-                      const result = await tool.execute(toolArgs, context);
-                      messages.push({
-                        role: 'tool',
-                        tool_call_id: toolCall.id,
-                        content: JSON.stringify(result),
-                      });
-                    } catch (error) {
-                      messages.push({
-                        role: 'tool',
-                        tool_call_id: toolCall.id,
-                        content: JSON.stringify({
-                          success: false,
-                          error: error instanceof Error ? error.message : 'Unknown error',
-                        }),
-                      });
-                    }
-                  }
-                }
-
-                // Get final response after fixes
-                fixResponse = await llm.chat({
-                  messages,
-                  tools,
-                  temperature: 0.7,
-                  max_tokens: 1000,
-                });
-              }
-
-              // Update response with fixed version
-              response = fixResponse;
-              console.log('[Agent] Reflection fixes applied');
-            } else {
-              console.log('[Agent] No issues found in reflection');
-            }
-          } catch (parseError) {
-            console.warn('[Agent] Failed to parse critique, skipping reflection fixes:', parseError);
-          }
-        } else {
-          console.warn('[Agent] getPageComponents tool not found, skipping reflection');
-        }
-    } catch (reflectionError) {
-      console.error('[Agent] Error in reflection step:', reflectionError);
-    }
-  } else {
-    console.log('[Agent] Skipping reflection - conditions not met');
-  }
-  */
-
-  // Return agent response
+    // Return agent response
   return {
       id: `agent-${Date.now()}`,
       role: 'agent',

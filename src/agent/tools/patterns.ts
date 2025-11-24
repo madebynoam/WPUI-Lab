@@ -5,7 +5,7 @@ import { ComponentNode } from '../../types';
 // Get available patterns
 export const getPatternsTool: AgentTool = {
   name: 'getPatterns',
-  description: 'Get list of available pre-built patterns that can be inserted into the page. Patterns are ready-made component structures like contact forms, hero sections, etc.',
+  description: 'Get list of available pre-built patterns that can be inserted into the page. Patterns are ready-made component structures like contact forms, hero sections, etc. Use includeFullTree:true to get the full ComponentNode tree for customization before insertion.',
   category: 'context',
   parameters: {
     category: {
@@ -13,9 +13,44 @@ export const getPatternsTool: AgentTool = {
       description: 'Optional category to filter patterns (e.g., "Forms", "Heroes", "Testimonials")',
       required: false,
     },
+    id: {
+      type: 'string',
+      description: 'Optional pattern ID to get a specific pattern',
+      required: false,
+    },
+    includeFullTree: {
+      type: 'boolean',
+      description: 'If true, includes the full ComponentNode tree structure (without IDs) that can be modified and inserted via modifyComponentTree. Use this when you need to customize pattern content before insertion.',
+      required: false,
+    },
   },
-  execute: async (params: { category?: string }, _context: ToolContext): Promise<ToolResult> => {
+  execute: async (params: { category?: string; id?: string; includeFullTree?: boolean }, _context: ToolContext): Promise<ToolResult> => {
     let filteredPatterns = patterns;
+
+    // Filter by ID if provided
+    if (params.id) {
+      const pattern = patterns.find(p => p.id === params.id);
+      if (!pattern) {
+        return {
+          success: false,
+          message: `Pattern with ID "${params.id}" not found`,
+          error: 'Pattern not found',
+        };
+      }
+
+      return {
+        success: true,
+        message: `Found pattern "${pattern.name}"`,
+        data: {
+          id: pattern.id,
+          name: pattern.name,
+          description: pattern.description,
+          category: pattern.category,
+          structure: describeStructure(pattern.tree),
+          ...(params.includeFullTree ? { tree: pattern.tree } : {}),
+        },
+      };
+    }
 
     // Filter by category if provided
     if (params.category) {
@@ -34,6 +69,7 @@ export const getPatternsTool: AgentTool = {
         name: pattern.name,
         description: pattern.description,
         structure: describeStructure(pattern.tree),
+        ...(params.includeFullTree ? { tree: pattern.tree } : {}),
       });
       return acc;
     }, {} as Record<string, any[]>);
@@ -44,6 +80,7 @@ export const getPatternsTool: AgentTool = {
       description: p.description,
       category: p.category,
       structure: describeStructure(p.tree),
+      ...(params.includeFullTree ? { tree: p.tree } : {}),
     }));
 
     return {

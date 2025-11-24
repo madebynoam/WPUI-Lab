@@ -85,6 +85,14 @@ export const getPageComponentsTool: AgentTool = {
     const pageId = params.pageId || context.currentPageId;
     const page = context.pages.find(p => p.id === pageId);
 
+    console.log('[getPageComponents] Checking page:', {
+      requestedPageId: params.pageId,
+      resolvedPageId: pageId,
+      currentPageId: context.currentPageId,
+      pageName: page?.name,
+      willUseLiveTree: pageId === context.currentPageId,
+    });
+
     if (!page) {
       return {
         success: false,
@@ -93,8 +101,10 @@ export const getPageComponentsTool: AgentTool = {
       };
     }
 
-    // Get root VStack for this page
-    const rootVStack = context.tree.find(n => n.id === ROOT_VSTACK_ID);
+    // Get tree for this page
+    // If it's the current page, use context.tree (live edits), otherwise use page.tree (saved state)
+    const treeToUse = pageId === context.currentPageId ? context.tree : page.tree;
+    const rootVStack = treeToUse.find(n => n.id === ROOT_VSTACK_ID);
 
     if (!rootVStack) {
       return {
@@ -234,6 +244,26 @@ export const searchComponentsTool: AgentTool = {
   execute: async (params: { query: string; pageId?: string }, context: ToolContext): Promise<ToolResult> => {
     const query = params.query.toLowerCase();
 
+    // Determine which tree to search
+    let treeToSearch: typeof context.tree;
+    const searchPageId = params.pageId || context.currentPageId;
+
+    if (searchPageId === context.currentPageId) {
+      // Searching current page - use live tree
+      treeToSearch = context.tree;
+    } else {
+      // Searching a different page - use saved tree
+      const page = context.pages.find(p => p.id === searchPageId);
+      if (!page) {
+        return {
+          success: false,
+          message: `Page with ID "${searchPageId}" not found`,
+          error: 'Page not found',
+        };
+      }
+      treeToSearch = page.tree;
+    }
+
     // Search recursively through tree
     const searchInTree = (nodes: typeof context.tree): any[] => {
       const results: any[] = [];
@@ -260,7 +290,7 @@ export const searchComponentsTool: AgentTool = {
       return results;
     };
 
-    const results = searchInTree(context.tree);
+    const results = searchInTree(treeToSearch);
 
     return {
       success: true,

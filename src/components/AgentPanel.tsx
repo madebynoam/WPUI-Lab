@@ -74,11 +74,20 @@ export const AgentPanel: React.FC = () => {
   // With useReducer, the reducer always receives current state, so no refs needed!
   const createToolContext = useCallback((): ToolContext => {
     return {
-      // Direct access to current state - reducer ensures each action sees updated state
-      tree: componentTreeContext.tree,
-      pages: componentTreeContext.pages,
-      currentPageId: componentTreeContext.currentPageId,
-      selectedNodeIds: componentTreeContext.selectedNodeIds,
+      // Use getters to always return current state (not snapshots!)
+      // This ensures that when createPage switches pages, subsequent tool calls see the new page
+      get tree() {
+        return componentTreeContext.tree;
+      },
+      get pages() {
+        return componentTreeContext.pages;
+      },
+      get currentPageId() {
+        return componentTreeContext.currentPageId;
+      },
+      get selectedNodeIds() {
+        return componentTreeContext.selectedNodeIds;
+      },
 
       // Direct pass-through - agent uses exact same code paths as UI
       getNodeById: componentTreeContext.getNodeById,
