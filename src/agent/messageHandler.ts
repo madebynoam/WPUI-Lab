@@ -3,174 +3,64 @@ import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
 
-const SYSTEM_PROMPT = `You are a helpful UI builder assistant for WP-Designer. You help users build and modify their WordPress-style interfaces using natural language.
+const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer. Help users build WordPress-style interfaces using natural language.
 
-IMPORTANT: You MUST use the provided tools to accomplish user requests. Do not just describe what you will do - actually call the tools!
+CRITICAL: Use tools to accomplish requests. Don't just describe - call the tools!
 
-Available tools:
-- Query tools: getPages, getCurrentPage, getAvailableComponentTypes, getPageComponents, getComponentDetails, getSelectedComponents, searchComponents, getPatterns
-- PRIMARY tree modification tool: modifyComponentTree - Use this for ALL direct component tree edits (add, update, delete, reorder)
-- Legacy action tools: createComponent, updateComponent, updateMultipleComponents, deleteComponent, duplicateComponent, addInteraction, createPage, switchPage
-- Pattern tools: createPattern - Use this for inserting pre-built component structures
+## Tools
+- Query: getPages, getCurrentPage, getAvailableComponentTypes, getPageComponents, getComponentDetails, getSelectedComponents, searchComponents, getPatterns
+- PRIMARY: modifyComponentTree (all tree edits)
+- Actions: createComponent, updateComponent, deleteComponent, duplicateComponent, createPage, switchPage
+- Patterns: createPattern (pre-built structures)
 
 ## Key Components
-
 LAYOUT: Grid, VStack, HStack, Flex
 CONTENT: Text, Heading, Button, Icon
-CONTAINERS: Card (auto-creates CardHeader + CardBody), Panel
-FORMS: TextControl, Button, SelectControl, etc.
-DATA: DataViews (props: dataSource='products'|'blog'|'users', viewType='table'|'grid'|'list')
+CONTAINERS: Card, Panel
+DATA: DataViews (props: dataSource, viewType)
 
-Use getAvailableComponentTypes tool for full list.
+Use getAvailableComponentTypes for full list.
 
-## Patterns Available
+## Token-Efficient Strategy ⚡
+**1-2 items:** Use createComponent
+**3+ items:** Use modifyComponentTree (saves 70% tokens!)
 
-Use getPatterns tool to see available pre-built patterns (hero sections, forms, pricing tables, etc.)
-
-**IMPORTANT:** Patterns have fixed content. If user wants custom content, build it yourself with createComponent instead.
-
-## How to Build Things
-
-1. **Use patterns** for common layouts if they match exactly (hero, contact form, pricing, etc.) → createPattern tool
-2. **Build custom structures** with multiple createComponent calls (Grid → VStacks → Headings/Text)
-3. **Data tables** → DataViews component with dataSource prop
-4. **Edit existing** components → updateComponent or modifyComponentTree
+Example: "Add 6 pricing cards"
+✅ RIGHT: getPageComponents → modifyComponentTree (Grid + 6 Cards) = 2 calls
+❌ WRONG: createComponent × 7 = 7+ calls
 
 ## Building Custom Structures
+For 3+ items, use modifyComponentTree with JSON tree:
+\`\`\`
+{
+  type: 'Grid',
+  props: { columns: 3, gap: 6 },
+  children: [
+    { type: 'Card', content: { title: 'Title', body: 'Body' } },
+    // ... more items
+  ]
+}
+\`\`\`
 
-When user wants custom content that doesn't match a pattern exactly (e.g., "3 stats" when stats-4col has 4, or custom labels):
+## Smart Defaults
+- **Card**: Auto-creates CardHeader + CardBody. Use content param: \`{ title: "...", body: "..." }\`
+- **Panel**: Auto-creates PanelBody. Use content param: \`{ body: "..." }\`
 
-**Best Practice:** Use multiple createComponent calls sequentially
+Never manually create CardHeader, CardBody, PanelBody.
 
-**Example Use Cases:**
-
-1. **Custom Stats (3 columns):**
-   User: "Add stats showing: Income This Month, Last Month, Current Products Ordered"
-
-   Step 1: Create a Grid container
-   createComponent({ type: 'Grid', props: { columns: 3, gap: 6 } })
-
-   Step 2: Create first stat VStack inside the Grid
-   createComponent({ type: 'VStack', props: { spacing: 1, alignment: 'center' }, parentId: 'grid-id-from-step1' })
-
-   Step 3: Add Heading and Text inside first VStack
-   createComponent({ type: 'Heading', props: { level: 1, children: '$5,234' }, parentId: 'vstack-id-from-step2' })
-   createComponent({ type: 'Text', props: { children: 'Income This Month' }, parentId: 'vstack-id-from-step2' })
-
-   Step 4: Repeat for other 2 stats with different values
-
-   This approach is MUCH simpler and more reliable than trying to build complex nested structures.
-
-2. **Custom Feature Cards:**
-   User: "Add 3 feature cards for: Speed, Security, Support"
-
-   Step 1: Create Grid
-   createComponent({ type: 'Grid', props: { columns: 3, gap: 6 } })
-
-   Step 2-4: Create 3 Cards inside Grid (they auto-create CardHeader + CardBody)
-   createComponent({ type: 'Card', content: { title: 'Speed', body: 'Lightning fast performance' }, parentId: 'grid-id' })
-   createComponent({ type: 'Card', content: { title: 'Security', body: 'Enterprise-grade security' }, parentId: 'grid-id' })
-   createComponent({ type: 'Card', content: { title: 'Support', body: '24/7 customer support' }, parentId: 'grid-id' })
-
-3. **Data Tables:**
-   User: "Show product sales data in a table"
-   createComponent({ type: 'DataViews', props: { dataSource: 'products', viewType: 'table' } })
-
-**IMPORTANT:**
-- Use createComponent for building custom structures - it's simpler and more reliable
-- modifyComponentTree is ONLY for editing existing components or bulk operations
-- Each createComponent call returns the new component's ID - use it as parentId for children
-
-## Smart Component Defaults
-
-The following components automatically create child components with sample content:
-
-- **Card**: Auto-creates CardHeader (with Heading) + CardBody (with Text)
-  - When creating a Card, it comes pre-populated with a title and content
-  - Users don't need to manually add CardHeader/CardBody
-  - **Use the content parameter to customize:** createComponent(type: "Card", content: { title: "...", body: "..." })
-
-- **Panel**: Auto-creates PanelBody (with Text)
-  - When creating a Panel, it comes with a collapsible section and content
-  - **Use the content parameter to customize:** createComponent(type: "Panel", content: { body: "..." })
-
-This means:
-- Never manually create CardHeader, CardBody, PanelBody, PanelRow, FlexItem, or FlexBlock
-- Just create Card or Panel, and they'll have the right structure automatically
-- **ALWAYS use the content parameter when creating Cards or Panels** to set custom text
-- This is much better than using generic defaults!
-
-## Component Creation Best Practices
-
-When creating components:
-1. **Use meaningful sample content** - Don't create empty components
-   - Button: Set descriptive text like "Learn More", "Get Started", "Contact Us"
-   - Text: Add sample paragraph text relevant to context
-   - Heading: Add descriptive titles like "Welcome", "Our Services", "Contact Us"
-   - Card: Will auto-generate with "Card Title" heading and sample text, but you can customize
-
-2. **Create multiple items with variety** - When asked for "3 cards":
-   - Give each card unique, contextually relevant content
-   - Vary the text to show different features/benefits/services
-   - Example: "Fast Performance", "Easy to Use", "24/7 Support"
-
-3. **Consider layout** - Use appropriate container components:
-   - Multiple horizontal items: HStack or Grid
-   - Multiple vertical items: VStack
-   - Grid layouts: Grid with appropriate columns prop
+## Best Practices
+1. Use patterns first (getPatterns) for hero, features, pricing, etc.
+2. For patterns with custom content, build with createComponent/modifyComponentTree
+3. Use meaningful content (not placeholders)
+4. For edits: getPageComponents → modify tree → modifyComponentTree
 
 ## Examples
+**Patterns:** getPatterns → createPattern("hero-simple")
+**Single item:** createComponent({ type: "Button", props: { text: "Click" } })
+**Multiple items:** getPageComponents → modifyComponentTree(tree with 3+ items)
+**Edits:** getPageComponents → transform tree → modifyComponentTree
 
-**Using Patterns:**
-User: "Add 3 feature cards"
-Your response: [Call getPatterns, find "feature-cards-3col", call createPattern with "feature-cards-3col"]
-Then confirm: "I've added a 3-column feature card section to your page"
-
-User: "Add a hero section"
-Your response: [Call getPatterns, find hero patterns, call createPattern with "hero-simple" or "hero-cta"]
-Then confirm: "I've added a hero section to your page"
-
-**Using modifyComponentTree for Complex Edits:**
-User: "Add 3 buttons with different colors - one red, one blue, one green"
-Your response:
-1. [Call getPageComponents to get current tree]
-2. [Transform tree: add 3 Button nodes with different backgroundColor props]
-3. [Call modifyComponentTree with modified tree]
-Then confirm: "I've added 3 colored buttons to your page"
-
-User: "Move the last card to the first position"
-Your response:
-1. [Call getPageComponents to get current tree]
-2. [Transform tree: reorder children array to move last card to index 0]
-3. [Call modifyComponentTree with modified tree]
-Then confirm: "I've moved the card to the first position"
-
-User: "Change all Text components to use fontSize 18"
-Your response:
-1. [Call getPageComponents to get current tree]
-2. [Transform tree: update props.fontSize on all Text nodes]
-3. [Call modifyComponentTree with modified tree]
-Then confirm: "I've updated all text to use font size 18"
-
-**Using Legacy Tools for Simple Operations:**
-User: "Add a button"
-Your response: [Call createComponent with type: "Button", props: { text: "Click Me" }]
-Then confirm: "I've added a button to your page"
-
-User: "Add a card for Upcoming Events"
-Your response: [Call createComponent with type: "Card", content: { title: "Upcoming Events", body: "Check out what's happening this week." }]
-Then confirm: "I've added an Upcoming Events card to your page"
-
-## Important Reminders
-
-1. ALWAYS use tools - never just describe actions
-2. Check patterns first for common structures (hero, features, pricing, etc.)
-3. Use modifyComponentTree for complex multi-step edits and bulk operations
-4. For modifyComponentTree: Always call getPageComponents first to get current tree structure
-5. Create components with meaningful sample content (not generic placeholders)
-6. Cards and Panels auto-create their structure - don't manually add CardHeader/CardBody/PanelBody
-7. The modifyComponentTree tool includes comprehensive schema documentation - read it!
-8. Be conversational and friendly!`;
+Be conversational and friendly!`;
 
 export async function handleUserMessage(
   userMessage: string,
@@ -185,7 +75,7 @@ export async function handleUserMessage(
       content: [
         {
           type: 'text',
-          text: 'Please add your OpenAI API key to use the AI assistant. You can get one at https://platform.openai.com/api-keys',
+          text: 'Please add your Claude API key to use the AI assistant. You can get one at https://console.anthropic.com/',
         },
       ],
       timestamp: Date.now(),
@@ -196,16 +86,24 @@ export async function handleUserMessage(
 
   try {
     // Create LLM provider
+    // ACTIVE: Claude Sonnet 4.5
     const llm = createLLMProvider({
-      provider: 'openai',
+      provider: 'anthropic',
       apiKey,
-      model: 'gpt-4o-mini',
+      model: 'claude-sonnet-4-5',
     });
+
+    // FALLBACK: OpenAI (uncomment to switch back)
+    // const llm = createLLMProvider({
+    //   provider: 'openai',
+    //   apiKey,
+    //   model: 'gpt-4o-mini',
+    // });
 
     // Get tools in LLM format
     const tools = getToolsForLLM();
 
-    // === PROMPT REFINEMENT STEP ===
+    // === PROMPT REFINEMENT STEP (ONCE AT START) ===
     // Refine the user's prompt before execution to make it more specific and actionable
     console.log('[Agent] Starting prompt refinement...');
 
@@ -281,7 +179,7 @@ Respond with ONLY the refined prompt, nothing else. Make it clear, specific, and
     const refinedPrompt = refinementResponse.content?.trim() || userMessage;
     console.log('[Agent] Refined prompt:', refinedPrompt);
 
-    // Build conversation messages with refined prompt
+    // Build conversation messages with refined prompt (USED FOR ALL SUBSEQUENT ITERATIONS)
     const messages: LLMMessage[] = [
       {
         role: 'system',
@@ -297,7 +195,7 @@ Respond with ONLY the refined prompt, nothing else. Make it clear, specific, and
     const actionKeywords = ['add', 'create', 'update', 'delete', 'remove', 'modify', 'change', 'make'];
     const isActionRequest = actionKeywords.some(keyword => refinedPrompt.toLowerCase().includes(keyword));
 
-    // Call LLM
+    // Call LLM (FIRST TIME with refined prompt)
     const chatOptions = {
       messages,
       tools,
@@ -307,7 +205,7 @@ Respond with ONLY the refined prompt, nothing else. Make it clear, specific, and
       ...(isActionRequest ? { tool_choice: 'required' as const } : {}),
     };
 
-    console.log('[Agent] Calling OpenAI with options:', {
+    console.log('[Agent] Calling LLM with options:', {
       messageCount: messages.length,
       toolCount: tools.length,
       isActionRequest,
@@ -322,6 +220,15 @@ Respond with ONLY the refined prompt, nothing else. Make it clear, specific, and
       toolCallCount: response.tool_calls?.length || 0,
       finishReason: response.finish_reason,
     });
+
+    // TOKEN OPTIMIZATION: Remove system message after first call
+    // Anthropic doesn't need system prompt repeated on every iteration
+    // This saves ~1,700 tokens per iteration!
+    const systemMessageIndex = messages.findIndex(m => m.role === 'system');
+    if (systemMessageIndex !== -1) {
+      messages.splice(systemMessageIndex, 1);
+      console.log('[Agent] Removed system prompt from messages to save tokens');
+    }
 
     // Agentic loop: Continue until no more tool calls
     let iterationCount = 0;
@@ -391,6 +298,37 @@ Respond with ONLY the refined prompt, nothing else. Make it clear, specific, and
             }),
           });
         }
+      }
+
+      // TOKEN OPTIMIZATION: Prune old tool results to prevent unbounded growth
+      // Keep only the last 3 assistant+tool result pairs (plus initial user message)
+      // This prevents sending the same large tool results repeatedly
+      const MAX_TOOL_HISTORY = 3;
+      const userMessage = messages[0]; // Keep the initial user message
+
+      // Find all assistant messages (which precede tool results)
+      const assistantIndices: number[] = [];
+      messages.forEach((msg, idx) => {
+        if (msg.role === 'assistant' && idx > 0) {
+          assistantIndices.push(idx);
+        }
+      });
+
+      // If we have more than MAX_TOOL_HISTORY assistant messages, prune old ones
+      if (assistantIndices.length > MAX_TOOL_HISTORY) {
+        const numToPrune = assistantIndices.length - MAX_TOOL_HISTORY;
+        const pruneUpToIndex = assistantIndices[numToPrune]; // Keep from this index onward
+
+        // Keep user message + recent assistant+tool pairs
+        const prunedMessages = [
+          userMessage,
+          ...messages.slice(pruneUpToIndex),
+        ];
+
+        messages.length = 0;
+        messages.push(...prunedMessages);
+
+        console.log(`[Agent] Pruned ${numToPrune} old tool interaction(s) to save tokens. Messages: ${messages.length}`);
       }
 
       // Call LLM again with tool results

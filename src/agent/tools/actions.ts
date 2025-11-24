@@ -172,6 +172,158 @@ export const createComponentTool: AgentTool = {
   },
 };
 
+// Batch create multiple components in a single operation
+export const batchCreateComponentsTool: AgentTool = {
+  name: 'batchCreateComponents',
+  description: 'Create multiple components in a single operation (3+ items). This is MUCH more token-efficient than multiple createComponent calls. Use this for bulk operations like "add 6 pricing cards".',
+  category: 'action',
+  parameters: {
+    components: {
+      type: 'array',
+      description: 'Array of component definitions to create',
+      required: true,
+      items: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            description: 'Component type (e.g., "Card", "Button", "VStack")',
+          },
+          props: {
+            type: 'object',
+            description: 'Component properties',
+          },
+          content: {
+            type: 'object',
+            description: 'Content parameter for Cards/Panels (e.g., { title: "...", body: "..." })',
+          },
+          children: {
+            type: 'array',
+            description: 'Nested child components (recursive structure)',
+          },
+          parentId: {
+            type: 'string',
+            description: 'Parent component ID (optional, defaults to root)',
+          },
+          index: {
+            type: 'number',
+            description: 'Position in parent (optional)',
+          },
+        },
+      },
+    },
+  },
+  execute: async (params: any, context: ToolContext): Promise<ToolResult> => {
+    console.log('[batchCreateComponents] Received params:', JSON.stringify(params, null, 2));
+
+    if (!params.components || !Array.isArray(params.components)) {
+      return {
+        success: false,
+        message: 'components parameter must be an array',
+      };
+    }
+
+    const results: any[] = [];
+    const errors: string[] = [];
+
+    // Process each component
+    for (let i = 0; i < params.components.length; i++) {
+      const compDef = params.components[i];
+
+      try {
+        const definition = componentRegistry[compDef.type as keyof typeof componentRegistry];
+        if (!definition) {
+          errors.push(`Component ${i}: Unknown type "${compDef.type}"`);
+          continue;
+        }
+
+        // Generate ID for this component
+        const newComponent: ComponentNode = {
+          id: generateId(),
+          type: compDef.type,
+          name: compDef.name || '',
+          props: { ...compDef.props },
+          children: [],
+          interactions: [],
+        };
+
+        // Handle content parameter for Card/Panel
+        if (compDef.content && (compDef.type === 'Card' || compDef.type === 'Panel')) {
+          if (compDef.type === 'Card' && definition.defaultChildren) {
+            const cardHeader = definition.defaultChildren.find((c: PatternNode) => c.type === 'CardHeader');
+            const cardBody = definition.defaultChildren.find((c: PatternNode) => c.type === 'CardBody');
+
+            if (cardHeader && compDef.content.title) {
+              const headerChild = cardHeader.children?.[0];
+              if (headerChild) {
+                (headerChild.props as any).children = compDef.content.title;
+              }
+            }
+
+            if (cardBody && compDef.content.body) {
+              const bodyChild = cardBody.children?.[0];
+              if (bodyChild) {
+                (bodyChild.props as any).children = compDef.content.body;
+              }
+            }
+          }
+
+          if (compDef.type === 'Panel' && definition.defaultChildren && compDef.content.body) {
+            const panelBody = definition.defaultChildren.find((c: PatternNode) => c.type === 'PanelBody');
+            if (panelBody) {
+              const bodyChild = panelBody.children?.[0];
+              if (bodyChild) {
+                (bodyChild.props as any).children = compDef.content.body;
+              }
+            }
+          }
+        }
+
+        // Add default children
+        if (definition.defaultChildren) {
+          const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
+          newComponent.children = defaultChildrenNodes;
+        }
+
+        // Add custom children if provided
+        if (compDef.children && Array.isArray(compDef.children)) {
+          const customChildren = patternNodesToComponentNodes(compDef.children);
+          newComponent.children.push(...customChildren);
+        }
+
+        // Add to tree
+        context.addComponent(newComponent, compDef.parentId, compDef.index);
+
+        results.push({
+          id: newComponent.id,
+          type: newComponent.type,
+          displayName: definition.name,
+        });
+
+      } catch (error) {
+        errors.push(`Component ${i} (${compDef.type}): ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    if (errors.length > 0 && results.length === 0) {
+      return {
+        success: false,
+        message: 'Failed to create all components',
+        error: errors.join('; '),
+      };
+    }
+
+    return {
+      success: true,
+      message: `Created ${results.length} component${results.length !== 1 ? 's' : ''}${errors.length > 0 ? ` (${errors.length} failed)` : ''}`,
+      data: {
+        created: results,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+    };
+  },
+};
+
 // Update an existing component
 export const updateComponentTool: AgentTool = {
   name: 'updateComponent',

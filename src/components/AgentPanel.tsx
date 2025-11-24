@@ -13,7 +13,7 @@ export const AgentPanel: React.FC = () => {
   const PANEL_WIDTH = 280;
   const componentTreeContext = useComponentTree();
 
-  const [openAIKey, setOpenAIKey] = useState<string>("");
+  const [apiKey, setApiKey] = useState<string>("");
   const [showKey, setShowKey] = useState(false);
 
   // Default welcome message
@@ -23,7 +23,7 @@ export const AgentPanel: React.FC = () => {
     content: [
       {
         type: "text",
-        text: 'Hi! I\'m your AI assistant. I can help you build and modify your UI.\n\nTry asking me:\n• "What pages do I have?"\n• "Add a button to the current page"\n• "Create a new page called About"\n\nType "help" to see everything I can do!',
+        text: 'Hi! I\'m your AI assistant powered by Claude. I can help you build and modify your UI.\n\nTry asking me:\n• "What pages do I have?"\n• "Add a button to the current page"\n• "Create a new page called About"\n\nType "help" to see everything I can do!',
       },
     ],
     timestamp: Date.now(),
@@ -48,11 +48,11 @@ export const AgentPanel: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load OpenAI key from localStorage
+  // Load Claude API key from localStorage
   useEffect(() => {
-    const savedKey = localStorage.getItem("wp-designer-openai-key");
+    const savedKey = localStorage.getItem("wp-designer-claude-key");
     if (savedKey) {
-      setOpenAIKey(savedKey);
+      setApiKey(savedKey);
     }
   }, []);
 
@@ -64,10 +64,10 @@ export const AgentPanel: React.FC = () => {
     );
   }, [messages]);
 
-  // Save OpenAI key to localStorage when it changes
+  // Save Claude API key to localStorage when it changes
   const handleKeyChange = (key: string) => {
-    setOpenAIKey(key);
-    localStorage.setItem("wp-designer-openai-key", key);
+    setApiKey(key);
+    localStorage.setItem("wp-designer-claude-key", key);
   };
 
   // Create tool context from component tree context - simple pass-through to use same code paths as UI
@@ -143,7 +143,7 @@ export const AgentPanel: React.FC = () => {
         const agentResponse = await handleUserMessage(
           userMessageText,
           toolContext,
-          openAIKey
+          apiKey
         );
 
         // Add agent response to chat
@@ -173,7 +173,7 @@ export const AgentPanel: React.FC = () => {
         setIsProcessing(false);
       }
     },
-    [createToolContext, openAIKey]
+    [createToolContext, apiKey]
   );
 
   // Generate contextual suggestions
@@ -197,7 +197,7 @@ export const AgentPanel: React.FC = () => {
         </h3>
       </div>
 
-      {/* OpenAI API Key Input */}
+      {/* Claude API Key Input */}
       <div
         style={{
           padding: "12px",
@@ -214,14 +214,14 @@ export const AgentPanel: React.FC = () => {
             marginBottom: "6px",
           }}
         >
-          OpenAI API Key (temp)
+          Claude API Key
         </label>
         <div style={{ display: "flex", gap: "4px" }}>
           <input
             type={showKey ? "text" : "password"}
-            value={openAIKey}
+            value={apiKey}
             onChange={(e) => handleKeyChange(e.target.value)}
-            placeholder="sk-..."
+            placeholder="sk-ant-..."
             style={{
               flex: 1,
               padding: "6px 8px",

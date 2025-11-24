@@ -16,6 +16,9 @@ import {
 } from './utils/treeHelpers';
 import { validateTree, formatValidationErrors } from './utils/treeValidation';
 
+// Debug flag - set to true to enable console logging
+const DEBUG = false;
+
 // State managed by the reducer
 export interface ComponentTreeState {
   // Core data
@@ -146,13 +149,17 @@ export function componentTreeReducer(
 
     case 'INSERT_COMPONENT': {
       const { node, parentId, index } = action.payload;
-      console.log('[Reducer] INSERT_COMPONENT - Received node:', JSON.stringify(node, null, 2));
-      console.log('[Reducer] INSERT_COMPONENT - Parent ID:', parentId, 'Index:', index);
+      if (DEBUG) {
+        console.log('[Reducer] INSERT_COMPONENT - Received node:', JSON.stringify(node, null, 2));
+        console.log('[Reducer] INSERT_COMPONENT - Parent ID:', parentId, 'Index:', index);
+      }
 
       const currentTree = getCurrentTree(state.pages, state.currentPageId);
 
       const newTree = insertNodeInTree(currentTree, node, parentId, index);
-      console.log('[Reducer] INSERT_COMPONENT - New tree after insertion:', JSON.stringify(newTree, null, 2));
+      if (DEBUG) {
+        console.log('[Reducer] INSERT_COMPONENT - New tree after insertion:', JSON.stringify(newTree, null, 2));
+      }
 
       const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
 
@@ -356,8 +363,49 @@ export function componentTreeReducer(
     }
 
     case 'PASTE_COMPONENT': {
-      const { parentId } = action.payload;
+      let { parentId } = action.payload;
       if (!state.clipboard) return state;
+
+      // If no parentId specified, use smart paste logic
+      if (!parentId && state.selectedNodeIds.length > 0) {
+        const selectedId = state.selectedNodeIds[0];
+        const currentTree = getCurrentTree(state.pages, state.currentPageId);
+
+        // Find selected node and check if it accepts children
+        const findNodeWithParent = (
+          nodes: ComponentNode[],
+          targetId: string,
+          parentId?: string
+        ): { node: ComponentNode; parentId?: string } | null => {
+          for (const node of nodes) {
+            if (node.id === targetId) {
+              return { node, parentId };
+            }
+            if (node.children) {
+              const result = findNodeWithParent(node.children, targetId, node.id);
+              if (result) return result;
+            }
+          }
+          return null;
+        };
+
+        const result = findNodeWithParent(currentTree, selectedId);
+        if (result) {
+          const { node, parentId: nodeParentId } = result;
+          // Import componentRegistry to check if node accepts children
+          const { componentRegistry } = require('./componentRegistry');
+          const definition = componentRegistry[node.type];
+
+          // If selected node is a container, paste inside it
+          if (definition?.acceptsChildren) {
+            parentId = node.id;
+          } else if (nodeParentId) {
+            // Otherwise, paste into the parent of the selected node
+            parentId = nodeParentId;
+          }
+          // If nodeParentId is undefined, it means selected node is at root, so paste at root (parentId stays undefined)
+        }
+      }
 
       // Create a new node with new ID
       const deepCloneWithNewIds = (node: ComponentNode): ComponentNode => ({

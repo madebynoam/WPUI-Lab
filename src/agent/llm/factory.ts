@@ -1,5 +1,6 @@
 import { LLMProvider, LLMConfig } from './types';
 import { OpenAIProvider } from './openai';
+import { AnthropicProvider } from './anthropic';
 
 export function createLLMProvider(config: LLMConfig): LLMProvider {
   switch (config.provider) {
@@ -7,8 +8,7 @@ export function createLLMProvider(config: LLMConfig): LLMProvider {
       return new OpenAIProvider(config.apiKey, config.model);
 
     case 'anthropic':
-      // TODO: Implement AnthropicProvider when needed
-      throw new Error('Anthropic provider not yet implemented');
+      return new AnthropicProvider(config.apiKey, config.model);
 
     default:
       throw new Error(`Unknown LLM provider: ${config.provider}`);

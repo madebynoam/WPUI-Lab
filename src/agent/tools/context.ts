@@ -123,20 +123,52 @@ export const getPageComponentsTool: AgentTool = {
 
     const componentCount = countComponents(rootVStack.children || []);
 
-    // Create simplified tree structure
-    const simplifyTree = (nodes: typeof context.tree): any[] => {
-      return nodes.map(node => ({
-        id: node.id,
-        type: node.type,
-        name: node.name,
-        props: node.props,
-        hasChildren: (node.children?.length || 0) > 0,
-        childCount: node.children?.length || 0,
-        children: node.children ? simplifyTree(node.children) : [],
-      }));
+    // Create simplified tree structure with depth limit to save tokens
+    // TOKEN OPTIMIZATION: Limit depth and truncate props to prevent massive outputs
+    const MAX_DEPTH = 3; // Only go 3 levels deep
+    const simplifyTree = (nodes: typeof context.tree, depth: number = 0): any[] => {
+      if (depth >= MAX_DEPTH) {
+        // At max depth, just return count without recursing
+        return nodes.map(node => ({
+          id: node.id,
+          type: node.type,
+          name: node.name,
+          childCount: node.children?.length || 0,
+          // Omit children to save tokens
+        }));
+      }
+
+      return nodes.map(node => {
+        // Only include essential props (omit large objects/arrays)
+        const essentialProps: Record<string, any> = {};
+        if (node.props) {
+          for (const [key, value] of Object.entries(node.props)) {
+            // Only include simple values (strings, numbers, booleans)
+            // Skip children, complex objects, and large arrays
+            if (key !== 'children' && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
+              // Truncate long strings
+              if (typeof value === 'string' && value.length > 100) {
+                essentialProps[key] = value.substring(0, 100) + '...';
+              } else {
+                essentialProps[key] = value;
+              }
+            }
+          }
+        }
+
+        return {
+          id: node.id,
+          type: node.type,
+          name: node.name,
+          props: essentialProps,
+          hasChildren: (node.children?.length || 0) > 0,
+          childCount: node.children?.length || 0,
+          children: node.children && depth < MAX_DEPTH - 1 ? simplifyTree(node.children, depth + 1) : [],
+        };
+      });
     };
 
-    const simplified = simplifyTree(rootVStack.children || []);
+    const simplified = simplifyTree(rootVStack.children || [], 0);
 
     return {
       success: true,

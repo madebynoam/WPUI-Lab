@@ -1,17 +1,23 @@
-import { LLMProvider, LLMChatOptions, LLMResponse } from './types';
+import { LLMProvider, LLMChatOptions, LLMResponse } from "./types";
 
 export class OpenAIProvider implements LLMProvider {
-  name = 'openai';
+  name = "openai";
   private apiKey: string;
   private model: string;
 
-  constructor(apiKey: string, model: string = 'gpt-4o-mini') {
+  constructor(apiKey: string, model: string = "gpt-5-nano") {
     this.apiKey = apiKey;
     this.model = model;
   }
 
   async chat(options: LLMChatOptions): Promise<LLMResponse> {
-    const { messages, tools, temperature = 0.7, max_tokens = 1000, tool_choice } = options;
+    const {
+      messages,
+      tools,
+      temperature = 0.7,
+      max_tokens = 1000,
+      tool_choice,
+    } = options;
 
     const requestBody: any = {
       model: this.model,
@@ -23,21 +29,25 @@ export class OpenAIProvider implements LLMProvider {
     // Add tools if provided
     if (tools && tools.length > 0) {
       requestBody.tools = tools;
-      requestBody.tool_choice = tool_choice || 'auto';
+      requestBody.tool_choice = tool_choice || "auto";
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
-      throw new Error(error.error?.message || `OpenAI API error: ${response.status}`);
+      const error = await response
+        .json()
+        .catch(() => ({ error: { message: response.statusText } }));
+      throw new Error(
+        error.error?.message || `OpenAI API error: ${response.status}`
+      );
     }
 
     const data = await response.json();

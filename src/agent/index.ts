@@ -11,6 +11,7 @@ import {
 } from './tools/context';
 import {
   createComponentTool,
+  batchCreateComponentsTool,
   updateComponentTool,
   deleteComponentTool,
   duplicateComponentTool,
@@ -44,6 +45,7 @@ registerTool(modifyComponentTreeTool);
 
 // Register legacy action tools (for backward compatibility - will be deprecated)
 registerTool(createComponentTool);
+registerTool(batchCreateComponentsTool);
 registerTool(updateComponentTool);
 registerTool(updateMultipleComponentsTool);
 registerTool(deleteComponentTool);
