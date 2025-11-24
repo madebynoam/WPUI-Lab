@@ -93,8 +93,10 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
   // Handle Button text prop
   if (node.type === 'Button') {
-    const text = props.text || 'Button';
-    delete props.text;
+    // Merge with defaultProps to ensure variant='primary' is applied by default
+    const mergedProps = { ...definition.defaultProps, ...props };
+    const text = mergedProps.text || 'Button';
+    delete mergedProps.text;
 
     return (
       <div
@@ -111,7 +113,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         }}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
-        <Component {...props}>{text}</Component>
+        <Component {...mergedProps}>{text}</Component>
       </div>
     );
   }
