@@ -25,16 +25,14 @@ Available components: Grid, VStack, HStack, Card, Panel, Text, Heading, Button, 
 
 Cards auto-create CardHeader/CardBody. Use shortcuts: Card: { title: "Title", children: [...] }
 
-DataViews displays tables/grids with sorting and pagination. For custom data:
+DataViews displays tables/grids with sorting and pagination. Just provide data:
 DataViews:
-  dataSource: custom
-  viewType: table
-  columns:
-    - {id: name, label: "Name"}
-    - {id: price, label: "Price"}
   data:
     - {id: 1, name: "Item 1", price: "$10"}
     - {id: 2, name: "Item 2", price: "$20"}
+  columns:
+    - {id: name, label: "Name"}
+    - {id: price, label: "Price"}
 
 Be conversational and friendly!`;
 

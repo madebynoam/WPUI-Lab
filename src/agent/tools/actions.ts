@@ -28,7 +28,7 @@ function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNod
 // Create a new component
 export const createComponentTool: AgentTool = {
   name: 'createComponent',
-  description: 'Create a new component and add it to the tree. IMPORTANT: Always use the "content" parameter for Card and Panel components to set custom text instead of generic placeholders!',
+  description: 'Create a SINGLE component. For 3+ components, use buildFromYAML instead (much more efficient). IMPORTANT: Always use the "content" parameter for Card and Panel components to set custom text instead of generic placeholders!',
   category: 'action',
   parameters: {
     type: {
@@ -176,7 +176,7 @@ export const createComponentTool: AgentTool = {
 // Batch create multiple components in a single operation
 export const batchCreateComponentsTool: AgentTool = {
   name: 'batchCreateComponents',
-  description: 'Create multiple components in a single operation (3+ items). This is MUCH more token-efficient than multiple createComponent calls. Use this for bulk operations like "add 6 pricing cards".',
+  description: 'DEPRECATED: Use buildFromYAML instead! buildFromYAML is more reliable and token-efficient for bulk operations. This tool has known bugs with content handling.',
   category: 'action',
   parameters: {
     components: {
@@ -942,7 +942,7 @@ export const updatePageThemeTool: AgentTool = {
 // Build component tree from YAML DSL (token-efficient bulk operations)
 export const buildFromYAMLTool: AgentTool = {
   name: 'buildFromYAML',
-  description: 'Build component tree from YAML DSL - use this for 3+ components! YAML is 20% more token-efficient. Pass the YAML structure as the "yaml" parameter. Example: {yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Basic\\n        children:\\n          - Text: Content"}',
+  description: '🎯 PRIMARY TOOL for creating multiple components! Use this for ANY bulk operation (3+ items). YAML is 20% more token-efficient and more reliable than other tools. Pass YAML as the "yaml" parameter. Example: {yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Spring Special\\n        children:\\n          - Text: 20% off!\\n          - Button:\\n              text: Shop Now"}',
   category: 'action',
   parameters: {
     yaml: {
