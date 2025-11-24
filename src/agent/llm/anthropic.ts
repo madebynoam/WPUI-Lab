@@ -23,6 +23,7 @@ export class AnthropicProvider implements LLMProvider {
       temperature = 0.7,
       max_tokens = 1000,
       tool_choice,
+      signal,
     } = options;
 
     // Extract system message (Claude requires it as a separate parameter)
@@ -119,6 +120,7 @@ export class AnthropicProvider implements LLMProvider {
         "anthropic-dangerous-direct-browser-access": "true",
       },
       body: JSON.stringify(requestBody),
+      signal,
     });
 
     if (!response.ok) {

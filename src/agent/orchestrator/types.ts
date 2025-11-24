@@ -122,6 +122,7 @@ export interface AgentExecutorOptions {
   context: ToolContext;
   apiKey: string;
   previousResults?: AgentResult[]; // Results from dependent tasks
+  signal?: AbortSignal; // For stop button support
 }
 
 /**

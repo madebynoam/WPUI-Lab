@@ -18,6 +18,26 @@ export const AgentPanel: React.FC = () => {
   const [openaiApiKey, setOpenaiApiKey] = useState<string>("");
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
 
+  // Progress state
+  const [progressState, setProgressState] = useState<{
+    isProcessing: boolean;
+    phase: string | null;
+    agent: string | null;
+    current: number;
+    total: number;
+    message: string;
+  }>({
+    isProcessing: false,
+    phase: null,
+    agent: null,
+    current: 0,
+    total: 0,
+    message: ''
+  });
+
+  // Abort controller for stop button
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+
   // Default welcome message
   const defaultWelcomeMessage: AgentMessage = {
     id: "welcome",
@@ -86,6 +106,22 @@ export const AgentPanel: React.FC = () => {
     localStorage.setItem("wp-designer-openai-key", key);
   };
 
+  // Handle stop button
+  const handleStop = useCallback(() => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      setProgressState({
+        isProcessing: false,
+        phase: null,
+        agent: null,
+        current: 0,
+        total: 0,
+        message: ''
+      });
+    }
+  }, [abortController]);
+
   // Create tool context from component tree context - simple pass-through to use same code paths as UI
   // With useReducer, the reducer always receives current state, so no refs needed!
   const createToolContext = useCallback((): ToolContext => {
@@ -150,8 +186,21 @@ export const AgentPanel: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, userMessage]);
-      setIsProcessing(true);
       setError(null);
+
+      // Create abort controller for stop button
+      const controller = new AbortController();
+      setAbortController(controller);
+
+      // Set initial progress state
+      setProgressState({
+        isProcessing: true,
+        phase: null,
+        agent: null,
+        current: 0,
+        total: 0,
+        message: 'Starting...'
+      });
 
       try {
         // Process message and get agent response
@@ -160,12 +209,29 @@ export const AgentPanel: React.FC = () => {
           userMessageText,
           toolContext,
           apiKey,
-          openaiApiKey
+          openaiApiKey,
+          (update) => {
+            setProgressState({
+              isProcessing: true,
+              phase: update.phase,
+              agent: update.agent || null,
+              current: update.current || 0,
+              total: update.total || 0,
+              message: update.message
+            });
+          },
+          controller.signal
         );
 
         // Add agent response to chat
         setMessages((prev) => [...prev, agentResponse]);
       } catch (err) {
+        // Handle abort (user clicked stop) - don't show error
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.log("Request aborted by user");
+          return;
+        }
+
         console.error("Error processing message:", err);
         setError(err instanceof Error ? err.message : "An error occurred");
 
@@ -187,7 +253,15 @@ export const AgentPanel: React.FC = () => {
         };
         setMessages((prev) => [...prev, errorMessage]);
       } finally {
-        setIsProcessing(false);
+        setAbortController(null);
+        setProgressState({
+          isProcessing: false,
+          phase: null,
+          agent: null,
+          current: 0,
+          total: 0,
+          message: ''
+        });
       }
     },
     [createToolContext, apiKey, openaiApiKey]
@@ -326,11 +400,29 @@ export const AgentPanel: React.FC = () => {
           padding: "8px",
         }}
       >
+        {/* Progress indicator */}
+        {progressState.isProcessing && progressState.message && (
+          <div style={{
+            padding: '8px 12px',
+            borderBottom: '1px solid #e0e0e0',
+            fontSize: '11px',
+            color: '#666',
+            backgroundColor: '#f9fafb'
+          }}>
+            {progressState.agent && progressState.total > 0 ? (
+              <span>{progressState.agent} ({progressState.current}/{progressState.total})</span>
+            ) : (
+              <span>{progressState.message}</span>
+            )}
+          </div>
+        )}
+
         <AgentUI
           messages={messages}
-          isProcessing={isProcessing}
+          isProcessing={progressState.isProcessing}
           error={error}
           onSubmit={handleSubmit}
+          onStop={handleStop}
           suggestions={suggestions}
           clearSuggestions={() => {
             // Suggestions are regenerated each render, no need to clear

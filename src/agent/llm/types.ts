@@ -42,6 +42,7 @@ export interface LLMChatOptions {
   temperature?: number;
   max_tokens?: number;
   tool_choice?: 'auto' | 'required' | 'none';
+  signal?: AbortSignal;
 }
 
 export interface LLMProvider {

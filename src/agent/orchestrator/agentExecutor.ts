@@ -26,7 +26,7 @@ function estimateTokens(text: string): number {
 export async function executeAgent(
   options: AgentExecutorOptions
 ): Promise<AgentResult> {
-  const { task, config, context, apiKey, previousResults = [] } = options;
+  const { task, config, context, apiKey, previousResults = [], signal } = options;
 
   const startTime = Date.now();
   let totalInputTokens = 0;
@@ -116,6 +116,7 @@ export async function executeAgent(
       temperature: 0.7,
       max_tokens: 1000,
       ...(forceToolUse ? { tool_choice: 'required' } : {}),
+      signal,
     });
 
     // Estimate output tokens
@@ -200,6 +201,7 @@ export async function executeAgent(
         tools: tools as any,
         temperature: 0.7,
         max_tokens: 1000,
+        signal,
       });
 
       // Estimate output tokens

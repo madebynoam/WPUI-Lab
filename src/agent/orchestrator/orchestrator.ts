@@ -4,6 +4,7 @@ import {
   AgentResult,
   UserIntent,
   MODEL_PRICING,
+  ProgressUpdate,
 } from './types';
 import { parseIntent, planTasks, getAgentConfig } from './taskRouter';
 import { executeAgent } from './agentExecutor';
@@ -30,7 +31,9 @@ export async function handleOrchestratedRequest(
   userMessage: string,
   context: ToolContext,
   claudeApiKey: string,
-  openaiApiKey: string
+  openaiApiKey: string,
+  onProgress?: (update: ProgressUpdate) => void,
+  signal?: AbortSignal
 ): Promise<OrchestratorResult> {
   const startTime = Date.now();
   const MAX_CALLS = 25;
@@ -42,8 +45,14 @@ export async function handleOrchestratedRequest(
   console.log('[Orchestrator] Processing request:', userMessage);
 
   try {
+    // Check if aborted before starting
+    if (signal?.aborted) {
+      throw new Error('Request aborted');
+    }
+
     // STEP 1: Parse user intent with Haiku
     console.log('[Orchestrator] Parsing intent with Haiku...');
+    onProgress?.({ phase: 'intent', message: 'Parsing intent...' });
 
     const haiku = createLLMProvider({
       provider: 'anthropic',
@@ -95,6 +104,7 @@ Example:
       ],
       temperature: 0.3,
       max_tokens: 500,
+      signal,
     });
 
     // Track orchestrator costs
@@ -128,8 +138,14 @@ Example:
       orchestratorCost: `$${orchestratorCost.toFixed(4)}`,
     });
 
+    // Check if aborted after intent parsing
+    if (signal?.aborted) {
+      throw new Error('Request aborted');
+    }
+
     // STEP 2: Plan tasks
     console.log('[Orchestrator] Planning tasks...');
+    onProgress?.({ phase: 'planning', message: 'Planning tasks...' });
     const tasks = planTasks(intent);
 
     console.log('[Orchestrator] Planned tasks:', tasks.map(t => ({
@@ -139,10 +155,24 @@ Example:
     })));
 
     // STEP 3: Execute agents
+    console.log('[Orchestrator] Executing agents...');
+    onProgress?.({
+      phase: 'executing',
+      message: 'Executing agents...',
+      total: tasks.length
+    });
+
     const agentResults: AgentResult[] = [];
     const completedTaskIds = new Set<string>();
 
-    for (const task of tasks) {
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+
+      // Check if aborted before each agent
+      if (signal?.aborted) {
+        throw new Error('Request aborted');
+      }
+
       // Check if we've hit the call limit
       if (totalCalls >= MAX_CALLS) {
         console.warn('[Orchestrator] Max calls reached, stopping execution');
@@ -165,6 +195,13 @@ Example:
       const config = getAgentConfig(task.type);
 
       console.log(`[Orchestrator] Executing ${task.type} agent for task ${task.id}...`);
+      onProgress?.({
+        phase: 'executing',
+        agent: `${config.type} agent`,
+        current: i + 1,
+        total: tasks.length,
+        message: `Running ${config.type} agent...`
+      });
 
       // Execute agent
       const result = await executeAgent({
@@ -173,6 +210,7 @@ Example:
         context,
         apiKey: openaiApiKey,
         previousResults: agentResults,
+        signal,
       });
 
       agentResults.push(result);

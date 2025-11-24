@@ -17,6 +17,7 @@ export class OpenAIProvider implements LLMProvider {
       temperature = 0.7,
       max_tokens = 1000,
       tool_choice,
+      signal,
     } = options;
 
     const requestBody: any = {
@@ -44,6 +45,7 @@ export class OpenAIProvider implements LLMProvider {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(requestBody),
+      signal,
     });
 
     if (!response.ok) {
