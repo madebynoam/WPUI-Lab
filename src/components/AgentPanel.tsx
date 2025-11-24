@@ -238,7 +238,7 @@ export const AgentPanel: React.FC = () => {
                       {
                         type: "text",
                         text: update.agent && update.total
-                          ? `${update.agent} (${update.current}/${update.total})`
+                          ? `${update.agent} (${update.current}/${update.total}): ${update.message}`
                           : update.message,
                       },
                     ],
