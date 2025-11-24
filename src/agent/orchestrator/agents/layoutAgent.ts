@@ -19,7 +19,7 @@ export const layoutAgentConfig: AgentConfig = {
   type: 'layout',
   model: {
     provider: 'openai',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-nano',
   },
   systemPrompt: `You are a Layout Agent for WP-Designer. Your job is to validate and enforce layout rules.
 

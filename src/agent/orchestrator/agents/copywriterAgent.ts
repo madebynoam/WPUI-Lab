@@ -18,7 +18,7 @@ export const copywriterAgentConfig: AgentConfig = {
   type: 'copywriter',
   model: {
     provider: 'openai',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-nano',
   },
   systemPrompt: `You are a Copywriter Agent for WP-Designer. Your job is to generate compelling, clear text for UI components.
 

@@ -21,7 +21,7 @@ export const contextAgentConfig: AgentConfig = {
   type: 'context',
   model: {
     provider: 'openai',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-nano',
   },
   systemPrompt: `You are a Context Agent for WP-Designer. Your job is to gather information about the current page state.
 

@@ -13,17 +13,21 @@ function estimateTokens(text: string): number {
 const MODEL_PRICING = {
   // Anthropic models
   'claude-sonnet-4-5': {
-    input: 0.001,   // $1.00 per MTok
-    output: 0.005,  // $5.00 per MTok
+    input: 0.003,   // $3.00 per MTok (EXPENSIVE - avoid for agents)
+    output: 0.015,  // $15.00 per MTok
   },
   'claude-haiku-4-5': {
-    input: 0.00025, // $0.25 per MTok
-    output: 0.00125, // $1.25 per MTok
+    input: 0.001,   // $1.00 per MTok (orchestrator)
+    output: 0.005,  // $5.00 per MTok
   },
   // OpenAI models
+  'gpt-5-nano': {
+    input: 0.00005, // $0.05 per MTok (CHEAPEST - use for simple agents)
+    output: 0.0004, // $0.40 per MTok
+  },
   'gpt-4o-mini': {
-    input: 0.00005, // $0.05 per MTok
-    output: 0.0004,  // $0.40 per MTok
+    input: 0.00025, // $0.25 per MTok
+    output: 0.0025, // $2.50 per MTok
   },
 };
 

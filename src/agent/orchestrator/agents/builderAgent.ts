@@ -19,7 +19,7 @@ export const builderAgentConfig: AgentConfig = {
   type: 'builder',
   model: {
     provider: 'openai',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-nano',
   },
   systemPrompt: `You are a Component Builder Agent for WP-Designer. Your job is to build UI components using YAML DSL.
 
