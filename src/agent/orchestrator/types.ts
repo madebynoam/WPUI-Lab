@@ -123,6 +123,7 @@ export interface AgentExecutorOptions {
   apiKey: string;
   previousResults?: AgentResult[]; // Results from dependent tasks
   signal?: AbortSignal; // For stop button support
+  onProgress?: (message: string) => void; // For detailed progress updates
 }
 
 /**

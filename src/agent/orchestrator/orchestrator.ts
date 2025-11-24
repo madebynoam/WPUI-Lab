@@ -211,6 +211,15 @@ Example:
         apiKey: openaiApiKey,
         previousResults: agentResults,
         signal,
+        onProgress: (message) => {
+          onProgress?.({
+            phase: 'executing',
+            agent: `${config.type} agent`,
+            current: i + 1,
+            total: tasks.length,
+            message,
+          });
+        },
       });
 
       agentResults.push(result);

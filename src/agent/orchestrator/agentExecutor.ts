@@ -26,7 +26,7 @@ function estimateTokens(text: string): number {
 export async function executeAgent(
   options: AgentExecutorOptions
 ): Promise<AgentResult> {
-  const { task, config, context, apiKey, previousResults = [], signal } = options;
+  const { task, config, context, apiKey, previousResults = [], signal, onProgress } = options;
 
   const startTime = Date.now();
   let totalInputTokens = 0;
@@ -110,6 +110,7 @@ export async function executeAgent(
     const forceToolUse = config.type === 'builder' && tools.length > 0;
 
     // Call LLM
+    onProgress?.(`${config.type} agent: analyzing...`);
     let response = await llm.chat({
       messages,
       tools: tools as any,
@@ -155,6 +156,7 @@ export async function executeAgent(
         const toolArgs = JSON.parse(toolCall.function.arguments);
 
         console.log(`[AgentExecutor] Executing tool: ${toolName}`);
+        onProgress?.(`${config.type} agent: ${toolName}...`);
 
         // Get the tool
         const tool = getTool(toolName);
