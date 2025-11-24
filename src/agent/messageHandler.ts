@@ -3,6 +3,15 @@ import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
 
+// Token estimation utility (rough estimate: 4 chars ≈ 1 token)
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+// Pricing for Claude Sonnet 4.5
+const PRICE_PER_1K_INPUT = 0.001; // $1 per million tokens
+const PRICE_PER_1K_OUTPUT = 0.005; // $5 per million tokens
+
 const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer.
 
 CRITICAL: Use buildFromYAML to build UIs. Pass YAML as the "yaml" parameter!
@@ -90,20 +99,38 @@ export async function handleUserMessage(
       ...(isActionRequest ? { tool_choice: 'required' as const } : {}),
     };
 
+    // Token tracking
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+
+    // Estimate input tokens for first call (system + user message + tool definitions)
+    const systemPromptTokens = estimateTokens(SYSTEM_PROMPT);
+    const userMessageTokens = estimateTokens(userMessage);
+    const toolsTokens = estimateTokens(JSON.stringify(tools));
+    const firstCallInputTokens = systemPromptTokens + userMessageTokens + toolsTokens;
+    totalInputTokens += firstCallInputTokens;
+
     console.log('[Agent] Calling LLM with options:', {
       messageCount: messages.length,
       toolCount: tools.length,
       isActionRequest,
       hasToolChoice: chatOptions.tool_choice !== undefined,
+      estimatedInputTokens: firstCallInputTokens,
     });
 
     let response = await llm.chat(chatOptions);
 
-    console.log('[Agent] OpenAI response:', {
+    // Estimate output tokens
+    const firstOutputTokens = estimateTokens(response.content || '') +
+      estimateTokens(JSON.stringify(response.tool_calls || []));
+    totalOutputTokens += firstOutputTokens;
+
+    console.log('[Agent] Response received:', {
       hasContent: !!response.content,
       hasToolCalls: !!response.tool_calls,
       toolCallCount: response.tool_calls?.length || 0,
       finishReason: response.finish_reason,
+      estimatedOutputTokens: firstOutputTokens,
     });
 
     // TOKEN OPTIMIZATION: Remove system message after first call
@@ -218,6 +245,10 @@ export async function handleUserMessage(
 
       // Call LLM again with tool results
       // Keep tools available so it can make more calls if needed
+      // Estimate input tokens for iteration (messages + tools)
+      const iterationInputTokens = estimateTokens(JSON.stringify(messages)) + toolsTokens;
+      totalInputTokens += iterationInputTokens;
+
       response = await llm.chat({
         messages,
         tools,
@@ -225,17 +256,40 @@ export async function handleUserMessage(
         max_tokens: 1000,
       });
 
-      console.log(`[Agent] LLM response after iteration ${iterationCount}:`, {
+      // Estimate output tokens for iteration
+      const iterationOutputTokens = estimateTokens(response.content || '') +
+        estimateTokens(JSON.stringify(response.tool_calls || []));
+      totalOutputTokens += iterationOutputTokens;
+
+      console.log(`[Agent] Response after iteration ${iterationCount}:`, {
         hasContent: !!response.content,
         hasToolCalls: !!response.tool_calls,
         toolCallCount: response.tool_calls?.length || 0,
         finishReason: response.finish_reason,
+        estimatedInputTokens: iterationInputTokens,
+        estimatedOutputTokens: iterationOutputTokens,
       });
     }
 
     if (iterationCount >= MAX_ITERATIONS) {
       console.warn('[Agent] Max iterations reached, stopping tool execution loop');
     }
+
+    // Calculate estimated cost
+    const estimatedInputCost = (totalInputTokens / 1000) * PRICE_PER_1K_INPUT;
+    const estimatedOutputCost = (totalOutputTokens / 1000) * PRICE_PER_1K_OUTPUT;
+    const totalEstimatedCost = estimatedInputCost + estimatedOutputCost;
+
+    console.log('[Agent] 💰 Request Summary:', {
+      totalIterations: iterationCount + 1,
+      estimatedInputTokens: totalInputTokens,
+      estimatedOutputTokens: totalOutputTokens,
+      totalEstimatedTokens: totalInputTokens + totalOutputTokens,
+      estimatedInputCost: `$${estimatedInputCost.toFixed(4)}`,
+      estimatedOutputCost: `$${estimatedOutputCost.toFixed(4)}`,
+      totalEstimatedCost: `$${totalEstimatedCost.toFixed(4)}`,
+      pricing: 'Claude Sonnet 4.5: $1/1M input, $5/1M output',
+    });
 
     // Return agent response
   return {
