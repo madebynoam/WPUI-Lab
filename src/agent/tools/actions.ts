@@ -942,7 +942,7 @@ export const updatePageThemeTool: AgentTool = {
 // Build component tree from YAML DSL (token-efficient bulk operations)
 export const buildFromYAMLTool: AgentTool = {
   name: 'buildFromYAML',
-  description: 'Build component tree from YAML DSL. Use this for 3+ components! YAML is 20% more token-efficient than JSON for Claude. Format: component name as key, props as object, children as array. Example: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Basic\\n        children:\\n          - Text: Content here"',
+  description: 'Build component tree from YAML DSL - use this for 3+ components! YAML is 20% more token-efficient. Pass the YAML structure as the "yaml" parameter. Example: {yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Basic\\n        children:\\n          - Text: Content"}',
   category: 'action',
   parameters: {
     yaml: {
@@ -958,6 +958,15 @@ export const buildFromYAMLTool: AgentTool = {
   },
   execute: async (params: any, context: ToolContext): Promise<ToolResult> => {
     console.log('[buildFromYAML] Received YAML:', params.yaml);
+
+    // Validate yaml parameter
+    if (!params.yaml || typeof params.yaml !== 'string') {
+      return {
+        success: false,
+        message: 'Missing required "yaml" parameter. Pass YAML string as: {yaml: "Grid:\\n  columns: 3..."}',
+        error: `The yaml parameter is required but received: ${typeof params.yaml}`,
+      };
+    }
 
     try {
       // Parse YAML
@@ -1021,15 +1030,15 @@ export const buildFromYAMLTool: AgentTool = {
               // Extract props and children
               const { children, title, price, body, ...otherProps } = componentData;
 
-              // Handle Card/Panel content shortcuts
-              if (componentType === 'Card' && (title || price || body)) {
-                // Don't add to props - will be handled by default children customization below
-                node.props = { ...otherProps };
-              } else {
-                node.props = { ...otherProps };
-                if (children) {
-                  node.children = Array.isArray(children) ? children.map(parseComponent) : [parseComponent(children)];
-                }
+              // Set all props (including title if present)
+              node.props = { ...otherProps };
+              if (title !== undefined) node.props.title = title;
+              if (price !== undefined) node.props.price = price;
+              if (body !== undefined) node.props.body = body;
+
+              // Parse children
+              if (children) {
+                node.children = Array.isArray(children) ? children.map(parseComponent) : [parseComponent(children)];
               }
             } else if (Array.isArray(componentData)) {
               // Array of children
@@ -1070,64 +1079,77 @@ export const buildFromYAMLTool: AgentTool = {
         };
 
         // Handle Card/Panel content shortcuts from YAML
-        const componentData = Object.values(parsed)[0];
-        if (typeof componentData === 'object' && !Array.isArray(componentData)) {
-          if (pattern.type === 'Card' && (componentData.title || componentData.body)) {
-            // Add default children for Card
-            if (definition.defaultChildren) {
-              const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
+        if (pattern.type === 'Card' && pattern.props.title && pattern.children && pattern.children.length > 0) {
+          // Card with BOTH title and custom children - wrap children in CardHeader + CardBody
+          const cardHeader: ComponentNode = {
+            id: generateId(),
+            type: 'CardHeader',
+            name: '',
+            props: {},
+            children: [{
+              id: generateId(),
+              type: 'Heading',
+              name: '',
+              props: { children: pattern.props.title, level: 3 },
+              children: [],
+              interactions: [],
+            }],
+            interactions: [],
+          };
 
-              // Customize with title/body
-              if (componentData.title) {
-                const cardHeader = defaultChildrenNodes.find(c => c.type === 'CardHeader');
-                if (cardHeader) {
-                  const heading = cardHeader.children.find(c => c.type === 'Heading');
-                  if (heading) {
-                    heading.props.children = componentData.title;
-                  }
-                }
-              }
+          const cardBody: ComponentNode = {
+            id: generateId(),
+            type: 'CardBody',
+            name: '',
+            props: {},
+            children: pattern.children.map(createComponentNode),
+            interactions: [],
+          };
 
-              if (componentData.body) {
-                const cardBody = defaultChildrenNodes.find(c => c.type === 'CardBody');
-                if (cardBody) {
-                  const text = cardBody.children.find(c => c.type === 'Text');
-                  if (text) {
-                    text.props.children = componentData.body;
-                  }
-                }
-              }
+          node.children = [cardHeader, cardBody];
+          // Remove title from props since we used it
+          delete node.props.title;
+        } else if (pattern.type === 'Card' && pattern.props.title && pattern.props.body) {
+          // Card with title/body shortcuts - use default children and customize
+          if (definition.defaultChildren) {
+            const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
 
-              node.children = defaultChildrenNodes;
+            const cardHeader = defaultChildrenNodes.find(c => c.type === 'CardHeader');
+            if (cardHeader) {
+              const heading = cardHeader.children.find(c => c.type === 'Heading');
+              if (heading) heading.props.children = pattern.props.title;
             }
-          } else if (pattern.type === 'Panel' && componentData.body) {
-            // Add default children for Panel
-            if (definition.defaultChildren) {
-              const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
 
-              const panelBody = defaultChildrenNodes.find(c => c.type === 'PanelBody');
-              if (panelBody && componentData.body) {
-                const text = panelBody.children.find(c => c.type === 'Text');
-                if (text) {
-                  text.props.children = componentData.body;
-                }
-              }
+            const cardBody = defaultChildrenNodes.find(c => c.type === 'CardBody');
+            if (cardBody) {
+              const text = cardBody.children.find(c => c.type === 'Text');
+              if (text) text.props.children = pattern.props.body;
+            }
 
-              node.children = defaultChildrenNodes;
-            }
-          } else {
-            // Add default children if no custom children provided
-            if (definition.defaultChildren && (!pattern.children || pattern.children.length === 0)) {
-              const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
-              node.children = defaultChildrenNodes;
-            }
+            node.children = defaultChildrenNodes;
+            delete node.props.title;
+            delete node.props.body;
           }
-        }
-
-        // Add custom children
-        if (pattern.children && pattern.children.length > 0) {
+        } else if (pattern.type === 'Panel' && pattern.props.body) {
+          // Panel with body shortcut
+          if (definition.defaultChildren) {
+            const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
+            const panelBody = defaultChildrenNodes.find(c => c.type === 'PanelBody');
+            if (panelBody) {
+              const text = panelBody.children.find(c => c.type === 'Text');
+              if (text) text.props.children = pattern.props.body;
+            }
+            node.children = defaultChildrenNodes;
+            delete node.props.body;
+          }
+        } else if (pattern.children && pattern.children.length > 0) {
+          // Custom children provided
           const customChildren = pattern.children.map(createComponentNode);
-          node.children.push(...customChildren);
+          node.children = customChildren;
+        } else if (definition.defaultChildren) {
+          // No custom children - use defaults
+          const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
+          node.children = defaultChildrenNodes;
         }
 
         return node;

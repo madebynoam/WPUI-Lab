@@ -3,82 +3,18 @@ import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
 
-const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer. Help users build WordPress-style interfaces using natural language.
+const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer.
 
-CRITICAL: Use tools to accomplish requests. Don't just describe - call the tools!
+CRITICAL: Use buildFromYAML to build UIs. Pass YAML as the "yaml" parameter!
 
-## Tools
-- Query: getPages, getCurrentPage, getAvailableComponentTypes, getPageComponents, getComponentDetails, getSelectedComponents, searchComponents, getPatterns
-- PRIMARY: buildFromYAML (YAML DSL - 20% more token-efficient!), modifyComponentTree
-- Actions: createComponent, updateComponent, deleteComponent, duplicateComponent, createPage, switchPage
-- Patterns: createPattern (pre-built structures)
+Example:
+buildFromYAML({
+  yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Starter\\n        children:\\n          - Text: $9/mo\\n          - Button:\\n              text: Buy Now\\n    - Card:\\n        title: Pro\\n        children:\\n          - Text: $29/mo\\n          - Button:\\n              text: Buy Now\\n    - Card:\\n        title: Enterprise\\n        children:\\n          - Text: $99/mo\\n          - Button:\\n              text: Buy Now"
+})
 
-## Key Components
-LAYOUT: Grid, VStack, HStack, Flex
-CONTENT: Text, Heading, Button, Icon
-CONTAINERS: Card, Panel
-DATA: DataViews (props: dataSource, viewType)
+Available components: Grid, VStack, HStack, Card, Panel, Text, Heading, Button, Icon
 
-Use getAvailableComponentTypes for full list.
-
-## Token-Efficient Strategy ⚡
-**1-2 items:** Use createComponent
-**3+ items:** Use buildFromYAML (YAML is 20% more efficient than JSON for Claude!)
-
-Example: "Add 6 pricing cards"
-✅ RIGHT: buildFromYAML = 1 call, ~400 tokens
-❌ WRONG: createComponent × 7 = 7+ calls, ~5000+ tokens
-
-## Building with YAML DSL
-For 3+ items, use buildFromYAML with YAML:
-\`\`\`yaml
-Grid:
-  columns: 6
-  gap: 4
-  children:
-    - Card:
-        title: Basic
-        price: $9/mo
-        children:
-          - VStack:
-              children:
-                - Text: "✓ 10GB Storage"
-                - Text: "✓ Email Support"
-                - Text: "✓ Basic Features"
-          - Button:
-              variant: primary
-              text: Buy Now
-    - Card:
-        title: Pro
-        price: $29/mo
-        children:
-          - VStack:
-              children:
-                - Text: "✓ 100GB Storage"
-                - Text: "✓ Priority Support"
-          - Button:
-              variant: primary
-              text: Buy Now
-    # ... 4 more cards
-\`\`\`
-
-## Smart Defaults
-- **Card**: Auto-creates CardHeader + CardBody. Use title/body shortcuts: \`Card: { title: "...", body: "..." }\`
-- **Panel**: Auto-creates PanelBody. Use body shortcut: \`Panel: { body: "..." }\`
-
-Never manually create CardHeader, CardBody, PanelBody.
-
-## Best Practices
-1. Use patterns first (getPatterns) for hero, features, pricing, etc.
-2. For 3+ custom items, always use buildFromYAML (most efficient!)
-3. Use meaningful content (not placeholders)
-4. For edits: getPageComponents → modifyComponentTree
-
-## Examples
-**Patterns:** getPatterns → createPattern("hero-simple")
-**Single item:** createComponent({ type: "Button", props: { text: "Click" } })
-**3+ items:** buildFromYAML(YAML string with Grid + Cards)
-**Edits:** getPageComponents → modifyComponentTree
+Cards auto-create CardHeader/CardBody. Use shortcuts: Card: { title: "Title", children: [...] }
 
 Be conversational and friendly!`;
 
@@ -123,83 +59,12 @@ export async function handleUserMessage(
     // Get tools in LLM format
     const tools = getToolsForLLM();
 
-    // === PROMPT REFINEMENT STEP (ONCE AT START) ===
-    // Refine the user's prompt before execution to make it more specific and actionable
-    console.log('[Agent] Starting prompt refinement...');
+    // === PROMPT REFINEMENT STEP (DISABLED FOR NOW) ===
+    // Skipping refinement to reduce confusion - going straight to user's message
+    // const getCurrentPageTool = getTool('getCurrentPage');
+    // ... (refinement code commented out)
 
-    const getCurrentPageTool = getTool('getCurrentPage');
-    const getPatternsTool = getTool('getPatterns');
-
-    let currentPageInfo = 'unknown page';
-    let availablePatterns = '';
-
-    if (getCurrentPageTool) {
-      try {
-        const pageResult = await getCurrentPageTool.execute({}, context);
-        if (pageResult.success && pageResult.data) {
-          currentPageInfo = `"${pageResult.data.name}" (${pageResult.data.componentCount || 0} components)`;
-        }
-      } catch (e) {
-        console.warn('[Agent] Failed to get current page:', e);
-      }
-    }
-
-    if (getPatternsTool) {
-      try {
-        const patternsResult = await getPatternsTool.execute({}, context);
-        if (patternsResult.success && patternsResult.data) {
-          availablePatterns = patternsResult.data.categories?.join(', ') || '';
-        }
-      } catch (e) {
-        console.warn('[Agent] Failed to get patterns:', e);
-      }
-    }
-
-    const refinementPrompt = `You are helping refine a user's request for a UI builder application.
-
-Context:
-- Current page: ${currentPageInfo}
-- Available component types: Grid, VStack, HStack, Card, Text, Heading, Button, DataViews, and 40+ more
-- Available pattern categories: ${availablePatterns || 'Heroes, Features, Pricing, Forms, Stats, etc.'}
-- DataViews component for tables (props: dataSource='products'|'blog'|'users', viewType='table'|'grid'|'list')
-
-User's original request: "${userMessage}"
-
-Your task: Refine this request to be MORE SPECIFIC and ACTIONABLE. Consider:
-
-1. **If user wants custom content** (specific labels, titles, text):
-   - Explicitly state "use createComponent" instead of patterns
-   - Example: "Add 3 stats" + user specifies labels → "Create a Grid with 3 columns, then create VStacks with custom Headings/Text for: Income This Month, Last Month, Current Products Ordered"
-
-2. **If user wants data tables** ("sales data", "product list", "table"):
-   - Explicitly mention: "Use DataViews component with dataSource='products' (or 'blog'/'users')"
-
-3. **If user request matches a pattern exactly**:
-   - Mention the pattern: "Use pricing-3col pattern" or "Use contact-form pattern"
-
-4. **Be specific about content**:
-   - Bad: "Add cards"
-   - Good: "Add 3 Cards with titles: Speed, Security, Support"
-
-Respond with ONLY the refined prompt, nothing else. Make it clear, specific, and actionable.`;
-
-    const refinementMessages: LLMMessage[] = [
-      {
-        role: 'user',
-        content: refinementPrompt,
-      },
-    ];
-
-    const refinementResponse = await llm.chat({
-      messages: refinementMessages,
-      temperature: 0.5,
-      max_tokens: 300,
-    });
-
-    const refinedPrompt = refinementResponse.content?.trim() || userMessage;
-    console.log('[Agent] Refined prompt:', refinedPrompt);
-
-    // Build conversation messages with refined prompt (USED FOR ALL SUBSEQUENT ITERATIONS)
+    // Build conversation messages with user's original message
     const messages: LLMMessage[] = [
       {
         role: 'system',
@@ -207,15 +72,15 @@ Respond with ONLY the refined prompt, nothing else. Make it clear, specific, and
       },
       {
         role: 'user',
-        content: refinedPrompt,
+        content: userMessage,
       },
     ];
 
     // Determine if this is an action request (should force tool use)
     const actionKeywords = ['add', 'create', 'update', 'delete', 'remove', 'modify', 'change', 'make'];
-    const isActionRequest = actionKeywords.some(keyword => refinedPrompt.toLowerCase().includes(keyword));
+    const isActionRequest = actionKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
 
-    // Call LLM (FIRST TIME with refined prompt)
+    // Call LLM with user's original message
     const chatOptions = {
       messages,
       tools,
