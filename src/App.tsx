@@ -17,13 +17,22 @@ function AppContent() {
   const [showInserter, setShowInserter] = useState(false);
   const [showTreePanel, setShowTreePanel] = useState(true);
   const [showHeader, setShowHeader] = useState(true);
-  const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'agent' | 'none'>('props');
+  const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'agent' | 'none'>(() => {
+    // Load saved panel from localStorage, default to 'props'
+    const saved = localStorage.getItem('wp-designer-right-panel');
+    return (saved as 'props' | 'code' | 'agent' | 'none') || 'props';
+  });
   const [rightPanelWidth, setRightPanelWidth] = useState(() => {
     // Load saved width from localStorage, default to 280
     const saved = localStorage.getItem('wp-designer-code-panel-width');
     return saved ? parseInt(saved, 10) : 280;
   });
   const [isResizing, setIsResizing] = useState(false);
+
+  // Save right panel selection to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('wp-designer-right-panel', rightPanel);
+  }, [rightPanel]);
 
   // Save code panel width to localStorage whenever it changes
   useEffect(() => {

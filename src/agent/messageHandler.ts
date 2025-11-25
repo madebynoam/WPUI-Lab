@@ -2,7 +2,7 @@ import { AgentMessage, ToolContext, ToolResult } from './types';
 import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
-import { handleOrchestratedRequest } from './orchestrator/orchestrator';
+import { handleHybridRequest } from './orchestrator/hybridOrchestrator';
 
 // Token estimation utility (rough estimate: 4 chars ≈ 1 token)
 function estimateTokens(text: string): number {
@@ -106,38 +106,25 @@ export async function handleUserMessage(
   }
 
   try {
-    // === v3.0 MULTI-AGENT ORCHESTRATOR ===
+    // === v3.0 HYBRID ORCHESTRATOR (Deterministic Tools + Small Agents) ===
     if (USE_ORCHESTRATOR) {
-      console.log('[Agent] Using v3.0 multi-agent orchestrator');
+      console.log('[Agent] Using v3.0 hybrid orchestrator (tools + agents)');
 
-      const result = await handleOrchestratedRequest(
+      const result = await handleHybridRequest(
         userMessage,
         context,
         claudeApiKey!,
-        openaiApiKey!,
         onProgress,
         signal
       );
 
       // Log cost breakdown
-      console.log('[Agent] 💰 Multi-Agent Summary:', {
-        totalCalls: result.totalCalls,
-        totalTokens: result.totalInputTokens + result.totalOutputTokens,
-        inputTokens: result.totalInputTokens,
-        outputTokens: result.totalOutputTokens,
-        totalCost: `$${result.totalCost.toFixed(4)}`,
-        duration: `${result.totalDuration}ms`,
-      });
-
-      console.log('[Agent] 📊 Model Breakdown:');
-      result.modelBreakdown.forEach(breakdown => {
-        const pricing = MODEL_PRICING[breakdown.model];
-        console.log(`  ${breakdown.model}:`, {
-          calls: breakdown.calls,
-          tokens: breakdown.inputTokens + breakdown.outputTokens,
-          cost: `$${breakdown.cost.toFixed(4)}`,
-          pricing: `$${pricing.input}/1K in, $${pricing.output}/1K out`,
-        });
+      console.log('[Agent] 💰 Hybrid Orchestrator Summary:', {
+        source: result.source,
+        agent: result.agent || 'N/A',
+        cost: `$${result.cost.toFixed(6)}`,
+        duration: `${result.duration}ms`,
+        success: result.success,
       });
 
       return {

@@ -735,6 +735,386 @@ export const patterns: Pattern[] = [
       ],
     },
   },
+
+  // Data Tables (DataViews)
+  {
+    id: 'product-table',
+    name: 'Product Table',
+    description: 'Product catalog table with name, price, and stock status',
+    category: 'Tables',
+    tree: {
+      type: 'DataViews',
+      props: {
+        dataSource: 'custom',
+        data: [
+          { id: 1, name: 'Rose Bundle', price: '$39.99', stock: 'In Stock', category: 'Flowers' },
+          { id: 2, name: 'Tulip Set', price: '$29.99', stock: 'Low Stock', category: 'Flowers' },
+          { id: 3, name: 'Orchid Collection', price: '$49.99', stock: 'In Stock', category: 'Flowers' },
+          { id: 4, name: 'Sunflower Bunch', price: '$24.99', stock: 'In Stock', category: 'Flowers' },
+          { id: 5, name: 'Lily Arrangement', price: '$34.99', stock: 'Out of Stock', category: 'Flowers' },
+        ],
+        columns: [
+          { id: 'name', label: 'Product Name' },
+          { id: 'price', label: 'Price' },
+          { id: 'stock', label: 'Availability' },
+          { id: 'category', label: 'Category' },
+        ],
+        viewType: 'table',
+        itemsPerPage: 10,
+      },
+      children: [],
+    },
+  },
+
+  {
+    id: 'user-table',
+    name: 'User Directory Table',
+    description: 'User directory with name, email, and role',
+    category: 'Tables',
+    tree: {
+      type: 'DataViews',
+      props: {
+        dataSource: 'custom',
+        data: [
+          { id: 1, name: 'Sarah Johnson', email: 'sarah@example.com', role: 'Admin', status: 'Active' },
+          { id: 2, name: 'Michael Chen', email: 'michael@example.com', role: 'Editor', status: 'Active' },
+          { id: 3, name: 'Emily Davis', email: 'emily@example.com', role: 'Contributor', status: 'Active' },
+          { id: 4, name: 'James Wilson', email: 'james@example.com', role: 'Subscriber', status: 'Inactive' },
+          { id: 5, name: 'Lisa Anderson', email: 'lisa@example.com', role: 'Editor', status: 'Active' },
+        ],
+        columns: [
+          { id: 'name', label: 'Name' },
+          { id: 'email', label: 'Email' },
+          { id: 'role', label: 'Role' },
+          { id: 'status', label: 'Status' },
+        ],
+        viewType: 'table',
+        itemsPerPage: 10,
+      },
+      children: [],
+    },
+  },
+
+  {
+    id: 'invoice-table',
+    name: 'Invoice Table',
+    description: 'Invoice list with date, amount, and status',
+    category: 'Tables',
+    tree: {
+      type: 'DataViews',
+      props: {
+        dataSource: 'custom',
+        data: [
+          { id: 1, invoice: 'INV-001', date: '2025-01-15', amount: '$1,250.00', status: 'Paid', customer: 'Acme Corp' },
+          { id: 2, invoice: 'INV-002', date: '2025-01-18', amount: '$890.50', status: 'Pending', customer: 'Tech Solutions' },
+          { id: 3, invoice: 'INV-003', date: '2025-01-20', amount: '$2,100.00', status: 'Paid', customer: 'Global Industries' },
+          { id: 4, invoice: 'INV-004', date: '2025-01-22', amount: '$675.25', status: 'Overdue', customer: 'SmallBiz LLC' },
+          { id: 5, invoice: 'INV-005', date: '2025-01-24', amount: '$1,450.00', status: 'Paid', customer: 'Enterprise Inc' },
+        ],
+        columns: [
+          { id: 'invoice', label: 'Invoice #' },
+          { id: 'customer', label: 'Customer' },
+          { id: 'date', label: 'Date' },
+          { id: 'amount', label: 'Amount' },
+          { id: 'status', label: 'Status' },
+        ],
+        viewType: 'table',
+        itemsPerPage: 10,
+      },
+      children: [],
+    },
+  },
+
+  {
+    id: 'flower-catalog',
+    name: 'Flower Catalog',
+    description: 'Comprehensive flower catalog with varieties and details',
+    category: 'Tables',
+    tree: {
+      type: 'DataViews',
+      props: {
+        dataSource: 'custom',
+        data: [
+          { id: 1, name: 'Red Roses', variety: 'Rosa', price: '$45.00', season: 'Year-round', availability: 'In Stock' },
+          { id: 2, name: 'White Tulips', variety: 'Tulipa', price: '$32.00', season: 'Spring', availability: 'In Stock' },
+          { id: 3, name: 'Purple Orchids', variety: 'Orchidaceae', price: '$58.00', season: 'Year-round', availability: 'Limited' },
+          { id: 4, name: 'Yellow Sunflowers', variety: 'Helianthus', price: '$28.00', season: 'Summer', availability: 'In Stock' },
+          { id: 5, name: 'Pink Peonies', variety: 'Paeonia', price: '$52.00', season: 'Spring', availability: 'Pre-order' },
+          { id: 6, name: 'White Lilies', variety: 'Lilium', price: '$38.00', season: 'Year-round', availability: 'In Stock' },
+        ],
+        columns: [
+          { id: 'name', label: 'Flower Name' },
+          { id: 'variety', label: 'Variety' },
+          { id: 'price', label: 'Price' },
+          { id: 'season', label: 'Season' },
+          { id: 'availability', label: 'Availability' },
+        ],
+        viewType: 'table',
+        itemsPerPage: 10,
+      },
+      children: [],
+    },
+  },
+
+  // Dashboards
+  {
+    id: 'dashboard-overview',
+    name: 'Dashboard Overview',
+    description: 'Overview dashboard with stats cards and recent activity',
+    category: 'Dashboards',
+    tree: {
+      type: 'VStack',
+      props: { spacing: 6 },
+      children: [
+        {
+          type: 'Heading',
+          props: { level: 1, children: 'Dashboard' },
+          children: [],
+        },
+        {
+          type: 'Grid',
+          props: { columns: 4, gap: 4 },
+          children: [
+            {
+              type: 'Card',
+              props: {},
+              children: [
+                {
+                  type: 'CardBody',
+                  props: {},
+                  children: [
+                    {
+                      type: 'VStack',
+                      props: { spacing: 2 },
+                      children: [
+                        {
+                          type: 'Text',
+                          props: { children: 'Total Users', variant: 'muted' },
+                          children: [],
+                        },
+                        {
+                          type: 'Heading',
+                          props: { level: 2, children: '2,543' },
+                          children: [],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'Card',
+              props: {},
+              children: [
+                {
+                  type: 'CardBody',
+                  props: {},
+                  children: [
+                    {
+                      type: 'VStack',
+                      props: { spacing: 2 },
+                      children: [
+                        {
+                          type: 'Text',
+                          props: { children: 'Revenue', variant: 'muted' },
+                          children: [],
+                        },
+                        {
+                          type: 'Heading',
+                          props: { level: 2, children: '$45,231' },
+                          children: [],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'Card',
+              props: {},
+              children: [
+                {
+                  type: 'CardBody',
+                  props: {},
+                  children: [
+                    {
+                      type: 'VStack',
+                      props: { spacing: 2 },
+                      children: [
+                        {
+                          type: 'Text',
+                          props: { children: 'Active Now', variant: 'muted' },
+                          children: [],
+                        },
+                        {
+                          type: 'Heading',
+                          props: { level: 2, children: '124' },
+                          children: [],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'Card',
+              props: {},
+              children: [
+                {
+                  type: 'CardBody',
+                  props: {},
+                  children: [
+                    {
+                      type: 'VStack',
+                      props: { spacing: 2 },
+                      children: [
+                        {
+                          type: 'Text',
+                          props: { children: 'Growth', variant: 'muted' },
+                          children: [],
+                        },
+                        {
+                          type: 'Heading',
+                          props: { level: 2, children: '+12.5%' },
+                          children: [],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    id: 'dashboard-analytics',
+    name: 'Analytics Dashboard',
+    description: 'Analytics dashboard with KPI cards and chart placeholders',
+    category: 'Dashboards',
+    tree: {
+      type: 'VStack',
+      props: { spacing: 6 },
+      children: [
+        {
+          type: 'Heading',
+          props: { level: 1, children: 'Analytics' },
+          children: [],
+        },
+        {
+          type: 'Grid',
+          props: { columns: 3, gap: 4 },
+          children: [
+            {
+              type: 'Card',
+              props: {},
+              children: [
+                {
+                  type: 'CardHeader',
+                  props: {},
+                  children: [
+                    {
+                      type: 'Heading',
+                      props: { level: 3, children: 'Page Views' },
+                      children: [],
+                    },
+                  ],
+                },
+                {
+                  type: 'CardBody',
+                  props: {},
+                  children: [
+                    {
+                      type: 'Heading',
+                      props: { level: 1, children: '45,231' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '+20.1% from last month', variant: 'muted' },
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'Card',
+              props: {},
+              children: [
+                {
+                  type: 'CardHeader',
+                  props: {},
+                  children: [
+                    {
+                      type: 'Heading',
+                      props: { level: 3, children: 'Bounce Rate' },
+                      children: [],
+                    },
+                  ],
+                },
+                {
+                  type: 'CardBody',
+                  props: {},
+                  children: [
+                    {
+                      type: 'Heading',
+                      props: { level: 1, children: '42%' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '-5.4% from last month', variant: 'muted' },
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'Card',
+              props: {},
+              children: [
+                {
+                  type: 'CardHeader',
+                  props: {},
+                  children: [
+                    {
+                      type: 'Heading',
+                      props: { level: 3, children: 'Avg Session' },
+                      children: [],
+                    },
+                  ],
+                },
+                {
+                  type: 'CardBody',
+                  props: {},
+                  children: [
+                    {
+                      type: 'Heading',
+                      props: { level: 1, children: '3m 24s' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '+12% from last month', variant: 'muted' },
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 // Pattern categories for organization
@@ -746,4 +1126,6 @@ export const patternCategories = [
   'Testimonials',
   'CTAs',
   'Stats',
+  'Tables',
+  'Dashboards',
 ];
