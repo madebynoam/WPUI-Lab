@@ -32,11 +32,12 @@ export const AgentPanel: React.FC = () => {
     agent: null,
     current: 0,
     total: 0,
-    message: ''
+    message: "",
   });
 
   // Abort controller for stop button
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [abortController, setAbortController] =
+    useState<AbortController | null>(null);
 
   // Default welcome message
   const defaultWelcomeMessage: AgentMessage = {
@@ -45,7 +46,7 @@ export const AgentPanel: React.FC = () => {
     content: [
       {
         type: "text",
-        text: 'Hi! I\'m your AI assistant powered by Claude. I can help you build and modify your UI.\n\nTry asking me:\n• "What pages do I have?"\n• "Add a button to the current page"\n• "Create a new page called About"\n\nType "help" to see everything I can do!',
+        text: "Hi! I'm your AI assistant. I can help you build and modify your UI.",
       },
     ],
     timestamp: Date.now(),
@@ -116,7 +117,7 @@ export const AgentPanel: React.FC = () => {
         agent: null,
         current: 0,
         total: 0,
-        message: ''
+        message: "",
       });
     }
   }, [abortController]);
@@ -169,6 +170,35 @@ export const AgentPanel: React.FC = () => {
     async (userMessageText: string) => {
       if (!userMessageText.trim()) return;
 
+      // Handle commands (messages starting with "/")
+      if (userMessageText.startsWith("/")) {
+        const command = userMessageText.toLowerCase().trim();
+
+        if (command === "/clear") {
+          // Clear messages and reset to welcome message
+          setMessages([defaultWelcomeMessage]);
+          localStorage.removeItem("wp-designer-agent-messages");
+          return;
+        }
+
+        // Unknown command
+        const errorMessage: AgentMessage = {
+          id: `error-${Date.now()}`,
+          role: "agent",
+          content: [
+            {
+              type: "text",
+              text: `Unknown command: ${userMessageText}\n\nAvailable commands:\n• /clear - Clear chat history`,
+            },
+          ],
+          timestamp: Date.now(),
+          archived: false,
+          showIcon: true,
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        return;
+      }
+
       // Add user message to chat
       const userMessage: AgentMessage = {
         id: `user-${Date.now()}`,
@@ -215,7 +245,7 @@ export const AgentPanel: React.FC = () => {
         agent: null,
         current: 0,
         total: 0,
-        message: 'Starting...'
+        message: "Starting...",
       });
 
       try {
@@ -227,24 +257,27 @@ export const AgentPanel: React.FC = () => {
           apiKey,
           openaiApiKey,
           (update) => {
-            console.log('[AgentPanel] Progress update:', update);
+            console.log("[AgentPanel] Progress update:", update);
 
             // Update progress message in chat
-            setMessages((prev) => prev.map(msg =>
-              msg.id === progressMessageId
-                ? {
-                    ...msg,
-                    content: [
-                      {
-                        type: "text",
-                        text: update.agent && update.total
-                          ? `${update.agent} (${update.current}/${update.total}): ${update.message}`
-                          : update.message,
-                      },
-                    ],
-                  }
-                : msg
-            ));
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === progressMessageId
+                  ? {
+                      ...msg,
+                      content: [
+                        {
+                          type: "text",
+                          text:
+                            update.agent && update.total
+                              ? `${update.agent} (${update.current}/${update.total}): ${update.message}`
+                              : update.message,
+                        },
+                      ],
+                    }
+                  : msg
+              )
+            );
 
             setProgressState({
               isProcessing: true,
@@ -252,23 +285,27 @@ export const AgentPanel: React.FC = () => {
               agent: update.agent || null,
               current: update.current || 0,
               total: update.total || 0,
-              message: update.message
+              message: update.message,
             });
           },
           controller.signal
         );
 
         // Remove progress message and add actual response
-        setMessages((prev) => prev.filter(msg => msg.id !== progressMessageId));
+        setMessages((prev) =>
+          prev.filter((msg) => msg.id !== progressMessageId)
+        );
 
         // Add agent response to chat
         setMessages((prev) => [...prev, agentResponse]);
       } catch (err) {
         // Remove progress message
-        setMessages((prev) => prev.filter(msg => msg.id !== progressMessageId));
+        setMessages((prev) =>
+          prev.filter((msg) => msg.id !== progressMessageId)
+        );
 
         // Handle abort (user clicked stop) - don't show error
-        if (err instanceof Error && err.name === 'AbortError') {
+        if (err instanceof Error && err.name === "AbortError") {
           console.log("Request aborted by user");
           return;
         }
@@ -301,7 +338,7 @@ export const AgentPanel: React.FC = () => {
           agent: null,
           current: 0,
           total: 0,
-          message: ''
+          message: "",
         });
       }
     },

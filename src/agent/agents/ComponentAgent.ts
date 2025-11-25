@@ -162,7 +162,7 @@ ${patternList}
 Available component types:
 - Layout: VStack, HStack, Grid, Box, Divider
 - Typography: Heading (level 1-6), Text
-- Interactive: Button, Link
+- Interactive: Button (use "text" prop, NOT "label"), Link
 - Forms: Input, Textarea, Select, Checkbox, FormControl, FormLabel
 - Data: DataViews, Badge
 - Containers: Card, CardHeader, CardBody
