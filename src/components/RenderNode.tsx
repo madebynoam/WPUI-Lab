@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { usePlayModeState } from '../PlayModeContext';
 import { ComponentNode } from '../types';
@@ -6,15 +6,187 @@ import { componentRegistry } from '../componentRegistry';
 import * as wpIcons from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
+import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } from '../utils/treeHelpers';
+import { useSelection } from './SelectionContext';
 
 export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
   const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, setPlayMode, updateComponentProps, setCurrentPage } = useComponentTree();
   const playModeState = usePlayModeState();
   const definition = componentRegistry[node.type];
 
+  // Shared click tracking for Figma-style selection
+  const { lastClickTimeRef, lastClickedIdRef } = useSelection();
+
   if (!definition) {
     return <div>Unknown component: {node.type}</div>;
   }
+
+  // Figma-style selection handler: Single click selects container, double click drills down
+  const handleComponentClick = useCallback((e: React.MouseEvent, hitTargetId: string) => {
+    e.stopPropagation();
+
+    // Preserve existing behavior for play mode and modifier keys
+    if (isPlayMode) {
+      executeInteractions(node.interactions);
+      return;
+    }
+
+    // Multi-select and range select bypass Figma-style selection
+    if (e.metaKey || e.ctrlKey || e.shiftKey) {
+      const multiSelect = e.metaKey || e.ctrlKey;
+      const rangeSelect = e.shiftKey;
+      toggleNodeSelection(hitTargetId, multiSelect, rangeSelect, tree);
+      return;
+    }
+
+    // Double-click detection (350ms window)
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTimeRef.current;
+    const isDoubleClick =
+      timeSinceLastClick < 350 &&
+      lastClickedIdRef.current === hitTargetId;
+
+    console.log('[Figma Selection] Click event:', {
+      hitTargetId,
+      timeSinceLastClick,
+      isDoubleClick,
+      lastClickedId: lastClickedIdRef.current,
+      currentSelection: selectedNodeIds[0],
+    });
+
+    if (isDoubleClick) {
+      console.log('[Figma Selection] DOUBLE CLICK detected');
+      // DOUBLE CLICK: Drill down from current selection
+      const currentSelection = selectedNodeIds[0];
+
+      if (currentSelection && currentSelection !== hitTargetId) {
+        // Find path from current selection to hit target
+        const path = findPathBetweenNodes(tree, currentSelection, hitTargetId);
+        console.log('[Figma Selection] Path from current to target:', path.map(n => ({ id: n.id, type: n.type })));
+
+        if (path.length > 1) {
+          // Drill to next level (direct child in path)
+          const nextLevel = path[1];
+          console.log('[Figma Selection] Drilling to next level:', { id: nextLevel.id, type: nextLevel.type });
+          toggleNodeSelection(nextLevel.id, false, false, tree);
+        } else {
+          // No path found (maybe clicking outside current selection), select top container
+          console.log('[Figma Selection] No path found, selecting top container');
+          const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
+          console.log('[Figma Selection] Top container found:', topContainer ? { id: topContainer.id, type: topContainer.type } : null);
+          if (topContainer) {
+            toggleNodeSelection(topContainer.id, false, false, tree);
+          }
+        }
+      } else {
+        console.log('[Figma Selection] Double-clicking already selected element');
+        // Double-clicking already selected element - can't drill further
+        // Do nothing (already selected)
+      }
+
+      // Reset click tracking
+      lastClickTimeRef.current = 0;
+      lastClickedIdRef.current = null;
+    } else {
+      console.log('[Figma Selection] SINGLE CLICK detected');
+
+      // Check if clicked element is inside current selection
+      const currentSelection = selectedNodeIds[0];
+      if (currentSelection) {
+        const path = findPathBetweenNodes(tree, currentSelection, hitTargetId);
+        console.log('[Figma Selection] Path from current selection to clicked element:', path.map(n => ({ id: n.id, type: n.type })));
+
+        if (path.length > 0) {
+          // Clicked element is inside current selection - keep current selection
+          console.log('[Figma Selection] Clicked inside current selection, keeping selection');
+          // Don't change selection, but update click tracking
+          lastClickTimeRef.current = now;
+          lastClickedIdRef.current = hitTargetId;
+          return;
+        }
+
+        // Clicked outside current selection - use Figma's "working level" algorithm
+        console.log('[Figma Selection] Clicked outside selection, finding appropriate sibling level');
+
+        // Build ancestor chains for both current selection and clicked element
+        const getCurrentAncestors = (nodeId: string): ComponentNode[] => {
+          const ancestors: ComponentNode[] = [];
+          let current = findNodeById(tree, nodeId);
+          while (current) {
+            ancestors.push(current);
+            const parent = findParent(tree, current.id);
+            if (!parent || parent.id === ROOT_VSTACK_ID) break;
+            current = parent;
+          }
+          return ancestors;
+        };
+
+        const currentAncestors = getCurrentAncestors(currentSelection);
+        const clickedAncestors = getCurrentAncestors(hitTargetId);
+
+        console.log('[Figma Selection] Current ancestors:', currentAncestors.map(n => ({ id: n.id, type: n.type })));
+        console.log('[Figma Selection] Clicked ancestors:', clickedAncestors.map(n => ({ id: n.id, type: n.type })));
+
+        // Find first common ancestor
+        let commonAncestor: ComponentNode | null = null;
+        for (const currentAnc of currentAncestors) {
+          for (const clickedAnc of clickedAncestors) {
+            if (currentAnc.id === clickedAnc.id) {
+              commonAncestor = currentAnc;
+              break;
+            }
+          }
+          if (commonAncestor) break;
+        }
+
+        if (commonAncestor) {
+          console.log('[Figma Selection] Common ancestor:', { id: commonAncestor.id, type: commonAncestor.type });
+
+          // Find the child of common ancestor that contains the clicked element
+          const clickedAncestorIndex = clickedAncestors.findIndex(n => n.id === commonAncestor!.id);
+          if (clickedAncestorIndex > 0) {
+            // Select the child of common ancestor in the clicked path
+            const targetNode = clickedAncestors[clickedAncestorIndex - 1];
+            console.log('[Figma Selection] Selecting at appropriate level:', { id: targetNode.id, type: targetNode.type });
+            toggleNodeSelection(targetNode.id, false, false, tree);
+            lastClickTimeRef.current = now;
+            lastClickedIdRef.current = hitTargetId;
+            return;
+          } else if (clickedAncestorIndex === 0) {
+            // Clicked on the common ancestor itself
+            console.log('[Figma Selection] Clicked on common ancestor');
+            toggleNodeSelection(commonAncestor.id, false, false, tree);
+            lastClickTimeRef.current = now;
+            lastClickedIdRef.current = hitTargetId;
+            return;
+          }
+        }
+
+        // No common ancestor found - select topmost container of clicked element
+        console.log('[Figma Selection] No common ancestor, selecting topmost container');
+        const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
+        if (topContainer) {
+          console.log('[Figma Selection] Selecting topmost container:', { id: topContainer.id, type: topContainer.type });
+          toggleNodeSelection(topContainer.id, false, false, tree);
+        }
+        lastClickTimeRef.current = now;
+        lastClickedIdRef.current = hitTargetId;
+        return;
+      }
+
+      // SINGLE CLICK with no selection: Select topmost container
+      console.log('[Figma Selection] No selection, finding topmost container');
+      const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
+      console.log('[Figma Selection] Top container found:', topContainer ? { id: topContainer.id, type: topContainer.type } : null);
+      if (topContainer) {
+        toggleNodeSelection(topContainer.id, false, false, tree);
+      }
+
+      // Track click for double-click detection
+      lastClickTimeRef.current = now;
+      lastClickedIdRef.current = hitTargetId;
+    }
+  }, [isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
@@ -74,16 +246,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     return (
       <div
         data-component-id={node.id}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          if (isPlayMode) {
-            executeInteractions(node.interactions);
-          } else {
-            const multiSelect = e.metaKey || e.ctrlKey;
-            const rangeSelect = e.shiftKey;
-            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-          }
-        }}
+        onMouseDown={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle()}
       >
         <Component {...props}>{content}</Component>
@@ -101,16 +264,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     return (
       <div
         data-component-id={node.id}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          if (isPlayMode) {
-            executeInteractions(node.interactions);
-          } else {
-            const multiSelect = e.metaKey || e.ctrlKey;
-            const rangeSelect = e.shiftKey;
-            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-          }
-        }}
+        onMouseDown={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
         <Component {...mergedProps}>{text}</Component>
@@ -128,16 +282,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     return (
       <div
         data-component-id={node.id}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          if (isPlayMode) {
-            executeInteractions(node.interactions);
-          } else {
-            const multiSelect = e.metaKey || e.ctrlKey;
-            const rangeSelect = e.shiftKey;
-            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-          }
-        }}
+        onMouseDown={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
         <Component icon={iconProp} {...props} />
@@ -153,16 +298,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       return (
         <div
           data-component-id={node.id}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            if (isPlayMode) {
-              executeInteractions(node.interactions);
-            } else {
-              const multiSelect = e.metaKey || e.ctrlKey;
-              const rangeSelect = e.shiftKey;
-              toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-            }
-          }}
+          onMouseDown={(e) => handleComponentClick(e, node.id)}
           style={{
             ...getWrapperStyle(),
             backgroundColor: '#fff',
@@ -198,16 +334,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     return (
       <div
         data-component-id={node.id}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          if (isPlayMode) {
-            executeInteractions(node.interactions);
-          } else {
-            const multiSelect = e.metaKey || e.ctrlKey;
-            const rangeSelect = e.shiftKey;
-            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-          }
-        }}
+        onMouseDown={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle()}
       >
         <Component {...mergedProps}>
@@ -438,16 +565,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       return (
         <div
           data-component-id={node.id}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            if (isPlayMode) {
-              executeInteractions(node.interactions);
-            } else {
-              const multiSelect = e.metaKey || e.ctrlKey;
-              const rangeSelect = e.shiftKey;
-              toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-            }
-          }}
+          onMouseDown={(e) => handleComponentClick(e, node.id)}
           style={getWrapperStyle({ minHeight: '400px', height: '100%' })}
         >
           <Component {...mergedProps} />
@@ -458,16 +576,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       return (
         <div
           data-component-id={node.id}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            if (isPlayMode) {
-              executeInteractions(node.interactions);
-            } else {
-              const multiSelect = e.metaKey || e.ctrlKey;
-              const rangeSelect = e.shiftKey;
-              toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-            }
-          }}
+          onMouseDown={(e) => handleComponentClick(e, node.id)}
           style={{
             ...getWrapperStyle(),
             padding: '16px',
@@ -532,16 +641,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     return (
       <div
         data-component-id={node.id}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          if (isPlayMode) {
-            executeInteractions(node.interactions);
-          } else {
-            const multiSelect = e.metaKey || e.ctrlKey;
-            const rangeSelect = e.shiftKey;
-            toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-          }
-        }}
+        onMouseDown={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle({ padding: '4px' })}
       >
         <Component {...mergedProps} />
@@ -561,16 +661,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   return (
     <div
       data-component-id={node.id}
-      onMouseDown={(e) => {
-        e.stopPropagation();
-        if (isPlayMode) {
-          executeInteractions(node.interactions);
-        } else {
-          const multiSelect = e.metaKey || e.ctrlKey;
-          const rangeSelect = e.shiftKey;
-          toggleNodeSelection(node.id, multiSelect, rangeSelect, tree);
-        }
-      }}
+      onMouseDown={(e) => handleComponentClick(e, node.id)}
       style={{ ...getWrapperStyle(), position: showGridLines ? 'relative' : undefined }}
     >
       <Component {...mergedProps}>

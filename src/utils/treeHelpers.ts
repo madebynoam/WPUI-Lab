@@ -335,3 +335,114 @@ export const updateTreeForPage = (pages: Page[], pageId: string, newTree: Compon
     page.id === pageId ? { ...page, tree: newTree } : page
   );
 };
+
+/**
+ * Find the topmost container starting from a node (Figma-style selection)
+ * Walks up the tree to find the highest "selectable" container before root
+ * Returns the TOPMOST container found, not the immediate parent
+ */
+export const findTopMostContainer = (
+  tree: ComponentNode[],
+  nodeId: string,
+  componentRegistry: Record<string, { acceptsChildren?: boolean }>
+): ComponentNode | null => {
+  const node = findNodeById(tree, nodeId);
+  console.log('[findTopMostContainer] Starting from node:', node ? { id: node.id, type: node.type } : null);
+
+  if (!node) return null;
+
+  // If clicking root, select it
+  if (node.id === ROOT_VSTACK_ID) {
+    console.log('[findTopMostContainer] Node is root, returning root');
+    return node;
+  }
+
+  // Walk up to find the TOPMOST container (keep walking until we hit root)
+  let current: ComponentNode | null = node;
+  let topContainer: ComponentNode | null = null;
+
+  while (current) {
+    const definition = componentRegistry[current.type];
+
+    // Skip internal structure containers (CardHeader, CardBody, PanelBody, PanelRow)
+    const isStructureContainer = [
+      'CardHeader',
+      'CardBody',
+      'PanelBody',
+      'PanelRow',
+    ].includes(current.type);
+
+    console.log('[findTopMostContainer] Checking node:', {
+      id: current.id,
+      type: current.type,
+      acceptsChildren: definition?.acceptsChildren,
+      isStructureContainer,
+    });
+
+    // If this is a container and not a structure container, it's a candidate
+    // Keep updating topContainer as we walk up (last one wins)
+    if (definition?.acceptsChildren && !isStructureContainer) {
+      console.log('[findTopMostContainer] Found container:', { id: current.id, type: current.type });
+      topContainer = current;
+    }
+
+    // Stop at root boundary
+    const parent = findParent(tree, current.id);
+    console.log('[findTopMostContainer] Parent:', parent ? { id: parent.id, type: parent.type } : null);
+
+    if (!parent || parent.id === ROOT_VSTACK_ID) {
+      console.log('[findTopMostContainer] Reached root boundary');
+      break;
+    }
+
+    current = parent;
+  }
+
+  // Return the topmost container found, or the node itself if none found
+  const result = topContainer || node;
+  console.log('[findTopMostContainer] Returning topmost container:', { id: result.id, type: result.type });
+  return result;
+};
+
+/**
+ * Find the path from start node to target node (for drill-down)
+ * Returns array of nodes from start to target, empty if no path exists
+ */
+export const findPathBetweenNodes = (
+  tree: ComponentNode[],
+  startId: string,
+  targetId: string
+): ComponentNode[] => {
+  // If start and target are the same, return just that node
+  if (startId === targetId) {
+    const node = findNodeById(tree, targetId);
+    return node ? [node] : [];
+  }
+
+  const startNode = findNodeById(tree, startId);
+  if (!startNode) return [];
+
+  // Check if target is a descendant of start
+  const path: ComponentNode[] = [startNode];
+
+  const findInChildren = (node: ComponentNode): boolean => {
+    if (node.id === targetId) {
+      return true;
+    }
+
+    if (node.children) {
+      for (const child of node.children) {
+        path.push(child);
+        if (findInChildren(child)) {
+          return true;
+        }
+        path.pop();
+      }
+    }
+
+    return false;
+  };
+
+  const found = findInChildren(startNode);
+  return found ? path : [];
+};

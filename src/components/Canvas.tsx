@@ -4,6 +4,7 @@ import { ComponentNode } from '../types';
 import { Breadcrumb } from './Breadcrumb';
 import { findParent } from '../utils/treeHelpers';
 import { RenderNode } from './RenderNode';
+import { SelectionProvider } from './SelectionContext';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { privateApis as themePrivateApis } from '@wordpress/theme';
 import { unlock } from '../utils/lock-unlock';
@@ -190,65 +191,67 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   const isInteractiveSelected = !!interactiveAncestor;
 
   return (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
+    <SelectionProvider>
       <div
         style={{
           flex: 1,
-          padding: `${pagePadding}px`,
-          backgroundColor: pageBackgroundColor,
-          overflow: 'auto',
           display: 'flex',
-          justifyContent: 'center',
-        }}
-        onMouseDown={(e) => {
-          // Check if the click was on empty space (not on a component)
-          const isClickOnComponent = (target: EventTarget | null): boolean => {
-            if (!target || !(target instanceof HTMLElement)) return false;
-            // Traverse up the DOM to see if we're inside a component wrapper
-            let current: HTMLElement | null = target as HTMLElement;
-            while (current) {
-              if (current.hasAttribute('data-component-id')) {
-                return true;
-              }
-              current = current.parentElement;
-            }
-            return false;
-          };
-
-          // If clicked on empty space, select the page
-          if (!isClickOnComponent(e.target)) {
-            toggleNodeSelection(ROOT_VSTACK_ID, false);
-          }
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        <ThemeProvider color={{ primary: pageTheme.primaryColor, bg: pageTheme.backgroundColor }}>
-          <div style={{ width: '100%', maxWidth: `${pageMaxWidth}px` }}>
-            {isInteractiveSelected && interactiveAncestor ? (
-              // Render only the interactive component in isolation
-              <div style={{
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '100%',
-              }}>
-                <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
-              </div>
-            ) : (
-              // Render full page tree for normal components (skip interactive components)
-              tree.map((node) => <RenderNode key={node.id} node={node} renderInteractive={false} />)
-            )}
-          </div>
-        </ThemeProvider>
+        <div
+          style={{
+            flex: 1,
+            padding: `${pagePadding}px`,
+            backgroundColor: pageBackgroundColor,
+            overflow: 'auto',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+          onMouseDown={(e) => {
+            // Check if the click was on empty space (not on a component)
+            const isClickOnComponent = (target: EventTarget | null): boolean => {
+              if (!target || !(target instanceof HTMLElement)) return false;
+              // Traverse up the DOM to see if we're inside a component wrapper
+              let current: HTMLElement | null = target as HTMLElement;
+              while (current) {
+                if (current.hasAttribute('data-component-id')) {
+                  return true;
+                }
+                current = current.parentElement;
+              }
+              return false;
+            };
+
+            // If clicked on empty space, select the page
+            if (!isClickOnComponent(e.target)) {
+              toggleNodeSelection(ROOT_VSTACK_ID, false);
+            }
+          }}
+        >
+          <ThemeProvider color={{ primary: pageTheme.primaryColor, bg: pageTheme.backgroundColor }}>
+            <div style={{ width: '100%', maxWidth: `${pageMaxWidth}px` }}>
+              {isInteractiveSelected && interactiveAncestor ? (
+                // Render only the interactive component in isolation
+                <div style={{
+                  padding: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: '100%',
+                }}>
+                  <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
+                </div>
+              ) : (
+                // Render full page tree for normal components (skip interactive components)
+                tree.map((node) => <RenderNode key={node.id} node={node} renderInteractive={false} />)
+              )}
+            </div>
+          </ThemeProvider>
+        </div>
+        {showBreadcrumb && !isPlayMode && <Breadcrumb />}
       </div>
-      {showBreadcrumb && !isPlayMode && <Breadcrumb />}
-    </div>
+    </SelectionProvider>
   );
 };
