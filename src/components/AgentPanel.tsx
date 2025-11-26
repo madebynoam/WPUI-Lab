@@ -288,7 +288,8 @@ export const AgentPanel: React.FC = () => {
               message: update.message,
             });
           },
-          controller.signal
+          controller.signal,
+          messages  // Pass conversation history for context
         );
 
         // Remove progress message and add actual response

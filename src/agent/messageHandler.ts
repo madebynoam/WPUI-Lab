@@ -69,7 +69,8 @@ export async function handleUserMessage(
   claudeApiKey?: string,
   openaiApiKey?: string,
   onProgress?: (update: any) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  conversationHistory?: AgentMessage[]
 ): Promise<AgentMessage> {
   // If no API keys, fall back to basic rule-based responses
   if ((!claudeApiKey || !claudeApiKey.trim()) && (!openaiApiKey || !openaiApiKey.trim())) {
@@ -115,7 +116,8 @@ export async function handleUserMessage(
         context,
         claudeApiKey!,
         onProgress,
-        signal
+        signal,
+        conversationHistory
       );
 
       // Log cost breakdown

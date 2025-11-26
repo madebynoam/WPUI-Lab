@@ -8,7 +8,7 @@
  * Replaces broken template-first architecture with proven multi-agent approach
  */
 
-import { ToolContext } from '../types';
+import { ToolContext, AgentMessage } from '../types';
 import { ComponentAgent } from '../agents/ComponentAgent';
 import { ContentAgent } from '../agents/ContentAgent';
 import { DataAgent } from '../agents/DataAgent';
@@ -45,7 +45,8 @@ export async function handleHybridRequest(
   context: ToolContext,
   anthropicApiKey: string,
   onProgress?: (update: ProgressUpdate) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  conversationHistory?: AgentMessage[]
 ): Promise<OrchestratorResult> {
   const startTime = Date.now();
 
@@ -71,7 +72,7 @@ export async function handleHybridRequest(
     // STEP 2: Use LLM to decompose request into steps
     onProgress?.({ phase: 'routing', message: 'Planning steps...' });
 
-    const steps = await decomposeRequest(userMessage, anthropicApiKey, signal);
+    const steps = await decomposeRequest(userMessage, anthropicApiKey, signal, conversationHistory);
 
     if (steps.length === 0) {
       return {
@@ -201,7 +202,8 @@ function trySimpleDeterministicTools(
 async function decomposeRequest(
   userMessage: string,
   apiKey: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  conversationHistory?: AgentMessage[]
 ): Promise<RequestStep[]> {
   const llm = createLLMProvider({
     provider: 'anthropic',
@@ -213,10 +215,15 @@ async function decomposeRequest(
 
 Available agents:
 - page: Create/delete/rename pages (use for "create page", "add page")
-- component: Create/modify UI components (use for "add button", "create cards", "add form")
-- content: Generate text content (use for "write headline", "change text")
+- component: Create/add/insert UI components (use for "add button", "add heading", "create cards", "add form", "insert component")
+- content: Update text in EXISTING components ONLY (use for "change the text to X", "update heading text", "modify content")
 - data: Generate table data (use for "create table", "generate data")
 - layout: Arrange components (use for "arrange in columns", "center this")
+
+CRITICAL ROUTING RULES:
+- "add X" / "create X" / "insert X" → ALWAYS use "component" agent (creating new components)
+- "change text" / "update text" / "edit text" → ALWAYS use "content" agent (updating existing components)
+- If user says "add heading" / "add button" / "add card" → use "component" agent
 
 Rules:
 1. For compound requests like "create page X and add Y inside", break into:
@@ -230,6 +237,10 @@ Rules:
 Examples:
 "add a kanban board" → [{"agent": "component", "operation": "create", "params": {"description": "kanban board"}}]
 
+"add a heading" → [{"agent": "component", "operation": "create", "params": {"description": "heading"}}]
+
+"add heading level 2 that says Our Services" → [{"agent": "component", "operation": "create", "params": {"description": "heading level 2 that says Our Services"}}]
+
 "create page Dashboard and add 3 metric cards" → [
   {"agent": "page", "operation": "create", "params": {"name": "Dashboard"}},
   {"agent": "component", "operation": "create", "params": {"description": "3 metric cards"}}
@@ -237,14 +248,34 @@ Examples:
 
 "create a users table with 20 rows" → [{"agent": "data", "operation": "createTable", "params": {"topic": "users", "rows": 20}}]
 
+"change the heading text to Welcome" → [{"agent": "content", "operation": "update", "params": {"description": "change heading text to Welcome"}}]
+
 Respond with ONLY the JSON array, no explanation.`;
 
   try {
+    // Build messages with conversation history for context
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    // Add recent conversation history (last 6 messages = 3 turns)
+    if (conversationHistory && conversationHistory.length > 0) {
+      conversationHistory
+        .slice(-6) // Last 6 messages
+        .filter(msg => msg.role === 'user' || msg.role === 'agent')
+        .forEach(msg => {
+          messages.push({
+            role: msg.role === 'agent' ? 'assistant' : 'user',
+            content: msg.content[0]?.text || ''
+          });
+        });
+    }
+
+    // Add current user message
+    messages.push({ role: 'user', content: userMessage });
+
     const response = await llm.chat({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
+      messages,
       temperature: 0.1, // Low temperature for consistent parsing
       max_tokens: 500,
       signal,
