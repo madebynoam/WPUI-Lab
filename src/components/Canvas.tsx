@@ -1,114 +1,24 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { Breadcrumb } from './Breadcrumb';
 import { findParent } from '../utils/treeHelpers';
 import { RenderNode } from './RenderNode';
 import { SelectionProvider } from './SelectionContext';
+import { SimpleDragProvider } from './SimpleDragContext';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { componentRegistry } from '../componentRegistry';
 import { privateApis as themePrivateApis } from '@wordpress/theme';
 import { unlock } from '../utils/lock-unlock';
-import { DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, MeasuringStrategy, DropAnimation, defaultDropAnimationSideEffects } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 const { ThemeProvider } = unlock(themePrivateApis);
-
-// Sortable wrapper for top-level nodes
-const SortableRenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: node.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <RenderNode node={node} renderInteractive={false} />
-    </div>
-  );
-};
 
 interface CanvasProps {
   showBreadcrumb?: boolean;
 }
 
 export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
-  const { tree, setTree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isPlayMode, pages, currentPageId } = useComponentTree();
-  const [activeId, setActiveId] = useState<string | null>(null);
-
-  // Configure dnd-kit sensors (matching official Pages example)
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts (prevents accidental drags on click)
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // Measuring configuration for accurate collision detection
-  const measuring = {
-    droppable: {
-      strategy: MeasuringStrategy.Always,
-    },
-  };
-
-  // Drop animation matching official Pages example
-  const dropAnimation: DropAnimation = {
-    keyframes({ transform }) {
-      return [
-        { transform: CSS.Transform.toString(transform.initial) },
-        {
-          transform: CSS.Transform.toString({
-            scaleX: 0.98,
-            scaleY: 0.98,
-            x: transform.final.x - 10,
-            y: transform.final.y - 10,
-          }),
-        },
-      ];
-    },
-    sideEffects: defaultDropAnimationSideEffects({
-      className: {
-        active: 'canvas-drag-active',
-      },
-    }),
-  };
-
-  // Handle drag start
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  // Handle drag end - reorder tree
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = tree.findIndex((node) => node.id === active.id);
-      const newIndex = tree.findIndex((node) => node.id === over.id);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newTree = arrayMove(tree, oldIndex, newIndex);
-        setTree(newTree);
-      }
-    }
-
-    setActiveId(null);
-  };
+  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isPlayMode, pages, currentPageId } = useComponentTree();
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
@@ -292,6 +202,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
 
   return (
     <SelectionProvider>
+      <SimpleDragProvider>
         <div
           style={{
             flex: 1,
@@ -300,92 +211,63 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
             overflow: 'hidden',
           }}
         >
-        <div
-          style={{
-            flex: 1,
-            padding: `${pagePadding}px`,
-            backgroundColor: pageBackgroundColor,
-            overflow: 'auto',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-          onMouseDown={(e) => {
-            // Check if the click was on empty space (not on a component)
-            const isClickOnComponent = (target: EventTarget | null): boolean => {
-              if (!target || !(target instanceof HTMLElement)) return false;
-              // Traverse up the DOM to see if we're inside a component wrapper
-              let current: HTMLElement | null = target as HTMLElement;
-              while (current) {
-                if (current.hasAttribute('data-component-id')) {
-                  return true;
+          <div
+            style={{
+              flex: 1,
+              padding: `${pagePadding}px`,
+              backgroundColor: pageBackgroundColor,
+              overflow: 'auto',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+            onMouseDown={(e) => {
+              // Check if the click was on empty space (not on a component)
+              const isClickOnComponent = (target: EventTarget | null): boolean => {
+                if (!target || !(target instanceof HTMLElement)) return false;
+                // Traverse up the DOM to see if we're inside a component wrapper
+                let current: HTMLElement | null = target as HTMLElement;
+                while (current) {
+                  if (current.hasAttribute('data-component-id')) {
+                    return true;
+                  }
+                  current = current.parentElement;
                 }
-                current = current.parentElement;
-              }
-              return false;
-            };
+                return false;
+              };
 
-            // If clicked on empty space, select the page
-            if (!isClickOnComponent(e.target)) {
-              toggleNodeSelection(ROOT_VSTACK_ID, false);
-            }
-          }}
-        >
-          <ThemeProvider color={{ primary: pageTheme.primaryColor, bg: pageTheme.backgroundColor }}>
-            <div style={{ width: '100%', maxWidth: `${pageMaxWidth}px` }}>
-              {isInteractiveSelected && interactiveAncestor ? (
-                // Render only the interactive component in isolation
-                <div style={{
-                  padding: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: '100%',
-                }}>
-                  <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
-                </div>
-              ) : (
-                // Render full page tree with drag-to-reorder (dnd-kit)
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  measuring={measuring}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={tree.map(node => node.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
+              // If clicked on empty space, select the page
+              if (!isClickOnComponent(e.target)) {
+                toggleNodeSelection(ROOT_VSTACK_ID, false);
+              }
+            }}
+          >
+            <ThemeProvider color={{ primary: pageTheme.primaryColor, bg: pageTheme.backgroundColor }}>
+              <div style={{ width: '100%', maxWidth: `${pageMaxWidth}px` }}>
+                {isInteractiveSelected && interactiveAncestor ? (
+                  // Render only the interactive component in isolation
+                  <div style={{
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '100%',
+                  }}>
+                    <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
+                  </div>
+                ) : (
+                  // Render full page tree with simple custom drag-drop
+                  <>
                     {tree.map((node) => (
-                      <SortableRenderNode key={node.id} node={node} />
+                      <RenderNode key={node.id} node={node} renderInteractive={false} />
                     ))}
-                  </SortableContext>
-                  <DragOverlay dropAnimation={dropAnimation}>
-                    {activeId ? (
-                      (() => {
-                        const node = getNodeById(activeId);
-                        if (!node) return null;
-                        return (
-                          <div style={{
-                            opacity: 0.8,
-                            backgroundColor: 'white',
-                            borderRadius: '4px',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                            border: '2px solid #3858e9',
-                          }}>
-                            <RenderNode node={node} renderInteractive={false} />
-                          </div>
-                        );
-                      })()
-                    ) : null}
-                  </DragOverlay>
-                </DndContext>
-              )}
-            </div>
-          </ThemeProvider>
+                  </>
+                )}
+              </div>
+            </ThemeProvider>
+          </div>
+          {showBreadcrumb && !isPlayMode && <Breadcrumb />}
         </div>
-        {showBreadcrumb && !isPlayMode && <Breadcrumb />}
-        </div>
+      </SimpleDragProvider>
     </SelectionProvider>
   );
 };

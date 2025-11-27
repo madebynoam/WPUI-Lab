@@ -31,7 +31,8 @@ export const RenderNode: React.FC<{
 
   // Pre-calculated sibling bounds for reliable drop detection
   const [siblingBounds, setSiblingBounds] = useState<Array<{ id: string; rect: DOMRect; index: number }>>([]);
-  const [parentLayoutDirection, setParentLayoutDirection] = useState<'vertical' | 'horizontal'>('vertical');
+  const [parentLayoutDirection, setParentLayoutDirection] = useState<'vertical' | 'horizontal' | 'grid'>('vertical');
+  const [parentGridColumns, setParentGridColumns] = useState<number>(1);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const dragThresholdMet = useRef<boolean>(false);
   const clonedElementRef = useRef<HTMLElement | null>(null);
@@ -290,8 +291,14 @@ export const RenderNode: React.FC<{
           const parent = findParent(tree, pendingDragTargetId);
           if (parent) {
             // Determine layout direction
-            const isVertical = parent.type === 'VStack';
-            setParentLayoutDirection(isVertical ? 'vertical' : 'horizontal');
+            if (parent.type === 'VStack') {
+              setParentLayoutDirection('vertical');
+            } else if (parent.type === 'Grid') {
+              setParentLayoutDirection('grid');
+              setParentGridColumns(parent.props?.columns || 3);
+            } else {
+              setParentLayoutDirection('horizontal');
+            }
 
             // Calculate all sibling bounds
             const bounds: Array<{ id: string; rect: DOMRect; index: number }> = [];
@@ -376,7 +383,7 @@ export const RenderNode: React.FC<{
               foundSlot = true;
               break;
             }
-          } else {
+          } else if (parentLayoutDirection === 'horizontal') {
             // Horizontal layout: check X position
             const midpoint = rect.left + rect.width / 2;
             if (e.clientX < midpoint && i === 0) {
@@ -387,6 +394,21 @@ export const RenderNode: React.FC<{
               break;
             } else if (e.clientX < rect.right) {
               // Within this sibling's bounds
+              const position = e.clientX < midpoint ? 'before' : 'after';
+              setHoveredSiblingId(sibling.id);
+              setDropPosition(position);
+              foundSlot = true;
+              break;
+            }
+          } else {
+            // Grid layout: use X position for now (simpler detection)
+            const midpoint = rect.left + rect.width / 2;
+            if (e.clientX < midpoint && i === 0) {
+              setHoveredSiblingId(sibling.id);
+              setDropPosition('before');
+              foundSlot = true;
+              break;
+            } else if (e.clientX < rect.right) {
               const position = e.clientX < midpoint ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
@@ -462,6 +484,7 @@ export const RenderNode: React.FC<{
       setGhostPosition(null);
       setDraggedSize(null);
       setSiblingBounds([]);
+      setParentGridColumns(1);
       dragStartPosRef.current = null;
       dragThresholdMet.current = false;
       dragOffsetRef.current = null;
@@ -529,23 +552,61 @@ export const RenderNode: React.FC<{
       // Get parent to determine layout direction
       const parent = findParent(tree, node.id);
       if (parent) {
-        // VStack uses vertical layout (translateY), others use horizontal (translateX)
-        const isVerticalLayout = parent.type === 'VStack';
-
         // Get parent's spacing/gap (default to 8px if not set)
         const parentGap = parent.props?.gap !== undefined ?
           (typeof parent.props.gap === 'number' ? parent.props.gap * 4 : 8) : 8;
 
-        // Calculate shift amount: component size + gap
-        const shiftAmount = isVerticalLayout ?
-          draggedSize.height + parentGap :
-          draggedSize.width + parentGap;
+        if (parent.type === 'VStack') {
+          // Vertical layout: shift up/down
+          const shiftAmount = draggedSize.height + parentGap;
+          const direction = dropPosition === 'before' ? -1 : 1;
+          transform = `translateY(${direction * shiftAmount}px)`;
+        } else if (parent.type === 'Grid') {
+          // Grid layout: calculate 2D displacement
+          const siblings = parent.children || [];
+          const thisIndex = siblings.findIndex(child => child.id === node.id);
+          const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
+          const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
 
-        // Apply appropriate transform direction
-        const direction = dropPosition === 'before' ? -1 : 1;
-        transform = isVerticalLayout ?
-          `translateY(${direction * shiftAmount}px)` :
-          `translateX(${direction * shiftAmount}px)`;
+          if (thisIndex !== -1 && draggedIndex !== -1 && hoveredIndex !== -1) {
+            const columns = parentGridColumns;
+
+            // Calculate where this item will be after the reorder
+            let newIndex = thisIndex;
+            if (draggedIndex < hoveredIndex) {
+              // Dragging forward: items between dragged and hovered shift backward
+              if (thisIndex > draggedIndex && thisIndex <= hoveredIndex) {
+                newIndex = thisIndex - 1;
+              }
+            } else {
+              // Dragging backward: items between hovered and dragged shift forward
+              if (thisIndex < draggedIndex && thisIndex >= hoveredIndex) {
+                newIndex = thisIndex + 1;
+              }
+            }
+
+            // Convert indices to grid positions (row, col)
+            const oldRow = Math.floor(thisIndex / columns);
+            const oldCol = thisIndex % columns;
+            const newRow = Math.floor(newIndex / columns);
+            const newCol = newIndex % columns;
+
+            // Calculate displacement
+            const colDiff = newCol - oldCol;
+            const rowDiff = newRow - oldRow;
+
+            if (colDiff !== 0 || rowDiff !== 0) {
+              const translateX = colDiff * (draggedSize.width + parentGap);
+              const translateY = rowDiff * (draggedSize.height + parentGap);
+              transform = `translate(${translateX}px, ${translateY}px)`;
+            }
+          }
+        } else {
+          // Horizontal layout (HStack): shift left/right
+          const shiftAmount = draggedSize.width + parentGap;
+          const direction = dropPosition === 'before' ? -1 : 1;
+          transform = `translateX(${direction * shiftAmount}px)`;
+        }
       }
     }
 
