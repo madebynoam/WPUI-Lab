@@ -313,6 +313,13 @@ export const RenderNode: React.FC<{
               }
             });
             setSiblingBounds(bounds);
+            console.log('[Drag Start] Sibling bounds calculated:', {
+              parentType: parent.type,
+              layoutDirection: parent.type === 'VStack' ? 'vertical' : parent.type === 'Grid' ? 'grid' : 'horizontal',
+              columns: parent.type === 'Grid' ? (parent.props?.columns || 3) : 'N/A',
+              siblingCount: bounds.length,
+              siblings: bounds.map(b => ({ id: b.id, index: b.index }))
+            });
 
             // Capture dragged component size and clone it
             const draggedElement = document.querySelector(`[data-component-id="${pendingDragTargetId}"]`) as HTMLElement;
@@ -361,6 +368,7 @@ export const RenderNode: React.FC<{
 
         // Use geometric slot detection with pre-calculated sibling bounds
         let foundSlot = false;
+        console.log('[Hover] Checking siblings, count:', siblingBounds.length, 'layoutDirection:', parentLayoutDirection);
         for (let i = 0; i < siblingBounds.length; i++) {
           const sibling = siblingBounds[i];
           if (sibling.id === draggedNodeId) continue; // Skip self
@@ -378,6 +386,7 @@ export const RenderNode: React.FC<{
             } else if (e.clientY < rect.bottom) {
               // Within this sibling's bounds
               const position = e.clientY < midpoint ? 'before' : 'after';
+              console.log(`[Hover Detection] Vertical - hovering over ${sibling.id}, position: ${position}`);
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
@@ -395,6 +404,7 @@ export const RenderNode: React.FC<{
             } else if (e.clientX < rect.right) {
               // Within this sibling's bounds
               const position = e.clientX < midpoint ? 'before' : 'after';
+              console.log(`[Hover Detection] Horizontal - hovering over ${sibling.id}, position: ${position}`);
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
@@ -404,12 +414,14 @@ export const RenderNode: React.FC<{
             // Grid layout: use X position for now (simpler detection)
             const midpoint = rect.left + rect.width / 2;
             if (e.clientX < midpoint && i === 0) {
+              console.log(`[Hover Detection] Grid - hovering over ${sibling.id}, position: before (first item)`);
               setHoveredSiblingId(sibling.id);
               setDropPosition('before');
               foundSlot = true;
               break;
             } else if (e.clientX < rect.right) {
               const position = e.clientX < midpoint ? 'before' : 'after';
+              console.log(`[Hover Detection] Grid - hovering over ${sibling.id}, position: ${position}`);
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
@@ -428,10 +440,8 @@ export const RenderNode: React.FC<{
           }
         }
 
-        if (!foundSlot) {
-          setHoveredSiblingId(null);
-          setDropPosition(null);
-        }
+        // Don't clear hover state if no slot found - keep last valid hover
+        // This prevents race conditions where mousemove clears state right before mouseup
       }
     };
 
@@ -519,30 +529,48 @@ export const RenderNode: React.FC<{
 
   // Check if this node is a sibling of the dragged node and should animate
   const shouldAnimateAsSibling = React.useMemo(() => {
-    if (!draggedNodeId || draggedNodeId === node.id || !hoveredSiblingId || !dropPosition) return false;
+    if (!draggedNodeId || draggedNodeId === node.id || !hoveredSiblingId || !dropPosition) {
+      return false;
+    }
 
     // Get parent of dragged node
     const draggedParent = findParent(tree, draggedNodeId);
     const thisParent = findParent(tree, node.id);
 
     // Must be siblings (same parent)
-    if (draggedParent?.id !== thisParent?.id || !thisParent) return false;
+    if (draggedParent?.id !== thisParent?.id || !thisParent) {
+      return false;
+    }
 
     // Get the children array to find indices
     const siblings = thisParent.children || [];
     const thisIndex = siblings.findIndex(child => child.id === node.id);
     const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
 
-    if (thisIndex === -1 || hoveredIndex === -1) return false;
+    if (thisIndex === -1 || hoveredIndex === -1) {
+      return false;
+    }
 
     // Shift siblings that come at or after the insertion point
     // If dropping BEFORE hovered: shift all siblings from hovered onwards
     // If dropping AFTER hovered: shift all siblings after hovered
+    let shouldAnimate = false;
     if (dropPosition === 'before') {
-      return thisIndex >= hoveredIndex;
+      shouldAnimate = thisIndex >= hoveredIndex;
     } else {
-      return thisIndex > hoveredIndex;
+      shouldAnimate = thisIndex > hoveredIndex;
     }
+
+    if (shouldAnimate) {
+      console.log(`[ShouldAnimate] Node ${node.id}: YES`, {
+        thisIndex,
+        hoveredIndex,
+        dropPosition,
+        parentType: thisParent.type
+      });
+    }
+
+    return shouldAnimate;
   }, [draggedNodeId, hoveredSiblingId, dropPosition, node.id, tree]);
 
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => {
@@ -561,6 +589,7 @@ export const RenderNode: React.FC<{
           const shiftAmount = draggedSize.height + parentGap;
           const direction = dropPosition === 'before' ? -1 : 1;
           transform = `translateY(${direction * shiftAmount}px)`;
+          console.log(`[Animation] VStack node ${node.id}: translateY(${direction * shiftAmount}px)`);
         } else if (parent.type === 'Grid') {
           // Grid layout: calculate 2D displacement
           const siblings = parent.children || [];
@@ -569,7 +598,7 @@ export const RenderNode: React.FC<{
           const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
 
           if (thisIndex !== -1 && draggedIndex !== -1 && hoveredIndex !== -1) {
-            const columns = parentGridColumns;
+            const columns = parent.props?.columns || 3;
 
             // Calculate where this item will be after the reorder
             let newIndex = thisIndex;
@@ -599,6 +628,10 @@ export const RenderNode: React.FC<{
               const translateX = colDiff * (draggedSize.width + parentGap);
               const translateY = rowDiff * (draggedSize.height + parentGap);
               transform = `translate(${translateX}px, ${translateY}px)`;
+              console.log(`[Animation] Grid node ${node.id}: translate(${translateX}px, ${translateY}px)`, {
+                thisIndex, draggedIndex, hoveredIndex, newIndex,
+                oldRow, oldCol, newRow, newCol, colDiff, rowDiff
+              });
             }
           }
         } else {
@@ -606,8 +639,17 @@ export const RenderNode: React.FC<{
           const shiftAmount = draggedSize.width + parentGap;
           const direction = dropPosition === 'before' ? -1 : 1;
           transform = `translateX(${direction * shiftAmount}px)`;
+          console.log(`[Animation] HStack node ${node.id}: translateX(${direction * shiftAmount}px)`);
         }
       }
+    }
+
+    // Highlight hovered sibling
+    const isHoveredSibling = hoveredSiblingId === node.id;
+    const backgroundColor = isHoveredSibling ? 'rgba(56, 88, 233, 0.1)' : undefined;
+
+    if (isHoveredSibling) {
+      console.log(`[Hover] Highlighting node ${node.id} as hovered sibling`);
     }
 
     const baseStyle: React.CSSProperties = {
@@ -618,6 +660,7 @@ export const RenderNode: React.FC<{
       position: 'relative',
       ...(gridColumn && { gridColumn }),
       ...(gridRow && { gridRow }),
+      backgroundColor,
 
       // Sibling animation: shift to make space for drop
       transform,
