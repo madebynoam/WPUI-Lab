@@ -9,6 +9,8 @@ interface SimpleDragContextType {
   setDropPosition: (position: 'before' | 'after' | null) => void;
   draggedSize: { width: number; height: number } | null;
   setDraggedSize: (size: { width: number; height: number } | null) => void;
+  justFinishedDragging: boolean;
+  setJustFinishedDragging: (value: boolean) => void;
 }
 
 const SimpleDragContext = createContext<SimpleDragContextType | undefined>(undefined);
@@ -18,6 +20,7 @@ export const SimpleDragProvider: React.FC<{ children: ReactNode }> = ({ children
   const [hoveredSiblingId, setHoveredSiblingId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
   const [draggedSize, setDraggedSize] = useState<{ width: number; height: number } | null>(null);
+  const [justFinishedDragging, setJustFinishedDragging] = useState<boolean>(false);
 
   return (
     <SimpleDragContext.Provider
@@ -30,6 +33,8 @@ export const SimpleDragProvider: React.FC<{ children: ReactNode }> = ({ children
         setDropPosition,
         draggedSize,
         setDraggedSize,
+        justFinishedDragging,
+        setJustFinishedDragging,
       }}
     >
       {children}

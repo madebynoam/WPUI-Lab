@@ -23,11 +23,10 @@ export const RenderNode: React.FC<{
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
 
   // Simple drag state
-  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize } = useSimpleDrag();
+  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize, justFinishedDragging, setJustFinishedDragging } = useSimpleDrag();
   const [isDragging, setIsDragging] = useState(false);
   const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const justFinishedDraggingRef = useRef<boolean>(false);
 
   // Pre-calculated sibling bounds for reliable drop detection
   const [siblingBounds, setSiblingBounds] = useState<Array<{ id: string; rect: DOMRect; index: number }>>([]);
@@ -47,7 +46,7 @@ export const RenderNode: React.FC<{
     e.stopPropagation();
 
     // Skip click handling if currently dragging or just finished dragging to prevent selection changes
-    if (draggedNodeId || justFinishedDraggingRef.current) {
+    if (draggedNodeId || justFinishedDragging) {
       return;
     }
 
@@ -212,7 +211,7 @@ export const RenderNode: React.FC<{
       lastClickTimeRef.current = now;
       lastClickedIdRef.current = hitTargetId;
     }
-  }, [draggedNodeId, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions]);
+  }, [draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
@@ -260,6 +259,15 @@ export const RenderNode: React.FC<{
 
     // If we found a selected ancestor, prepare for potential drag
     if (dragTargetId && dragTargetId !== ROOT_VSTACK_ID) {
+      // Don't set up drag if we're in a potential double-click window
+      const timeSinceLastClick = Date.now() - lastClickTimeRef.current;
+      if (timeSinceLastClick < 350) {
+        // Within double-click window - don't prepare for drag, let event proceed normally
+        console.log('[Drag] Skipping drag setup - within double-click window');
+        return;
+      }
+
+      // Only prevent default for drag, not for double-clicks
       e.preventDefault();
       e.stopPropagation();
 
@@ -269,6 +277,7 @@ export const RenderNode: React.FC<{
 
       // Store the drag target ID temporarily (will start drag after threshold)
       (window as any).__pendingDragTargetId = dragTargetId;
+      console.log('[Drag] Prepared for potential drag, waiting for threshold');
     }
   }, [isPlayMode, draggedNodeId, node.id, selectedNodeIds, tree]);
 
@@ -282,6 +291,15 @@ export const RenderNode: React.FC<{
         const dx = e.clientX - dragStartPosRef.current.x;
         const dy = e.clientY - dragStartPosRef.current.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Don't start drag if we're in a potential double-click window (350ms)
+        const timeSinceLastClick = Date.now() - lastClickTimeRef.current;
+        if (timeSinceLastClick < 350) {
+          // Clear pending drag to prevent drag during double-click
+          (window as any).__pendingDragTargetId = null;
+          dragStartPosRef.current = null;
+          return;
+        }
 
         // Start drag if threshold exceeded (5px)
         if (distance > 5) {
@@ -344,8 +362,10 @@ export const RenderNode: React.FC<{
               clone.style.pointerEvents = 'none';
               clone.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
               clone.style.borderRadius = '4px';
+              clone.setAttribute('data-drag-clone', 'true');
               document.body.appendChild(clone);
               clonedElementRef.current = clone;
+              console.log('[Drag Start] Clone created and attached to body for node:', pendingDragTargetId);
             }
 
             // Start the drag
@@ -411,15 +431,16 @@ export const RenderNode: React.FC<{
               break;
             }
           } else {
-            // Grid layout: use X position for now (simpler detection)
-            const midpoint = rect.left + rect.width / 2;
-            if (e.clientX < midpoint && i === 0) {
-              console.log(`[Hover Detection] Grid - hovering over ${sibling.id}, position: before (first item)`);
-              setHoveredSiblingId(sibling.id);
-              setDropPosition('before');
-              foundSlot = true;
-              break;
-            } else if (e.clientX < rect.right) {
+            // Grid layout: use 2D geometric detection (check both X and Y)
+            const isInsideRect =
+              e.clientX >= rect.left &&
+              e.clientX <= rect.right &&
+              e.clientY >= rect.top &&
+              e.clientY <= rect.bottom;
+
+            if (isInsideRect) {
+              // Cursor is inside this sibling's bounds - determine before/after
+              const midpoint = rect.left + rect.width / 2;
               const position = e.clientX < midpoint ? 'before' : 'after';
               console.log(`[Hover Detection] Grid - hovering over ${sibling.id}, position: ${position}`);
               setHoveredSiblingId(sibling.id);
@@ -475,15 +496,27 @@ export const RenderNode: React.FC<{
       }
 
       // Set flag to prevent click event after drag
-      justFinishedDraggingRef.current = true;
+      setJustFinishedDragging(true);
       setTimeout(() => {
-        justFinishedDraggingRef.current = false;
+        setJustFinishedDragging(false);
       }, 200);
 
       // Remove cloned element
       if (clonedElementRef.current) {
-        document.body.removeChild(clonedElementRef.current);
-        clonedElementRef.current = null;
+        console.log('[Drop] Removing cloned element from node:', node.id);
+        try {
+          document.body.removeChild(clonedElementRef.current);
+          clonedElementRef.current = null;
+        } catch (error) {
+          console.error('[Drop] Error removing clone:', error);
+        }
+      }
+
+      // Fallback: Remove any drag clone that might be lingering
+      const orphanedClone = document.querySelector('[data-drag-clone="true"]');
+      if (orphanedClone) {
+        console.log('[Drop] Removing orphaned clone via fallback');
+        orphanedClone.remove();
       }
 
       // Cleanup drag state
@@ -503,7 +536,7 @@ export const RenderNode: React.FC<{
 
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, [draggedNodeId, hoveredSiblingId, dropPosition, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition]);
+  }, [draggedNodeId, hoveredSiblingId, dropPosition, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition, setJustFinishedDragging]);
 
   // Skip rendering interactive components unless explicitly allowed
   if (INTERACTIVE_COMPONENT_TYPES.includes(node.type) && !renderInteractive) {
