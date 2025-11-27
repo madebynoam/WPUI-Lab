@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { usePlayModeState } from '../PlayModeContext';
 import { ComponentNode } from '../types';
@@ -8,15 +8,34 @@ import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
 import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } from '../utils/treeHelpers';
 import { useSelection } from './SelectionContext';
+import { useSimpleDrag } from './SimpleDragContext';
 
-// Figma-style drag-and-drop with animations
-export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
+// Simple Figma-style drag-and-drop component
+export const RenderNode: React.FC<{
+  node: ComponentNode;
+  renderInteractive?: boolean;
+}> = ({ node, renderInteractive = true }) => {
   const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent } = useComponentTree();
   const playModeState = usePlayModeState();
   const definition = componentRegistry[node.type];
 
   // Shared click tracking for Figma-style selection
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
+
+  // Simple drag state
+  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize } = useSimpleDrag();
+  const [isDragging, setIsDragging] = useState(false);
+  const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const justFinishedDraggingRef = useRef<boolean>(false);
+
+  // Pre-calculated sibling bounds for reliable drop detection
+  const [siblingBounds, setSiblingBounds] = useState<Array<{ id: string; rect: DOMRect; index: number }>>([]);
+  const [parentLayoutDirection, setParentLayoutDirection] = useState<'vertical' | 'horizontal'>('vertical');
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const dragThresholdMet = useRef<boolean>(false);
+  const clonedElementRef = useRef<HTMLElement | null>(null);
+  const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
 
   if (!definition) {
     return <div>Unknown component: {node.type}</div>;
@@ -25,6 +44,11 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   // Figma-style selection handler: Single click selects container, double click drills down
   const handleComponentClick = useCallback((e: React.MouseEvent, hitTargetId: string) => {
     e.stopPropagation();
+
+    // Skip click handling if currently dragging or just finished dragging to prevent selection changes
+    if (draggedNodeId || justFinishedDraggingRef.current) {
+      return;
+    }
 
     // Preserve existing behavior for play mode and modifier keys
     if (isPlayMode) {
@@ -187,7 +211,7 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       lastClickTimeRef.current = now;
       lastClickedIdRef.current = hitTargetId;
     }
-  }, [isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions]);
+  }, [draggedNodeId, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
@@ -209,6 +233,244 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       }
     });
   };
+
+  // Figma-style drag: Find nearest selected ancestor to drag
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Skip if in play mode or already dragging
+    if (isPlayMode || draggedNodeId) return;
+
+    // Skip if not left click
+    if (e.button !== 0) return;
+
+    // Start with clicked node
+    let currentId = node.id;
+    let dragTargetId: string | null = null;
+
+    // Walk up ancestors to find selected node
+    while (currentId) {
+      if (selectedNodeIds.includes(currentId)) {
+        dragTargetId = currentId;
+        break;
+      }
+      const parent = findParent(tree, currentId);
+      if (!parent || parent.id === ROOT_VSTACK_ID) break;
+      currentId = parent.id;
+    }
+
+    // If we found a selected ancestor, prepare for potential drag
+    if (dragTargetId && dragTargetId !== ROOT_VSTACK_ID) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Capture initial mouse position for drag threshold
+      dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+      dragThresholdMet.current = false;
+
+      // Store the drag target ID temporarily (will start drag after threshold)
+      (window as any).__pendingDragTargetId = dragTargetId;
+    }
+  }, [isPlayMode, draggedNodeId, node.id, selectedNodeIds, tree]);
+
+  // Document-level mouse move for drag tracking
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const pendingDragTargetId = (window as any).__pendingDragTargetId;
+
+      // Check if we're waiting to start a drag (threshold not met yet)
+      if (pendingDragTargetId && dragStartPosRef.current && !dragThresholdMet.current) {
+        const dx = e.clientX - dragStartPosRef.current.x;
+        const dy = e.clientY - dragStartPosRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Start drag if threshold exceeded (5px)
+        if (distance > 5) {
+          dragThresholdMet.current = true;
+
+          // Find the parent and calculate sibling bounds
+          const parent = findParent(tree, pendingDragTargetId);
+          if (parent) {
+            // Determine layout direction
+            const isVertical = parent.type === 'VStack';
+            setParentLayoutDirection(isVertical ? 'vertical' : 'horizontal');
+
+            // Calculate all sibling bounds
+            const bounds: Array<{ id: string; rect: DOMRect; index: number }> = [];
+            parent.children?.forEach((sibling, index) => {
+              const element = document.querySelector(`[data-component-id="${sibling.id}"]`);
+              if (element) {
+                bounds.push({
+                  id: sibling.id,
+                  rect: element.getBoundingClientRect(),
+                  index,
+                });
+              }
+            });
+            setSiblingBounds(bounds);
+
+            // Capture dragged component size and clone it
+            const draggedElement = document.querySelector(`[data-component-id="${pendingDragTargetId}"]`) as HTMLElement;
+            if (draggedElement) {
+              const rect = draggedElement.getBoundingClientRect();
+              setDraggedSize({ width: rect.width, height: rect.height });
+
+              // Calculate offset from cursor to element's top-left corner
+              dragOffsetRef.current = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+              };
+
+              // Clone the element for dragging
+              const clone = draggedElement.cloneNode(true) as HTMLElement;
+              clone.style.position = 'fixed';
+              clone.style.left = `${e.clientX - dragOffsetRef.current.x}px`;
+              clone.style.top = `${e.clientY - dragOffsetRef.current.y}px`;
+              clone.style.width = `${rect.width}px`;
+              clone.style.height = `${rect.height}px`;
+              clone.style.zIndex = '10000';
+              clone.style.pointerEvents = 'none';
+              clone.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
+              clone.style.borderRadius = '4px';
+              document.body.appendChild(clone);
+              clonedElementRef.current = clone;
+            }
+
+            // Start the drag
+            setDraggedNodeId(pendingDragTargetId);
+            setIsDragging(true);
+            (window as any).__pendingDragTargetId = null;
+          }
+        }
+        return;
+      }
+
+      // If drag is active, update clone position and detect drop position
+      if (draggedNodeId) {
+        // Update clone position using offset
+        if (clonedElementRef.current && dragOffsetRef.current) {
+          clonedElementRef.current.style.left = `${e.clientX - dragOffsetRef.current.x}px`;
+          clonedElementRef.current.style.top = `${e.clientY - dragOffsetRef.current.y}px`;
+        }
+        setGhostPosition({ x: e.clientX, y: e.clientY });
+
+        // Use geometric slot detection with pre-calculated sibling bounds
+        let foundSlot = false;
+        for (let i = 0; i < siblingBounds.length; i++) {
+          const sibling = siblingBounds[i];
+          if (sibling.id === draggedNodeId) continue; // Skip self
+
+          const rect = sibling.rect;
+          if (parentLayoutDirection === 'vertical') {
+            // Vertical layout: check Y position
+            const midpoint = rect.top + rect.height / 2;
+            if (e.clientY < midpoint && i === 0) {
+              // Before first item
+              setHoveredSiblingId(sibling.id);
+              setDropPosition('before');
+              foundSlot = true;
+              break;
+            } else if (e.clientY < rect.bottom) {
+              // Within this sibling's bounds
+              const position = e.clientY < midpoint ? 'before' : 'after';
+              setHoveredSiblingId(sibling.id);
+              setDropPosition(position);
+              foundSlot = true;
+              break;
+            }
+          } else {
+            // Horizontal layout: check X position
+            const midpoint = rect.left + rect.width / 2;
+            if (e.clientX < midpoint && i === 0) {
+              // Before first item
+              setHoveredSiblingId(sibling.id);
+              setDropPosition('before');
+              foundSlot = true;
+              break;
+            } else if (e.clientX < rect.right) {
+              // Within this sibling's bounds
+              const position = e.clientX < midpoint ? 'before' : 'after';
+              setHoveredSiblingId(sibling.id);
+              setDropPosition(position);
+              foundSlot = true;
+              break;
+            }
+          }
+        }
+
+        // Check if after last sibling
+        if (!foundSlot && siblingBounds.length > 0) {
+          const lastSibling = siblingBounds[siblingBounds.length - 1];
+          if (lastSibling.id !== draggedNodeId) {
+            setHoveredSiblingId(lastSibling.id);
+            setDropPosition('after');
+            foundSlot = true;
+          }
+        }
+
+        if (!foundSlot) {
+          setHoveredSiblingId(null);
+          setDropPosition(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, [draggedNodeId, tree, setHoveredSiblingId, setDropPosition, setDraggedNodeId, setDraggedSize, siblingBounds, parentLayoutDirection]);
+
+  // Document-level mouse up for drop
+  React.useEffect(() => {
+    if (!draggedNodeId) return;
+
+    const handleMouseUp = () => {
+      // Capture values immediately to avoid race conditions
+      const targetSiblingId = hoveredSiblingId;
+      const targetPosition = dropPosition;
+
+      console.log('[Drop] Mouse up detected:', {
+        draggedNodeId,
+        targetSiblingId,
+        targetPosition,
+        hasValidTarget: !!(targetSiblingId && targetPosition)
+      });
+
+      // Perform drop if we have a valid target
+      if (targetSiblingId && targetPosition) {
+        console.log('[Drop] Calling reorderComponent');
+        reorderComponent(draggedNodeId, targetSiblingId, targetPosition);
+        console.log('[Drop] Reorder completed');
+      } else {
+        console.log('[Drop] No valid drop target, canceling drag');
+      }
+
+      // Set flag to prevent click event after drag
+      justFinishedDraggingRef.current = true;
+      setTimeout(() => {
+        justFinishedDraggingRef.current = false;
+      }, 200);
+
+      // Remove cloned element
+      if (clonedElementRef.current) {
+        document.body.removeChild(clonedElementRef.current);
+        clonedElementRef.current = null;
+      }
+
+      // Cleanup drag state
+      setDraggedNodeId(null);
+      setIsDragging(false);
+      setHoveredSiblingId(null);
+      setDropPosition(null);
+      setGhostPosition(null);
+      setDraggedSize(null);
+      setSiblingBounds([]);
+      dragStartPosRef.current = null;
+      dragThresholdMet.current = false;
+      dragOffsetRef.current = null;
+      (window as any).__pendingDragTargetId = null;
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
+  }, [draggedNodeId, hoveredSiblingId, dropPosition, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition]);
 
   // Skip rendering interactive components unless explicitly allowed
   if (INTERACTIVE_COMPONENT_TYPES.includes(node.type) && !renderInteractive) {
@@ -232,15 +494,77 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   const isRootVStack = node.id === ROOT_VSTACK_ID;
   const isSelected = selectedNodeIds.includes(node.id);
 
-  const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => ({
-    outline: isSelected && !isRootVStack && !isPlayMode ? '2px solid #3858e9' : 'none',
-    cursor: isPlayMode && node.interactions && node.interactions.length > 0
-      ? 'pointer'
-      : 'default',
-    ...(gridColumn && { gridColumn }),
-    ...(gridRow && { gridRow }),
-    ...additionalStyles,
-  });
+  // Check if this node is a sibling of the dragged node and should animate
+  const shouldAnimateAsSibling = React.useMemo(() => {
+    if (!draggedNodeId || draggedNodeId === node.id || !hoveredSiblingId || !dropPosition) return false;
+
+    // Get parent of dragged node
+    const draggedParent = findParent(tree, draggedNodeId);
+    const thisParent = findParent(tree, node.id);
+
+    // Must be siblings (same parent)
+    if (draggedParent?.id !== thisParent?.id || !thisParent) return false;
+
+    // Get the children array to find indices
+    const siblings = thisParent.children || [];
+    const thisIndex = siblings.findIndex(child => child.id === node.id);
+    const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
+
+    if (thisIndex === -1 || hoveredIndex === -1) return false;
+
+    // Shift siblings that come at or after the insertion point
+    // If dropping BEFORE hovered: shift all siblings from hovered onwards
+    // If dropping AFTER hovered: shift all siblings after hovered
+    if (dropPosition === 'before') {
+      return thisIndex >= hoveredIndex;
+    } else {
+      return thisIndex > hoveredIndex;
+    }
+  }, [draggedNodeId, hoveredSiblingId, dropPosition, node.id, tree]);
+
+  const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => {
+    // Calculate proper sibling animation transform
+    let transform = 'none';
+    if (shouldAnimateAsSibling && dropPosition && draggedSize && draggedNodeId) {
+      // Get parent to determine layout direction
+      const parent = findParent(tree, node.id);
+      if (parent) {
+        // VStack uses vertical layout (translateY), others use horizontal (translateX)
+        const isVerticalLayout = parent.type === 'VStack';
+
+        // Get parent's spacing/gap (default to 8px if not set)
+        const parentGap = parent.props?.gap !== undefined ?
+          (typeof parent.props.gap === 'number' ? parent.props.gap * 4 : 8) : 8;
+
+        // Calculate shift amount: component size + gap
+        const shiftAmount = isVerticalLayout ?
+          draggedSize.height + parentGap :
+          draggedSize.width + parentGap;
+
+        // Apply appropriate transform direction
+        const direction = dropPosition === 'before' ? -1 : 1;
+        transform = isVerticalLayout ?
+          `translateY(${direction * shiftAmount}px)` :
+          `translateX(${direction * shiftAmount}px)`;
+      }
+    }
+
+    const baseStyle: React.CSSProperties = {
+      outline: isSelected && !isRootVStack && !isPlayMode ? '2px solid #3858e9' : 'none',
+      cursor: isPlayMode && node.interactions && node.interactions.length > 0
+        ? 'pointer'
+        : 'default',
+      position: 'relative',
+      ...(gridColumn && { gridColumn }),
+      ...(gridRow && { gridRow }),
+
+      // Sibling animation: shift to make space for drop
+      transform,
+      transition: 'transform 0.2s ease',
+    };
+
+    return { ...baseStyle, ...additionalStyles };
+  };
 
   // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading') {
@@ -249,8 +573,10 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        ref={wrapperRef}
         data-component-id={node.id}
         onClick={(e) => handleComponentClick(e, node.id)}
+        onMouseDown={handleMouseDown}
         style={getWrapperStyle()}
       >
         <Component {...props}>{content}</Component>
@@ -267,8 +593,10 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        ref={wrapperRef}
         data-component-id={node.id}
         onClick={(e) => handleComponentClick(e, node.id)}
+        onMouseDown={handleMouseDown}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
         <Component {...mergedProps}>{text}</Component>
@@ -285,8 +613,10 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        ref={wrapperRef}
         data-component-id={node.id}
         onClick={(e) => handleComponentClick(e, node.id)}
+        onMouseDown={handleMouseDown}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
         <Component icon={iconProp} {...props} />
@@ -301,8 +631,10 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       // Render Modal content directly without the blocking overlay
       return (
         <div
+          ref={wrapperRef}
           data-component-id={node.id}
           onClick={(e) => handleComponentClick(e, node.id)}
+          onMouseDown={handleMouseDown}
           style={{
             ...getWrapperStyle(),
             backgroundColor: '#fff',
@@ -326,7 +658,9 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
           {/* Modal content */}
           <div style={{ padding: '24px' }}>
             {node.children && node.children.length > 0
-              ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
+              ? node.children.map((child) =>
+                  <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />
+                )
               : <div style={{ padding: '20px', color: '#666', textAlign: 'center' }}>Add components inside this Modal</div>}
           </div>
         </div>
@@ -337,13 +671,17 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     const mergedProps = { ...definition.defaultProps, ...props };
     return (
       <div
+        ref={wrapperRef}
         data-component-id={node.id}
         onClick={(e) => handleComponentClick(e, node.id)}
+        onMouseDown={handleMouseDown}
         style={getWrapperStyle()}
       >
         <Component {...mergedProps}>
           {node.children && node.children.length > 0
-            ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
+            ? node.children.map((child) =>
+                <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />
+              )
             : null}
         </Component>
       </div>
@@ -568,8 +906,10 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
       return (
         <div
+          ref={wrapperRef}
           data-component-id={node.id}
           onClick={(e) => handleComponentClick(e, node.id)}
+          onMouseDown={handleMouseDown}
           style={getWrapperStyle({ minHeight: '400px', height: '100%' })}
         >
           <Component {...mergedProps} />
@@ -579,8 +919,10 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       console.error('DataViews rendering error:', error);
       return (
         <div
+          ref={wrapperRef}
           data-component-id={node.id}
           onClick={(e) => handleComponentClick(e, node.id)}
+          onMouseDown={handleMouseDown}
           style={{
             ...getWrapperStyle(),
             padding: '16px',
@@ -644,8 +986,10 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        ref={wrapperRef}
         data-component-id={node.id}
         onClick={(e) => handleComponentClick(e, node.id)}
+        onMouseDown={handleMouseDown}
         style={getWrapperStyle({ padding: '4px' })}
       >
         <Component {...mergedProps} />
@@ -663,14 +1007,23 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   const isEmptyGrid = node.type === 'Grid' && (!node.children || node.children.length === 0);
 
   return (
+    <React.Fragment>
     <div
+      ref={wrapperRef}
       data-component-id={node.id}
       onClick={(e) => handleComponentClick(e, node.id)}
-      style={{ ...getWrapperStyle(), position: showGridLines ? 'relative' : undefined }}
+      onMouseDown={handleMouseDown}
+      style={{
+        ...getWrapperStyle(),
+        position: showGridLines ? 'relative' : undefined,
+        opacity: draggedNodeId === node.id ? 0 : 1,
+      }}
     >
       <Component {...mergedProps}>
         {node.children && node.children.length > 0
-          ? node.children.map((child) => <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />)
+          ? node.children.map((child) =>
+              <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />
+            )
           : isEmptyGrid && !isPlayMode ? (
               <div style={{
                 minHeight: '120px',
@@ -777,5 +1130,6 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
         </div>
       )}
     </div>
+    </React.Fragment>
   );
 };
