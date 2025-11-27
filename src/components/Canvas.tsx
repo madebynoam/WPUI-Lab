@@ -9,10 +9,35 @@ import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { componentRegistry } from '../componentRegistry';
 import { privateApis as themePrivateApis } from '@wordpress/theme';
 import { unlock } from '../utils/lock-unlock';
-import { DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, MeasuringStrategy, DropAnimation, defaultDropAnimationSideEffects } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const { ThemeProvider } = unlock(themePrivateApis);
+
+// Sortable wrapper for top-level nodes
+const SortableRenderNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: node.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <RenderNode node={node} renderInteractive={false} />
+    </div>
+  );
+};
 
 interface CanvasProps {
   showBreadcrumb?: boolean;
@@ -22,14 +47,46 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   const { tree, setTree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isPlayMode, pages, currentPageId } = useComponentTree();
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Configure dnd-kit sensors
+  // Configure dnd-kit sensors (matching official Pages example)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // Require 8px movement before drag starts (prevents accidental drags on click)
       },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Measuring configuration for accurate collision detection
+  const measuring = {
+    droppable: {
+      strategy: MeasuringStrategy.Always,
+    },
+  };
+
+  // Drop animation matching official Pages example
+  const dropAnimation: DropAnimation = {
+    keyframes({ transform }) {
+      return [
+        { transform: CSS.Transform.toString(transform.initial) },
+        {
+          transform: CSS.Transform.toString({
+            scaleX: 0.98,
+            scaleY: 0.98,
+            x: transform.final.x - 10,
+            y: transform.final.y - 10,
+          }),
+        },
+      ];
+    },
+    sideEffects: defaultDropAnimationSideEffects({
+      className: {
+        active: 'canvas-drag-active',
+      },
+    }),
+  };
 
   // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
@@ -291,6 +348,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
+                  measuring={measuring}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                 >
@@ -299,27 +357,26 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
                     strategy={verticalListSortingStrategy}
                   >
                     {tree.map((node) => (
-                      <RenderNode key={node.id} node={node} renderInteractive={false} />
+                      <SortableRenderNode key={node.id} node={node} />
                     ))}
                   </SortableContext>
-                  <DragOverlay>
+                  <DragOverlay dropAnimation={dropAnimation}>
                     {activeId ? (
-                      <div style={{
-                        opacity: 0.8,
-                        padding: '8px 12px',
-                        backgroundColor: '#3858e9',
-                        color: '#fff',
-                        borderRadius: '4px',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                      }}>
-                        {(() => {
-                          const node = getNodeById(activeId);
-                          if (!node) return 'Component';
-                          return node.name ? `${node.name} (${node.type})` : node.type;
-                        })()}
-                      </div>
+                      (() => {
+                        const node = getNodeById(activeId);
+                        if (!node) return null;
+                        return (
+                          <div style={{
+                            opacity: 0.8,
+                            backgroundColor: 'white',
+                            borderRadius: '4px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            border: '2px solid #3858e9',
+                          }}>
+                            <RenderNode node={node} renderInteractive={false} />
+                          </div>
+                        );
+                      })()
                     ) : null}
                   </DragOverlay>
                 </DndContext>

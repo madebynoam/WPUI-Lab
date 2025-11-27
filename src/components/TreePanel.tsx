@@ -223,7 +223,10 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
 		// Remove children of activeId and collapsed nodes
 		const excludeIds = activeId ? [activeId, ...collapsedIds] : collapsedIds;
-		return removeChildrenOf(flattenedTree, excludeIds);
+		const filteredTree = removeChildrenOf(flattenedTree, excludeIds);
+
+		// Hide the root VStack (page node) from layers panel
+		return filteredTree.filter(item => item.id !== ROOT_VSTACK_ID);
 	}, [tree, activeId]);
 
 	const sortedIds = React.useMemo(() => flattenedItems.map((item) => item.id), [flattenedItems]);
