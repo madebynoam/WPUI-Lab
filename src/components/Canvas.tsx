@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { Breadcrumb } from './Breadcrumb';
@@ -6,8 +6,11 @@ import { findParent } from '../utils/treeHelpers';
 import { RenderNode } from './RenderNode';
 import { SelectionProvider } from './SelectionContext';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
+import { componentRegistry } from '../componentRegistry';
 import { privateApis as themePrivateApis } from '@wordpress/theme';
 import { unlock } from '../utils/lock-unlock';
+import { DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
 const { ThemeProvider } = unlock(themePrivateApis);
 
@@ -16,7 +19,39 @@ interface CanvasProps {
 }
 
 export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
-  const { tree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isPlayMode, pages, currentPageId } = useComponentTree();
+  const { tree, setTree, selectedNodeIds, toggleNodeSelection, getNodeById, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isPlayMode, pages, currentPageId } = useComponentTree();
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Configure dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts (prevents accidental drags on click)
+      },
+    })
+  );
+
+  // Handle drag start
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  // Handle drag end - reorder tree
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = tree.findIndex((node) => node.id === active.id);
+      const newIndex = tree.findIndex((node) => node.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newTree = arrayMove(tree, oldIndex, newIndex);
+        setTree(newTree);
+      }
+    }
+
+    setActiveId(null);
+  };
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
@@ -186,20 +221,28 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [selectedNodeIds, tree, toggleNodeSelection, getNodeById, findInteractiveAncestor, toggleGridLines, undo, redo, canUndo, canRedo, removeComponent, copyComponent, pasteComponent, canPaste, duplicateComponent, isInEditMode, isPlayMode]);
 
+  // Find editing context - either interactive component or selected container
+  const selectedNode = selectedNodeIds.length > 0 ? getNodeById(selectedNodeIds[0]) : null;
+
   // Check if selected node is an interactive component or a child of one
   const interactiveAncestor = selectedNodeIds.length > 0 ? findInteractiveAncestor(selectedNodeIds[0]) : null;
   const isInteractiveSelected = !!interactiveAncestor;
 
+  // Figma-style: If a container component is selected, show its children as draggable context
+  const editingContext = selectedNode && componentRegistry[selectedNode.type]?.acceptsChildren && !INTERACTIVE_COMPONENT_TYPES.includes(selectedNode.type)
+    ? selectedNode
+    : null;
+
   return (
     <SelectionProvider>
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
         <div
           style={{
             flex: 1,
@@ -244,14 +287,48 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
                   <RenderNode key={interactiveAncestor.id} node={interactiveAncestor} renderInteractive={true} />
                 </div>
               ) : (
-                // Render full page tree for normal components (skip interactive components)
-                tree.map((node) => <RenderNode key={node.id} node={node} renderInteractive={false} />)
+                // Render full page tree with drag-to-reorder (dnd-kit)
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={tree.map(node => node.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {tree.map((node) => (
+                      <RenderNode key={node.id} node={node} renderInteractive={false} />
+                    ))}
+                  </SortableContext>
+                  <DragOverlay>
+                    {activeId ? (
+                      <div style={{
+                        opacity: 0.8,
+                        padding: '8px 12px',
+                        backgroundColor: '#3858e9',
+                        color: '#fff',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                      }}>
+                        {(() => {
+                          const node = getNodeById(activeId);
+                          if (!node) return 'Component';
+                          return node.name ? `${node.name} (${node.type})` : node.type;
+                        })()}
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
               )}
             </div>
           </ThemeProvider>
         </div>
         {showBreadcrumb && !isPlayMode && <Breadcrumb />}
-      </div>
+        </div>
     </SelectionProvider>
   );
 };

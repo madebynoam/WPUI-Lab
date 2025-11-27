@@ -14,6 +14,7 @@ export interface ComponentNode {
   props: Record<string, any>;
   interactions?: Interaction[];
   children?: ComponentNode[];
+  collapsed?: boolean;
 }
 
 // Pattern node - same as ComponentNode but without id (assigned on insert)

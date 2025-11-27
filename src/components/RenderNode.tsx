@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { usePlayModeState } from '../PlayModeContext';
 import { ComponentNode } from '../types';
@@ -8,14 +8,37 @@ import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
 import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } from '../utils/treeHelpers';
 import { useSelection } from './SelectionContext';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
+// Figma-style drag-and-drop with animations
 export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boolean }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, setPlayMode, updateComponentProps, setCurrentPage } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent } = useComponentTree();
   const playModeState = usePlayModeState();
   const definition = componentRegistry[node.type];
 
   // Shared click tracking for Figma-style selection
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
+
+  // dnd-kit sortable hook (only for page-level components when not in isolated interactive view)
+  const sortableDisabled = node.id === ROOT_VSTACK_ID || isPlayMode || renderInteractive;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: node.id,
+    disabled: sortableDisabled,
+  });
+
+  // Apply transform styles for smooth dragging (Figma-style: no opacity change)
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   if (!definition) {
     return <div>Unknown component: {node.type}</div>;
@@ -230,13 +253,20 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
   // Base wrapper style with grid child properties
   const isRootVStack = node.id === ROOT_VSTACK_ID;
   const isSelected = selectedNodeIds.includes(node.id);
+
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => ({
     outline: isSelected && !isRootVStack && !isPlayMode ? '2px solid #3858e9' : 'none',
-    cursor: isPlayMode && node.interactions && node.interactions.length > 0 ? 'pointer' : 'default',
+    cursor: isPlayMode && node.interactions && node.interactions.length > 0
+      ? 'pointer'
+      : (!sortableDisabled ? 'grab' : 'default'),
     ...(gridColumn && { gridColumn }),
     ...(gridRow && { gridRow }),
+    ...(!sortableDisabled && style), // Only apply dnd-kit styles when sortable is enabled
     ...additionalStyles,
   });
+
+  // Helper to get drag props (only when sortable is enabled)
+  const getDragProps = () => sortableDisabled ? {} : { ...attributes, ...listeners };
 
   // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading') {
@@ -245,9 +275,11 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        ref={setNodeRef}
         data-component-id={node.id}
-        onMouseDown={(e) => handleComponentClick(e, node.id)}
+        onClick={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle()}
+        {...getDragProps()}
       >
         <Component {...props}>{content}</Component>
       </div>
@@ -263,9 +295,11 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        ref={setNodeRef}
         data-component-id={node.id}
-        onMouseDown={(e) => handleComponentClick(e, node.id)}
+        onClick={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle({ display: 'inline-block' })}
+        {...getDragProps()}
       >
         <Component {...mergedProps}>{text}</Component>
       </div>
@@ -281,9 +315,11 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        ref={setNodeRef}
         data-component-id={node.id}
-        onMouseDown={(e) => handleComponentClick(e, node.id)}
+        onClick={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle({ display: 'inline-block' })}
+        {...getDragProps()}
       >
         <Component icon={iconProp} {...props} />
       </div>
@@ -297,8 +333,9 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       // Render Modal content directly without the blocking overlay
       return (
         <div
+          ref={setNodeRef}
           data-component-id={node.id}
-          onMouseDown={(e) => handleComponentClick(e, node.id)}
+          onClick={(e) => handleComponentClick(e, node.id)}
           style={{
             ...getWrapperStyle(),
             backgroundColor: '#fff',
@@ -308,6 +345,8 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
             minWidth: '400px',
             maxWidth: '600px',
           }}
+          {...attributes}
+          {...listeners}
         >
           {/* Modal header */}
           <div style={{
@@ -333,9 +372,11 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
     const mergedProps = { ...definition.defaultProps, ...props };
     return (
       <div
+        ref={setNodeRef}
         data-component-id={node.id}
-        onMouseDown={(e) => handleComponentClick(e, node.id)}
+        onClick={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle()}
+        {...getDragProps()}
       >
         <Component {...mergedProps}>
           {node.children && node.children.length > 0
@@ -564,9 +605,12 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
       return (
         <div
+          ref={setNodeRef}
           data-component-id={node.id}
-          onMouseDown={(e) => handleComponentClick(e, node.id)}
+          onClick={(e) => handleComponentClick(e, node.id)}
           style={getWrapperStyle({ minHeight: '400px', height: '100%' })}
+          {...attributes}
+          {...listeners}
         >
           <Component {...mergedProps} />
         </div>
@@ -575,8 +619,9 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
       console.error('DataViews rendering error:', error);
       return (
         <div
+          ref={setNodeRef}
           data-component-id={node.id}
-          onMouseDown={(e) => handleComponentClick(e, node.id)}
+          onClick={(e) => handleComponentClick(e, node.id)}
           style={{
             ...getWrapperStyle(),
             padding: '16px',
@@ -585,6 +630,8 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
             borderRadius: '4px',
             color: '#856404',
           }}
+          {...attributes}
+          {...listeners}
         >
           <strong>DataViews Error:</strong> Failed to render component. Check console for details.
         </div>
@@ -640,9 +687,11 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
     return (
       <div
+        ref={setNodeRef}
         data-component-id={node.id}
-        onMouseDown={(e) => handleComponentClick(e, node.id)}
+        onClick={(e) => handleComponentClick(e, node.id)}
         style={getWrapperStyle({ padding: '4px' })}
+        {...getDragProps()}
       >
         <Component {...mergedProps} />
       </div>
@@ -660,9 +709,12 @@ export const RenderNode: React.FC<{ node: ComponentNode; renderInteractive?: boo
 
   return (
     <div
+      ref={setNodeRef}
       data-component-id={node.id}
-      onMouseDown={(e) => handleComponentClick(e, node.id)}
+      onClick={(e) => handleComponentClick(e, node.id)}
       style={{ ...getWrapperStyle(), position: showGridLines ? 'relative' : undefined }}
+      {...attributes}
+      {...listeners}
     >
       <Component {...mergedProps}>
         {node.children && node.children.length > 0

@@ -1,6 +1,5 @@
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
-import { ROOT_VSTACK_ID } from '../ComponentTreeContext';
 
 export interface ValidationError {
   path: string;
@@ -30,15 +29,7 @@ export function validateTree(tree: ComponentNode[]): ValidationResult {
     return { valid: false, errors };
   }
 
-  // Root must be VStack with ROOT_VSTACK_ID
-  const root = tree[0];
-  if (!root || root.id !== ROOT_VSTACK_ID || root.type !== 'VStack') {
-    errors.push({
-      path: 'root',
-      message: `Root node must be VStack with id="${ROOT_VSTACK_ID}"`,
-      severity: 'error',
-    });
-  }
+  // Figma-style: Allow any top-level components, no root constraint
 
   // Validate each node recursively
   function validateNode(node: any, path: string): void {
