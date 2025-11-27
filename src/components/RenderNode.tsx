@@ -236,6 +236,10 @@ export const RenderNode: React.FC<{
 
   // Figma-style drag: Find nearest selected ancestor to drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTimeRef.current;
+    console.log('[MouseDown] Event on node:', node.id, 'timeSinceLastClick:', timeSinceLastClick);
+
     // Skip if in play mode or already dragging
     if (isPlayMode || draggedNodeId) return;
 
@@ -257,19 +261,21 @@ export const RenderNode: React.FC<{
       currentId = parent.id;
     }
 
+    console.log('[MouseDown] dragTargetId:', dragTargetId, 'timeSinceLastClick:', timeSinceLastClick);
+
     // If we found a selected ancestor, prepare for potential drag
     if (dragTargetId && dragTargetId !== ROOT_VSTACK_ID) {
       // Don't set up drag if we're in a potential double-click window
-      const timeSinceLastClick = Date.now() - lastClickTimeRef.current;
       if (timeSinceLastClick < 350) {
         // Within double-click window - don't prepare for drag, let event proceed normally
-        console.log('[Drag] Skipping drag setup - within double-click window');
+        console.log('[Drag] Skipping drag setup - within double-click window, timeSinceLastClick:', timeSinceLastClick);
         return;
       }
 
-      // Only prevent default for drag, not for double-clicks
-      e.preventDefault();
-      e.stopPropagation();
+      // DON'T preventDefault here - let click events work for double-click detection
+      // We'll preventDefault in mousemove when we actually start dragging
+
+      console.log('[Drag] Prepared for potential drag, timeSinceLastClick:', timeSinceLastClick);
 
       // Capture initial mouse position for drag threshold
       dragStartPosRef.current = { x: e.clientX, y: e.clientY };
@@ -277,7 +283,6 @@ export const RenderNode: React.FC<{
 
       // Store the drag target ID temporarily (will start drag after threshold)
       (window as any).__pendingDragTargetId = dragTargetId;
-      console.log('[Drag] Prepared for potential drag, waiting for threshold');
     }
   }, [isPlayMode, draggedNodeId, node.id, selectedNodeIds, tree]);
 
@@ -472,9 +477,17 @@ export const RenderNode: React.FC<{
 
   // Document-level mouse up for drop
   React.useEffect(() => {
-    if (!draggedNodeId) return;
-
     const handleMouseUp = () => {
+      // Clear pending drag state if we didn't start dragging
+      if ((window as any).__pendingDragTargetId && !draggedNodeId) {
+        console.log('[MouseUp] Clearing pending drag - no drag started');
+        (window as any).__pendingDragTargetId = null;
+        dragStartPosRef.current = null;
+        dragThresholdMet.current = false;
+        return;
+      }
+
+      if (!draggedNodeId) return;
       // Capture values immediately to avoid race conditions
       const targetSiblingId = hoveredSiblingId;
       const targetPosition = dropPosition;
@@ -536,7 +549,7 @@ export const RenderNode: React.FC<{
 
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, [draggedNodeId, hoveredSiblingId, dropPosition, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition, setJustFinishedDragging]);
+  }, [draggedNodeId, hoveredSiblingId, dropPosition, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition, setJustFinishedDragging, node.id]);
 
   // Skip rendering interactive components unless explicitly allowed
   if (INTERACTIVE_COMPONENT_TYPES.includes(node.type) && !renderInteractive) {
