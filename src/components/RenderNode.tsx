@@ -238,7 +238,6 @@ export const RenderNode: React.FC<{
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const now = Date.now();
     const timeSinceLastClick = now - lastClickTimeRef.current;
-    console.log('[MouseDown] Event on node:', node.id, 'timeSinceLastClick:', timeSinceLastClick);
 
     // Skip if in play mode or already dragging
     if (isPlayMode || draggedNodeId) return;
@@ -261,21 +260,16 @@ export const RenderNode: React.FC<{
       currentId = parent.id;
     }
 
-    console.log('[MouseDown] dragTargetId:', dragTargetId, 'timeSinceLastClick:', timeSinceLastClick);
-
     // If we found a selected ancestor, prepare for potential drag
     if (dragTargetId && dragTargetId !== ROOT_VSTACK_ID) {
       // Don't set up drag if we're in a potential double-click window
       if (timeSinceLastClick < 350) {
         // Within double-click window - don't prepare for drag, let event proceed normally
-        console.log('[Drag] Skipping drag setup - within double-click window, timeSinceLastClick:', timeSinceLastClick);
         return;
       }
 
       // DON'T preventDefault here - let click events work for double-click detection
       // We'll preventDefault in mousemove when we actually start dragging
-
-      console.log('[Drag] Prepared for potential drag, timeSinceLastClick:', timeSinceLastClick);
 
       // Capture initial mouse position for drag threshold
       dragStartPosRef.current = { x: e.clientX, y: e.clientY };
@@ -336,13 +330,6 @@ export const RenderNode: React.FC<{
               }
             });
             setSiblingBounds(bounds);
-            console.log('[Drag Start] Sibling bounds calculated:', {
-              parentType: parent.type,
-              layoutDirection: parent.type === 'VStack' ? 'vertical' : parent.type === 'Grid' ? 'grid' : 'horizontal',
-              columns: parent.type === 'Grid' ? (parent.props?.columns || 3) : 'N/A',
-              siblingCount: bounds.length,
-              siblings: bounds.map(b => ({ id: b.id, index: b.index }))
-            });
 
             // Capture dragged component size and clone it
             const draggedElement = document.querySelector(`[data-component-id="${pendingDragTargetId}"]`) as HTMLElement;
@@ -370,13 +357,16 @@ export const RenderNode: React.FC<{
               clone.setAttribute('data-drag-clone', 'true');
               document.body.appendChild(clone);
               clonedElementRef.current = clone;
-              console.log('[Drag Start] Clone created and attached to body for node:', pendingDragTargetId);
             }
 
             // Start the drag
             setDraggedNodeId(pendingDragTargetId);
             setIsDragging(true);
             (window as any).__pendingDragTargetId = null;
+
+            // Prevent text selection during drag
+            document.body.style.userSelect = 'none';
+            document.body.style.webkitUserSelect = 'none';
           }
         }
         return;
@@ -392,62 +382,47 @@ export const RenderNode: React.FC<{
         setGhostPosition({ x: e.clientX, y: e.clientY });
 
         // Use geometric slot detection with pre-calculated sibling bounds
+        // Add buffer zone for more forgiving hit detection
+        const BUFFER = 15; // pixels of slack on each side
         let foundSlot = false;
-        console.log('[Hover] Checking siblings, count:', siblingBounds.length, 'layoutDirection:', parentLayoutDirection);
         for (let i = 0; i < siblingBounds.length; i++) {
           const sibling = siblingBounds[i];
           if (sibling.id === draggedNodeId) continue; // Skip self
 
           const rect = sibling.rect;
           if (parentLayoutDirection === 'vertical') {
-            // Vertical layout: check Y position
-            const midpoint = rect.top + rect.height / 2;
-            if (e.clientY < midpoint && i === 0) {
-              // Before first item
-              setHoveredSiblingId(sibling.id);
-              setDropPosition('before');
-              foundSlot = true;
-              break;
-            } else if (e.clientY < rect.bottom) {
-              // Within this sibling's bounds
+            // Vertical layout: check Y position with buffer
+            if (e.clientY >= rect.top - BUFFER && e.clientY <= rect.bottom + BUFFER) {
+              const midpoint = rect.top + rect.height / 2;
               const position = e.clientY < midpoint ? 'before' : 'after';
-              console.log(`[Hover Detection] Vertical - hovering over ${sibling.id}, position: ${position}`);
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
               break;
             }
           } else if (parentLayoutDirection === 'horizontal') {
-            // Horizontal layout: check X position
-            const midpoint = rect.left + rect.width / 2;
-            if (e.clientX < midpoint && i === 0) {
-              // Before first item
-              setHoveredSiblingId(sibling.id);
-              setDropPosition('before');
-              foundSlot = true;
-              break;
-            } else if (e.clientX < rect.right) {
-              // Within this sibling's bounds
+            // Horizontal layout: check X position with buffer
+            if (e.clientX >= rect.left - BUFFER && e.clientX <= rect.right + BUFFER) {
+              const midpoint = rect.left + rect.width / 2;
               const position = e.clientX < midpoint ? 'before' : 'after';
-              console.log(`[Hover Detection] Horizontal - hovering over ${sibling.id}, position: ${position}`);
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
               break;
             }
           } else {
-            // Grid layout: use 2D geometric detection (check both X and Y)
+            // Grid layout: use 2D geometric detection with buffer zone
             const isInsideRect =
-              e.clientX >= rect.left &&
-              e.clientX <= rect.right &&
-              e.clientY >= rect.top &&
-              e.clientY <= rect.bottom;
+              e.clientX >= rect.left - BUFFER &&
+              e.clientX <= rect.right + BUFFER &&
+              e.clientY >= rect.top - BUFFER &&
+              e.clientY <= rect.bottom + BUFFER;
 
             if (isInsideRect) {
-              // Cursor is inside this sibling's bounds - determine before/after
-              const midpoint = rect.left + rect.width / 2;
-              const position = e.clientX < midpoint ? 'before' : 'after';
-              console.log(`[Hover Detection] Grid - hovering over ${sibling.id}, position: ${position}`);
+              // Cursor is inside this sibling's bounds (with buffer) - determine before/after
+              // Use fuzzy midpoint: 30% is "before", 70% is "after", middle is fuzzy
+              const relativeX = (e.clientX - rect.left) / rect.width;
+              const position = relativeX < 0.5 ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
@@ -480,7 +455,6 @@ export const RenderNode: React.FC<{
     const handleMouseUp = () => {
       // Clear pending drag state if we didn't start dragging
       if ((window as any).__pendingDragTargetId && !draggedNodeId) {
-        console.log('[MouseUp] Clearing pending drag - no drag started');
         (window as any).__pendingDragTargetId = null;
         dragStartPosRef.current = null;
         dragThresholdMet.current = false;
@@ -492,20 +466,9 @@ export const RenderNode: React.FC<{
       const targetSiblingId = hoveredSiblingId;
       const targetPosition = dropPosition;
 
-      console.log('[Drop] Mouse up detected:', {
-        draggedNodeId,
-        targetSiblingId,
-        targetPosition,
-        hasValidTarget: !!(targetSiblingId && targetPosition)
-      });
-
       // Perform drop if we have a valid target
       if (targetSiblingId && targetPosition) {
-        console.log('[Drop] Calling reorderComponent');
         reorderComponent(draggedNodeId, targetSiblingId, targetPosition);
-        console.log('[Drop] Reorder completed');
-      } else {
-        console.log('[Drop] No valid drop target, canceling drag');
       }
 
       // Set flag to prevent click event after drag
@@ -516,7 +479,6 @@ export const RenderNode: React.FC<{
 
       // Remove cloned element
       if (clonedElementRef.current) {
-        console.log('[Drop] Removing cloned element from node:', node.id);
         try {
           document.body.removeChild(clonedElementRef.current);
           clonedElementRef.current = null;
@@ -528,9 +490,12 @@ export const RenderNode: React.FC<{
       // Fallback: Remove any drag clone that might be lingering
       const orphanedClone = document.querySelector('[data-drag-clone="true"]');
       if (orphanedClone) {
-        console.log('[Drop] Removing orphaned clone via fallback');
         orphanedClone.remove();
       }
+
+      // Restore text selection
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
 
       // Cleanup drag state
       setDraggedNodeId(null);
@@ -635,7 +600,6 @@ export const RenderNode: React.FC<{
           const shiftAmount = draggedSize.height + parentGap;
           const direction = dropPosition === 'before' ? -1 : 1;
           transform = `translateY(${direction * shiftAmount}px)`;
-          console.log(`[Animation] VStack node ${node.id}: translateY(${direction * shiftAmount}px)`);
         } else if (parent.type === 'Grid') {
           // Grid layout: calculate 2D displacement
           const siblings = parent.children || [];
@@ -709,8 +673,14 @@ export const RenderNode: React.FC<{
       backgroundColor,
 
       // Sibling animation: shift to make space for drop
-      transform,
-      transition: 'transform 0.2s ease',
+      // Only apply transform and transition when actually animating to prevent unwanted animations
+      ...(shouldAnimateAsSibling && transform !== 'none' ? {
+        transform,
+        transition: 'transform 0.2s ease',
+      } : {
+        transform: 'none',
+        transition: 'none',
+      }),
     };
 
     return { ...baseStyle, ...additionalStyles };
