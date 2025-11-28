@@ -477,7 +477,22 @@ export const RenderNode: React.FC<{
 
       // Perform drop if we have a valid target
       if (targetSiblingId && targetPosition) {
-        reorderComponent(draggedNodeId, targetSiblingId, targetPosition);
+        // Validate that dragged item and target share the same parent
+        // This prevents cross-container drops (e.g., from one Grid to another)
+        const draggedParent = findParent(tree, draggedNodeId);
+        const targetParent = findParent(tree, targetSiblingId);
+
+        if (draggedParent && targetParent && draggedParent.id === targetParent.id) {
+          // Same parent - safe to reorder
+          reorderComponent(draggedNodeId, targetSiblingId, targetPosition);
+        } else {
+          console.warn('[Drop] Prevented cross-container drop:', {
+            draggedNodeId,
+            draggedParent: draggedParent?.id,
+            targetSiblingId,
+            targetParent: targetParent?.id,
+          });
+        }
       }
 
       // Set flag to prevent click event after drag

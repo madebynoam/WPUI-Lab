@@ -251,6 +251,24 @@ export const reorderNodeInTree = (
     return tree;
   }
 
+  // For 'before' and 'after' positions, validate that items share the same parent
+  // This prevents cross-container reordering
+  if (position === 'before' || position === 'after') {
+    const activeParent = findParent(tree, activeId);
+    const overParent = findParent(tree, overId);
+
+    // Both must have parents and they must be the same
+    if (!activeParent || !overParent || activeParent.id !== overParent.id) {
+      console.warn('Cannot reorder items from different parent containers:', {
+        activeId,
+        activeParent: activeParent?.id,
+        overId,
+        overParent: overParent?.id,
+      });
+      return tree;
+    }
+  }
+
   // Find and remove the active node
   const activeNode = findNodeById(tree, activeId);
   if (!activeNode) return tree;
