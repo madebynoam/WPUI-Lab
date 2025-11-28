@@ -146,8 +146,9 @@ export const RenderNode: React.FC<{
       console.log('[Figma Selection] SINGLE CLICK detected');
 
       // Check if clicked element is inside current selection
+      // Treat root-vstack as "no selection" for single-click purposes
       const currentSelection = selectedNodeIds[0];
-      if (currentSelection) {
+      if (currentSelection && currentSelection !== ROOT_VSTACK_ID) {
         const path = findPathBetweenNodes(tree, currentSelection, hitTargetId);
         console.log('[Figma Selection] Path from current selection to clicked element:', path.map(n => ({ id: n.id, type: n.type })));
 
