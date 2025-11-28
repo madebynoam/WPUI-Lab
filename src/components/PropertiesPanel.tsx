@@ -174,6 +174,7 @@ export const PropertiesPanel: React.FC = () => {
     const backgroundColor =
       firstNode.props.backgroundColor ?? "rgb(249, 250, 251)";
     const padding = firstNode.props.padding ?? 20;
+    const spacing = firstNode.props.spacing ?? 2;
 
     // Get current page theme
     const currentPage = pages.find((p) => p.id === currentPageId);
@@ -268,6 +269,19 @@ export const PropertiesPanel: React.FC = () => {
                   })
                 }
                 help="Padding around the page content (multiplier of 4)"
+              />
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              <NumberControl
+                label="Gap"
+                value={spacing}
+                onChange={(value) =>
+                  updateComponentProps(selectedNodeIds[0], {
+                    spacing: Number(value),
+                  })
+                }
+                help="Gap between page elements (multiplier of 4)"
               />
             </div>
           </PanelBody>
