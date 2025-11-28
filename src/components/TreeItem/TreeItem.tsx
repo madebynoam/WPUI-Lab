@@ -121,7 +121,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         ref={wrapperRef}
         style={
           {
-            '--spacing': `${indentationWidth * depth + 8}px`,
+            '--spacing': `${depth === 0 ? 0 : indentationWidth * depth + 8}px`,
           } as CSSProperties
         }
         {...props}
