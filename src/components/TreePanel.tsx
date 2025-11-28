@@ -229,8 +229,11 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			activeId != null ? [activeId, ...collapsedItems] : collapsedItems
 		);
 
-		// Hide the root VStack (page node) from layers panel
-		return filteredTree.filter(item => item.id !== ROOT_VSTACK_ID);
+		// Hide the root VStack (page node) from layers panel and adjust depth
+		// Since we're removing root (depth 0), subtract 1 from all depths so direct children start at 0
+		return filteredTree
+			.filter(item => item.id !== ROOT_VSTACK_ID)
+			.map(item => ({ ...item, depth: item.depth - 1 }));
 	}, [tree, activeId]);
 
 	const sortedIds = React.useMemo(() => flattenedItems.map((item) => item.id), [flattenedItems]);
