@@ -1,6 +1,7 @@
 import React from 'react';
 import { useComponentTree } from '../ComponentTreeContext';
 import { ComponentNode } from '../types';
+import { ROOT_VSTACK_ID } from '../utils/treeHelpers';
 
 export const Breadcrumb: React.FC = () => {
   const { selectedNodeIds, toggleNodeSelection, tree } = useComponentTree();
@@ -78,7 +79,7 @@ export const Breadcrumb: React.FC = () => {
               }
             }}
           >
-            {node.type}
+            {node.id === ROOT_VSTACK_ID ? 'Page' : node.type}
           </button>
         </React.Fragment>
       ))}
