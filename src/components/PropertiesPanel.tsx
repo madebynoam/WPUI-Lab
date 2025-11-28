@@ -19,6 +19,7 @@ import {
   blockDefault,
 } from "@wordpress/icons";
 import { IconPicker } from "./IconPicker";
+import { ColorVariantPicker } from "./ColorVariantPicker";
 import { TabContainer } from "./TabContainer";
 import { componentIconMap } from "./ComponentInserter";
 
@@ -458,8 +459,19 @@ export const PropertiesPanel: React.FC = () => {
                     />
                   )}
 
+                  {propDef.type === "select" && propDef.name === "colorVariant" && (
+                    <ColorVariantPicker
+                      label={propDef.name}
+                      value={currentValue || "default"}
+                      onChange={(value) =>
+                        handlePropChange(propDef.name, value)
+                      }
+                    />
+                  )}
+
                   {propDef.type === "select" &&
                     propDef.name !== "icon" &&
+                    propDef.name !== "colorVariant" &&
                     propDef.options && (
                       <SelectControl
                         label={propDef.name}
