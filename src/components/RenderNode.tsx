@@ -599,25 +599,35 @@ export const RenderNode: React.FC<{
     // Get the children array to find indices
     const siblings = thisParent.children || [];
     const thisIndex = siblings.findIndex(child => child.id === node.id);
+    const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
     const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
 
-    if (thisIndex === -1 || hoveredIndex === -1) {
+    if (thisIndex === -1 || draggedIndex === -1 || hoveredIndex === -1) {
       return false;
     }
 
-    // Shift siblings that come at or after the insertion point
-    // If dropping BEFORE hovered: shift all siblings from hovered onwards
-    // If dropping AFTER hovered: shift all siblings after hovered
+    // Determine which items should animate based on drag direction
     let shouldAnimate = false;
-    if (dropPosition === 'before') {
-      shouldAnimate = thisIndex >= hoveredIndex;
+    if (draggedIndex < hoveredIndex) {
+      // Dragging forward (left→right): items between dragged and hovered shift left
+      if (dropPosition === 'after') {
+        shouldAnimate = thisIndex > draggedIndex && thisIndex <= hoveredIndex;
+      } else {
+        shouldAnimate = thisIndex > draggedIndex && thisIndex < hoveredIndex;
+      }
     } else {
-      shouldAnimate = thisIndex > hoveredIndex;
+      // Dragging backward (right→left): items between hovered and dragged shift right
+      if (dropPosition === 'before') {
+        shouldAnimate = thisIndex >= hoveredIndex && thisIndex < draggedIndex;
+      } else {
+        shouldAnimate = thisIndex > hoveredIndex && thisIndex < draggedIndex;
+      }
     }
 
     if (shouldAnimate) {
       console.log(`[ShouldAnimate] Node ${node.id}: YES`, {
         thisIndex,
+        draggedIndex,
         hoveredIndex,
         dropPosition,
         parentType: thisParent.type
@@ -640,8 +650,13 @@ export const RenderNode: React.FC<{
 
         if (parent.type === 'VStack') {
           // Vertical layout: shift up/down
+          const siblings = parent.children || [];
+          const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
+          const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
+
           const shiftAmount = draggedSize.height + parentGap;
-          const direction = dropPosition === 'before' ? -1 : 1;
+          // Direction based on drag direction: forward (up→down) = shift up (-1), backward (down→up) = shift down (+1)
+          const direction = draggedIndex < hoveredIndex ? -1 : 1;
           transform = `translateY(${direction * shiftAmount}px)`;
         } else if (parent.type === 'Grid') {
           // Grid layout: calculate 2D displacement
@@ -689,10 +704,19 @@ export const RenderNode: React.FC<{
           }
         } else {
           // Horizontal layout (HStack): shift left/right
+          const siblings = parent.children || [];
+          const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
+          const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
+
           const shiftAmount = draggedSize.width + parentGap;
-          const direction = dropPosition === 'before' ? -1 : 1;
+          // Direction based on drag direction: forward (left→right) = shift left (-1), backward (right→left) = shift right (+1)
+          const direction = draggedIndex < hoveredIndex ? -1 : 1;
           transform = `translateX(${direction * shiftAmount}px)`;
-          console.log(`[Animation] HStack node ${node.id}: translateX(${direction * shiftAmount}px)`);
+          console.log(`[Animation] HStack node ${node.id}: translateX(${direction * shiftAmount}px)`, {
+            draggedIndex,
+            hoveredIndex,
+            direction: draggedIndex < hoveredIndex ? 'forward' : 'backward'
+          });
         }
       }
     }
