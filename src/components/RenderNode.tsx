@@ -1298,6 +1298,35 @@ export const RenderNode: React.FC<{
     }
   }
 
+  // TabPanel requires special handling - children must be a render prop function
+  if (node.type === 'TabPanel') {
+    const mergedProps = { ...definition.defaultProps, ...props };
+
+    return (
+      <div
+        ref={wrapperRef}
+        data-component-id={node.id}
+        onClick={(e) => handleComponentClick(e, node.id)}
+        onMouseDown={handleMouseDown}
+        style={getWrapperStyle({ padding: '4px' })}
+      >
+        <Component {...mergedProps}>
+          {(tab: any) => (
+            <div>
+              {node.children && node.children.length > 0
+                ? node.children.map((child) =>
+                    <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />
+                  )
+                : <div style={{ padding: '20px', color: '#666', textAlign: 'center' }}>
+                    Add components to tab: {tab.name}
+                  </div>}
+            </div>
+          )}
+        </Component>
+      </div>
+    );
+  }
+
   // Form controls and self-contained components (don't accept children)
   const formControls = [
     'TextControl',
@@ -1320,7 +1349,6 @@ export const RenderNode: React.FC<{
     'BoxControl',
     'BorderControl',
     'FormTokenField',
-    'TabPanel',
   ];
 
   if (formControls.includes(node.type)) {

@@ -1132,7 +1132,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
   TabPanel: {
     name: 'TabPanel',
     component: TabPanel,
-    acceptsChildren: false,
+    acceptsChildren: true,
     description: 'Tabbed interface for organizing content into sections.',
     defaultProps: { tabs: [{ name: 'tab1', title: 'Tab 1' }, { name: 'tab2', title: 'Tab 2' }] },
     propDefinitions: [

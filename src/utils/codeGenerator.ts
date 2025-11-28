@@ -111,6 +111,21 @@ function generateNodeCode(
   const containerComponents = ['Text', 'Heading', 'Button', 'Label', 'Paragraph', 'Div', 'Span'];
   const isContainerComponent = containerComponents.includes(componentName);
 
+  // Handle TabPanel - requires render prop pattern
+  if (componentName === 'TabPanel' && node.children && node.children.length > 0) {
+    const childrenCode = node.children
+      .map((child) => generateNodeCode(child, indent + 2, includeInteractions, handlerMap))
+      .join('\n');
+
+    return `${indentStr}<${componentName}${propsStr}>
+${indentStr}  {(tab) => (
+${indentStr}    <div>
+${childrenCode}
+${indentStr}    </div>
+${indentStr}  )}
+${indentStr}</${componentName}>`;
+  }
+
   // Handle components with children
   if (node.children && node.children.length > 0) {
     const childrenCode = node.children
