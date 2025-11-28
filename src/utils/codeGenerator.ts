@@ -51,6 +51,7 @@ function generateNodeCode(
   delete props.children;
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
+  delete props.colorVariant; // Used internally for icon colors, applied via style prop
 
   // Generate props string
   const propEntries = Object.entries(props).filter(([, value]) => value !== undefined);
