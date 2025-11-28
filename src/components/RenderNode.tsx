@@ -65,11 +65,22 @@ export const RenderNode: React.FC<{
       return;
     }
 
-    // Multi-select and range select bypass Figma-style selection
-    if (e.metaKey || e.ctrlKey || e.shiftKey) {
-      const multiSelect = e.metaKey || e.ctrlKey;
-      const rangeSelect = e.shiftKey;
-      toggleNodeSelection(hitTargetId, multiSelect, rangeSelect, tree);
+    // Handle modifier keys for selection
+    // Cmd+Shift or Ctrl+Shift = multi-select (toggle item in/out of selection)
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+      toggleNodeSelection(hitTargetId, true, false, tree);
+      return;
+    }
+
+    // Shift alone = range select
+    if (e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      toggleNodeSelection(hitTargetId, false, true, tree);
+      return;
+    }
+
+    // Cmd or Ctrl alone = normal single selection (bypass Figma logic, just select this item)
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
+      toggleNodeSelection(hitTargetId, false, false, tree);
       return;
     }
 
