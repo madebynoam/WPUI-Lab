@@ -28,8 +28,8 @@ export const RenderNode: React.FC<{
   const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Pre-calculated sibling bounds for reliable drop detection
-  const [siblingBounds, setSiblingBounds] = useState<Array<{ id: string; rect: DOMRect; index: number }>>([]);
+  // Store dragged item's parent for sibling validation
+  const [draggedItemParentId, setDraggedItemParentId] = useState<string | null>(null);
   const [parentLayoutDirection, setParentLayoutDirection] = useState<'vertical' | 'horizontal' | 'grid'>('vertical');
   const [parentGridColumns, setParentGridColumns] = useState<number>(1);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -324,10 +324,13 @@ export const RenderNode: React.FC<{
         if (distance > 5) {
           dragThresholdMet.current = true;
 
-          // Find the parent and calculate sibling bounds
+          // Find the parent and store its ID for sibling validation
           const parent = findParent(tree, pendingDragTargetId);
           if (parent) {
-            // Determine layout direction
+            // Store parent ID - used to validate drop targets are siblings
+            setDraggedItemParentId(parent.id);
+
+            // Determine layout direction for animation
             if (parent.type === 'VStack') {
               setParentLayoutDirection('vertical');
             } else if (parent.type === 'Grid') {
@@ -336,20 +339,6 @@ export const RenderNode: React.FC<{
             } else {
               setParentLayoutDirection('horizontal');
             }
-
-            // Calculate all sibling bounds
-            const bounds: Array<{ id: string; rect: DOMRect; index: number }> = [];
-            parent.children?.forEach((sibling, index) => {
-              const element = document.querySelector(`[data-component-id="${sibling.id}"]`);
-              if (element) {
-                bounds.push({
-                  id: sibling.id,
-                  rect: element.getBoundingClientRect(),
-                  index,
-                });
-              }
-            });
-            setSiblingBounds(bounds);
 
             // Capture dragged component size and clone it
             const draggedElement = document.querySelector(`[data-component-id="${pendingDragTargetId}"]`) as HTMLElement;
@@ -401,15 +390,25 @@ export const RenderNode: React.FC<{
         }
         setGhostPosition({ x: e.clientX, y: e.clientY });
 
-        // Use geometric slot detection with pre-calculated sibling bounds
-        // Add buffer zone for more forgiving hit detection
+        // Simplified hover detection: check elements under cursor for same-parent siblings
+        if (!draggedItemParentId) return;
+
+        // Get parent node to access its children
+        const parent = findNodeById(tree, draggedItemParentId);
+        if (!parent || !parent.children) return;
+
         const BUFFER = 15; // pixels of slack on each side
         let foundSlot = false;
-        for (let i = 0; i < siblingBounds.length; i++) {
-          const sibling = siblingBounds[i];
+
+        // Check each sibling for hit detection
+        for (const sibling of parent.children) {
           if (sibling.id === draggedNodeId) continue; // Skip self
 
-          const rect = sibling.rect;
+          const element = document.querySelector(`[data-component-id="${sibling.id}"]`);
+          if (!element) continue;
+
+          const rect = element.getBoundingClientRect();
+
           if (parentLayoutDirection === 'vertical') {
             // Vertical layout: check Y position with buffer
             if (e.clientY >= rect.top - BUFFER && e.clientY <= rect.bottom + BUFFER) {
@@ -439,8 +438,6 @@ export const RenderNode: React.FC<{
               e.clientY <= rect.bottom + BUFFER;
 
             if (isInsideRect) {
-              // Cursor is inside this sibling's bounds (with buffer) - determine before/after
-              // Use fuzzy midpoint: 30% is "before", 70% is "after", middle is fuzzy
               const relativeX = (e.clientX - rect.left) / rect.width;
               const position = relativeX < 0.5 ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
@@ -451,16 +448,6 @@ export const RenderNode: React.FC<{
           }
         }
 
-        // Check if after last sibling
-        if (!foundSlot && siblingBounds.length > 0) {
-          const lastSibling = siblingBounds[siblingBounds.length - 1];
-          if (lastSibling.id !== draggedNodeId) {
-            setHoveredSiblingId(lastSibling.id);
-            setDropPosition('after');
-            foundSlot = true;
-          }
-        }
-
         // Don't clear hover state if no slot found - keep last valid hover
         // This prevents race conditions where mousemove clears state right before mouseup
       }
@@ -468,7 +455,7 @@ export const RenderNode: React.FC<{
 
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, [draggedNodeId, tree, setHoveredSiblingId, setDropPosition, setDraggedNodeId, setDraggedSize, siblingBounds, parentLayoutDirection]);
+  }, [draggedNodeId, tree, setHoveredSiblingId, setDropPosition, setDraggedNodeId, setDraggedSize, draggedItemParentId, parentLayoutDirection]);
 
   // Document-level mouse up for drop
   React.useEffect(() => {
@@ -487,19 +474,19 @@ export const RenderNode: React.FC<{
       const targetPosition = dropPosition;
 
       // Perform drop if we have a valid target
-      if (targetSiblingId && targetPosition) {
-        // Validate using siblingBounds - target must be in the same container
-        // siblingBounds was calculated at drag start and contains only valid siblings from same parent
-        const isValidSibling = siblingBounds.some(s => s.id === targetSiblingId);
+      if (targetSiblingId && targetPosition && draggedItemParentId) {
+        // Simple validation: check if target shares the same parent
+        const targetParent = findParent(tree, targetSiblingId);
 
-        if (isValidSibling) {
-          // Target is in siblingBounds - safe to reorder within same container
+        if (targetParent && targetParent.id === draggedItemParentId) {
+          // Same parent - safe to reorder
           reorderComponent(draggedNodeId, targetSiblingId, targetPosition);
         } else {
-          console.warn('[Drop] Prevented cross-container drop - target not in siblingBounds:', {
+          console.warn('[Drop] Prevented cross-container drop - different parents:', {
             draggedNodeId,
+            draggedItemParentId,
             targetSiblingId,
-            siblingBoundsIds: siblingBounds.map(s => s.id),
+            targetParentId: targetParent?.id,
           });
         }
       }
@@ -537,7 +524,7 @@ export const RenderNode: React.FC<{
       setDropPosition(null);
       setGhostPosition(null);
       setDraggedSize(null);
-      setSiblingBounds([]);
+      setDraggedItemParentId(null);
       setParentGridColumns(1);
       dragStartPosRef.current = null;
       dragThresholdMet.current = false;
