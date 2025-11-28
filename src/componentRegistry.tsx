@@ -76,19 +76,19 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'gap',
         type: 'number',
         defaultValue: 4,
-        description: 'Gap between items (multiplier of 4px)',
+        description: 'Gap between items (multiplier of 4)',
       },
       {
         name: 'rowGap',
         type: 'number',
         defaultValue: undefined,
-        description: 'Gap between rows (multiplier of 4px)',
+        description: 'Gap between rows (multiplier of 4)',
       },
       {
         name: 'columnGap',
         type: 'number',
         defaultValue: undefined,
-        description: 'Gap between columns (multiplier of 4px)',
+        description: 'Gap between columns (multiplier of 4)',
       },
       {
         name: 'templateColumns',
@@ -301,7 +301,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'spacing',
         type: 'number',
         defaultValue: 2,
-        description: 'Space between items (multiplier of 4px)'
+        description: 'Space between items (multiplier of 4)'
       },
       {
         name: 'alignment',
@@ -349,7 +349,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'spacing',
         type: 'number',
         defaultValue: 2,
-        description: 'Space between items (multiplier of 4px)'
+        description: 'Space between items (multiplier of 4)'
       },
       {
         name: 'alignment',
@@ -905,7 +905,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'gap',
         type: 'number',
         defaultValue: 2,
-        description: 'Gap between items (multiplier of 4px)',
+        description: 'Gap between items (multiplier of 4)',
       },
       {
         name: 'align',
@@ -968,25 +968,25 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'margin',
         type: 'number',
         defaultValue: 2,
-        description: 'Margin (multiplier of 4px)',
+        description: 'Margin (multiplier of 4)',
       },
       {
         name: 'marginTop',
         type: 'number',
         defaultValue: 0,
-        description: 'Top margin (multiplier of 4px)',
+        description: 'Top margin (multiplier of 4)',
       },
       {
         name: 'marginBottom',
         type: 'number',
         defaultValue: 0,
-        description: 'Bottom margin (multiplier of 4px)',
+        description: 'Bottom margin (multiplier of 4)',
       },
       {
         name: 'padding',
         type: 'number',
         defaultValue: 0,
-        description: 'Padding (multiplier of 4px)',
+        description: 'Padding (multiplier of 4)',
       },
     ],
   },
@@ -1002,7 +1002,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'margin',
         type: 'number',
         defaultValue: 2,
-        description: 'Margin (multiplier of 4px)',
+        description: 'Margin (multiplier of 4)',
       },
     ],
   },

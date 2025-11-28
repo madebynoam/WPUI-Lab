@@ -289,7 +289,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
           <div
             style={{
               flex: 1,
-              padding: `${pagePadding}px`,
+              padding: `${pagePadding * 4}px`,
               backgroundColor: pageBackgroundColor,
               overflow: "auto",
               display: "flex",
