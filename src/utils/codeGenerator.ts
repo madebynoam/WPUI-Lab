@@ -34,7 +34,8 @@ function generateNodeCode(
 
   // Check for text content BEFORE deleting from props
   // Treat empty strings and null as no content
-  const contentValue = node.props.content !== undefined ? node.props.content : node.props.text;
+  // Check in order: content, text, children (children is where normalized text content lives)
+  const contentValue = node.props.content ?? node.props.text ?? node.props.children;
   const hasTextContent = contentValue !== undefined && contentValue !== null && contentValue !== '';
   const textContent = contentValue;
 
