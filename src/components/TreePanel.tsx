@@ -258,6 +258,67 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		[tree, setTree]
 	);
 
+	// Auto-expand collapsed parents when an item is selected
+	const prevSelectedRef = useRef<string[]>([]);
+	useEffect(() => {
+		// Only run when selection actually changes
+		const currentSelection = selectedNodeIds.join(',');
+		const prevSelection = prevSelectedRef.current.join(',');
+
+		if (currentSelection === prevSelection || selectedNodeIds.length === 0) {
+			prevSelectedRef.current = selectedNodeIds;
+			return;
+		}
+
+		prevSelectedRef.current = selectedNodeIds;
+		const selectedId = selectedNodeIds[0];
+
+		// Find all ancestor IDs and check if any are collapsed
+		const findAncestorsAndCheckCollapsed = (
+			nodes: ComponentNode[],
+			targetId: string,
+			ancestors: ComponentNode[] = []
+		): { ancestorIds: string[]; hasCollapsed: boolean } | null => {
+			for (const node of nodes) {
+				if (node.id === targetId) {
+					return {
+						ancestorIds: ancestors.map(n => n.id),
+						hasCollapsed: ancestors.some(n => n.collapsed === true)
+					};
+				}
+				if (node.children) {
+					const result = findAncestorsAndCheckCollapsed(node.children, targetId, [...ancestors, node]);
+					if (result !== null) {
+						return result;
+					}
+				}
+			}
+			return null;
+		};
+
+		const result = findAncestorsAndCheckCollapsed(tree, selectedId);
+
+		// Only update tree if there are actually collapsed ancestors
+		if (result && result.hasCollapsed && result.ancestorIds.length > 0) {
+			const ancestorIds = result.ancestorIds;
+
+			// Expand all collapsed ancestors
+			const expandAncestors = (nodes: ComponentNode[]): ComponentNode[] => {
+				return nodes.map((node) => {
+					if (ancestorIds.includes(node.id) && node.collapsed) {
+						return { ...node, collapsed: false, children: node.children ? expandAncestors(node.children) : undefined };
+					}
+					if (node.children) {
+						return { ...node, children: expandAncestors(node.children) };
+					}
+					return node;
+				});
+			};
+
+			setTree(expandAncestors(tree));
+		}
+	}, [selectedNodeIds, tree, setTree]);
+
 	// Handle adding component
 	const handleAddComponent = (componentType: string) => {
 		const targetId = selectedNodeIds[0] || ROOT_VSTACK_ID;
