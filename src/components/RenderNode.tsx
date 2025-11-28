@@ -362,7 +362,7 @@ export const RenderNode: React.FC<{
             setDraggedItemParentId(parent.id);
 
             // Determine layout direction for animation
-            if (parent.type === 'VStack') {
+            if (parent.type === 'VStack' || (parent.type === 'Flex' && parent.props?.flexDirection === 'column')) {
               setParentLayoutDirection('vertical');
             } else if (parent.type === 'Grid') {
               setParentLayoutDirection('grid');
@@ -675,11 +675,18 @@ export const RenderNode: React.FC<{
       // Get parent to determine layout direction
       const parent = findParent(tree, node.id);
       if (parent) {
+        console.log(`[Transform Debug] Node ${node.id}: parent.type = '${parent.type}'`);
+
         // Get parent's spacing/gap (default to 8px if not set)
         const parentGap = parent.props?.gap !== undefined ?
           (typeof parent.props.gap === 'number' ? parent.props.gap * 4 : 8) : 8;
 
-        if (parent.type === 'VStack') {
+        // Check if parent uses vertical layout
+        const isVerticalLayout =
+          parent.type === 'VStack' ||
+          (parent.type === 'Flex' && parent.props?.flexDirection === 'column');
+
+        if (isVerticalLayout) {
           // Vertical layout: shift up/down
           const siblings = parent.children || [];
           const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
@@ -689,6 +696,12 @@ export const RenderNode: React.FC<{
           // Direction based on drag direction: forward (up→down) = shift up (-1), backward (down→up) = shift down (+1)
           const direction = draggedIndex < hoveredIndex ? -1 : 1;
           transform = `translateY(${direction * shiftAmount}px)`;
+          console.log(`[Animation] Vertical node ${node.id}: translateY(${direction * shiftAmount}px)`, {
+            draggedIndex,
+            hoveredIndex,
+            direction: draggedIndex < hoveredIndex ? 'forward' : 'backward',
+            parentType: parent.type
+          });
         } else if (parent.type === 'Grid') {
           // Grid layout: calculate 2D displacement
           const siblings = parent.children || [];
