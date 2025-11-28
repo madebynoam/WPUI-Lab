@@ -267,7 +267,7 @@ export const PropertiesPanel: React.FC = () => {
                     padding: Number(value),
                   })
                 }
-                help="Padding around the page content (px)"
+                help="Padding around the page content (multiplier of 4px)"
               />
             </div>
           </PanelBody>
