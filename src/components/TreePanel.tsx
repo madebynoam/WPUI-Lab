@@ -411,7 +411,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 					activeId,
 					over.id as string,
 					delta.x,
-					indentationWidth
+					indentationWidth,
+					componentRegistry
 				);
 				setCurrentProjection(projection);
 			}

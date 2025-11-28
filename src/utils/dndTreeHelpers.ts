@@ -99,7 +99,8 @@ export function getProjection(
   activeId: string,
   overId: string,
   dragOffset: number,
-  indentationWidth: number
+  indentationWidth: number,
+  componentRegistry?: Record<string, { acceptsChildren?: boolean }>
 ): Projection | null {
   const overItemIndex = items.findIndex((item) => item.id === overId);
   const activeItemIndex = items.findIndex((item) => item.id === activeId);
@@ -137,13 +138,30 @@ export function getProjection(
     }
 
     if (depth > overItem.depth) {
+      // Check if overItem accepts children before allowing nesting
+      if (componentRegistry) {
+        const overDefinition = componentRegistry[overItem.type];
+        if (overDefinition && !overDefinition.acceptsChildren) {
+          // Can't nest into this component - use its parent instead
+          return overItem.parentId;
+        }
+      }
       return overId;
     }
 
     // depth < overItem.depth - need to find ancestor at correct depth
     for (let i = overItemIndex - 1; i >= 0; i--) {
       if (items[i].depth === depth - 1) {
-        return items[i].id;
+        const candidateParent = items[i];
+        // Validate candidate parent accepts children
+        if (componentRegistry) {
+          const candidateDefinition = componentRegistry[candidateParent.type];
+          if (candidateDefinition && !candidateDefinition.acceptsChildren) {
+            // Skip this candidate - keep looking
+            continue;
+          }
+        }
+        return candidateParent.id;
       }
     }
 
@@ -151,6 +169,14 @@ export function getProjection(
   }
 
   function getMaxDepth(overItem: FlattenedNode): number {
+    // Check if overItem accepts children
+    if (componentRegistry) {
+      const overDefinition = componentRegistry[overItem.type];
+      if (overDefinition && !overDefinition.acceptsChildren) {
+        // Can't nest into this component - can only be siblings
+        return overItem.depth;
+      }
+    }
     // Can be a child of the over item
     return overItem.depth + 1;
   }
