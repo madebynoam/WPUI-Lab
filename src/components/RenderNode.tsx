@@ -119,8 +119,8 @@ export const RenderNode: React.FC<{
     if (isDoubleClick) {
       console.log('[Figma Selection] DOUBLE CLICK detected');
 
-      // For Text/Heading components, enter edit mode instead of drilling
-      if (node.type === 'Text' || node.type === 'Heading') {
+      // For Text/Heading components, enter edit mode ONLY if already selected (Figma behavior)
+      if ((node.type === 'Text' || node.type === 'Heading') && selectedNodeIds.includes(node.id)) {
         setIsEditingText(true);
         // Focus will happen via useEffect
         // Reset click tracking
@@ -848,6 +848,14 @@ export const RenderNode: React.FC<{
             style={{
               cursor: 'text',
               outline: 'none', // Remove browser default outline
+            }}
+            onClick={(e) => {
+              // Prevent clicks from bubbling up and changing selection
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => {
+              // Prevent mousedown from bubbling up to drag handlers
+              e.stopPropagation();
             }}
             onPaste={(e) => {
               // Strip all formatting and insert plain text only
