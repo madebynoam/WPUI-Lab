@@ -51,7 +51,51 @@ function generateNodeCode(
   delete props.children;
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
-  delete props.colorVariant; // Used internally for icon colors, applied via style prop
+
+  // Handle Icon colorVariant - convert to fill prop
+  if (componentName === 'Icon' && props.colorVariant) {
+    const colorVariant = props.colorVariant;
+    const colorMap: Record<string, string> = {
+      'default': 'currentColor',
+      // Content colors
+      'content-brand': 'var(--wpds-color-fg-content-brand)',
+      'content-neutral': 'var(--wpds-color-fg-content-neutral)',
+      'content-neutral-weak': 'var(--wpds-color-fg-content-neutral-weak)',
+      'content-error': 'var(--wpds-color-fg-content-error)',
+      'content-error-weak': 'var(--wpds-color-fg-content-error-weak)',
+      'content-success': 'var(--wpds-color-fg-content-success)',
+      'content-success-weak': 'var(--wpds-color-fg-content-success-weak)',
+      'content-caution': 'var(--wpds-color-fg-content-caution)',
+      'content-caution-weak': 'var(--wpds-color-fg-content-caution-weak)',
+      'content-info': 'var(--wpds-color-fg-content-info)',
+      'content-info-weak': 'var(--wpds-color-fg-content-info-weak)',
+      'content-warning': 'var(--wpds-color-fg-content-warning)',
+      'content-warning-weak': 'var(--wpds-color-fg-content-warning-weak)',
+      // Interactive colors
+      'interactive-brand': 'var(--wpds-color-fg-interactive-brand)',
+      'interactive-brand-active': 'var(--wpds-color-fg-interactive-brand-active)',
+      'interactive-brand-disabled': 'var(--wpds-color-fg-interactive-brand-disabled)',
+      'interactive-brand-strong': 'var(--wpds-color-fg-interactive-brand-strong)',
+      'interactive-brand-strong-active': 'var(--wpds-color-fg-interactive-brand-strong-active)',
+      'interactive-brand-strong-disabled': 'var(--wpds-color-fg-interactive-brand-strong-disabled)',
+      'interactive-neutral': 'var(--wpds-color-fg-interactive-neutral)',
+      'interactive-neutral-active': 'var(--wpds-color-fg-interactive-neutral-active)',
+      'interactive-neutral-disabled': 'var(--wpds-color-fg-interactive-neutral-disabled)',
+      'interactive-neutral-strong': 'var(--wpds-color-fg-interactive-neutral-strong)',
+      'interactive-neutral-strong-active': 'var(--wpds-color-fg-interactive-neutral-strong-active)',
+      'interactive-neutral-strong-disabled': 'var(--wpds-color-fg-interactive-neutral-strong-disabled)',
+      'interactive-neutral-weak': 'var(--wpds-color-fg-interactive-neutral-weak)',
+      'interactive-neutral-weak-disabled': 'var(--wpds-color-fg-interactive-neutral-weak-disabled)',
+    };
+
+    // Only add fill if colorVariant is not default
+    if (colorVariant !== 'default') {
+      props.fill = colorMap[colorVariant] || colorMap['default'];
+    }
+    delete props.colorVariant;
+  } else {
+    delete props.colorVariant;
+  }
 
   // Generate props string
   const propEntries = Object.entries(props).filter(([, value]) => value !== undefined);
