@@ -36,6 +36,7 @@ export const RenderNode: React.FC<{
   const dragThresholdMet = useRef<boolean>(false);
   const clonedElementRef = useRef<HTMLElement | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
+  const prevMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
   if (!definition) {
     return <div>Unknown component: {node.type}</div>;
@@ -390,56 +391,80 @@ export const RenderNode: React.FC<{
         }
         setGhostPosition({ x: e.clientX, y: e.clientY });
 
-        // Simplified hover detection: check elements under cursor for same-parent siblings
-        if (!draggedItemParentId) return;
+        // Direction and edge-based hover detection
+        if (!draggedItemParentId || !draggedSize || !dragOffsetRef.current) return;
 
-        // Get parent node to access its children
+        // Calculate dragged item's bounds
+        const draggedLeft = e.clientX - dragOffsetRef.current.x;
+        const draggedTop = e.clientY - dragOffsetRef.current.y;
+        const draggedRight = draggedLeft + draggedSize.width;
+        const draggedBottom = draggedTop + draggedSize.height;
+
+        // Determine drag direction
+        let movingRight = true;
+        let movingDown = true;
+        if (prevMousePosRef.current) {
+          movingRight = e.clientX >= prevMousePosRef.current.x;
+          movingDown = e.clientY >= prevMousePosRef.current.y;
+        }
+        prevMousePosRef.current = { x: e.clientX, y: e.clientY };
+
+        // Get parent node
         const parent = findNodeById(tree, draggedItemParentId);
         if (!parent || !parent.children) return;
 
-        const BUFFER = 15; // pixels of slack on each side
         let foundSlot = false;
 
-        // Check each sibling for hit detection
+        // Check each sibling
         for (const sibling of parent.children) {
-          if (sibling.id === draggedNodeId) continue; // Skip self
+          if (sibling.id === draggedNodeId) continue;
 
           const element = document.querySelector(`[data-component-id="${sibling.id}"]`);
           if (!element) continue;
 
           const rect = element.getBoundingClientRect();
+          const siblingMidX = rect.left + rect.width / 2;
+          const siblingMidY = rect.top + rect.height / 2;
 
           if (parentLayoutDirection === 'vertical') {
-            // Vertical layout: check Y position with buffer
-            if (e.clientY >= rect.top - BUFFER && e.clientY <= rect.bottom + BUFFER) {
-              const midpoint = rect.top + rect.height / 2;
-              const position = e.clientY < midpoint ? 'before' : 'after';
+            // Use leading edge based on direction
+            const leadingEdge = movingDown ? draggedBottom : draggedTop;
+
+            // Check if leading edge overlaps with sibling
+            if (leadingEdge >= rect.top && leadingEdge <= rect.bottom) {
+              // Determine position only when edge crosses midpoint
+              const position = leadingEdge < siblingMidY ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
               break;
             }
           } else if (parentLayoutDirection === 'horizontal') {
-            // Horizontal layout: check X position with buffer
-            if (e.clientX >= rect.left - BUFFER && e.clientX <= rect.right + BUFFER) {
-              const midpoint = rect.left + rect.width / 2;
-              const position = e.clientX < midpoint ? 'before' : 'after';
+            // Use leading edge based on direction
+            const leadingEdge = movingRight ? draggedRight : draggedLeft;
+
+            // Check if leading edge overlaps with sibling
+            if (leadingEdge >= rect.left && leadingEdge <= rect.right) {
+              // Determine position only when edge crosses midpoint
+              const position = leadingEdge < siblingMidX ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
               break;
             }
           } else {
-            // Grid layout: use 2D geometric detection with buffer zone
-            const isInsideRect =
-              e.clientX >= rect.left - BUFFER &&
-              e.clientX <= rect.right + BUFFER &&
-              e.clientY >= rect.top - BUFFER &&
-              e.clientY <= rect.bottom + BUFFER;
+            // Grid: Use leading edges
+            const leadingEdgeX = movingRight ? draggedRight : draggedLeft;
+            const leadingEdgeY = movingDown ? draggedBottom : draggedTop;
 
-            if (isInsideRect) {
-              const relativeX = (e.clientX - rect.left) / rect.width;
-              const position = relativeX < 0.5 ? 'before' : 'after';
+            const isInside =
+              leadingEdgeX >= rect.left &&
+              leadingEdgeX <= rect.right &&
+              leadingEdgeY >= rect.top &&
+              leadingEdgeY <= rect.bottom;
+
+            if (isInside) {
+              const position = leadingEdgeX < siblingMidX ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
               foundSlot = true;
@@ -448,8 +473,7 @@ export const RenderNode: React.FC<{
           }
         }
 
-        // Don't clear hover state if no slot found - keep last valid hover
-        // This prevents race conditions where mousemove clears state right before mouseup
+        // Keep last valid hover to prevent race conditions
       }
     };
 
