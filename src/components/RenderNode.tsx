@@ -651,7 +651,7 @@ export const RenderNode: React.FC<{
       if (dropPosition === 'before') {
         shouldAnimate = thisIndex >= hoveredIndex && thisIndex < draggedIndex;
       } else {
-        shouldAnimate = thisIndex > hoveredIndex && thisIndex < draggedIndex;
+        shouldAnimate = thisIndex >= hoveredIndex && thisIndex < draggedIndex;
       }
     }
 
