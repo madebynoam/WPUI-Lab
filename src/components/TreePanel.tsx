@@ -212,34 +212,22 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	// Get the current page object from the pages array
 	const currentPage = pages.find((page) => page.id === currentPageId);
 
-	// Flatten tree with collapsed filtering (official dnd-kit pattern)
+	// Flatten tree with collapsed filtering (matches dnd-kit SortableTree example)
 	const flattenedItems = React.useMemo(() => {
 		const flattenedTree = flattenTree(tree);
 
-		// Get collapsed node IDs - but only include nodes whose parents aren't already collapsed
-		const collapsedIds = flattenedTree.reduce<string[]>((acc, item) => {
-			if (!item.collapsed || !item.children?.length) {
-				return acc;
-			}
-
-			// Check if any ancestor is already in the collapsed list
-			let currentParentId = item.parentId;
-			while (currentParentId) {
-				if (acc.includes(currentParentId)) {
-					// Parent is already collapsed, so this node won't be visible anyway
-					return acc;
-				}
-				const parentItem = flattenedTree.find((i) => i.id === currentParentId);
-				currentParentId = parentItem?.parentId || null;
-			}
-
-			// No collapsed ancestor found, add this node to collapsedIds
-			return [...acc, item.id];
-		}, []);
+		// Simple collapsed detection - matches dnd-kit example exactly
+		const collapsedItems = flattenedTree.reduce<string[]>(
+			(acc, { children, collapsed, id }) =>
+				collapsed && children && children.length ? [...acc, id] : acc,
+			[]
+		);
 
 		// Remove children of activeId and collapsed nodes
-		const excludeIds = activeId ? [activeId, ...collapsedIds] : collapsedIds;
-		const filteredTree = removeChildrenOf(flattenedTree, excludeIds);
+		const filteredTree = removeChildrenOf(
+			flattenedTree,
+			activeId != null ? [activeId, ...collapsedItems] : collapsedItems
+		);
 
 		// Hide the root VStack (page node) from layers panel
 		return filteredTree.filter(item => item.id !== ROOT_VSTACK_ID);

@@ -184,31 +184,23 @@ export function getChildCount(items: ComponentNode[], id: string): number {
 
 /**
  * Remove all descendants of items being dragged (prevents flashing)
+ * Matches dnd-kit SortableTree example implementation
  */
 export function removeChildrenOf(
   items: FlattenedNode[],
   ids: string[]
 ): FlattenedNode[] {
-  const excludeParentIds = new Set(ids);
+  const excludeParentIds = [...ids];
 
   return items.filter((item) => {
-    // Always keep the items in the exclude set themselves
-    if (excludeParentIds.has(item.id)) {
-      return true;
-    }
-
-    // Walk up the parent chain - if we find an excluded parent, filter this item out
-    let currentParentId = item.parentId;
-    while (currentParentId) {
-      if (excludeParentIds.has(currentParentId)) {
-        return false; // This item is a child of an excluded parent
+    if (item.parentId && excludeParentIds.includes(item.parentId)) {
+      if (item.children && item.children.length) {
+        excludeParentIds.push(item.id);
       }
-      // Find the parent and continue walking up
-      const parentItem = items.find((i) => i.id === currentParentId);
-      currentParentId = parentItem?.parentId || null;
+      return false;
     }
 
-    return true; // Not a child of any excluded parent
+    return true;
   });
 }
 
