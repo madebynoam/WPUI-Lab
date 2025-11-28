@@ -1124,10 +1124,12 @@ export const patterns: Pattern[] = [
     category: 'Actions',
     tree: {
       type: 'Grid',
+      name: 'Action cards',
       props: { columns: 3, gap: 4 },
       children: [
         {
           type: 'Card',
+          name: 'Deployments',
           props: { size: 'medium' },
           children: [
             {
@@ -1140,6 +1142,7 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'HStack',
+                      name: 'Content',
                       props: { spacing: 4, alignment: 'top', expanded: false },
                       children: [
                         {
@@ -1167,6 +1170,7 @@ export const patterns: Pattern[] = [
                     },
                     {
                       type: 'Icon',
+                      name: 'Chevron',
                       props: { icon: 'chevronRight', size: 24 },
                       children: [],
                     },
@@ -1178,6 +1182,7 @@ export const patterns: Pattern[] = [
         },
         {
           type: 'Card',
+          name: 'Analytics',
           props: { size: 'medium' },
           children: [
             {
@@ -1190,6 +1195,7 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'HStack',
+                      name: 'Content',
                       props: { spacing: 4, alignment: 'top', expanded: false },
                       children: [
                         {
@@ -1217,6 +1223,7 @@ export const patterns: Pattern[] = [
                     },
                     {
                       type: 'Icon',
+                      name: 'Chevron',
                       props: { icon: 'chevronRight', size: 24 },
                       children: [],
                     },
@@ -1228,6 +1235,7 @@ export const patterns: Pattern[] = [
         },
         {
           type: 'Card',
+          name: 'Security',
           props: { size: 'medium' },
           children: [
             {
@@ -1240,6 +1248,7 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'HStack',
+                      name: 'Content',
                       props: { spacing: 4, alignment: 'top', expanded: false },
                       children: [
                         {
@@ -1267,6 +1276,7 @@ export const patterns: Pattern[] = [
                     },
                     {
                       type: 'Icon',
+                      name: 'Chevron',
                       props: { icon: 'chevronRight', size: 24 },
                       children: [],
                     },
