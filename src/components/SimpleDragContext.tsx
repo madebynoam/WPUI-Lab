@@ -11,6 +11,8 @@ interface SimpleDragContextType {
   setDraggedSize: (size: { width: number; height: number } | null) => void;
   justFinishedDragging: boolean;
   setJustFinishedDragging: (value: boolean) => void;
+  draggedItemParentId: string | null;
+  setDraggedItemParentId: (id: string | null) => void;
 }
 
 const SimpleDragContext = createContext<SimpleDragContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ export const SimpleDragProvider: React.FC<{ children: ReactNode }> = ({ children
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
   const [draggedSize, setDraggedSize] = useState<{ width: number; height: number } | null>(null);
   const [justFinishedDragging, setJustFinishedDragging] = useState<boolean>(false);
+  const [draggedItemParentId, setDraggedItemParentId] = useState<string | null>(null);
 
   return (
     <SimpleDragContext.Provider
@@ -35,6 +38,8 @@ export const SimpleDragProvider: React.FC<{ children: ReactNode }> = ({ children
         setDraggedSize,
         justFinishedDragging,
         setJustFinishedDragging,
+        draggedItemParentId,
+        setDraggedItemParentId,
       }}
     >
       {children}

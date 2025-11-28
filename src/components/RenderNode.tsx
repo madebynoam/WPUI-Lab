@@ -23,13 +23,12 @@ export const RenderNode: React.FC<{
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
 
   // Simple drag state
-  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize, justFinishedDragging, setJustFinishedDragging } = useSimpleDrag();
+  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize, justFinishedDragging, setJustFinishedDragging, draggedItemParentId, setDraggedItemParentId } = useSimpleDrag();
   const [isDragging, setIsDragging] = useState(false);
   const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Store dragged item's parent for sibling validation
-  const [draggedItemParentId, setDraggedItemParentId] = useState<string | null>(null);
+  // Local drag state
   const [parentLayoutDirection, setParentLayoutDirection] = useState<'vertical' | 'horizontal' | 'grid'>('vertical');
   const [parentGridColumns, setParentGridColumns] = useState<number>(1);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -558,7 +557,7 @@ export const RenderNode: React.FC<{
 
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, [draggedNodeId, hoveredSiblingId, dropPosition, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition, setJustFinishedDragging, node.id]);
+  }, [draggedNodeId, hoveredSiblingId, dropPosition, draggedItemParentId, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition, setJustFinishedDragging, setDraggedItemParentId, setDraggedSize, tree, node.id]);
 
   // Skip rendering interactive components unless explicitly allowed
   if (INTERACTIVE_COMPONENT_TYPES.includes(node.type) && !renderInteractive) {
