@@ -865,7 +865,7 @@ export const RenderNode: React.FC<{
         onMouseDown={handleMouseDown}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
-        <Component icon={iconProp} style={{ color: colorMap[colorVariant] }} {...props} />
+        <Component icon={iconProp} fill={colorMap[colorVariant]} {...props} />
       </div>
     );
   }
