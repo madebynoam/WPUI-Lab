@@ -111,3 +111,28 @@
   opacity: 0.8;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
+.ProjectionIndicator {
+  position: relative;
+  height: 2px;
+  background-color: #3858e9;
+  margin-left: var(--projection-spacing);
+  margin-right: 8px;
+  margin-top: -1px;
+  margin-bottom: -1px;
+  border-radius: 1px;
+  opacity: 0.8;
+}
+
+.ProjectionIndicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #3858e9;
+  margin-left: -3px;
+}

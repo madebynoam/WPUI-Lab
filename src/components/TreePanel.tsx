@@ -711,6 +711,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 							{flattenedItems.map((item) => {
 								const isSelected = selectedNodeIds.includes(item.id);
 								const isRootVStack = item.id === ROOT_VSTACK_ID;
+								const isOverItem = overId === item.id;
+								const projectedDepth = isOverItem && currentProjection ? currentProjection.depth : undefined;
 
 								return (
 									<SortableTreeItem
@@ -727,7 +729,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 										isRootVStack={isRootVStack}
 										currentPage={currentPage}
 										canPaste={canPaste}
-										indicator={overId === item.id}
+										indicator={isOverItem}
+										projectedDepth={projectedDepth}
 										onCollapse={() => handleCollapse(item.id)}
 										onClick={(e: any) => {
 											if (editingNodeId === item.id) {

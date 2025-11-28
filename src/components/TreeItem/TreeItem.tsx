@@ -37,6 +37,7 @@ export interface TreeItemProps extends Omit<HTMLAttributes<HTMLLIElement>, 'id'>
   onEditStart?: () => void;
   onEditChange?: (name: string) => void;
   onEditEnd?: (save: boolean) => void;
+  projectedDepth?: number;
 }
 
 export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
@@ -74,6 +75,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
       onEditStart,
       onEditChange,
       onEditEnd,
+      projectedDepth,
       ...props
     },
     ref
@@ -225,6 +227,16 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
             </div>
           )}
         </div>
+
+        {/* Projection indicator - shows where item will be dropped at projected depth */}
+        {projectedDepth !== undefined && indicator && (
+          <div
+            className={styles.ProjectionIndicator}
+            style={{
+              '--projection-spacing': `${indentationWidth * projectedDepth + 8}px`,
+            } as CSSProperties}
+          />
+        )}
       </li>
     );
   }
