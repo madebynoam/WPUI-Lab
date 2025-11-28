@@ -33,6 +33,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     pasteComponent,
     canPaste,
     duplicateComponent,
+    reorderComponent,
     isPlayMode,
     pages,
     currentPageId,
@@ -230,6 +231,71 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
           toggleGridLines(selectedNodeIds[0]);
         }
       }
+
+      // Arrow keys to reorder items (Figma-style)
+      // Only single selection, not in edit mode, and not root
+      if (
+        selectedNodeIds.length === 1 &&
+        selectedNodeIds[0] !== ROOT_VSTACK_ID &&
+        !isInEditMode() &&
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
+      ) {
+        const selectedId = selectedNodeIds[0];
+        const parent = findParent(tree, selectedId);
+
+        if (!parent || !parent.children || parent.children.length < 2) {
+          return; // Can't reorder if no parent or only one child
+        }
+
+        // Determine layout direction based on parent type
+        let isVertical = false;
+        let isHorizontal = false;
+
+        if (parent.type === "VStack") {
+          isVertical = true;
+        } else if (parent.type === "HStack") {
+          isHorizontal = true;
+        } else if (parent.type === "Grid") {
+          // Grid supports both directions
+          isVertical = true;
+          isHorizontal = true;
+        } else if (parent.type === "Flex") {
+          // Check flex direction
+          const direction = parent.props?.direction || "row";
+          isVertical = direction === "column";
+          isHorizontal = direction === "row";
+        }
+
+        // Find current index
+        const currentIndex = parent.children.findIndex(
+          (child) => child.id === selectedId
+        );
+        if (currentIndex === -1) return;
+
+        let targetIndex = -1;
+
+        // Determine target index based on arrow key and layout
+        if (e.key === "ArrowUp" && isVertical) {
+          targetIndex = currentIndex - 1;
+        } else if (e.key === "ArrowDown" && isVertical) {
+          targetIndex = currentIndex + 1;
+        } else if (e.key === "ArrowLeft" && isHorizontal) {
+          targetIndex = currentIndex - 1;
+        } else if (e.key === "ArrowRight" && isHorizontal) {
+          targetIndex = currentIndex + 1;
+        }
+
+        // Check if target index is valid
+        if (targetIndex >= 0 && targetIndex < parent.children.length) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const targetSibling = parent.children[targetIndex];
+          // Determine position: if moving forward use 'after', if moving backward use 'before'
+          const position = targetIndex > currentIndex ? "after" : "before";
+          reorderComponent(selectedId, targetSibling.id, position);
+        }
+      }
     };
 
     // Attach to document to catch events earlier
@@ -251,6 +317,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     pasteComponent,
     canPaste,
     duplicateComponent,
+    reorderComponent,
     isInEditMode,
     isPlayMode,
   ]);
