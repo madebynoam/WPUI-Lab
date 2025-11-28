@@ -80,15 +80,15 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       },
       {
         name: 'rowGap',
-        type: 'string',
-        defaultValue: '',
-        description: 'Gap between rows (CSS value)',
+        type: 'number',
+        defaultValue: undefined,
+        description: 'Gap between rows (multiplier of 4px)',
       },
       {
         name: 'columnGap',
-        type: 'string',
-        defaultValue: '',
-        description: 'Gap between columns (CSS value)',
+        type: 'number',
+        defaultValue: undefined,
+        description: 'Gap between columns (multiplier of 4px)',
       },
       {
         name: 'templateColumns',
