@@ -1,5 +1,6 @@
 import { ComponentTreeAction } from './ComponentTreeTypes';
 import { ComponentNode, Page, HistoryState } from './types';
+import { componentRegistry } from './componentRegistry';
 import {
   ROOT_VSTACK_ID,
   getCurrentTree,
@@ -392,8 +393,7 @@ export function componentTreeReducer(
         const result = findNodeWithParent(currentTree, selectedId);
         if (result) {
           const { node, parentId: nodeParentId } = result;
-          // Import componentRegistry to check if node accepts children
-          const { componentRegistry } = require('./componentRegistry');
+          // Check if node accepts children
           const definition = componentRegistry[node.type];
 
           // If selected node is a container, paste inside it
