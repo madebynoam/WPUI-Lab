@@ -362,7 +362,7 @@ export const RenderNode: React.FC<{
             setDraggedItemParentId(parent.id);
 
             // Determine layout direction for animation
-            if (parent.type === 'VStack' || (parent.type === 'Flex' && parent.props?.flexDirection === 'column')) {
+            if (parent.type === 'VStack' || (parent.type === 'Flex' && parent.props?.direction === 'column')) {
               setParentLayoutDirection('vertical');
             } else if (parent.type === 'Grid') {
               setParentLayoutDirection('grid');
@@ -684,7 +684,7 @@ export const RenderNode: React.FC<{
         // Check if parent uses vertical layout
         const isVerticalLayout =
           parent.type === 'VStack' ||
-          (parent.type === 'Flex' && parent.props?.flexDirection === 'column');
+          (parent.type === 'Flex' && parent.props?.direction === 'column');
 
         if (isVerticalLayout) {
           // Vertical layout: shift up/down
