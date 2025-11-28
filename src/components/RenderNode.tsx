@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { usePlayModeState } from '../PlayModeContext';
 import { ComponentNode } from '../types';
@@ -36,6 +36,23 @@ export const RenderNode: React.FC<{
   const clonedElementRef = useRef<HTMLElement | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const prevMousePosRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Text editing state for inline contenteditable
+  const [isEditingText, setIsEditingText] = useState(false);
+  const editableRef = useRef<HTMLDivElement>(null);
+
+  // Focus editable element when entering edit mode
+  useEffect(() => {
+    if (isEditingText && editableRef.current) {
+      editableRef.current.focus();
+      // Select all text for easy replacement
+      const range = document.createRange();
+      const selection = window.getSelection();
+      range.selectNodeContents(editableRef.current);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }, [isEditingText]);
 
   if (!definition) {
     return <div>Unknown component: {node.type}</div>;
@@ -101,6 +118,17 @@ export const RenderNode: React.FC<{
 
     if (isDoubleClick) {
       console.log('[Figma Selection] DOUBLE CLICK detected');
+
+      // For Text/Heading components, enter edit mode instead of drilling
+      if (node.type === 'Text' || node.type === 'Heading') {
+        setIsEditingText(true);
+        // Focus will happen via useEffect
+        // Reset click tracking
+        lastClickTimeRef.current = 0;
+        lastClickedIdRef.current = null;
+        return;
+      }
+
       // DOUBLE CLICK: Drill down from current selection
       const currentSelection = selectedNodeIds[0];
 
@@ -802,6 +830,70 @@ export const RenderNode: React.FC<{
     // Data is normalized at the boundary, so content is always in props.children
     const content = props.children || definition.defaultProps?.children;
 
+    // Render contenteditable wrapper preserving component styling (WYSIWYG)
+    if (isEditingText) {
+      return (
+        <div
+          ref={wrapperRef}
+          data-component-id={node.id}
+          style={{
+            ...getWrapperStyle(),
+            outline: '2px solid #3858e9',
+          }}
+        >
+          <div
+            ref={editableRef}
+            contentEditable
+            suppressContentEditableWarning
+            style={{
+              cursor: 'text',
+              outline: 'none', // Remove browser default outline
+            }}
+            onPaste={(e) => {
+              // Strip all formatting and insert plain text only
+              e.preventDefault();
+              const plainText = e.clipboardData.getData('text/plain');
+              document.execCommand('insertText', false, plainText);
+            }}
+            onKeyDown={(e) => {
+              // Block formatting shortcuts
+              if ((e.ctrlKey || e.metaKey) && ['b', 'i', 'u'].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+                return;
+              }
+
+              // Exit edit mode on Escape
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                setIsEditingText(false);
+                return;
+              }
+
+              // Save and exit on Enter (for single-line text only, not headings)
+              if (e.key === 'Enter' && node.type === 'Text') {
+                e.preventDefault();
+                setIsEditingText(false);
+                return;
+              }
+            }}
+            onBlur={() => {
+              // Save plain text content and exit edit mode
+              const newContent = editableRef.current?.textContent || '';
+              updateComponentProps(node.id, { children: newContent });
+              setIsEditingText(false);
+            }}
+            onContextMenu={(e) => {
+              // Disable right-click format menu
+              e.preventDefault();
+            }}
+          >
+            <Component {...props}>{content}</Component>
+          </div>
+        </div>
+      );
+    }
+
+    // Normal rendering (non-edit mode)
     return (
       <div
         ref={wrapperRef}
