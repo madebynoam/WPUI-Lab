@@ -848,13 +848,35 @@ export const RenderNode: React.FC<{
 
     const colorMap: Record<string, string> = {
       'default': 'currentColor',
-      'brand': 'var(--wpds-color-fg-interactive-brand)',
-      'neutral': 'var(--wpds-color-fg-content-neutral)',
-      'neutral-weak': 'var(--wpds-color-fg-content-neutral-weak)',
-      'error': 'var(--wpds-color-fg-content-error)',
-      'success': 'var(--wpds-color-fg-content-success)',
-      'caution': 'var(--wpds-color-fg-content-caution)',
-      'info': 'var(--wpds-color-fg-content-info)',
+      // Content colors
+      'content-brand': 'var(--wpds-color-fg-content-brand)',
+      'content-neutral': 'var(--wpds-color-fg-content-neutral)',
+      'content-neutral-weak': 'var(--wpds-color-fg-content-neutral-weak)',
+      'content-error': 'var(--wpds-color-fg-content-error)',
+      'content-error-weak': 'var(--wpds-color-fg-content-error-weak)',
+      'content-success': 'var(--wpds-color-fg-content-success)',
+      'content-success-weak': 'var(--wpds-color-fg-content-success-weak)',
+      'content-caution': 'var(--wpds-color-fg-content-caution)',
+      'content-caution-weak': 'var(--wpds-color-fg-content-caution-weak)',
+      'content-info': 'var(--wpds-color-fg-content-info)',
+      'content-info-weak': 'var(--wpds-color-fg-content-info-weak)',
+      'content-warning': 'var(--wpds-color-fg-content-warning)',
+      'content-warning-weak': 'var(--wpds-color-fg-content-warning-weak)',
+      // Interactive colors
+      'interactive-brand': 'var(--wpds-color-fg-interactive-brand)',
+      'interactive-brand-active': 'var(--wpds-color-fg-interactive-brand-active)',
+      'interactive-brand-disabled': 'var(--wpds-color-fg-interactive-brand-disabled)',
+      'interactive-brand-strong': 'var(--wpds-color-fg-interactive-brand-strong)',
+      'interactive-brand-strong-active': 'var(--wpds-color-fg-interactive-brand-strong-active)',
+      'interactive-brand-strong-disabled': 'var(--wpds-color-fg-interactive-brand-strong-disabled)',
+      'interactive-neutral': 'var(--wpds-color-fg-interactive-neutral)',
+      'interactive-neutral-active': 'var(--wpds-color-fg-interactive-neutral-active)',
+      'interactive-neutral-disabled': 'var(--wpds-color-fg-interactive-neutral-disabled)',
+      'interactive-neutral-strong': 'var(--wpds-color-fg-interactive-neutral-strong)',
+      'interactive-neutral-strong-active': 'var(--wpds-color-fg-interactive-neutral-strong-active)',
+      'interactive-neutral-strong-disabled': 'var(--wpds-color-fg-interactive-neutral-strong-disabled)',
+      'interactive-neutral-weak': 'var(--wpds-color-fg-interactive-neutral-weak)',
+      'interactive-neutral-weak-disabled': 'var(--wpds-color-fg-interactive-neutral-weak-disabled)',
     };
 
     return (
