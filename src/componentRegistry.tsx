@@ -570,6 +570,13 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: 24,
         description: 'Icon size in pixels',
       },
+      {
+        name: 'colorVariant',
+        type: 'select',
+        options: ['default', 'brand', 'neutral', 'neutral-weak', 'error', 'success', 'caution', 'info'],
+        defaultValue: 'default',
+        description: 'Semantic color from WordPress theme system',
+      },
     ],
   },
 

@@ -842,6 +842,21 @@ export const RenderNode: React.FC<{
     const iconProp = (wpIcons as Record<string, any>)[iconName] || (wpIcons as Record<string, any>).wordpress;
     delete props.icon;
 
+    // Map colorVariant to WordPress theme CSS variables
+    const colorVariant = props.colorVariant || 'default';
+    delete props.colorVariant;
+
+    const colorMap: Record<string, string> = {
+      'default': 'currentColor',
+      'brand': 'var(--wpds-color-fg-interactive-brand)',
+      'neutral': 'var(--wpds-color-fg-content-neutral)',
+      'neutral-weak': 'var(--wpds-color-fg-content-neutral-weak)',
+      'error': 'var(--wpds-color-fg-content-error)',
+      'success': 'var(--wpds-color-fg-content-success)',
+      'caution': 'var(--wpds-color-fg-content-caution)',
+      'info': 'var(--wpds-color-fg-content-info)',
+    };
+
     return (
       <div
         ref={wrapperRef}
@@ -850,7 +865,7 @@ export const RenderNode: React.FC<{
         onMouseDown={handleMouseDown}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
-        <Component icon={iconProp} {...props} />
+        <Component icon={iconProp} style={{ color: colorMap[colorVariant] }} {...props} />
       </div>
     );
   }
