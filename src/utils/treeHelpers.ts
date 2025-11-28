@@ -102,20 +102,13 @@ export const insertNodeInTree = (
   parentId?: string,
   index?: number
 ): ComponentNode[] => {
-  if (!parentId) {
-    // Add to root level
-    const newTree = [...tree];
-    if (index !== undefined) {
-      newTree.splice(index, 0, node);
-    } else {
-      newTree.push(node);
-    }
-    return newTree;
-  }
+  // Default to root VStack if no parentId specified
+  // This ensures all components are children of root, never siblings
+  const effectiveParentId = parentId || ROOT_VSTACK_ID;
 
   // Add to specific parent
   return tree.map(n => {
-    if (n.id === parentId) {
+    if (n.id === effectiveParentId) {
       const updatedChildren = [...(n.children || [])];
       if (index !== undefined) {
         updatedChildren.splice(index, 0, node);
@@ -125,7 +118,7 @@ export const insertNodeInTree = (
       return { ...n, children: updatedChildren };
     }
     if (n.children) {
-      return { ...n, children: insertNodeInTree(n.children, node, parentId, index) };
+      return { ...n, children: insertNodeInTree(n.children, node, effectiveParentId, index) };
     }
     return n;
   });

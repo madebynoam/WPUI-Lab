@@ -50,6 +50,15 @@ export const RenderNode: React.FC<{
       return;
     }
 
+    // Clicking root VStack clears selection (clicking empty canvas area)
+    if (hitTargetId === ROOT_VSTACK_ID) {
+      // Clear all selections when clicking on the root container (empty canvas)
+      if (selectedNodeIds.length > 0) {
+        toggleNodeSelection('', false, false, tree); // Empty string clears selection
+      }
+      return;
+    }
+
     // Preserve existing behavior for play mode and modifier keys
     if (isPlayMode) {
       executeInteractions(node.interactions);
