@@ -115,12 +115,22 @@ export const RenderNode: React.FC<{
           console.log('[Figma Selection] Drilling to next level:', { id: nextLevel.id, type: nextLevel.type });
           toggleNodeSelection(nextLevel.id, false, false, tree);
         } else {
-          // No path found (maybe clicking outside current selection), select top container
-          console.log('[Figma Selection] No path found, selecting top container');
-          const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
-          console.log('[Figma Selection] Top container found:', topContainer ? { id: topContainer.id, type: topContainer.type } : null);
-          if (topContainer) {
-            toggleNodeSelection(topContainer.id, false, false, tree);
+          // No path found (maybe clicking outside current selection), check if direct child of root
+          console.log('[Figma Selection] No path found, checking if direct child of root');
+          const clickedParent = findParent(tree, hitTargetId);
+
+          if (clickedParent && clickedParent.id === ROOT_VSTACK_ID) {
+            // Direct child of root - select it directly
+            console.log('[Figma Selection] Direct child of root, selecting:', hitTargetId);
+            toggleNodeSelection(hitTargetId, false, false, tree);
+          } else {
+            // Not a direct child - select top container
+            console.log('[Figma Selection] Not direct child, selecting top container');
+            const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
+            console.log('[Figma Selection] Top container found:', topContainer ? { id: topContainer.id, type: topContainer.type } : null);
+            if (topContainer) {
+              toggleNodeSelection(topContainer.id, false, false, tree);
+            }
           }
         }
       } else {
@@ -207,24 +217,44 @@ export const RenderNode: React.FC<{
           }
         }
 
-        // No common ancestor found - select topmost container of clicked element
-        console.log('[Figma Selection] No common ancestor, selecting topmost container');
-        const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
-        if (topContainer) {
-          console.log('[Figma Selection] Selecting topmost container:', { id: topContainer.id, type: topContainer.type });
-          toggleNodeSelection(topContainer.id, false, false, tree);
+        // No common ancestor found - check if direct child of root
+        console.log('[Figma Selection] No common ancestor, checking if direct child of root');
+        const clickedParent = findParent(tree, hitTargetId);
+
+        if (clickedParent && clickedParent.id === ROOT_VSTACK_ID) {
+          // Direct child of root - select it directly
+          console.log('[Figma Selection] Direct child of root, selecting:', hitTargetId);
+          toggleNodeSelection(hitTargetId, false, false, tree);
+        } else {
+          // Not a direct child - select topmost container
+          console.log('[Figma Selection] Not direct child, selecting topmost container');
+          const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
+          if (topContainer) {
+            console.log('[Figma Selection] Selecting topmost container:', { id: topContainer.id, type: topContainer.type });
+            toggleNodeSelection(topContainer.id, false, false, tree);
+          }
         }
         lastClickTimeRef.current = now;
         lastClickedIdRef.current = hitTargetId;
         return;
       }
 
-      // SINGLE CLICK with no selection: Select topmost container
-      console.log('[Figma Selection] No selection, finding topmost container');
-      const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
-      console.log('[Figma Selection] Top container found:', topContainer ? { id: topContainer.id, type: topContainer.type } : null);
-      if (topContainer) {
-        toggleNodeSelection(topContainer.id, false, false, tree);
+      // SINGLE CLICK with no selection: Check if this is a direct child of root
+      console.log('[Figma Selection] No selection, checking if direct child of root');
+      const parent = findParent(tree, hitTargetId);
+
+      if (parent && parent.id === ROOT_VSTACK_ID) {
+        // Direct child of root - select it directly with one click
+        console.log('[Figma Selection] Direct child of root, selecting:', hitTargetId);
+        toggleNodeSelection(hitTargetId, false, false, tree);
+      } else {
+        // Not a direct child - find topmost container
+        console.log('[Figma Selection] Not direct child, finding topmost container');
+        const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
+        console.log('[Figma Selection] Top container found:', topContainer ? { id: topContainer.id, type: topContainer.type } : null);
+        if (topContainer) {
+          toggleNodeSelection(topContainer.id, false, false, tree);
+        }
       }
 
       // Track click for double-click detection
