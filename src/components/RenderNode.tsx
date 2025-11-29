@@ -60,7 +60,29 @@ export const RenderNode: React.FC<{
 
   // Figma-style selection handler: Single click selects container, double click drills down
   const handleComponentClick = useCallback((e: React.MouseEvent, hitTargetId: string) => {
-    e.stopPropagation();
+    // Check if the click originated from an editable input element
+    // Only input fields should prevent selection so users can type in them
+    // Buttons and tabs should be selectable in design mode
+    const target = e.target as HTMLElement;
+    const isEditableInput = target.tagName === 'INPUT' ||
+                            target.tagName === 'TEXTAREA' ||
+                            target.tagName === 'SELECT' ||
+                            target.closest('input') !== null ||
+                            target.closest('textarea') !== null ||
+                            target.closest('select') !== null;
+
+    if (isEditableInput && !isPlayMode) {
+      // Let the input handle the click, but still stop propagation
+      // to prevent selecting parent components
+      e.stopPropagation();
+      return;
+    }
+
+    // Only stop propagation in design mode for selection control
+    // In play mode, let events bubble naturally so interactive components work
+    if (!isPlayMode) {
+      e.stopPropagation();
+    }
 
     // Skip click handling if currently dragging or just finished dragging to prevent selection changes
     if (draggedNodeId || justFinishedDragging) {
@@ -803,9 +825,9 @@ export const RenderNode: React.FC<{
 
     const baseStyle: React.CSSProperties = {
       outline: isSelected && !isRootVStack && !isPlayMode ? '2px solid #3858e9' : 'none',
-      cursor: isPlayMode && node.interactions && node.interactions.length > 0
-        ? 'pointer'
-        : 'default',
+      // In play mode, don't set cursor - let native components use their natural cursor styles
+      // In design mode, use default cursor for selection interactions
+      cursor: isPlayMode ? undefined : 'default',
       position: 'relative',
       ...(gridColumn && { gridColumn }),
       ...(gridRow && { gridRow }),
@@ -1036,7 +1058,14 @@ export const RenderNode: React.FC<{
     }
 
     // For other interactive components, render normally
-    const mergedProps = { ...definition.defaultProps, ...props };
+    const mergedProps = {
+      ...definition.defaultProps,
+      ...props,
+      style: {
+        ...definition.defaultProps?.style,
+        ...props.style,
+        },
+    };
     return (
       <div
         ref={wrapperRef}
@@ -1306,35 +1335,6 @@ export const RenderNode: React.FC<{
     }
   }
 
-  // TabPanel requires special handling - children must be a render prop function
-  if (node.type === 'TabPanel') {
-    const mergedProps = { ...definition.defaultProps, ...props };
-
-    return (
-      <div
-        ref={wrapperRef}
-        data-component-id={node.id}
-        onClick={(e) => handleComponentClick(e, node.id)}
-        onMouseDown={handleMouseDown}
-        style={getWrapperStyle({ padding: '4px' })}
-      >
-        <Component {...mergedProps}>
-          {(tab: any) => (
-            <div>
-              {node.children && node.children.length > 0
-                ? node.children.map((child) =>
-                    <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />
-                  )
-                : <div style={{ padding: '20px', color: '#666', textAlign: 'center' }}>
-                    Add components to tab: {tab.name}
-                  </div>}
-            </div>
-          )}
-        </Component>
-      </div>
-    );
-  }
-
   // Form controls and self-contained components (don't accept children)
   const formControls = [
     'TextControl',
@@ -1360,7 +1360,14 @@ export const RenderNode: React.FC<{
   ];
 
   if (formControls.includes(node.type)) {
-    const mergedProps = { ...definition.defaultProps, ...props };
+    const mergedProps = {
+      ...definition.defaultProps,
+      ...props,
+      style: {
+        ...definition.defaultProps?.style,
+        ...props.style,
+        },
+    };
 
     if (isPlayMode) {
       // In play mode: enable real interaction with runtime state
@@ -1394,7 +1401,14 @@ export const RenderNode: React.FC<{
   }
 
   // Regular components with children - merge with defaultProps
-  const mergedProps = { ...definition.defaultProps, ...props };
+  const mergedProps = {
+    ...definition.defaultProps,
+    ...props,
+    style: {
+      ...definition.defaultProps?.style,
+      ...props.style,
+    },
+  };
 
   // Check if this is a Grid with grid lines enabled
   const showGridLines = node.type === 'Grid' && gridLinesVisible.has(node.id);

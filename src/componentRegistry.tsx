@@ -43,11 +43,18 @@ import {
   __experimentalBorderControl as BorderControl,
   FormTokenField,
   __experimentalGrid as Grid,
+  // @ts-ignore
+  privateApis as componentsPrivateApis,
 } from '@wordpress/components';
 import { DataViews } from '@wordpress/dataviews';
 import { ComponentDefinition } from './types';
 import { getMockData, getFieldDefinitions } from './utils/mockDataGenerator';
 import { WORDPRESS_ICON_NAMES } from './utils/iconNames';
+import { unlockComponents } from './utils/lock-unlock';
+
+// Access Tabs from private APIs
+// @ts-ignore - Tabs is private API but stable
+const { Tabs } = unlockComponents(componentsPrivateApis);
 
 export const componentRegistry: Record<string, ComponentDefinition> = {
   Grid: {
@@ -1133,7 +1140,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     name: 'TabPanel',
     component: TabPanel,
     acceptsChildren: true,
-    description: 'Tabbed interface for organizing content into sections.',
+    description: '⚠️ DEPRECATED: Use Tabs component instead. TabPanel uses render props which are not compatible with the visual designer.',
     defaultProps: { tabs: [{ name: 'tab1', title: 'Tab 1' }, { name: 'tab2', title: 'Tab 2' }] },
     propDefinitions: [
       {
@@ -1141,6 +1148,119 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'string',
         defaultValue: 'tab1',
         description: 'Initial tab',
+      },
+    ],
+  },
+
+  Tabs: {
+    name: 'Tabs',
+    component: Tabs,
+    acceptsChildren: true,
+    description: 'Modern tabbed interface with composable structure. Add Tabs.TabList and Tabs.TabPanel children.',
+    defaultProps: {
+      defaultTabId: 'tab-1',
+    },
+    defaultChildren: [
+      {
+        type: 'Tabs.TabList',
+        props: {},
+        children: [
+          { type: 'Tabs.Tab', props: { tabId: 'tab-1' }, children: [{ type: 'Text', props: { children: 'Tab 1' } }] },
+          { type: 'Tabs.Tab', props: { tabId: 'tab-2' }, children: [{ type: 'Text', props: { children: 'Tab 2' } }] },
+        ],
+      },
+      {
+        type: 'Tabs.TabPanel',
+        props: { tabId: 'tab-1' },
+        children: [],
+      },
+      {
+        type: 'Tabs.TabPanel',
+        props: { tabId: 'tab-2' },
+        children: [],
+      },
+    ],
+    propDefinitions: [
+      {
+        name: 'defaultTabId',
+        type: 'string',
+        defaultValue: 'tab-1',
+        description: 'Initially selected tab (uncontrolled mode)',
+      },
+      {
+        name: 'selectedTabId',
+        type: 'string',
+        description: 'Currently selected tab (controlled mode)',
+      },
+      {
+        name: 'orientation',
+        type: 'select',
+        options: ['horizontal', 'vertical'],
+        defaultValue: 'horizontal',
+        description: 'Tabs orientation',
+      },
+    ],
+  },
+
+  'Tabs.TabList': {
+    name: 'Tabs.TabList',
+    // @ts-ignore - Access subcomponent
+    component: Tabs.TabList,
+    acceptsChildren: true,
+    description: 'Container for tab buttons. Add Tabs.Tab children.',
+    defaultProps: {},
+    propDefinitions: [],
+  },
+
+  'Tabs.Tab': {
+    name: 'Tabs.Tab',
+    // @ts-ignore - Access subcomponent
+    component: Tabs.Tab,
+    acceptsChildren: true,
+    description: 'Individual tab button. Put text or icons as children.',
+    defaultProps: {
+      tabId: 'tab-1',
+    },
+    defaultChildren: [
+      { type: 'Text', props: { children: 'Tab Label' } },
+    ],
+    propDefinitions: [
+      {
+        name: 'tabId',
+        type: 'string',
+        defaultValue: 'tab-1',
+        description: 'Unique tab identifier (must match a Tabs.TabPanel)',
+      },
+      {
+        name: 'disabled',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Disable the tab',
+      },
+    ],
+  },
+
+  'Tabs.TabPanel': {
+    name: 'Tabs.TabPanel',
+    // @ts-ignore - Access subcomponent
+    component: Tabs.TabPanel,
+    acceptsChildren: true,
+    description: 'Content panel for a tab. Add your content as children.',
+    defaultProps: {
+      tabId: 'tab-1',
+    },
+    propDefinitions: [
+      {
+        name: 'tabId',
+        type: 'string',
+        defaultValue: 'tab-1',
+        description: 'Matching tab identifier',
+      },
+      {
+        name: 'focusable',
+        type: 'boolean',
+        defaultValue: true,
+        description: 'Allow panel to receive focus',
       },
     ],
   },

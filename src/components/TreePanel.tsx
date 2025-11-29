@@ -104,7 +104,7 @@ export const componentGroups: ComponentGroup[] = [
 	{
 		name: 'Advanced',
 		icon: settings,
-		components: ['BoxControl', 'BorderControl', 'FormTokenField', 'TabPanel'],
+		components: ['BoxControl', 'BorderControl', 'FormTokenField', 'Tabs'],
 	},
 	{
 		name: 'Interactive',

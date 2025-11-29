@@ -30,6 +30,7 @@ interface ComponentTreeContextType {
    * @param index - Optional position index within parent's children
    */
   insertComponent: (node: ComponentNode, parentId?: string, index?: number) => void;
+
   removeComponent: (id: string) => void;
   updateComponentProps: (id: string, props: Record<string, any>) => void;
   updateMultipleComponentProps: (ids: string[], props: Record<string, any>) => void;
