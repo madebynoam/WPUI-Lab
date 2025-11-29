@@ -68,8 +68,6 @@ export const componentGroups: ComponentGroup[] = [
 			'Card',
 			'CardBody',
 			'CardHeader',
-			'CardFooter',
-			'CardMedia',
 			'Panel',
 			'PanelBody',
 			'PanelRow',
@@ -97,19 +95,19 @@ export const componentGroups: ComponentGroup[] = [
 			'DateTimePicker',
 		],
 	},
-	{
-		name: 'Interactive',
-		icon: plugins,
-		components: [
-			'Modal',
-			'Popover',
-			'Dropdown',
-			'MenuGroup',
-			'MenuItem',
-			'Tooltip',
-			'Notice',
-		],
-	},
+	// {
+	// 	name: 'Interactive',
+	// 	icon: plugins,
+	// 	components: [
+	// 		'Modal',
+	// 		'Popover',
+	// 		'Dropdown',
+	// 		'MenuGroup',
+	// 		'MenuItem',
+	// 		'Tooltip',
+	// 		'Notice',
+	// 	],
+	// },
 	{
 		name: 'Utilities',
 		icon: plus,
@@ -251,6 +249,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
 	// Auto-expand collapsed parents when an item is selected
 	const prevSelectedRef = useRef<string[]>([]);
+	const treeItemRefsMap = useRef<Map<string, HTMLElement>>(new Map());
+	const treeContainerRef = useRef<HTMLDivElement>(null);
+
 	useEffect(() => {
 		// Only run when selection actually changes
 		const currentSelection = selectedNodeIds.join(',');
@@ -309,6 +310,24 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			setTree(expandAncestors(tree));
 		}
 	}, [selectedNodeIds, tree, setTree]);
+
+	// Auto-scroll to selected item
+	useEffect(() => {
+		if (selectedNodeIds.length === 0) return;
+
+		const selectedId = selectedNodeIds[0];
+		const selectedElement = treeItemRefsMap.current.get(selectedId);
+
+		if (selectedElement && treeContainerRef.current) {
+			// Use a timeout to ensure the item is expanded first
+			setTimeout(() => {
+				selectedElement.scrollIntoView({
+					behavior: 'smooth',
+					block: 'nearest',
+				});
+			}, 100);
+		}
+	}, [selectedNodeIds, flattenedItems]);
 
 	// Handle adding component
 	const handleAddComponent = (componentType: string) => {
@@ -741,7 +760,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			/>
 
 			{/* Tree */}
-			<div style={{ flex: 1, overflow: 'auto' }}>
+			<div ref={treeContainerRef} style={{ flex: 1, overflow: 'auto' }}>
 				<DndContext
 					sensors={sensors}
 					collisionDetection={closestCenter}
@@ -804,6 +823,13 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 												updateComponentName(item.id, editingNodeName.trim());
 											}
 											setEditingNodeId(null);
+										}}
+										wrapperRef={(node: HTMLLIElement) => {
+											if (node) {
+												treeItemRefsMap.current.set(item.id, node);
+											} else {
+												treeItemRefsMap.current.delete(item.id);
+											}
 										}}
 									/>
 								);
