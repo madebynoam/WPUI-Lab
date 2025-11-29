@@ -1438,8 +1438,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     acceptsChildren: false,
     description: 'Display tabular data with sorting, filtering, and pagination.',
     defaultProps: {
-      data: getMockData('blog'),
-      fields: getFieldDefinitions('blog'),
+      // Don't set data/fields in defaultProps - let RenderNode generate them based on dataSource
       view: {
         type: 'table',
         perPage: 10,

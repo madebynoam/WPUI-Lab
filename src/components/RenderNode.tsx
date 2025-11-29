@@ -1092,11 +1092,14 @@ export const RenderNode: React.FC<{
       const viewType = props.viewType || 'table';
       const itemsPerPage = props.itemsPerPage || 10;
 
+      console.log('[DataViews] Rendering with:', { dataSource, viewType, nodeId: node.id, propsDataSource: props.dataSource });
+
       // Auto-detect custom data or use mock data
       let mockData, fields;
 
-      // SMART MODE: If data prop is provided, use it (regardless of dataSource)
-      if (props.data && Array.isArray(props.data) && props.data.length > 0) {
+      // SMART MODE: If dataSource is 'custom' and data prop is provided, use custom data
+      // Otherwise, use mock data based on dataSource
+      if (dataSource === 'custom' && props.data && Array.isArray(props.data) && props.data.length > 0) {
         mockData = props.data;
 
         // Accept both 'columns' and 'fields' props (LLM might use either)
@@ -1136,6 +1139,12 @@ export const RenderNode: React.FC<{
         // Fall back to mock data based on dataSource
         mockData = getMockData(dataSource);
         fields = getFieldDefinitions(dataSource);
+        console.log('[DataViews] Using mock data:', {
+          dataSource,
+          mockDataLength: mockData?.length,
+          firstItem: mockData?.[0],
+          fieldsLength: fields?.length
+        });
       }
 
       // Validate data and fields exist
@@ -1309,7 +1318,7 @@ export const RenderNode: React.FC<{
           onMouseDown={handleMouseDown}
           style={getWrapperStyle({ minHeight: '400px', height: '100%' })}
         >
-          <Component {...mergedProps} />
+          <Component key={`${node.id}-${dataSource}-${viewType}`} {...mergedProps} />
         </div>
       );
     } catch (error) {
