@@ -295,6 +295,12 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: false,
         description: 'Pressed/active state'
       },
+      {
+        name: 'stretchFullWidth',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Stretch to full width (applies style={{ width: "100%" }} - not native to WordPress Button)'
+      },
     ],
   },
   HStack: {

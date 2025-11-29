@@ -946,6 +946,23 @@ export const RenderNode: React.FC<{
     const text = mergedProps.text || 'Button';
     delete mergedProps.text;
 
+    // Handle stretchFullWidth prop (not native to WordPress Button)
+    const stretchFullWidth = mergedProps.stretchFullWidth;
+    delete mergedProps.stretchFullWidth;
+
+    // Apply width: 100% and justify-content: center if stretchFullWidth is true
+    const buttonStyle: React.CSSProperties = stretchFullWidth
+      ? { width: '100%', justifyContent: 'center' }
+      : {};
+
+    // In design mode, make disabled buttons look disabled but keep them enabled for selection
+    const isDisabled = mergedProps.disabled;
+    if (!isPlayMode && isDisabled) {
+      buttonStyle.opacity = '0.5';
+      buttonStyle.cursor = 'not-allowed';
+      buttonStyle.pointerEvents = 'none'; // Prevent button's own click handler but allow wrapper's
+    }
+
     return (
       <div
         ref={wrapperRef}
@@ -954,7 +971,7 @@ export const RenderNode: React.FC<{
         onMouseDown={handleMouseDown}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
-        <Component {...mergedProps}>{text}</Component>
+        <Component {...mergedProps} style={Object.keys(buttonStyle).length > 0 ? buttonStyle : undefined} disabled={isPlayMode ? mergedProps.disabled : false}>{text}</Component>
       </div>
     );
   }

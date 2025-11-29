@@ -52,6 +52,15 @@ function generateNodeCode(
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
 
+  // Track if Button has stretchFullWidth for comment generation
+  const hasStretchFullWidth = componentName === 'Button' && props.stretchFullWidth;
+
+  // Handle Button stretchFullWidth - convert to style prop (not native to WordPress Button)
+  if (hasStretchFullWidth) {
+    props.style = { width: '100%', justifyContent: 'center' };
+    delete props.stretchFullWidth;
+  }
+
   // Handle Icon colorVariant - convert to fill prop
   if (componentName === 'Icon' && props.colorVariant) {
     const colorVariant = props.colorVariant;
@@ -111,32 +120,37 @@ function generateNodeCode(
   const containerComponents = ['Text', 'Heading', 'Button', 'Label', 'Paragraph', 'Div', 'Span'];
   const isContainerComponent = containerComponents.includes(componentName);
 
+  // Add comment for Button with stretchFullWidth
+  const comment = hasStretchFullWidth
+    ? `${indentStr}{/* WordPress Button does not have a native full-width prop, so we use inline styles */}\n`
+    : '';
+
   // Handle components with children
   if (node.children && node.children.length > 0) {
     const childrenCode = node.children
       .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap))
       .join('\n');
 
-    return `${indentStr}<${componentName}${propsStr}>\n${childrenCode}\n${indentStr}</${componentName}>`;
+    return `${comment}${indentStr}<${componentName}${propsStr}>\n${childrenCode}\n${indentStr}</${componentName}>`;
   }
 
   // Handle Text/Heading/Button with text content
   if (hasTextContent) {
-    return `${indentStr}<${componentName}${propsStr}>${textContent}</${componentName}>`;
+    return `${comment}${indentStr}<${componentName}${propsStr}>${textContent}</${componentName}>`;
   }
 
   // Handle container components with placeholder content
   if (hasPlaceholder) {
-    return `${indentStr}<${componentName}${propsStr}>${placeholderContent}</${componentName}>`;
+    return `${comment}${indentStr}<${componentName}${propsStr}>${placeholderContent}</${componentName}>`;
   }
 
   // For container components without content, render with empty opening/closing tags
   if (isContainerComponent) {
-    return `${indentStr}<${componentName}${propsStr}></${componentName}>`;
+    return `${comment}${indentStr}<${componentName}${propsStr}></${componentName}>`;
   }
 
   // Self-closing component
-  return `${indentStr}<${componentName}${propsStr} />`;
+  return `${comment}${indentStr}<${componentName}${propsStr} />`;
 }
 
 /**
@@ -159,6 +173,12 @@ function generatePropsString(entries: [string, any][]): string {
         return `${jsxKey}={${value}}`;
       } else if (value === null || value === undefined) {
         return '';
+      } else if (key === 'style' && typeof value === 'object') {
+        // Format style object with readable spacing
+        const styleEntries = Object.entries(value)
+          .map(([k, v]) => `${k}: "${v}"`)
+          .join(', ');
+        return `${jsxKey}={{ ${styleEntries} }}`;
       } else {
         return `${jsxKey}={${JSON.stringify(value)}}`;
       }
