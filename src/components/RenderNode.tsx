@@ -49,8 +49,11 @@ export const RenderNode: React.FC<{
     if (isPlayMode || node.id === ROOT_VSTACK_ID || isDragging || draggedNodeId) return false;
     if (!isHovered) return false;
 
-    // If nothing is selected, show hover on top-level items only
-    if (selectedNodeIds.length === 0) {
+    // If nothing is selected (or only root is selected), show hover on top-level items only
+    const nothingSelected = selectedNodeIds.length === 0 ||
+      (selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_VSTACK_ID);
+
+    if (nothingSelected) {
       const parent = findParent(tree, node.id);
       return parent?.id === ROOT_VSTACK_ID;
     }
