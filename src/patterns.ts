@@ -210,34 +210,57 @@ export const patterns: Pattern[] = [
   // Pricing Table
   {
     id: 'pricing-3col',
-    name: 'Pricing Table - 3 Plans',
-    description: 'Three-column pricing table with features',
+    name: 'Pricing Table - 4 Plans',
+    description: 'Four-column pricing table with features and badges',
     category: 'Pricing',
     tree: {
       type: 'Grid',
-      props: { columns: 3, gap: 6 },
+      props: { columns: 12, gap: 6 },
       children: [
         {
           type: 'Card',
-          props: {},
+          name: 'Free',
+          props: { gridColumnSpan: 3 },
           children: [
             {
               type: 'CardHeader',
-              props: {},
+              props: { size: 'small' },
               children: [
                 {
                   type: 'VStack',
-                  props: { spacing: 2, alignment: 'center' },
+                  props: { spacing: 1, alignment: 'left' },
                   children: [
                     {
-                      type: 'Heading',
-                      props: { level: 3, children: 'Starter' },
+                      type: 'Text',
+                      props: { children: 'CURRENT PLAN', variant: 'muted' },
                       children: [],
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, children: '$9/mo' },
+                      props: { level: 2, children: 'Free' },
                       children: [],
+                    },
+                    {
+                      type: 'HStack',
+                      props: { spacing: 2, alignment: 'stretch', justify: 'space-between', expanded: true },
+                      children: [
+                        {
+                          type: 'VStack',
+                          props: { spacing: 2 },
+                          children: [
+                            {
+                              type: 'Heading',
+                              props: { level: 3, children: '$7' },
+                              children: [],
+                            },
+                            {
+                              type: 'Text',
+                              props: { children: 'Per month, paid yearly', variant: 'muted' },
+                              children: [],
+                            },
+                          ],
+                        },
+                      ],
                     },
                   ],
                 },
@@ -245,12 +268,17 @@ export const patterns: Pattern[] = [
             },
             {
               type: 'CardBody',
-              props: {},
+              props: { size: 'small' },
               children: [
                 {
                   type: 'VStack',
-                  props: { spacing: 2 },
+                  props: { spacing: 2, alignment: 'stretch', justify: 'flex-start', expanded: true, wrap: false },
                   children: [
+                    {
+                      type: 'Button',
+                      props: { text: 'Select', variant: 'secondary', disabled: true, stretchFullWidth: true },
+                      children: [],
+                    },
                     {
                       type: 'Text',
                       props: { children: '✓ 5 Projects' },
@@ -267,8 +295,8 @@ export const patterns: Pattern[] = [
                       children: [],
                     },
                     {
-                      type: 'Button',
-                      props: { text: 'Choose Plan', variant: 'secondary' },
+                      type: 'Text',
+                      props: { children: '✓ 1GB Bandwidth' },
                       children: [],
                     },
                   ],
@@ -279,25 +307,53 @@ export const patterns: Pattern[] = [
         },
         {
           type: 'Card',
-          props: {},
+          name: 'Premium',
+          props: { gridColumnSpan: 3, elevation: 0, isRounded: true, isBorderless: false },
           children: [
             {
               type: 'CardHeader',
-              props: {},
+              props: { size: 'small', isBorderless: false, isShady: false },
               children: [
                 {
                   type: 'VStack',
-                  props: { spacing: 2, alignment: 'center' },
+                  props: { spacing: 1, alignment: 'stretch', expanded: true },
                   children: [
                     {
-                      type: 'Heading',
-                      props: { level: 3, children: 'Pro' },
+                      type: 'Text',
+                      props: { children: 'RECOMMENDED', variant: 'muted' },
                       children: [],
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, children: '$29/mo' },
+                      props: { level: 2, children: 'Premium' },
                       children: [],
+                    },
+                    {
+                      type: 'HStack',
+                      props: { spacing: 2, alignment: 'top', justify: 'space-between', expanded: true },
+                      children: [
+                        {
+                          type: 'VStack',
+                          props: { spacing: 2 },
+                          children: [
+                            {
+                              type: 'Heading',
+                              props: { level: 3, children: '$12' },
+                              children: [],
+                            },
+                            {
+                              type: 'Text',
+                              props: { children: 'Per month, paid yearly', variant: 'muted' },
+                              children: [],
+                            },
+                          ],
+                        },
+                        {
+                          type: 'Badge',
+                          props: { content: '20% off', intent: 'success' },
+                          children: [],
+                        },
+                      ],
                     },
                   ],
                 },
@@ -305,15 +361,108 @@ export const patterns: Pattern[] = [
             },
             {
               type: 'CardBody',
-              props: {},
+              props: { size: 'small' },
               children: [
                 {
                   type: 'VStack',
-                  props: { spacing: 2 },
+                  props: { spacing: 2, alignment: 'stretch', justify: 'flex-start', expanded: true, wrap: false },
                   children: [
                     {
+                      type: 'Button',
+                      props: { text: 'Upgrade to Premium', variant: 'primary', disabled: false, stretchFullWidth: true },
+                      children: [],
+                    },
+                    {
                       type: 'Text',
-                      props: { children: '✓ Unlimited Projects' },
+                      props: { children: '✓ 10 Projects' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '✓ Priority Support' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '✓ 5GB Storage' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '✓ 5GB Bandwidth' },
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'Card',
+          name: 'Business',
+          props: { gridColumnSpan: 3, elevation: 0, isRounded: true, isBorderless: false },
+          children: [
+            {
+              type: 'CardHeader',
+              props: { size: 'small', isBorderless: false, isShady: false },
+              children: [
+                {
+                  type: 'VStack',
+                  props: { spacing: 1, alignment: 'stretch', expanded: true },
+                  children: [
+                    {
+                      type: 'Spacer',
+                      props: { margin: 3 },
+                      children: [],
+                    },
+                    {
+                      type: 'Heading',
+                      props: { level: 2, children: 'Business' },
+                      children: [],
+                    },
+                    {
+                      type: 'HStack',
+                      props: { spacing: 2, alignment: 'top', justify: 'space-between', expanded: true },
+                      children: [
+                        {
+                          type: 'VStack',
+                          props: { spacing: 2 },
+                          children: [
+                            {
+                              type: 'Heading',
+                              props: { level: 3, children: '$24' },
+                              children: [],
+                            },
+                            {
+                              type: 'Text',
+                              props: { children: 'Per month, paid yearly', variant: 'muted' },
+                              children: [],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'CardBody',
+              props: { size: 'small' },
+              children: [
+                {
+                  type: 'VStack',
+                  props: { spacing: 2, alignment: 'stretch', justify: 'flex-start', expanded: true, wrap: false },
+                  children: [
+                    {
+                      type: 'Button',
+                      props: { text: 'Upgrade to Business', variant: 'secondary', disabled: false, stretchFullWidth: true },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '✓ 15 Projects' },
                       children: [],
                     },
                     {
@@ -327,8 +476,8 @@ export const patterns: Pattern[] = [
                       children: [],
                     },
                     {
-                      type: 'Button',
-                      props: { text: 'Choose Plan', variant: 'primary' },
+                      type: 'Text',
+                      props: { children: '✓ 10GB Bandwidth' },
                       children: [],
                     },
                   ],
@@ -339,25 +488,48 @@ export const patterns: Pattern[] = [
         },
         {
           type: 'Card',
-          props: {},
+          name: 'Commerce',
+          props: { gridColumnSpan: 3, elevation: 0, isRounded: true, isBorderless: false },
           children: [
             {
               type: 'CardHeader',
-              props: {},
+              props: { size: 'small', isBorderless: false, isShady: false },
               children: [
                 {
                   type: 'VStack',
-                  props: { spacing: 2, alignment: 'center' },
+                  props: { spacing: 1, alignment: 'stretch', expanded: true },
                   children: [
                     {
-                      type: 'Heading',
-                      props: { level: 3, children: 'Enterprise' },
+                      type: 'Spacer',
+                      props: { margin: 3 },
                       children: [],
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, children: '$99/mo' },
+                      props: { level: 2, children: 'Commerce' },
                       children: [],
+                    },
+                    {
+                      type: 'HStack',
+                      props: { spacing: 2, alignment: 'top', justify: 'space-between', expanded: true },
+                      children: [
+                        {
+                          type: 'VStack',
+                          props: { spacing: 2 },
+                          children: [
+                            {
+                              type: 'Heading',
+                              props: { level: 3, children: '$32' },
+                              children: [],
+                            },
+                            {
+                              type: 'Text',
+                              props: { children: 'Per month, paid yearly', variant: 'muted' },
+                              children: [],
+                            },
+                          ],
+                        },
+                      ],
                     },
                   ],
                 },
@@ -365,30 +537,35 @@ export const patterns: Pattern[] = [
             },
             {
               type: 'CardBody',
-              props: {},
+              props: { size: 'small' },
               children: [
                 {
                   type: 'VStack',
-                  props: { spacing: 2 },
+                  props: { spacing: 2, alignment: 'stretch', justify: 'flex-start', expanded: true, wrap: false },
                   children: [
                     {
-                      type: 'Text',
-                      props: { children: '✓ Unlimited Everything' },
-                      children: [],
-                    },
-                    {
-                      type: 'Text',
-                      props: { children: '✓ 24/7 Support' },
-                      children: [],
-                    },
-                    {
-                      type: 'Text',
-                      props: { children: '✓ 100GB Storage' },
-                      children: [],
-                    },
-                    {
                       type: 'Button',
-                      props: { text: 'Contact Sales', variant: 'secondary' },
+                      props: { text: 'Upgrade to Commerce', variant: 'secondary', disabled: false, stretchFullWidth: true },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '✓ 20 Projects' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '✓ Priority Support' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '✓ 20GB Storage' },
+                      children: [],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: '✓ 20GB Bandwidth' },
                       children: [],
                     },
                   ],

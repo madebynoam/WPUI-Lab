@@ -49,16 +49,39 @@ function generateNodeCode(
   delete props.text;
   delete props.placeholder;
   delete props.children;
+
+  // Convert gridColumnSpan/gridRowSpan to CSS Grid styles
+  const gridColumnSpan = props.gridColumnSpan;
+  const gridRowSpan = props.gridRowSpan;
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
 
   // Track if Button has stretchFullWidth for comment generation
   const hasStretchFullWidth = componentName === 'Button' && props.stretchFullWidth;
 
+  // Build style object for special props
+  let styleObj: Record<string, any> = props.style ? { ...props.style } : {};
+
+  // Handle gridColumnSpan - convert to CSS Grid style
+  if (gridColumnSpan !== undefined) {
+    styleObj.gridColumn = `span ${gridColumnSpan}`;
+  }
+
+  // Handle gridRowSpan - convert to CSS Grid style
+  if (gridRowSpan !== undefined) {
+    styleObj.gridRow = `span ${gridRowSpan}`;
+  }
+
   // Handle Button stretchFullWidth - convert to style prop (not native to WordPress Button)
   if (hasStretchFullWidth) {
-    props.style = { width: '100%', justifyContent: 'center' };
+    styleObj.width = '100%';
+    styleObj.justifyContent = 'center';
     delete props.stretchFullWidth;
+  }
+
+  // Apply style object if it has any properties
+  if (Object.keys(styleObj).length > 0) {
+    props.style = styleObj;
   }
 
   // Handle Icon colorVariant - convert to fill prop

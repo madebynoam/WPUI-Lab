@@ -141,8 +141,8 @@ export const RenderNode: React.FC<{
     if (isDoubleClick) {
       console.log('[Figma Selection] DOUBLE CLICK detected');
 
-      // For Text/Heading components, enter edit mode ONLY if already selected (Figma behavior)
-      if ((node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge') && selectedNodeIds.includes(node.id)) {
+      // For Text/Heading/Badge/Button components, enter edit mode ONLY if already selected (Figma behavior)
+      if ((node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') && selectedNodeIds.includes(node.id)) {
         setIsEditingText(true);
         // Focus will happen via useEffect
         // Reset click tracking
@@ -848,9 +848,49 @@ export const RenderNode: React.FC<{
   };
 
   // Handle components with special text/content props
-  if (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge') {
-    // Data is normalized at the boundary, so content is always in props.children
-    const content = props.children || definition.defaultProps?.children;
+  if (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') {
+    // Button uses 'text' prop, others use 'children'
+    const content = node.type === 'Button'
+      ? (props.text || definition.defaultProps?.children || 'Button')
+      : (props.children || definition.defaultProps?.children);
+
+    // For Button, handle special props
+    let buttonStyle: React.CSSProperties = {};
+    let buttonProps = { ...props };
+
+    if (node.type === 'Button') {
+      // Merge with defaultProps for Button
+      buttonProps = { ...definition.defaultProps, ...props };
+      delete buttonProps.text; // Remove text prop, will be passed as children
+
+      // Handle stretchFullWidth
+      const stretchFullWidth = buttonProps.stretchFullWidth;
+      delete buttonProps.stretchFullWidth;
+      if (stretchFullWidth) {
+        buttonStyle = { width: '100%', justifyContent: 'center' };
+      }
+
+      // Handle disabled styling in design mode
+      const isDisabled = buttonProps.disabled;
+      if (!isPlayMode && isDisabled) {
+        buttonStyle = {
+          ...buttonStyle,
+          opacity: '0.5',
+          cursor: 'not-allowed',
+          pointerEvents: 'none'
+        };
+      }
+
+      // Apply style to button
+      if (Object.keys(buttonStyle).length > 0) {
+        buttonProps.style = buttonStyle;
+      }
+
+      // Disable button in play mode only
+      buttonProps.disabled = isPlayMode ? buttonProps.disabled : false;
+    } else {
+      buttonProps = props;
+    }
 
     // Render contenteditable wrapper preserving component styling (WYSIWYG)
     if (isEditingText) {
@@ -896,13 +936,17 @@ export const RenderNode: React.FC<{
               if (e.key === 'Escape') {
                 e.preventDefault();
                 const newContent = editableRef.current?.textContent || '';
-                updateComponentProps(node.id, { children: newContent });
+                if (node.type === 'Button') {
+                  updateComponentProps(node.id, { text: newContent });
+                } else {
+                  updateComponentProps(node.id, { children: newContent });
+                }
                 setIsEditingText(false);
                 return;
               }
 
-              // Save and exit on Enter (for single-line text only, not headings)
-              if (e.key === 'Enter' && node.type === 'Text') {
+              // Save and exit on Enter (for single-line text and buttons only, not headings)
+              if (e.key === 'Enter' && (node.type === 'Text' || node.type === 'Button')) {
                 e.preventDefault();
                 setIsEditingText(false);
                 return;
@@ -911,7 +955,11 @@ export const RenderNode: React.FC<{
             onBlur={() => {
               // Save plain text content and exit edit mode
               const newContent = editableRef.current?.textContent || '';
-              updateComponentProps(node.id, { children: newContent });
+              if (node.type === 'Button') {
+                updateComponentProps(node.id, { text: newContent });
+              } else {
+                updateComponentProps(node.id, { children: newContent });
+              }
               setIsEditingText(false);
             }}
             onContextMenu={(e) => {
@@ -919,7 +967,7 @@ export const RenderNode: React.FC<{
               e.preventDefault();
             }}
           >
-            <Component {...props}>{content}</Component>
+            <Component {...buttonProps}>{content}</Component>
           </div>
         </div>
       );
@@ -934,44 +982,7 @@ export const RenderNode: React.FC<{
         onMouseDown={handleMouseDown}
         style={getWrapperStyle()}
       >
-        <Component {...props}>{content}</Component>
-      </div>
-    );
-  }
-
-  // Handle Button text prop
-  if (node.type === 'Button') {
-    // Merge with defaultProps to ensure variant='primary' is applied by default
-    const mergedProps = { ...definition.defaultProps, ...props };
-    const text = mergedProps.text || 'Button';
-    delete mergedProps.text;
-
-    // Handle stretchFullWidth prop (not native to WordPress Button)
-    const stretchFullWidth = mergedProps.stretchFullWidth;
-    delete mergedProps.stretchFullWidth;
-
-    // Apply width: 100% and justify-content: center if stretchFullWidth is true
-    const buttonStyle: React.CSSProperties = stretchFullWidth
-      ? { width: '100%', justifyContent: 'center' }
-      : {};
-
-    // In design mode, make disabled buttons look disabled but keep them enabled for selection
-    const isDisabled = mergedProps.disabled;
-    if (!isPlayMode && isDisabled) {
-      buttonStyle.opacity = '0.5';
-      buttonStyle.cursor = 'not-allowed';
-      buttonStyle.pointerEvents = 'none'; // Prevent button's own click handler but allow wrapper's
-    }
-
-    return (
-      <div
-        ref={wrapperRef}
-        data-component-id={node.id}
-        onClick={(e) => handleComponentClick(e, node.id)}
-        onMouseDown={handleMouseDown}
-        style={getWrapperStyle({ display: 'inline-block' })}
-      >
-        <Component {...mergedProps} style={Object.keys(buttonStyle).length > 0 ? buttonStyle : undefined} disabled={isPlayMode ? mergedProps.disabled : false}>{text}</Component>
+        <Component {...buttonProps}>{content}</Component>
       </div>
     );
   }
