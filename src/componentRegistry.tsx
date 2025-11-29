@@ -2,6 +2,8 @@ import {
   Card,
   CardBody,
   CardHeader,
+  CardFooter,
+  CardMedia,
   Button,
   __experimentalHStack as HStack,
   __experimentalVStack as VStack,
@@ -164,7 +166,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'size',
         type: 'select',
-        options: ['xSmall', 'small', 'medium', 'large'],
+        options: ['none', 'xSmall', 'small', 'medium', 'large'],
         defaultValue: 'medium',
         description: 'Card size'
       },
@@ -198,7 +200,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'size',
         type: 'select',
-        options: ['xSmall', 'small', 'medium', 'large'],
+        options: ['none', 'xSmall', 'small', 'medium', 'large'],
         defaultValue: 'medium',
         description: 'Padding size'
       },
@@ -226,7 +228,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'size',
         type: 'select',
-        options: ['xSmall', 'small', 'medium', 'large'],
+        options: ['none', 'xSmall', 'small', 'medium', 'large'],
         defaultValue: 'medium',
         description: 'Padding size'
       },
@@ -243,6 +245,49 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         description: 'Remove border'
       },
     ],
+  },
+  CardFooter: {
+    name: 'CardFooter',
+    component: CardFooter,
+    acceptsChildren: true,
+    description: 'Footer section at the bottom of a card.',
+    defaultProps: {},
+    propDefinitions: [
+      {
+        name: 'size',
+        type: 'select',
+        options: ['none', 'xSmall', 'small', 'medium', 'large'],
+        defaultValue: 'medium',
+        description: 'Padding size'
+      },
+      {
+        name: 'isShady',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Light gray background'
+      },
+      {
+        name: 'isBorderless',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Remove border'
+      },
+      {
+        name: 'justify',
+        type: 'select',
+        options: ['flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly'],
+        defaultValue: 'flex-start',
+        description: 'Content alignment'
+      },
+    ],
+  },
+  CardMedia: {
+    name: 'CardMedia',
+    component: CardMedia,
+    acceptsChildren: true,
+    description: 'Full-bleed media container for images, video, or background colors.',
+    defaultProps: {},
+    propDefinitions: [],
   },
   Button: {
     name: 'Button',

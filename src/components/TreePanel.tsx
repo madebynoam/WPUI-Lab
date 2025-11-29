@@ -68,6 +68,8 @@ export const componentGroups: ComponentGroup[] = [
 			'Card',
 			'CardBody',
 			'CardHeader',
+			'CardFooter',
+			'CardMedia',
 			'Panel',
 			'PanelBody',
 			'PanelRow',

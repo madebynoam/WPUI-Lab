@@ -40,6 +40,8 @@ export const componentIconMap: Record<string, any> = {
   Card: box,
   CardBody: box,
   CardHeader: box,
+  CardFooter: box,
+  CardMedia: box,
   Panel: box,
   PanelBody: box,
   PanelRow: box,
