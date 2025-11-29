@@ -77,7 +77,7 @@ export const componentGroups: ComponentGroup[] = [
 	{
 		name: 'Content',
 		icon: pencil,
-		components: ['Text', 'Heading', 'Button', 'Icon'],
+		components: ['Text', 'Heading', 'Button', 'Badge', 'Icon'],
 	},
 	{
 		name: 'Form Inputs',

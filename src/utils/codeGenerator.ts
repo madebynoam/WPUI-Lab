@@ -117,7 +117,7 @@ function generateNodeCode(
   }
 
   // Components that should always render with opening/closing tags
-  const containerComponents = ['Text', 'Heading', 'Button', 'Label', 'Paragraph', 'Div', 'Span'];
+  const containerComponents = ['Text', 'Heading', 'Button', 'Badge', 'Label', 'Paragraph', 'Div', 'Span'];
   const isContainerComponent = containerComponents.includes(componentName);
 
   // Add comment for Button with stretchFullWidth
@@ -231,12 +231,30 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
 
   // Generate imports
   const imports: string[] = [];
+
+  // Regular WordPress components
   const wpComponents = Array.from(componentTypes).filter((type) =>
     ['VStack', 'HStack', 'Grid', 'Button', 'Text', 'Heading', 'Icon', 'Spacer', 'Divider'].includes(type)
   );
 
+  // Private API components that need to be unlocked
+  const privateComponents = Array.from(componentTypes).filter((type) =>
+    ['Badge'].includes(type)
+  );
+
   if (wpComponents.length > 0) {
     imports.push(`import { ${wpComponents.join(', ')} } from '@wordpress/components';`);
+  }
+
+  if (privateComponents.length > 0) {
+    imports.push(`import { __dangerousOptInToUnstableAPIsOnlyForCoreModules } from '@wordpress/private-apis';`);
+    imports.push(`import { privateApis as componentsPrivateApis } from '@wordpress/components';`);
+    imports.push('');
+    imports.push(`const { unlock } = __dangerousOptInToUnstableAPIsOnlyForCoreModules(`);
+    imports.push(`  'I acknowledge private features are not for use in themes or plugins and doing so will break in the next version of WordPress.',`);
+    imports.push(`  '@wordpress/components'`);
+    imports.push(`);`);
+    imports.push(`const { ${privateComponents.join(', ')} } = unlock(componentsPrivateApis);`);
   }
 
   imports.push('');

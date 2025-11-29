@@ -52,9 +52,9 @@ import { getMockData, getFieldDefinitions } from './utils/mockDataGenerator';
 import { WORDPRESS_ICON_NAMES } from './utils/iconNames';
 import { unlockComponents } from './utils/lock-unlock';
 
-// Access Tabs from private APIs
-// @ts-ignore - Tabs is private API but stable
-const { Tabs } = unlockComponents(componentsPrivateApis);
+// Access Tabs and Badge from private APIs
+// @ts-ignore - Tabs and Badge are private APIs but stable
+const { Tabs, Badge } = unlockComponents(componentsPrivateApis);
 
 export const componentRegistry: Record<string, ComponentDefinition> = {
   Grid: {
@@ -438,6 +438,29 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'select',
         options: ['1', '2', '3', '4', '5', '6'],
         defaultValue: '2',
+      },
+    ],
+  },
+
+  Badge: {
+    name: 'Badge',
+    component: Badge,
+    acceptsChildren: false,
+    description: 'Small label or tag for status, categories, or notifications.',
+    defaultProps: { children: 'Badge', intent: 'default', placeholder: 'Badge' },
+    propDefinitions: [
+      {
+        name: 'content',
+        type: 'string',
+        defaultValue: 'Badge',
+        description: 'Badge text content',
+      },
+      {
+        name: 'intent',
+        type: 'select',
+        options: ['default', 'info', 'success', 'warning', 'error'],
+        defaultValue: 'default',
+        description: 'Badge visual variant',
       },
     ],
   },

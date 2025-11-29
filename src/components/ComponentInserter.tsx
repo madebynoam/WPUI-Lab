@@ -47,6 +47,7 @@ export const componentIconMap: Record<string, any> = {
   Text: paragraph,
   Heading: heading,
   Button: buttonIcon,
+  Badge: tag,
   Icon: pages,
   // Form Inputs
   TextControl: textColor,

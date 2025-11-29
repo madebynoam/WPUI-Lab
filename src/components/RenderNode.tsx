@@ -142,7 +142,7 @@ export const RenderNode: React.FC<{
       console.log('[Figma Selection] DOUBLE CLICK detected');
 
       // For Text/Heading components, enter edit mode ONLY if already selected (Figma behavior)
-      if ((node.type === 'Text' || node.type === 'Heading') && selectedNodeIds.includes(node.id)) {
+      if ((node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge') && selectedNodeIds.includes(node.id)) {
         setIsEditingText(true);
         // Focus will happen via useEffect
         // Reset click tracking
@@ -848,7 +848,7 @@ export const RenderNode: React.FC<{
   };
 
   // Handle components with special text/content props
-  if (node.type === 'Text' || node.type === 'Heading') {
+  if (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge') {
     // Data is normalized at the boundary, so content is always in props.children
     const content = props.children || definition.defaultProps?.children;
 
