@@ -71,6 +71,7 @@ export const componentGroups: ComponentGroup[] = [
 			'Panel',
 			'PanelBody',
 			'PanelRow',
+			'Tabs',
 		],
 	},
 	{
@@ -92,19 +93,7 @@ export const componentGroups: ComponentGroup[] = [
 			'RadioControl',
 			'RangeControl',
 			'DateTimePicker',
-			'FontSizePicker',
-			'AnglePickerControl',
 		],
-	},
-	{
-		name: 'Color',
-		icon: brush,
-		components: ['ColorPicker', 'ColorPalette'],
-	},
-	{
-		name: 'Advanced',
-		icon: settings,
-		components: ['BoxControl', 'BorderControl', 'FormTokenField', 'Tabs'],
 	},
 	{
 		name: 'Interactive',
@@ -122,7 +111,7 @@ export const componentGroups: ComponentGroup[] = [
 	{
 		name: 'Utilities',
 		icon: plus,
-		components: ['Spacer', 'Divider', 'Spinner', 'Truncate'],
+		components: ['Spacer', 'Divider', 'Spinner'],
 	},
 	{
 		name: 'Data Display',

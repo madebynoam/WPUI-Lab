@@ -892,9 +892,11 @@ export const RenderNode: React.FC<{
                 return;
               }
 
-              // Exit edit mode on Escape
+              // Save and exit edit mode on Escape
               if (e.key === 'Escape') {
                 e.preventDefault();
+                const newContent = editableRef.current?.textContent || '';
+                updateComponentProps(node.id, { children: newContent });
                 setIsEditingText(false);
                 return;
               }

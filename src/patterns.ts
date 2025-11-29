@@ -1004,7 +1004,7 @@ export const patterns: Pattern[] = [
       children: [
         {
           type: 'Heading',
-          props: { level: 1, children: 'Analytics' },
+          props: { level: 4, children: 'Analytics' },
           children: [],
         },
         {
@@ -1017,22 +1017,22 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'CardHeader',
-                  props: {},
+                  props: { size: 'small' },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 3, children: 'Page Views' },
+                      props: { level: 4, children: 'Page views' },
                       children: [],
                     },
                   ],
                 },
                 {
                   type: 'CardBody',
-                  props: {},
+                  props: { size: 'small' },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 1, children: '45,231' },
+                      props: { level: 2, children: '45,231' },
                       children: [],
                     },
                     {
@@ -1050,27 +1050,27 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'CardHeader',
-                  props: {},
+                  props: { size: 'small' },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 3, children: 'Bounce Rate' },
+                      props: { level: 4, children: 'Avg Session' },
                       children: [],
                     },
                   ],
                 },
                 {
                   type: 'CardBody',
-                  props: {},
+                  props: { size: 'small' },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 1, children: '42%' },
+                      props: { level: 2, children: '3m 24s' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { children: '-5.4% from last month', variant: 'muted' },
+                      props: { children: '+12% from last month', variant: 'muted' },
                       children: [],
                     },
                   ],
@@ -1083,27 +1083,27 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'CardHeader',
-                  props: {},
+                  props: { size: 'small' },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 3, children: 'Avg Session' },
+                      props: { level: 4, children: 'Bounce Rate' },
                       children: [],
                     },
                   ],
                 },
                 {
                   type: 'CardBody',
-                  props: {},
+                  props: { size: 'small' },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 1, children: '3m 24s' },
+                      props: { level: 2, children: '42%' },
                       children: [],
                     },
                     {
                       type: 'Text',
-                      props: { children: '+12% from last month', variant: 'muted' },
+                      props: { children: '-5.4% from last month', variant: 'muted' },
                       children: [],
                     },
                   ],
