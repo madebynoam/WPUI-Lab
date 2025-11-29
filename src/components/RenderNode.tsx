@@ -41,6 +41,56 @@ export const RenderNode: React.FC<{
   const [isEditingText, setIsEditingText] = useState(false);
   const editableRef = useRef<HTMLDivElement>(null);
 
+  // Hover state for Figma-style hover behavior
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Determine if this node should show hover border (Figma-style)
+  const shouldShowHoverBorder = useCallback(() => {
+    if (isPlayMode || node.id === ROOT_VSTACK_ID || isDragging || draggedNodeId) return false;
+    if (!isHovered) return false;
+
+    // If nothing is selected, show hover on top-level items only
+    if (selectedNodeIds.length === 0) {
+      const parent = findParent(tree, node.id);
+      return parent?.id === ROOT_VSTACK_ID;
+    }
+
+    // If something is selected, show hover on siblings and parent's siblings (one level up)
+    const selectedId = selectedNodeIds[0];
+    if (selectedId === node.id) return false; // Don't hover the selected item itself
+
+    // Check if node is a sibling of selected
+    const selectedParent = findParent(tree, selectedId);
+    const thisParent = findParent(tree, node.id);
+
+    if (selectedParent && thisParent && selectedParent.id === thisParent.id) {
+      // Same parent = siblings
+      return true;
+    }
+
+    // Check if node is a sibling of selected's parent (one level up)
+    if (selectedParent && selectedParent.id !== ROOT_VSTACK_ID) {
+      const selectedGrandparent = findParent(tree, selectedParent.id);
+      if (selectedGrandparent && thisParent && selectedGrandparent.id === thisParent.id) {
+        // Same grandparent = parent's siblings
+        return true;
+      }
+    }
+
+    return false;
+  }, [isPlayMode, node.id, isDragging, draggedNodeId, isHovered, selectedNodeIds, tree]);
+
+  // Hover handlers for Figma-style hover
+  const handleMouseEnter = useCallback(() => {
+    if (!isPlayMode && !isDragging && !draggedNodeId) {
+      setIsHovered(true);
+    }
+  }, [isPlayMode, isDragging, draggedNodeId]);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+  }, []);
+
   // Focus editable element when entering edit mode
   useEffect(() => {
     if (isEditingText && editableRef.current) {
@@ -823,8 +873,14 @@ export const RenderNode: React.FC<{
       console.log(`[Hover] Highlighting node ${node.id} as hovered sibling`);
     }
 
+    // Figma-style hover border - single pixel blue outline
+    const showHoverBorder = shouldShowHoverBorder();
+    const hoverOutline = showHoverBorder && !isSelected ? '1px solid #3858e9' : undefined;
+
     const baseStyle: React.CSSProperties = {
-      outline: isSelected && !isRootVStack && !isPlayMode ? '2px solid #3858e9' : 'none',
+      outline: isSelected && !isRootVStack && !isPlayMode
+        ? '2px solid #3858e9'
+        : (hoverOutline || 'none'),
       // In play mode, don't set cursor - let native components use their natural cursor styles
       // In design mode, use default cursor for selection interactions
       cursor: isPlayMode ? undefined : 'default',
@@ -898,6 +954,8 @@ export const RenderNode: React.FC<{
         <div
           ref={wrapperRef}
           data-component-id={node.id}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           style={{
             ...getWrapperStyle(),
             outline: '2px solid #3858e9',
@@ -980,6 +1038,8 @@ export const RenderNode: React.FC<{
         data-component-id={node.id}
         onClick={(e) => handleComponentClick(e, node.id)}
         onMouseDown={handleMouseDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         style={getWrapperStyle()}
       >
         <Component {...buttonProps}>{content}</Component>
@@ -1037,6 +1097,8 @@ export const RenderNode: React.FC<{
         data-component-id={node.id}
         onClick={(e) => handleComponentClick(e, node.id)}
         onMouseDown={handleMouseDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         style={getWrapperStyle({ display: 'inline-block' })}
       >
         <Component icon={iconProp} fill={colorMap[colorVariant]} {...props} />
@@ -1055,6 +1117,8 @@ export const RenderNode: React.FC<{
           data-component-id={node.id}
           onClick={(e) => handleComponentClick(e, node.id)}
           onMouseDown={handleMouseDown}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           style={{
             ...getWrapperStyle(),
             backgroundColor: '#fff',
@@ -1346,6 +1410,8 @@ export const RenderNode: React.FC<{
           data-component-id={node.id}
           onClick={(e) => handleComponentClick(e, node.id)}
           onMouseDown={handleMouseDown}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           style={getWrapperStyle({ minHeight: '400px', height: '100%' })}
         >
           <Component key={`${node.id}-${dataSource}-${viewType}`} {...mergedProps} />
@@ -1359,6 +1425,8 @@ export const RenderNode: React.FC<{
           data-component-id={node.id}
           onClick={(e) => handleComponentClick(e, node.id)}
           onMouseDown={handleMouseDown}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           style={{
             ...getWrapperStyle(),
             padding: '16px',
@@ -1432,6 +1500,8 @@ export const RenderNode: React.FC<{
         data-component-id={node.id}
         onClick={(e) => handleComponentClick(e, node.id)}
         onMouseDown={handleMouseDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         style={getWrapperStyle({ padding: '4px' })}
       >
         <Component {...mergedProps} />
@@ -1462,6 +1532,8 @@ export const RenderNode: React.FC<{
       data-component-id={node.id}
       onClick={(e) => handleComponentClick(e, node.id)}
       onMouseDown={handleMouseDown}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         ...getWrapperStyle(),
         position: showGridLines ? 'relative' : undefined,
