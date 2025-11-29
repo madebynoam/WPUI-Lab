@@ -357,19 +357,6 @@ export const PropertiesPanel: React.FC = () => {
   const renderStylesTab = () => {
     return (
       <div style={{ flex: 1, overflow: "auto" }}>
-        {/* Layer Name - only for single select */}
-        {!isMultiSelect && (
-          <PanelBody title="Layer Name" initialOpen={true}>
-            <TextControl
-              value={firstNode.name || ""}
-              onChange={(value) =>
-                updateComponentName(selectedNodeIds[0], value)
-              }
-              placeholder={firstNode.type}
-            />
-          </PanelBody>
-        )}
-
         {/* Properties */}
         {definition.propDefinitions.length > 0 && (
           <PanelBody
