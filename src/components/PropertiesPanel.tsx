@@ -245,6 +245,7 @@ export const PropertiesPanel: React.FC = () => {
                   })
                 }
                 help="Padding around the page content (multiplier of 4, applies to all pages)"
+                min={0}
               />
             </div>
 
@@ -258,6 +259,7 @@ export const PropertiesPanel: React.FC = () => {
                   })
                 }
                 help="Gap between page elements (multiplier of 4, applies to all pages)"
+                min={0}
               />
             </div>
           </PanelBody>
@@ -395,6 +397,7 @@ export const PropertiesPanel: React.FC = () => {
                           ? `${propDef.description} (applying to all ${selectedNodes.length} items)`
                           : propDef.description
                       }
+                      min={0}
                     />
                   )}
 
