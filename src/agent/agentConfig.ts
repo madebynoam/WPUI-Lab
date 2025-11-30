@@ -54,17 +54,17 @@ export const AGENT_MODELS = {
   // Specialized Agents
   component: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_NANO,
+    model: Models.OpenAI.GPT_5_MINI,
   } as AgentModelConfig,
 
   content: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_MINI,
+    model: Models.OpenAI.GPT_5_NANO,
   } as AgentModelConfig,
 
   data: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_NANO,
+    model: Models.OpenAI.GPT_5_MINI,
   } as AgentModelConfig,
 
   layout: {
