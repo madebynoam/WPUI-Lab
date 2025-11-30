@@ -5,9 +5,36 @@
  * Change models here to affect all agents at once.
  */
 
+/**
+ * Available AI Models
+ */
+export const Models = {
+  Anthropic: {
+    CLAUDE_SONNET_4_5: 'claude-sonnet-4-5',
+    CLAUDE_HAIKU_4_5: 'claude-haiku-4-5',
+  },
+  OpenAI: {
+    GPT_4O_MINI: 'gpt-4o-mini',
+    GPT_4O: 'gpt-4o',
+  },
+} as const;
+
+/**
+ * AI Providers
+ */
+export const Providers = {
+  ANTHROPIC: 'anthropic',
+  OPENAI: 'openai',
+} as const;
+
+export type Provider = typeof Providers.ANTHROPIC | typeof Providers.OPENAI;
+export type AnthropicModel = typeof Models.Anthropic[keyof typeof Models.Anthropic];
+export type OpenAIModel = typeof Models.OpenAI[keyof typeof Models.OpenAI];
+export type Model = AnthropicModel | OpenAIModel;
+
 export interface AgentModelConfig {
-  provider: 'anthropic' | 'openai';
-  model: string;
+  provider: Provider;
+  model: Model;
 }
 
 /**
@@ -19,34 +46,34 @@ export interface AgentModelConfig {
 export const AGENT_MODELS = {
   // Orchestrators
   orchestrator: {
-    provider: 'anthropic',
-    model: 'claude-haiku-4-5',
+    provider: Providers.ANTHROPIC,
+    model: Models.Anthropic.CLAUDE_HAIKU_4_5,
   } as AgentModelConfig,
 
   // Specialized Agents
   component: {
-    provider: 'anthropic',
-    model: 'claude-haiku-4-5',
+    provider: Providers.ANTHROPIC,
+    model: Models.Anthropic.CLAUDE_HAIKU_4_5,
   } as AgentModelConfig,
 
   content: {
-    provider: 'anthropic',
-    model: 'claude-haiku-4-5',
+    provider: Providers.ANTHROPIC,
+    model: Models.Anthropic.CLAUDE_HAIKU_4_5,
   } as AgentModelConfig,
 
   data: {
-    provider: 'anthropic',
-    model: 'claude-haiku-4-5',
+    provider: Providers.ANTHROPIC,
+    model: Models.Anthropic.CLAUDE_HAIKU_4_5,
   } as AgentModelConfig,
 
   layout: {
-    provider: 'anthropic',
-    model: 'claude-haiku-4-5',
+    provider: Providers.ANTHROPIC,
+    model: Models.Anthropic.CLAUDE_HAIKU_4_5,
   } as AgentModelConfig,
 
   page: {
-    provider: 'anthropic',
-    model: 'claude-haiku-4-5',
+    provider: Providers.ANTHROPIC,
+    model: Models.Anthropic.CLAUDE_HAIKU_4_5,
   } as AgentModelConfig,
 } as const;
 
@@ -57,14 +84,14 @@ export const AGENT_MODELS = {
  */
 export const AVAILABLE_MODELS = {
   // Anthropic Models
-  'claude-sonnet-4-5': {
-    provider: 'anthropic',
+  [Models.Anthropic.CLAUDE_SONNET_4_5]: {
+    provider: Providers.ANTHROPIC,
     description: 'Most capable, highest cost ($3/MTok input, $15/MTok output)',
     bestFor: 'Complex reasoning, long context, critical tasks',
     pricing: { input: 0.003, output: 0.015 },
   },
-  'claude-haiku-4-5': {
-    provider: 'anthropic',
+  [Models.Anthropic.CLAUDE_HAIKU_4_5]: {
+    provider: Providers.ANTHROPIC,
     description: 'Fast and affordable ($1/MTok input, $5/MTok output)',
     bestFor: 'Standard tasks, agents, fast responses',
     pricing: { input: 0.001, output: 0.005 },
