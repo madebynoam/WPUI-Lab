@@ -20,7 +20,7 @@ export type AgentType =
  */
 export interface AgentModel {
   provider: 'anthropic' | 'openai';
-  model: 'claude-haiku-4-5' | 'claude-sonnet-4-5';
+  model: 'claude-haiku-4-5' | 'claude-sonnet-4-5' | 'gpt-5-nano' | 'gpt-5-mini' | 'gpt-4o-mini' | 'gpt-4o';
 }
 
 /**
@@ -140,6 +140,7 @@ export interface ModelPricing {
 }
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
+  // Anthropic Models
   'claude-sonnet-4-5': {
     input: 0.003,   // $3.00 per MTok (EXPENSIVE - avoid)
     output: 0.015,  // $15.00 per MTok
@@ -147,6 +148,24 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   'claude-haiku-4-5': {
     input: 0.001,   // $1.00 per MTok (orchestrator and agents)
     output: 0.005,  // $5.00 per MTok
+  },
+
+  // OpenAI Models
+  'gpt-5-nano': {
+    input: 0.0003,  // $0.30 per MTok (cheapest)
+    output: 0.0012, // $1.20 per MTok
+  },
+  'gpt-5-mini': {
+    input: 0.0004,  // $0.40 per MTok
+    output: 0.0016, // $1.60 per MTok
+  },
+  'gpt-4o-mini': {
+    input: 0.00015, // $0.15 per MTok
+    output: 0.0006, // $0.60 per MTok
+  },
+  'gpt-4o': {
+    input: 0.0025,  // $2.50 per MTok
+    output: 0.01,   // $10.00 per MTok
   },
 };
 

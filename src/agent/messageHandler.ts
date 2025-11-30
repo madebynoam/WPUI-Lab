@@ -21,6 +21,24 @@ const MODEL_PRICING = {
     input: 0.001,   // $1.00 per MTok (orchestrator and agents)
     output: 0.005,  // $5.00 per MTok
   },
+
+  // OpenAI models
+  'gpt-5-nano': {
+    input: 0.0003,  // $0.30 per MTok (cheapest)
+    output: 0.0012, // $1.20 per MTok
+  },
+  'gpt-5-mini': {
+    input: 0.0004,  // $0.40 per MTok
+    output: 0.0016, // $1.60 per MTok
+  },
+  'gpt-4o-mini': {
+    input: 0.00015, // $0.15 per MTok
+    output: 0.0006, // $0.60 per MTok
+  },
+  'gpt-4o': {
+    input: 0.0025,  // $2.50 per MTok
+    output: 0.01,   // $10.00 per MTok
+  },
 };
 
 // Current model pricing (for v2.0 single-agent system - using Haiku)
