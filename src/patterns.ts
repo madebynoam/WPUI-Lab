@@ -36,7 +36,7 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'CardHeader',
-              props: { size: 'small' },
+              props: { size: 'small', isBorderless: true },
               children: [
                 {
                   type: 'VStack',
@@ -129,7 +129,7 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'CardHeader',
-              props: { size: 'small', isBorderless: false, isShady: false },
+              props: { size: 'small', isBorderless: true, isShady: false },
               children: [
                 {
                   type: 'VStack',
@@ -167,7 +167,7 @@ export const patterns: Pattern[] = [
                         },
                         {
                           type: 'Badge',
-                          props: { content: '20% off', intent: 'success' },
+                          props: { children: '20% off', intent: 'success' },
                           children: [],
                         },
                       ],
@@ -227,7 +227,7 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'CardHeader',
-              props: { size: 'small', isBorderless: false, isShady: false },
+              props: { size: 'small', isBorderless: true, isShady: false },
               children: [
                 {
                   type: 'VStack',
@@ -235,7 +235,7 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Spacer',
-                      props: { margin: 3 },
+                      props: { margin: 0 },
                       children: [],
                     },
                     {
@@ -320,7 +320,7 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'CardHeader',
-              props: { size: 'small', isBorderless: false, isShady: false },
+              props: { size: 'small', isBorderless: true, isShady: false },
               children: [
                 {
                   type: 'VStack',
@@ -328,7 +328,7 @@ export const patterns: Pattern[] = [
                   children: [
                     {
                       type: 'Spacer',
-                      props: { margin: 3 },
+                      props: { margin: 0 },
                       children: [],
                     },
                     {
@@ -914,7 +914,7 @@ export const patterns: Pattern[] = [
     category: 'Dashboards',
     tree: {
       type: 'VStack',
-      props: { spacing: 6 },
+      props: { spacing: 4 },
       children: [
         {
           type: 'Heading',
@@ -923,35 +923,46 @@ export const patterns: Pattern[] = [
         },
         {
           type: 'Grid',
-          props: { columns: 3, gap: 4 },
+          props: { columns: 12, gap: 4 },
           children: [
             {
               type: 'Card',
-              props: {},
+              props: { size: 'none', gridColumnSpan: 3 },
               children: [
                 {
                   type: 'CardHeader',
-                  props: { size: 'small' },
+                  props: { size: 'xSmall', isBorderless: true },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 4, children: 'Page views' },
+                      props: { level: 5, children: 'Total visitors' },
                       children: [],
                     },
                   ],
                 },
                 {
                   type: 'CardBody',
-                  props: { size: 'small' },
+                  props: { size: 'xSmall' },
                   children: [
                     {
-                      type: 'Heading',
-                      props: { level: 2, children: '45,231' },
-                      children: [],
+                      type: 'HStack',
+                      props: { spacing: 2, justify: 'flex-start' },
+                      children: [
+                        {
+                          type: 'Heading',
+                          props: { level: 3, children: '4,231' },
+                          children: [],
+                        },
+                        {
+                          type: 'Badge',
+                          props: { children: '+12.5%', intent: 'success' },
+                          children: [],
+                        },
+                      ],
                     },
                     {
                       type: 'Text',
-                      props: { children: '+20.1% from last month', variant: 'muted' },
+                      props: { children: 'Since last month', variant: 'muted' },
                       children: [],
                     },
                   ],
@@ -960,31 +971,42 @@ export const patterns: Pattern[] = [
             },
             {
               type: 'Card',
-              props: {},
+              props: { size: 'none', gridColumnSpan: 3 },
               children: [
                 {
                   type: 'CardHeader',
-                  props: { size: 'small' },
+                  props: { size: 'xSmall', isBorderless: true },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 4, children: 'Avg Session' },
+                      props: { level: 5, children: 'New users' },
                       children: [],
                     },
                   ],
                 },
                 {
                   type: 'CardBody',
-                  props: { size: 'small' },
+                  props: { size: 'xSmall' },
                   children: [
                     {
-                      type: 'Heading',
-                      props: { level: 2, children: '3m 24s' },
-                      children: [],
+                      type: 'HStack',
+                      props: { spacing: 2, justify: 'flex-start' },
+                      children: [
+                        {
+                          type: 'Heading',
+                          props: { level: 3, children: '689' },
+                          children: [],
+                        },
+                        {
+                          type: 'Badge',
+                          props: { children: '+8.2%', intent: 'success' },
+                          children: [],
+                        },
+                      ],
                     },
                     {
                       type: 'Text',
-                      props: { children: '+12% from last month', variant: 'muted' },
+                      props: { children: 'Since last month', variant: 'muted' },
                       children: [],
                     },
                   ],
@@ -993,31 +1015,86 @@ export const patterns: Pattern[] = [
             },
             {
               type: 'Card',
-              props: {},
+              props: { size: 'none', gridColumnSpan: 3 },
               children: [
                 {
                   type: 'CardHeader',
-                  props: { size: 'small' },
+                  props: { size: 'xSmall', isBorderless: true },
                   children: [
                     {
                       type: 'Heading',
-                      props: { level: 4, children: 'Bounce Rate' },
+                      props: { level: 5, children: 'Bounce rate' },
                       children: [],
                     },
                   ],
                 },
                 {
                   type: 'CardBody',
-                  props: { size: 'small' },
+                  props: { size: 'xSmall' },
                   children: [
                     {
-                      type: 'Heading',
-                      props: { level: 2, children: '42%' },
-                      children: [],
+                      type: 'HStack',
+                      props: { spacing: 2, justify: 'flex-start' },
+                      children: [
+                        {
+                          type: 'Heading',
+                          props: { level: 3, children: '27.3%' },
+                          children: [],
+                        },
+                        {
+                          type: 'Badge',
+                          props: { children: '-3.1%', intent: 'success' },
+                          children: [],
+                        },
+                      ],
                     },
                     {
                       type: 'Text',
-                      props: { children: '-5.4% from last month', variant: 'muted' },
+                      props: { children: 'Since last month', variant: 'muted' },
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'Card',
+              props: { size: 'none', gridColumnSpan: 3 },
+              children: [
+                {
+                  type: 'CardHeader',
+                  props: { size: 'xSmall', isBorderless: true },
+                  children: [
+                    {
+                      type: 'Heading',
+                      props: { level: 5, children: 'Avg. Session' },
+                      children: [],
+                    },
+                  ],
+                },
+                {
+                  type: 'CardBody',
+                  props: { size: 'xSmall' },
+                  children: [
+                    {
+                      type: 'HStack',
+                      props: { spacing: 2, justify: 'flex-start' },
+                      children: [
+                        {
+                          type: 'Heading',
+                          props: { level: 3, children: '2m 56s' },
+                          children: [],
+                        },
+                        {
+                          type: 'Badge',
+                          props: { children: '-5.0%', intent: 'error' },
+                          children: [],
+                        },
+                      ],
+                    },
+                    {
+                      type: 'Text',
+                      props: { children: 'Since last month', variant: 'muted' },
                       children: [],
                     },
                   ],
