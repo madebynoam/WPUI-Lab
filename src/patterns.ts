@@ -771,6 +771,7 @@ export const patterns: Pattern[] = [
   },
 
   // Dashboards
+  /* Temporarily hidden - needs redesign
   {
     id: 'dashboard-overview',
     name: 'Dashboard Overview',
@@ -906,6 +907,7 @@ export const patterns: Pattern[] = [
       ],
     },
   },
+  */
 
   {
     id: 'dashboard-analytics',
