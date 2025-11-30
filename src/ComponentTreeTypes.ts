@@ -28,6 +28,7 @@ export type ComponentTreeAction =
 
   // Clipboard actions
   | { type: 'COPY_COMPONENT'; payload: { node: ComponentNode } }
+  | { type: 'CUT_COMPONENT'; payload: { node: ComponentNode; nodeId: string } }
   | { type: 'PASTE_COMPONENT'; payload: { parentId?: string } }
 
   // Grid actions

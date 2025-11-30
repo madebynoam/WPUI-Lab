@@ -30,6 +30,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     canRedo,
     removeComponent,
     copyComponent,
+    cutComponent,
     pasteComponent,
     canPaste,
     duplicateComponent,
@@ -160,6 +161,20 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
         e.preventDefault();
         e.stopPropagation();
         copyComponent(selectedNodeIds[0]);
+        return;
+      }
+
+      // Cmd/Ctrl+X for cut
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key === "x" &&
+        selectedNodeIds.length > 0 &&
+        !isInEditMode()
+      ) {
+        console.log('[Canvas] Cmd/Ctrl+X pressed, cutting component:', selectedNodeIds[0]);
+        e.preventDefault();
+        e.stopPropagation();
+        cutComponent(selectedNodeIds[0]);
         return;
       }
 
@@ -314,6 +329,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     canRedo,
     removeComponent,
     copyComponent,
+    cutComponent,
     pasteComponent,
     canPaste,
     duplicateComponent,

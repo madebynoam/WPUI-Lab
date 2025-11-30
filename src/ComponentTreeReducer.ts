@@ -30,6 +30,7 @@ export interface ComponentTreeState {
   selectedNodeIds: string[];
   gridLinesVisible: Set<string>;
   clipboard: ComponentNode | null;
+  cutNodeId: string | null; // ID of the node that was cut (to remove after paste)
   isPlayMode: boolean;
 
   // History state
@@ -56,6 +57,7 @@ const HISTORY_ACTIONS = new Set([
   'RENAME_PAGE',
   'DUPLICATE_PAGE',
   'UPDATE_PAGE_THEME',
+  'CUT_COMPONENT',
   'PASTE_COMPONENT',
   'RESET_TREE',
   'SET_CURRENT_PAGE',
@@ -360,7 +362,23 @@ export function componentTreeReducer(
 
     case 'COPY_COMPONENT': {
       const { node } = action.payload;
-      return { ...state, clipboard: JSON.parse(JSON.stringify(node)) };
+      return { ...state, clipboard: JSON.parse(JSON.stringify(node)), cutNodeId: null };
+    }
+
+    case 'CUT_COMPONENT': {
+      const { node, nodeId } = action.payload;
+      // Cut should remove the component immediately from the tree (like delete)
+      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const newTree = removeNodeFromTree(currentTree, nodeId);
+      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
+
+      // Update selection to root after cutting
+      return {
+        ...updateHistory(state, newPages, state.currentPageId),
+        clipboard: JSON.parse(JSON.stringify(node)),
+        cutNodeId: nodeId,
+        selectedNodeIds: [ROOT_VSTACK_ID],
+      };
     }
 
     case 'PASTE_COMPONENT': {
@@ -419,9 +437,11 @@ export function componentTreeReducer(
       const newTree = insertNodeInTree(currentTree, newNode, parentId);
       const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
 
+      // Cut components are already removed from tree, so just insert
       return {
         ...updateHistory(state, newPages, state.currentPageId),
         selectedNodeIds: [newNode.id],
+        cutNodeId: null, // Clear cut state after paste
       };
     }
 

@@ -46,7 +46,9 @@ interface ComponentTreeContextType {
 
   // Copy/Paste management
   clipboard: ComponentNode | null;
+  cutNodeId: string | null;
   copyComponent: (id: string) => void;
+  cutComponent: (id: string) => void;
   pasteComponent: (parentId?: string) => void;
   canPaste: boolean;
 
@@ -145,6 +147,7 @@ function initializeState(): ComponentTreeState {
     selectedNodeIds: [ROOT_VSTACK_ID],
     gridLinesVisible: new Set(),
     clipboard: null,
+    cutNodeId: null,
     isPlayMode: false,
     history: {
       past: [],
@@ -319,6 +322,17 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     }
   };
 
+  const cutComponent = (id: string) => {
+    console.log('[ComponentTreeContext] cutComponent called with id:', id);
+    const node = getNodeById(id);
+    if (node && id !== ROOT_VSTACK_ID) { // Don't allow cutting root
+      console.log('[ComponentTreeContext] Dispatching CUT_COMPONENT for node:', node.type);
+      dispatch({ type: 'CUT_COMPONENT', payload: { node, nodeId: id } });
+    } else {
+      console.log('[ComponentTreeContext] Cannot cut - node not found or is root');
+    }
+  };
+
   const pasteComponent = (parentId?: string) => {
     dispatch({ type: 'PASTE_COMPONENT', payload: { parentId } });
   };
@@ -438,7 +452,9 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     gridLinesVisible: state.gridLinesVisible,
     toggleGridLines,
     clipboard: state.clipboard,
+    cutNodeId: state.cutNodeId,
     copyComponent,
+    cutComponent,
     pasteComponent,
     canPaste: state.clipboard !== null,
     pages: state.pages,
