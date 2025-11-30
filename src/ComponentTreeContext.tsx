@@ -71,6 +71,8 @@ interface ComponentTreeContextType {
   deleteProject: (projectId: string) => void;
   renameProject: (projectId: string, name: string) => void;
   duplicateProject: (projectId: string) => void;
+  updateProjectTheme: (theme: { primaryColor?: string; backgroundColor?: string }) => void;
+  updateProjectLayout: (layout: { maxWidth?: number; padding?: number; spacing?: number }) => void;
 
   // History management
   canUndo: boolean;
@@ -433,6 +435,14 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'DUPLICATE_PROJECT', payload: { projectId } });
   };
 
+  const updateProjectTheme = (theme: { primaryColor?: string; backgroundColor?: string }) => {
+    dispatch({ type: 'UPDATE_PROJECT_THEME', payload: { theme } });
+  };
+
+  const updateProjectLayout = (layout: { maxWidth?: number; padding?: number; spacing?: number }) => {
+    dispatch({ type: 'UPDATE_PROJECT_LAYOUT', payload: { layout } });
+  };
+
   // ===== History =====
 
   const undo = () => {
@@ -519,6 +529,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     deleteProject,
     renameProject,
     duplicateProject,
+    updateProjectTheme,
+    updateProjectLayout,
     canUndo: state.history.past.length > 0,
     canRedo: state.history.future.length > 0,
     undo,

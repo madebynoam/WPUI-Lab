@@ -57,6 +57,8 @@ const HISTORY_ACTIONS = new Set([
   'RENAME_PAGE',
   'DUPLICATE_PAGE',
   'UPDATE_PAGE_THEME',
+  'UPDATE_PROJECT_THEME',
+  'UPDATE_PROJECT_LAYOUT',
   'CUT_COMPONENT',
   'PASTE_COMPONENT',
   'RESET_TREE',
@@ -72,6 +74,8 @@ const HISTORY_ACTIONS = new Set([
 const DEBOUNCED_ACTIONS = new Set([
   'UPDATE_COMPONENT_PROPS',
   'UPDATE_COMPONENT_NAME',
+  'UPDATE_PROJECT_THEME',
+  'UPDATE_PROJECT_LAYOUT',
   'RENAME_PAGE',
   'RENAME_PROJECT',
 ]);
@@ -445,6 +449,35 @@ export function componentTreeReducer(
           ? { ...page, theme: { ...page.theme, ...theme } }
           : page
       );
+      const updatedProject = { ...currentProject, pages: newPages, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    case 'UPDATE_PROJECT_THEME': {
+      const { theme } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = {
+        ...currentProject,
+        theme: { ...currentProject.theme, ...theme },
+        lastModified: Date.now(),
+      };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    case 'UPDATE_PROJECT_LAYOUT': {
+      const { layout } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      // Update root VStack props on all pages
+      const newPages = currentProject.pages.map(page => {
+        const newTree = page.tree.map(node =>
+          node.id === ROOT_VSTACK_ID
+            ? { ...node, props: { ...node.props, ...layout } }
+            : node
+        );
+        return { ...page, tree: newTree };
+      });
       const updatedProject = { ...currentProject, pages: newPages, lastModified: Date.now() };
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
       return updateHistory(state, newProjects, state.currentProjectId);

@@ -32,6 +32,8 @@ export type ComponentTreeAction =
   | { type: 'DELETE_PROJECT'; payload: { projectId: string } }
   | { type: 'RENAME_PROJECT'; payload: { projectId: string; name: string } }
   | { type: 'DUPLICATE_PROJECT'; payload: { projectId: string } }
+  | { type: 'UPDATE_PROJECT_THEME'; payload: { theme: { primaryColor?: string; backgroundColor?: string } } }
+  | { type: 'UPDATE_PROJECT_LAYOUT'; payload: { layout: { maxWidth?: number; padding?: number; spacing?: number } } }
   | { type: 'SET_PROJECTS'; payload: { projects: Project[] } }
 
   // Clipboard actions

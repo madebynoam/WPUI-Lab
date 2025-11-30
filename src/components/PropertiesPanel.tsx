@@ -111,6 +111,10 @@ export const PropertiesPanel: React.FC = () => {
     addInteraction,
     removeInteraction,
     updateInteraction,
+    projects,
+    currentProjectId,
+    updateProjectTheme,
+    updateProjectLayout,
   } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
@@ -149,40 +153,18 @@ export const PropertiesPanel: React.FC = () => {
   }, [selectedNodes, isMultiSelect, firstNode]);
 
   if (selectedNodes.length === 0) {
-    return (
-      <div
-        style={{
-          width: `${PANEL_WIDTH}px`,
-          borderLeft: "1px solid rgba(0, 0, 0, 0.133)",
-          backgroundColor: "#fff",
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div style={{ color: "#999", fontSize: "13px", textAlign: "center" }}>
-          Select a component to edit properties
-        </div>
-      </div>
-    );
-  }
-
-  if (!firstNode) return null;
-
-  // Special case: Page-level properties for root VStack (only single select)
-  if (selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_VSTACK_ID) {
-    const maxWidth = firstNode.props.maxWidth ?? 1440;
-    const backgroundColor =
-      firstNode.props.backgroundColor ?? "rgb(249, 250, 251)";
-    const padding = firstNode.props.padding ?? 20;
-    const spacing = firstNode.props.spacing ?? 2;
-
-    // Get current page theme
-    const currentPage = pages.find((p) => p.id === currentPageId);
-    const pageTheme = currentPage?.theme ?? {
+    // Show Project Settings when nothing is selected
+    const currentProject = projects.find((p) => p.id === currentProjectId);
+    const projectTheme = currentProject?.theme ?? {
       primaryColor: "#3858e9",
       backgroundColor: "#ffffff",
     };
+
+    // Get layout settings from first page's root VStack
+    const rootVStack = getNodeById(ROOT_VSTACK_ID);
+    const maxWidth = rootVStack?.props.maxWidth ?? 1440;
+    const padding = rootVStack?.props.padding ?? 20;
+    const spacing = rootVStack?.props.spacing ?? 2;
 
     return (
       <div
@@ -197,34 +179,26 @@ export const PropertiesPanel: React.FC = () => {
       >
         <div style={{ padding: "12px", borderBottom: "1px solid #e0e0e0" }}>
           <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>
-            Page Settings
+            Project Settings
           </h3>
         </div>
 
         <div style={{ flex: 1, overflow: "auto" }}>
-          {/* Page Theme Section */}
+          {/* Project Theme Section */}
           <PanelBody
-            title="Page Theme"
+            title="Project Theme"
             initialOpen={openPanels["theme"]}
             onToggle={() =>
               setOpenPanels({ ...openPanels, theme: !openPanels["theme"] })
             }
           >
             <ColorSwatchButton
-              color={pageTheme.primaryColor || "#3858e9"}
+              color={projectTheme.primaryColor || "#3858e9"}
               label="Primary Color"
               onChange={(color) =>
-                updatePageTheme(currentPageId, { primaryColor: color })
+                updateProjectTheme({ primaryColor: color })
               }
               help="Theme primary color for buttons and interactive elements"
-            />
-            <ColorSwatchButton
-              color={pageTheme.backgroundColor || "#ffffff"}
-              label="Theme Background Color"
-              onChange={(color) =>
-                updatePageTheme(currentPageId, { backgroundColor: color })
-              }
-              help="Theme background color (affects foreground color calculations)"
             />
           </PanelBody>
 
@@ -237,39 +211,36 @@ export const PropertiesPanel: React.FC = () => {
             }
           >
             <div style={{ marginBottom: "16px" }}>
-              <NumberControl
+              <SelectControl
                 label="Max Width"
-                value={maxWidth}
+                value={maxWidth === 0 ? "none" : String(maxWidth)}
+                options={[
+                  { label: "None (100%)", value: "none" },
+                  { label: "1920px", value: "1920" },
+                  { label: "1440px", value: "1440" },
+                  { label: "1200px", value: "1200" },
+                  { label: "1024px", value: "1024" },
+                  { label: "768px", value: "768" },
+                ]}
                 onChange={(value) =>
-                  updateComponentProps(selectedNodeIds[0], {
-                    maxWidth: Number(value),
+                  updateProjectLayout({
+                    maxWidth: value === "none" ? 0 : Number(value),
                   })
                 }
-                help="Maximum width of the page content (px)"
+                help="Maximum width of the page content (applies to all pages)"
               />
             </div>
-
-            <ColorSwatchButton
-              color={backgroundColor}
-              label="Canvas Background Color"
-              onChange={(color) =>
-                updateComponentProps(selectedNodeIds[0], {
-                  backgroundColor: color,
-                })
-              }
-              help="Canvas background color"
-            />
 
             <div style={{ marginBottom: "16px" }}>
               <NumberControl
                 label="Padding"
                 value={padding}
                 onChange={(value) =>
-                  updateComponentProps(selectedNodeIds[0], {
+                  updateProjectLayout({
                     padding: Number(value),
                   })
                 }
-                help="Padding around the page content (multiplier of 4)"
+                help="Padding around the page content (multiplier of 4, applies to all pages)"
               />
             </div>
 
@@ -278,11 +249,11 @@ export const PropertiesPanel: React.FC = () => {
                 label="Gap"
                 value={spacing}
                 onChange={(value) =>
-                  updateComponentProps(selectedNodeIds[0], {
+                  updateProjectLayout({
                     spacing: Number(value),
                   })
                 }
-                help="Gap between page elements (multiplier of 4)"
+                help="Gap between page elements (multiplier of 4, applies to all pages)"
               />
             </div>
           </PanelBody>
@@ -290,6 +261,8 @@ export const PropertiesPanel: React.FC = () => {
       </div>
     );
   }
+
+  if (!firstNode) return null;
 
   // For multi-select, only show properties if all nodes are the same type
   const allSameType = selectedNodes.every(

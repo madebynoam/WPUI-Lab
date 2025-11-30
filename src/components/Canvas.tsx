@@ -21,6 +21,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   const {
     tree,
     selectedNodeIds,
+    setSelectedNodeIds,
     toggleNodeSelection,
     getNodeById,
     toggleGridLines,
@@ -38,6 +39,8 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     isPlayMode,
     pages,
     currentPageId,
+    projects,
+    currentProjectId,
   } = useComponentTree();
 
   // Get page-level properties from root VStack
@@ -47,9 +50,9 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     rootVStack?.props.backgroundColor ?? "rgb(249, 250, 251)";
   const pagePadding = rootVStack?.props.padding ?? 20;
 
-  // Get current page theme
-  const currentPage = pages.find((p) => p.id === currentPageId);
-  const pageTheme = currentPage?.theme ?? {
+  // Get current project theme
+  const currentProject = projects.find((p) => p.id === currentProjectId);
+  const projectTheme = currentProject?.theme ?? {
     primaryColor: "#3858e9",
     backgroundColor: "#ffffff",
   };
@@ -395,19 +398,19 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
                 return false;
               };
 
-              // If clicked on empty space, select the page
+              // If clicked on empty space, deselect everything to show Project Settings
               if (!isClickOnComponent(e.target)) {
-                toggleNodeSelection(ROOT_VSTACK_ID, false);
+                setSelectedNodeIds([]);
               }
             }}
           >
             <ThemeProvider
               color={{
-                primary: pageTheme.primaryColor,
-                bg: pageTheme.backgroundColor,
+                primary: projectTheme.primaryColor,
+                bg: projectTheme.backgroundColor,
               }}
             >
-              <div style={{ width: "100%", maxWidth: `${pageMaxWidth}px` }}>
+              <div style={{ width: "100%", ...(pageMaxWidth > 0 && { maxWidth: `${pageMaxWidth}px` }) }}>
                 {isInteractiveSelected && interactiveAncestor ? (
                   // Render only the interactive component in isolation
                   <div
