@@ -1063,6 +1063,18 @@ export const RenderNode: React.FC<{
     );
   }
 
+  // Handle Button component - convert icon name to icon component
+  if (node.type === 'Button' && props.icon) {
+    const iconName = props.icon;
+    const iconComponent = (wpIcons as Record<string, any>)[iconName];
+    if (iconComponent) {
+      props.icon = iconComponent;
+    } else {
+      // If icon name not found, remove it to avoid errors
+      delete props.icon;
+    }
+  }
+
   // Handle Icon component - needs icon prop from @wordpress/icons
   if (node.type === 'Icon') {
     // Get icon name from props and map to actual icon object

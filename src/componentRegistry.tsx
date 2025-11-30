@@ -360,6 +360,25 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: false,
         description: 'Stretch to full width (applies style={{ width: "100%" }} - not native to WordPress Button)'
       },
+      {
+        name: 'icon',
+        type: 'select',
+        defaultValue: undefined,
+        description: 'Icon to display in the button'
+      },
+      {
+        name: 'iconPosition',
+        type: 'select',
+        options: ['left', 'right'],
+        defaultValue: 'left',
+        description: 'Position of icon relative to text'
+      },
+      {
+        name: 'iconSize',
+        type: 'number',
+        defaultValue: undefined,
+        description: 'Size of the icon in pixels'
+      },
     ],
   },
   HStack: {
