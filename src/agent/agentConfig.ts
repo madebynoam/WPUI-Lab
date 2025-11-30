@@ -39,6 +39,17 @@ export interface AgentModelConfig {
 }
 
 /**
+ * Model Capabilities
+ * Defines what parameters each model supports
+ */
+export interface ModelCapabilities {
+  supportsCustomTemperature: boolean;
+  defaultTemperature?: number;
+  supportsMaxTokens: boolean;
+  maxTokensParam?: 'max_tokens' | 'max_completion_tokens';
+}
+
+/**
  * Agent Model Configuration
  *
  * Configure which model each agent should use.
@@ -90,12 +101,22 @@ export const AVAILABLE_MODELS = {
     description: "Most capable, highest cost ($3/MTok input, $15/MTok output)",
     bestFor: "Complex reasoning, long context, critical tasks",
     pricing: { input: 0.003, output: 0.015 },
+    capabilities: {
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: 'max_tokens' as const,
+    },
   },
   [Models.Anthropic.CLAUDE_HAIKU_4_5]: {
     provider: Providers.ANTHROPIC,
     description: "Fast and affordable ($1/MTok input, $5/MTok output)",
     bestFor: "Standard tasks, agents, fast responses",
     pricing: { input: 0.001, output: 0.005 },
+    capabilities: {
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: 'max_tokens' as const,
+    },
   },
 
   // OpenAI Models
@@ -105,6 +126,11 @@ export const AVAILABLE_MODELS = {
       "Ultra-fast and cheapest ($0.30/MTok input, $1.20/MTok output)",
     bestFor: "Simple tasks, high-volume operations, cost optimization",
     pricing: { input: 0.0003, output: 0.0012 },
+    capabilities: {
+      supportsCustomTemperature: false,
+      defaultTemperature: 1,
+      supportsMaxTokens: false,
+    },
   },
   [Models.OpenAI.GPT_5_MINI]: {
     provider: Providers.OPENAI,
@@ -112,6 +138,11 @@ export const AVAILABLE_MODELS = {
       "Fast and very affordable ($0.40/MTok input, $1.60/MTok output)",
     bestFor: "Standard tasks, agents, good balance of speed and cost",
     pricing: { input: 0.0004, output: 0.0016 },
+    capabilities: {
+      supportsCustomTemperature: false,
+      defaultTemperature: 1,
+      supportsMaxTokens: false,
+    },
   },
   [Models.OpenAI.GPT_4O_MINI]: {
     provider: Providers.OPENAI,
@@ -119,12 +150,22 @@ export const AVAILABLE_MODELS = {
       "Previous generation mini model ($0.15/MTok input, $0.60/MTok output)",
     bestFor: "Legacy compatibility, standard tasks",
     pricing: { input: 0.00015, output: 0.0006 },
+    capabilities: {
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: 'max_completion_tokens' as const,
+    },
   },
   [Models.OpenAI.GPT_4O]: {
     provider: Providers.OPENAI,
     description: "Full-size GPT-4o model ($2.50/MTok input, $10/MTok output)",
     bestFor: "Complex reasoning, multimodal tasks",
     pricing: { input: 0.0025, output: 0.01 },
+    capabilities: {
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: 'max_completion_tokens' as const,
+    },
   },
 } as const;
 
@@ -142,4 +183,23 @@ export function getAgentModel(
  */
 export function getAllAgentModels() {
   return AGENT_MODELS;
+}
+
+/**
+ * Get model capabilities for a specific model
+ */
+export function getModelCapabilities(modelName: string): ModelCapabilities {
+  const modelConfig = AVAILABLE_MODELS[modelName as keyof typeof AVAILABLE_MODELS];
+
+  if (!modelConfig?.capabilities) {
+    // Default to safe capabilities if model not found
+    console.warn(`[AgentConfig] Model "${modelName}" not found, using default capabilities`);
+    return {
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: 'max_tokens',
+    };
+  }
+
+  return modelConfig.capabilities;
 }

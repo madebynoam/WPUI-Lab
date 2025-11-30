@@ -50,8 +50,7 @@ export class LayoutAgent {
       const systemPrompt = this.buildSystemPrompt();
       const contextInfo = this.buildContext(context);
 
-      // Build chat options - GPT-5 models don't support custom temperature
-      const isGPT5 = this.config.model.startsWith('gpt-5');
+      // Call LLM - provider will handle model-specific parameter constraints
       const chatOptions: any = {
         messages: [
           { role: 'system', content: systemPrompt },
@@ -61,14 +60,10 @@ export class LayoutAgent {
           },
         ],
         max_tokens: 1000,
+        temperature: 0.3,
         signal,
         tools: this.getTools(),
       };
-
-      // Only set temperature for models that support it
-      if (!isGPT5) {
-        chatOptions.temperature = 0.3;
-      }
 
       const response = await this.llm.chat(chatOptions);
 

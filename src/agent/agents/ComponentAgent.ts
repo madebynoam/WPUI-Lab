@@ -57,8 +57,7 @@ export class ComponentAgent {
 
       console.log('[ComponentAgent] Context sent to LLM:\n', contextInfo);
 
-      // Build chat options - GPT-5 models don't support custom temperature
-      const isGPT5 = this.config.model.startsWith('gpt-5');
+      // Call LLM - provider will handle model-specific parameter constraints
       const chatOptions: any = {
         messages: [
           { role: 'system', content: systemPrompt },
@@ -68,14 +67,10 @@ export class ComponentAgent {
           },
         ],
         max_tokens: 4000, // Increased for large component trees (e.g., 12 cards)
+        temperature: 0.3,
         signal,
         tools: this.getTools(),
       };
-
-      // Only set temperature for models that support it
-      if (!isGPT5) {
-        chatOptions.temperature = 0.3;
-      }
 
       // Call LLM with tool definitions
       const response = await this.llm.chat(chatOptions);

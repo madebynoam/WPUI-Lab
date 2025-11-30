@@ -182,20 +182,15 @@ export async function handleUserMessage(
     const actionKeywords = ['add', 'create', 'update', 'delete', 'remove', 'modify', 'change', 'make'];
     const isActionRequest = actionKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
 
-    // Build chat options - GPT-5 models don't support custom temperature
-    const isGPT5 = config.model.startsWith('gpt-5');
+    // Build chat options - provider will handle model-specific parameter constraints
     const chatOptions: any = {
       messages,
       tools,
       max_tokens: 1000,
+      temperature: 0.7,
       // Force tool use for action requests
       ...(isActionRequest ? { tool_choice: 'required' as const } : {}),
     };
-
-    // Only set temperature for models that support it
-    if (!isGPT5) {
-      chatOptions.temperature = 0.7;
-    }
 
     // Token tracking
     let totalInputTokens = 0;
@@ -347,19 +342,13 @@ export async function handleUserMessage(
       const iterationInputTokens = estimateTokens(JSON.stringify(messages)) + toolsTokens;
       totalInputTokens += iterationInputTokens;
 
-      // Build chat options - GPT-5 models don't support custom temperature
-      const iterationChatOptions: any = {
+      // Call LLM - provider will handle model-specific parameter constraints
+      response = await llm.chat({
         messages,
         tools,
         max_tokens: 1000,
-      };
-
-      // Only set temperature for models that support it
-      if (!isGPT5) {
-        iterationChatOptions.temperature = 0.7;
-      }
-
-      response = await llm.chat(iterationChatOptions);
+        temperature: 0.7,
+      });
 
       // Estimate output tokens for iteration
       const iterationOutputTokens = estimateTokens(response.content || '') +

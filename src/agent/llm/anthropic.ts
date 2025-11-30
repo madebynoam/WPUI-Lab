@@ -5,6 +5,7 @@ import {
   LLMMessage,
   LLMToolCall,
 } from "./types";
+import { getModelCapabilities } from "../agentConfig";
 
 export class AnthropicProvider implements LLMProvider {
   name = "anthropic";
@@ -84,9 +85,21 @@ export class AnthropicProvider implements LLMProvider {
     const requestBody: any = {
       model: this.model,
       messages: claudeMessages,
-      max_tokens,
-      temperature,
     };
+
+    // Get model capabilities to determine what parameters to send
+    const capabilities = getModelCapabilities(this.model);
+
+    // Only set temperature if the model supports custom temperature
+    if (capabilities.supportsCustomTemperature) {
+      requestBody.temperature = temperature;
+    }
+
+    // Only set max tokens if the model supports it
+    if (capabilities.supportsMaxTokens) {
+      const tokenParam = capabilities.maxTokensParam || 'max_tokens';
+      requestBody[tokenParam] = max_tokens;
+    }
 
     // Add system message if present
     if (systemMessage) {

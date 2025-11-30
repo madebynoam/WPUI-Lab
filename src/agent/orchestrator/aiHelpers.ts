@@ -76,24 +76,16 @@ Rules:
 
 Include ${rowCount} rows with relevant columns.`;
 
-  // Build chat options - GPT-5 models don't support custom temperature
-  const isGPT5 = config.model.startsWith('gpt-5');
-  const chatOptions: any = {
+  // Call LLM - provider will handle model-specific parameter constraints
+  const response = await llm.chat({
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     max_tokens: 2000,
+    temperature: 0.7,
     signal,
-  };
-
-  // Only set temperature for models that support it
-  if (!isGPT5) {
-    chatOptions.temperature = 0.7;
-  }
-
-  // Generate data
-  const response = await llm.chat(chatOptions);
+  });
 
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
@@ -167,24 +159,16 @@ Output ONLY the text content, no quotes, no formatting, no explanations.`;
     ? `${request}\n\nContext: ${context}`
     : request;
 
-  // Build chat options - GPT-5 models don't support custom temperature
-  const isGPT5 = config.model.startsWith('gpt-5');
-  const chatOptions: any = {
+  // Call LLM - provider will handle model-specific parameter constraints
+  const response = await llm.chat({
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     max_tokens: 150,
+    temperature: 0.8,
     signal,
-  };
-
-  // Only set temperature for models that support it
-  if (!isGPT5) {
-    chatOptions.temperature = 0.8;
-  }
-
-  // Generate copy
-  const response = await llm.chat(chatOptions);
+  });
 
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
@@ -254,24 +238,16 @@ NO markdown formatting, ONLY raw JSON object.`;
 
   const userPrompt = `Update props based on: ${request}`;
 
-  // Build chat options - GPT-5 models don't support custom temperature
-  const isGPT5 = config.model.startsWith('gpt-5');
-  const chatOptions: any = {
+  // Call LLM - provider will handle model-specific parameter constraints
+  const response = await llm.chat({
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     max_tokens: 500,
+    temperature: 0.5,
     signal,
-  };
-
-  // Only set temperature for models that support it
-  if (!isGPT5) {
-    chatOptions.temperature = 0.5;
-  }
-
-  // Generate props
-  const response = await llm.chat(chatOptions);
+  });
 
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
@@ -376,24 +352,16 @@ Example for "3 pricing cards":
 
   const userPrompt = `Generate component structure for: ${request}`;
 
-  // Build chat options - GPT-5 models don't support custom temperature
-  const isGPT5 = config.model.startsWith('gpt-5');
-  const chatOptions: any = {
+  // Call LLM - provider will handle model-specific parameter constraints
+  const response = await llm.chat({
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     max_tokens: 2000,
+    temperature: 0.7,
     signal,
-  };
-
-  // Only set temperature for models that support it
-  if (!isGPT5) {
-    chatOptions.temperature = 0.7;
-  }
-
-  // Generate structure
-  const response = await llm.chat(chatOptions);
+  });
 
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);

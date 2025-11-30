@@ -1,4 +1,5 @@
 import { LLMProvider, LLMChatOptions, LLMResponse } from "./types";
+import { getModelCapabilities } from "../agentConfig";
 
 export class OpenAIProvider implements LLMProvider {
   name = "openai";
@@ -25,11 +26,18 @@ export class OpenAIProvider implements LLMProvider {
       messages,
     };
 
-    // gpt-5-nano doesn't support custom temperature, only default (1)
-    // gpt-5-nano also doesn't support max_completion_tokens - let it use its default
-    if (this.model !== 'gpt-5-nano') {
+    // Get model capabilities to determine what parameters to send
+    const capabilities = getModelCapabilities(this.model);
+
+    // Only set temperature if the model supports custom temperature
+    if (capabilities.supportsCustomTemperature) {
       requestBody.temperature = temperature;
-      requestBody.max_completion_tokens = max_tokens;
+    }
+
+    // Only set max tokens if the model supports it
+    if (capabilities.supportsMaxTokens) {
+      const tokenParam = capabilities.maxTokensParam || 'max_completion_tokens';
+      requestBody[tokenParam] = max_tokens;
     }
 
     // Add tools if provided
