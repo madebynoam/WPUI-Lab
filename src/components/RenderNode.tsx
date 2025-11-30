@@ -906,6 +906,19 @@ export const RenderNode: React.FC<{
     return { ...baseStyle, ...additionalStyles };
   };
 
+  // Helper: Build editor interaction props to pass directly to components
+  const getEditorProps = (additionalStyles: React.CSSProperties = {}) => {
+    return {
+      ref: wrapperRef,
+      'data-component-id': node.id,
+      onClick: (e: React.MouseEvent) => handleComponentClick(e, node.id),
+      onMouseDown: handleMouseDown,
+      onMouseEnter: handleMouseEnter,
+      onMouseLeave: handleMouseLeave,
+      style: getWrapperStyle(additionalStyles),
+    };
+  };
+
   // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') {
     // Button uses 'text' prop, others use 'children'
@@ -952,6 +965,7 @@ export const RenderNode: React.FC<{
     }
 
     // Render contenteditable wrapper preserving component styling (WYSIWYG)
+    // NOTE: Edit mode still needs a wrapper div for the contenteditable functionality
     if (isEditingText) {
       return (
         <div
@@ -1034,19 +1048,18 @@ export const RenderNode: React.FC<{
       );
     }
 
-    // Normal rendering (non-edit mode)
+    // Normal rendering (non-edit mode) - pass editor props directly to component
+    const editorProps = getEditorProps();
+    const mergedStyle = { ...editorProps.style, ...buttonStyle };
+
     return (
-      <div
-        ref={wrapperRef}
-        data-component-id={node.id}
-        onClick={(e) => handleComponentClick(e, node.id)}
-        onMouseDown={handleMouseDown}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        style={getWrapperStyle()}
+      <Component
+        {...editorProps}
+        {...buttonProps}
+        style={mergedStyle}
       >
-        <Component {...buttonProps}>{content}</Component>
-      </div>
+        {content}
+      </Component>
     );
   }
 
@@ -1094,18 +1107,16 @@ export const RenderNode: React.FC<{
       'interactive-neutral-weak-disabled': 'var(--wpds-color-fg-interactive-neutral-weak-disabled)',
     };
 
+    // Pass editor props directly to Icon component
+    const editorProps = getEditorProps({ display: 'inline-block' });
+
     return (
-      <div
-        ref={wrapperRef}
-        data-component-id={node.id}
-        onClick={(e) => handleComponentClick(e, node.id)}
-        onMouseDown={handleMouseDown}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        style={getWrapperStyle({ display: 'inline-block' })}
-      >
-        <Component icon={iconProp} fill={colorMap[colorVariant]} {...props} />
-      </div>
+      <Component
+        {...editorProps}
+        icon={iconProp}
+        fill={colorMap[colorVariant]}
+        {...props}
+      />
     );
   }
 
@@ -1114,16 +1125,12 @@ export const RenderNode: React.FC<{
     // For Modal in isolated view, render content directly without the overlay
     if (node.type === 'Modal') {
       // Render Modal content directly without the blocking overlay
+      const editorProps = getEditorProps();
       return (
         <div
-          ref={wrapperRef}
-          data-component-id={node.id}
-          onClick={(e) => handleComponentClick(e, node.id)}
-          onMouseDown={handleMouseDown}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          {...editorProps}
           style={{
-            ...getWrapperStyle(),
+            ...editorProps.style,
             backgroundColor: '#fff',
             border: '1px solid #ddd',
             borderRadius: '4px',
@@ -1154,31 +1161,26 @@ export const RenderNode: React.FC<{
       );
     }
 
-    // For other interactive components, render normally
+    // For other interactive components, render without wrapper
+    const editorProps = getEditorProps();
     const mergedProps = {
       ...definition.defaultProps,
+      ...editorProps,
       ...props,
       style: {
+        ...editorProps.style,
         ...definition.defaultProps?.style,
         ...props.style,
-        },
+      },
     };
     return (
-      <div
-        ref={wrapperRef}
-        data-component-id={node.id}
-        onClick={(e) => handleComponentClick(e, node.id)}
-        onMouseDown={handleMouseDown}
-        style={getWrapperStyle()}
-      >
-        <Component {...mergedProps}>
-          {node.children && node.children.length > 0
-            ? node.children.map((child) =>
-                <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />
-              )
-            : null}
-        </Component>
-      </div>
+      <Component {...mergedProps}>
+        {node.children && node.children.length > 0
+          ? node.children.map((child) =>
+              <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />
+            )
+          : null}
+      </Component>
     );
   }
 
@@ -1407,31 +1409,30 @@ export const RenderNode: React.FC<{
         });
       }
 
+      // Pass editor props directly to DataViews
+      const editorProps = getEditorProps({ minHeight: '400px', height: '100%' });
+      const finalProps = {
+        ...mergedProps,
+        ...editorProps,
+        style: {
+          ...editorProps.style,
+          ...mergedProps.style,
+        },
+      };
+
       return (
-        <div
-          ref={wrapperRef}
-          data-component-id={node.id}
-          onClick={(e) => handleComponentClick(e, node.id)}
-          onMouseDown={handleMouseDown}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          style={getWrapperStyle({ minHeight: '400px', height: '100%' })}
-        >
-          <Component key={`${node.id}-${dataSource}-${viewType}`} {...mergedProps} />
-        </div>
+        <Component key={`${node.id}-${dataSource}-${viewType}`} {...finalProps} />
       );
     } catch (error) {
       console.error('DataViews rendering error:', error);
+
+      // Error fallback - render a div with error message
+      const editorProps = getEditorProps();
       return (
         <div
-          ref={wrapperRef}
-          data-component-id={node.id}
-          onClick={(e) => handleComponentClick(e, node.id)}
-          onMouseDown={handleMouseDown}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          {...editorProps}
           style={{
-            ...getWrapperStyle(),
+            ...editorProps.style,
             padding: '16px',
             backgroundColor: '#fff3cd',
             border: '1px solid #ffc107',
@@ -1497,19 +1498,18 @@ export const RenderNode: React.FC<{
       mergedProps.onChange = () => {};
     }
 
-    return (
-      <div
-        ref={wrapperRef}
-        data-component-id={node.id}
-        onClick={(e) => handleComponentClick(e, node.id)}
-        onMouseDown={handleMouseDown}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        style={getWrapperStyle({ padding: '4px' })}
-      >
-        <Component {...mergedProps} />
-      </div>
-    );
+    // Pass editor props directly to form controls
+    const editorProps = getEditorProps({ padding: '4px' });
+    const finalProps = {
+      ...mergedProps,
+      ...editorProps,
+      style: {
+        ...editorProps.style,
+        ...mergedProps.style,
+      },
+    };
+
+    return <Component {...finalProps} />;
   }
 
   // Regular components with children - merge with defaultProps
@@ -1528,22 +1528,22 @@ export const RenderNode: React.FC<{
   // Check if Grid is empty
   const isEmptyGrid = node.type === 'Grid' && (!node.children || node.children.length === 0);
 
+  // Pass editor props directly to regular components
+  const editorProps = getEditorProps();
+  const finalProps = {
+    ...editorProps,
+    ...mergedProps,
+    style: {
+      ...editorProps.style,
+      ...mergedProps.style,
+      position: showGridLines ? 'relative' : (editorProps.style?.position || mergedProps.style?.position),
+      opacity: draggedNodeId === node.id ? 0 : 1,
+    },
+  };
+
   return (
     <React.Fragment>
-    <div
-      ref={wrapperRef}
-      data-component-id={node.id}
-      onClick={(e) => handleComponentClick(e, node.id)}
-      onMouseDown={handleMouseDown}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        ...getWrapperStyle(),
-        position: showGridLines ? 'relative' : undefined,
-        opacity: draggedNodeId === node.id ? 0 : 1,
-      }}
-    >
-      <Component {...mergedProps}>
+      <Component {...finalProps}>
         {node.children && node.children.length > 0
           ? node.children.map((child) =>
               <RenderNode key={child.id} node={child} renderInteractive={renderInteractive} />
@@ -1563,97 +1563,96 @@ export const RenderNode: React.FC<{
                 Add items to the grid
               </div>
             ) : null}
-      </Component>
 
-      {/* Grid Lines Overlay */}
-      {showGridLines && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: 'none',
-            zIndex: 1000,
-          }}
-        >
-          <svg
-            width="100%"
-            height="100%"
+        {/* Grid Lines Overlay */}
+        {showGridLines && (
+          <div
             style={{
               position: 'absolute',
               top: 0,
               left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              zIndex: 1000,
             }}
           >
-            {(() => {
-              // Get grid properties
-              const columns = mergedProps.columns || 2;
-              // gap is a multiplier of 4px in WordPress components
-              const gapMultiplier = typeof mergedProps.gap === 'number' ? mergedProps.gap : 0;
-              const gapPx = gapMultiplier * 4;
+            <svg
+              width="100%"
+              height="100%"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+              }}
+            >
+              {(() => {
+                // Get grid properties
+                const columns = mergedProps.columns || 2;
+                // gap is a multiplier of 4px in WordPress components
+                const gapMultiplier = typeof mergedProps.gap === 'number' ? mergedProps.gap : 0;
+                const gapPx = gapMultiplier * 4;
 
-              const elements = [];
+                const elements = [];
 
-              // Draw column boundaries and gutters
-              for (let i = 1; i < columns; i++) {
-                if (gapPx > 0) {
-                  // Calculate gutter position
-                  // In CSS Grid, gaps are between columns, so position is at end of column i-1
-                  const gutterXPercent = (100 / columns) * i;
+                // Draw column boundaries and gutters
+                for (let i = 1; i < columns; i++) {
+                  if (gapPx > 0) {
+                    // Calculate gutter position
+                    // In CSS Grid, gaps are between columns, so position is at end of column i-1
+                    const gutterXPercent = (100 / columns) * i;
 
-                  elements.push(
-                    <rect
-                      key={`gutter-${i}`}
-                      x={`calc(${gutterXPercent}% - ${gapPx / 2}px)`}
-                      y="0"
-                      width={`${gapPx}px`}
-                      height="100%"
-                      fill="#3858e9"
-                      opacity="0.15"
-                    />
-                  );
+                    elements.push(
+                      <rect
+                        key={`gutter-${i}`}
+                        x={`calc(${gutterXPercent}% - ${gapPx / 2}px)`}
+                        y="0"
+                        width={`${gapPx}px`}
+                        height="100%"
+                        fill="#3858e9"
+                        opacity="0.15"
+                      />
+                    );
 
-                  // Draw line in the center of the gutter
-                  elements.push(
-                    <line
-                      key={`col-${i}`}
-                      x1={`${gutterXPercent}%`}
-                      y1="0"
-                      x2={`${gutterXPercent}%`}
-                      y2="100%"
-                      stroke="#3858e9"
-                      strokeWidth="1"
-                      strokeDasharray="4 4"
-                      opacity="0.5"
-                    />
-                  );
-                } else {
-                  // No gap - just draw divider lines at column boundaries
-                  const xPercent = (100 / columns) * i;
-                  elements.push(
-                    <line
-                      key={`col-${i}`}
-                      x1={`${xPercent}%`}
-                      y1="0"
-                      x2={`${xPercent}%`}
-                      y2="100%"
-                      stroke="#3858e9"
-                      strokeWidth="1"
-                      strokeDasharray="4 4"
-                      opacity="0.5"
-                    />
-                  );
+                    // Draw line in the center of the gutter
+                    elements.push(
+                      <line
+                        key={`col-${i}`}
+                        x1={`${gutterXPercent}%`}
+                        y1="0"
+                        x2={`${gutterXPercent}%`}
+                        y2="100%"
+                        stroke="#3858e9"
+                        strokeWidth="1"
+                        strokeDasharray="4 4"
+                        opacity="0.5"
+                      />
+                    );
+                  } else {
+                    // No gap - just draw divider lines at column boundaries
+                    const xPercent = (100 / columns) * i;
+                    elements.push(
+                      <line
+                        key={`col-${i}`}
+                        x1={`${xPercent}%`}
+                        y1="0"
+                        x2={`${xPercent}%`}
+                        y2="100%"
+                        stroke="#3858e9"
+                        strokeWidth="1"
+                        strokeDasharray="4 4"
+                        opacity="0.5"
+                      />
+                    );
+                  }
                 }
-              }
 
-              return elements;
-            })()}
-          </svg>
-        </div>
-      )}
-    </div>
+                return elements;
+              })()}
+            </svg>
+          </div>
+        )}
+      </Component>
     </React.Fragment>
   );
 };
