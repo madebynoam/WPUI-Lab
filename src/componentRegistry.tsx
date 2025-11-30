@@ -509,7 +509,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     defaultProps: { children: 'Badge', intent: 'default', placeholder: 'Badge' },
     propDefinitions: [
       {
-        name: 'content',
+        name: 'children',
         type: 'string',
         defaultValue: 'Badge',
         description: 'Badge text content',

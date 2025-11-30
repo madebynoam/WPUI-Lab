@@ -92,6 +92,11 @@ export const patterns: Pattern[] = [
                       children: [],
                     },
                     {
+                      type: 'Spacer',
+                      props: { margin: 0 },
+                      children: [],
+                    },
+                    {
                       type: 'Text',
                       props: { children: '✓ 5 Projects' },
                       children: [],
@@ -185,6 +190,11 @@ export const patterns: Pattern[] = [
                       children: [],
                     },
                     {
+                      type: 'Spacer',
+                      props: { margin: 0 },
+                      children: [],
+                    },
+                    {
                       type: 'Text',
                       props: { children: '✓ 10 Projects' },
                       children: [],
@@ -273,6 +283,11 @@ export const patterns: Pattern[] = [
                       children: [],
                     },
                     {
+                      type: 'Spacer',
+                      props: { margin: 0 },
+                      children: [],
+                    },
+                    {
                       type: 'Text',
                       props: { children: '✓ 15 Projects' },
                       children: [],
@@ -358,6 +373,11 @@ export const patterns: Pattern[] = [
                     {
                       type: 'Button',
                       props: { text: 'Upgrade to Commerce', variant: 'secondary', disabled: false, stretchFullWidth: true },
+                      children: [],
+                    },
+                    {
+                      type: 'Spacer',
+                      props: { margin: 0 },
                       children: [],
                     },
                     {
