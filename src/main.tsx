@@ -1,8 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { __experimentalStyleProvider as StyleProvider } from '@wordpress/components'
 import '@wordpress/components/build-style/style.css'
 import './index.css'
-import './card-borders.css'
 import App from './App.tsx'
 import { privateApis as themePrivateApis } from '@wordpress/theme'
 import { unlock } from './utils/lock-unlock'
@@ -25,8 +25,10 @@ const { ThemeProvider } = unlock(themePrivateApis)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider color={{ primary: '#3858e9' }} isRoot>
-      <App />
-    </ThemeProvider>
+    <StyleProvider document={document}>
+      <ThemeProvider color={{ primary: '#3858e9' }} isRoot>
+        <App />
+      </ThemeProvider>
+    </StyleProvider>
   </StrictMode>,
 )
