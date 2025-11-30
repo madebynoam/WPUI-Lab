@@ -11,7 +11,7 @@
  * - 30% of requests: ~500ms, ~$0.0005 (AI-powered)
  *
  * This eliminates:
- * - LLM-based intent parsing (gpt-5-nano call)
+ * - LLM-based intent parsing (claude-haiku-4-5 call)
  * - Multi-agent task planning
  * - 6 specialized agents
  * - YAML generation
@@ -109,7 +109,7 @@ export async function handleOrchestratedRequest(
           topic: classification.tableTopic!,
           rowCount: classification.rowCount,
           context,
-          apiKey: openaiApiKey,
+          apiKey: claudeApiKey,
           signal,
         });
         break;
@@ -122,7 +122,7 @@ export async function handleOrchestratedRequest(
           componentId,
           request: classification.updateRequest!,
           context,
-          apiKey: openaiApiKey,
+          apiKey: claudeApiKey,
           signal,
         });
         break;
@@ -135,7 +135,7 @@ export async function handleOrchestratedRequest(
           request: classification.updateRequest!,
           tone: classification.tone,
           context,
-          apiKey: openaiApiKey,
+          apiKey: claudeApiKey,
           signal,
         });
         break;
@@ -162,7 +162,7 @@ export async function handleOrchestratedRequest(
         result = await executeCustomComponentCreation({
           request: classification.componentSpec || userMessage,
           context,
-          apiKey: openaiApiKey,
+          apiKey: claudeApiKey,
           signal,
         });
         break;
@@ -185,9 +185,9 @@ export async function handleOrchestratedRequest(
     const modelBreakdown = [];
     if (result.llmCalls > 0) {
       // Determine which model was used based on executor type
-      let model = 'gpt-4o-mini'; // default
+      let model = 'claude-haiku-4-5'; // default
       if (classification.type === 'update_copy') {
-        model = 'gpt-5-nano';
+        model = 'claude-haiku-4-5';
       }
 
       modelBreakdown.push({

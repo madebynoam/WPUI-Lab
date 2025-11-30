@@ -2,8 +2,8 @@
  * AI Helper Functions
  *
  * Provides focused AI functions for the 30% of requests that need custom content:
- * 1. generateTableData() - Uses gpt-4o-mini to create custom table data
- * 2. generateCopy() - Uses gpt-5-nano for simple text/copy generation
+ * 1. generateTableData() - Uses claude-haiku-4-5 to create custom table data
+ * 2. generateCopy() - Uses claude-haiku-4-5 for simple text/copy generation
  *
  * These are called ONLY when deterministic templates don't match the user's request.
  */
@@ -17,7 +17,7 @@ function estimateTokens(text: string): number {
 }
 
 /**
- * Generate custom table data using gpt-4o-mini
+ * Generate custom table data using claude-haiku-4-5
  *
  * Use this when user requests a table that doesn't match any template
  * (e.g., "flower bundles", "pokemon", "recipes", etc.)
@@ -42,9 +42,9 @@ export async function generateTableData(params: {
 
   // Create LLM provider
   const llm = createLLMProvider({
-    provider: 'openai',
+    provider: 'anthropic',
     apiKey,
-    model: 'gpt-4o-mini',
+    model: 'claude-haiku-4-5',
   });
 
   // System prompt for structured data generation
@@ -88,7 +88,7 @@ Include ${rowCount} rows with relevant columns.`;
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   const outputTokens = estimateTokens(response.content || '');
-  const pricing = MODEL_PRICING['gpt-4o-mini'];
+  const pricing = MODEL_PRICING['claude-haiku-4-5'];
   const cost = (inputTokens / 1000000) * pricing.input + (outputTokens / 1000000) * pricing.output;
 
   // Parse response
@@ -115,7 +115,7 @@ Include ${rowCount} rows with relevant columns.`;
 }
 
 /**
- * Generate copy/text content using gpt-5-nano
+ * Generate copy/text content using claude-haiku-4-5
  *
  * Use this for simple text generation (headlines, button labels, descriptions, etc.)
  * when templates have placeholder text that needs customization.
@@ -139,9 +139,9 @@ export async function generateCopy(params: {
 
   // Create LLM provider
   const llm = createLLMProvider({
-    provider: 'openai',
+    provider: 'anthropic',
     apiKey,
-    model: 'gpt-5-nano',
+    model: 'claude-haiku-4-5',
   });
 
   // System prompt for copy generation
@@ -170,7 +170,7 @@ Output ONLY the text content, no quotes, no formatting, no explanations.`;
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   const outputTokens = estimateTokens(response.content || '');
-  const pricing = MODEL_PRICING['gpt-5-nano'];
+  const pricing = MODEL_PRICING['claude-haiku-4-5'];
   const cost = (inputTokens / 1000000) * pricing.input + (outputTokens / 1000000) * pricing.output;
 
   const text = (response.content || '').trim();
@@ -187,7 +187,7 @@ Output ONLY the text content, no quotes, no formatting, no explanations.`;
 }
 
 /**
- * Generate custom component properties using gpt-4o-mini
+ * Generate custom component properties using claude-haiku-4-5
  *
  * Use this when user wants to customize component props beyond simple templates
  * (e.g., "make the button blue with rounded corners and a shadow")
@@ -210,9 +210,9 @@ export async function generateComponentProps(params: {
 
   // Create LLM provider
   const llm = createLLMProvider({
-    provider: 'openai',
+    provider: 'anthropic',
     apiKey,
-    model: 'gpt-4o-mini',
+    model: 'claude-haiku-4-5',
   });
 
   // System prompt for props generation
@@ -248,7 +248,7 @@ NO markdown formatting, ONLY raw JSON object.`;
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   const outputTokens = estimateTokens(response.content || '');
-  const pricing = MODEL_PRICING['gpt-4o-mini'];
+  const pricing = MODEL_PRICING['claude-haiku-4-5'];
   const cost = (inputTokens / 1000000) * pricing.input + (outputTokens / 1000000) * pricing.output;
 
   // Parse response
@@ -295,9 +295,9 @@ export async function generateComponentStructure(params: {
 
   // Create LLM provider
   const llm = createLLMProvider({
-    provider: 'openai',
+    provider: 'anthropic',
     apiKey,
-    model: 'gpt-4o-mini',
+    model: 'claude-haiku-4-5',
   });
 
   // System prompt for component structure generation
@@ -361,7 +361,7 @@ Example for "3 pricing cards":
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   const outputTokens = estimateTokens(response.content || '');
-  const pricing = MODEL_PRICING['gpt-4o-mini'];
+  const pricing = MODEL_PRICING['claude-haiku-4-5'];
   const cost = (inputTokens / 1000000) * pricing.input + (outputTokens / 1000000) * pricing.output;
 
   // Parse response

@@ -17,17 +17,8 @@ const MODEL_PRICING = {
     output: 0.015,  // $15.00 per MTok
   },
   'claude-haiku-4-5': {
-    input: 0.001,   // $1.00 per MTok (orchestrator)
+    input: 0.001,   // $1.00 per MTok (orchestrator and agents)
     output: 0.005,  // $5.00 per MTok
-  },
-  // OpenAI models
-  'gpt-5-nano': {
-    input: 0.00005, // $0.05 per MTok (CHEAPEST - use for simple agents)
-    output: 0.0004, // $0.40 per MTok
-  },
-  'gpt-4o-mini': {
-    input: 0.00025, // $0.25 per MTok
-    output: 0.0025, // $2.50 per MTok
   },
 };
 
@@ -72,32 +63,15 @@ export async function handleUserMessage(
   signal?: AbortSignal,
   conversationHistory?: AgentMessage[]
 ): Promise<AgentMessage> {
-  // If no API keys, fall back to basic rule-based responses
-  if ((!claudeApiKey || !claudeApiKey.trim()) && (!openaiApiKey || !openaiApiKey.trim())) {
+  // If no API key, fall back to basic rule-based responses
+  if (!claudeApiKey || !claudeApiKey.trim()) {
     return {
       id: `agent-${Date.now()}`,
       role: 'agent',
       content: [
         {
           type: 'text',
-          text: 'Please add your Claude and OpenAI API keys to use the AI assistant. Get Claude key at https://console.anthropic.com/ and OpenAI key at https://platform.openai.com/',
-        },
-      ],
-      timestamp: Date.now(),
-      archived: false,
-      showIcon: true,
-    };
-  }
-
-  // Check if we have both keys for orchestrator
-  if (USE_ORCHESTRATOR && ((!claudeApiKey || !claudeApiKey.trim()) || (!openaiApiKey || !openaiApiKey.trim()))) {
-    return {
-      id: `agent-${Date.now()}`,
-      role: 'agent',
-      content: [
-        {
-          type: 'text',
-          text: 'The multi-agent orchestrator requires both Claude and OpenAI API keys. Please add both keys to continue.',
+          text: 'Please add your Claude API key to use the AI assistant. Get your key at https://console.anthropic.com/',
         },
       ],
       timestamp: Date.now(),

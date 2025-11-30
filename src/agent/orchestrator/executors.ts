@@ -197,7 +197,7 @@ export async function executeComponentDeletion(params: {
 /**
  * AI-POWERED EXECUTOR 1: Custom Table Creation
  *
- * Create table with custom data using gpt-4o-mini (30% case)
+ * Create table with custom data using claude-haiku-4-5 (30% case)
  * Target: ~500ms, ~$0.0005
  */
 export async function executeCustomTableCreation(params: {
@@ -274,7 +274,7 @@ export async function executeCustomTableCreation(params: {
 /**
  * AI-POWERED EXECUTOR 2: Custom Copy Update
  *
- * Generate custom text content using gpt-5-nano (30% case)
+ * Generate custom text content using claude-haiku-4-5 (30% case)
  * Target: ~300ms, ~$0.0001
  */
 export async function executeCustomCopyUpdate(params: {
@@ -355,7 +355,7 @@ export async function executeCustomCopyUpdate(params: {
 /**
  * AI-POWERED EXECUTOR 3: Custom Props Update
  *
- * Generate custom component properties using gpt-4o-mini (30% case)
+ * Generate custom component properties using claude-haiku-4-5 (30% case)
  * Target: ~400ms, ~$0.0003
  */
 export async function executeCustomPropsUpdate(params: {
@@ -481,7 +481,7 @@ export async function executeComponentMove(params: {
 /**
  * AI-POWERED EXECUTOR 4: Custom Component Creation
  *
- * Generate and insert custom component structure using gpt-4o-mini (30% case)
+ * Generate and insert custom component structure using claude-haiku-4-5 (30% case)
  * Target: ~800ms, ~$0.0008
  */
 export async function executeCustomComponentCreation(params: {

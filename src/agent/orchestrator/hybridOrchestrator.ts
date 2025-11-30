@@ -250,6 +250,10 @@ Examples:
 
 "change the heading text to Welcome" → [{"agent": "content", "operation": "update", "params": {"description": "change heading text to Welcome"}}]
 
+"change the title of the pricing cards to Base, Pro, Advanced and Shopping and the prices should be $9, $16, $32 and $56" → [{"agent": "content", "operation": "update", "params": {"description": "change the title of the pricing cards to Base, Pro, Advanced and Shopping and the prices should be $9, $16, $32 and $56"}}]
+
+"update the card titles to X, Y, Z" → [{"agent": "content", "operation": "update", "params": {"description": "update the card titles to X, Y, Z"}}]
+
 Respond with ONLY the JSON array, no explanation.`;
 
   try {
