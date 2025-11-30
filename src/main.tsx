@@ -1,6 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@wordpress/components/build-style/style.css'
 import './index.css'
+import './card-borders.css'
 import App from './App.tsx'
 import { privateApis as themePrivateApis } from '@wordpress/theme'
 import { unlock } from './utils/lock-unlock'

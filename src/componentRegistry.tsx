@@ -143,7 +143,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     defaultChildren: [
       {
         type: 'CardHeader',
-        props: {},
+        props: { isBorderless: false },
         children: [
           {
             type: 'Heading',
@@ -158,6 +158,20 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
           {
             type: 'Text',
             props: { children: 'This is the card content. Add your text here.' },
+          },
+        ],
+      },
+      {
+        type: 'CardFooter',
+        props: { isBorderless: false },
+        children: [
+          {
+            type: 'Text',
+            props: { children: 'CardFooter' },
+          },
+          {
+            type: 'Button',
+            props: { text: 'Action Button', variant: 'secondary' },
           },
         ],
       },

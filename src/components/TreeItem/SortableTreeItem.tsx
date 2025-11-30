@@ -12,7 +12,7 @@ interface Props extends TreeItemProps {
 const animateLayoutChanges: AnimateLayoutChanges = ({ isSorting, wasDragging }) =>
   isSorting || wasDragging ? false : true;
 
-export function SortableTreeItem({ id, depth, ...props }: Props) {
+export function SortableTreeItem({ id, depth, wrapperRef, ...props }: Props) {
   const {
     attributes,
     isDragging,
@@ -32,10 +32,18 @@ export function SortableTreeItem({ id, depth, ...props }: Props) {
     transition,
   };
 
+  // Combine both refs: dnd-kit's setDroppableNodeRef and the custom wrapperRef
+  const combinedWrapperRef = (node: HTMLLIElement | null) => {
+    setDroppableNodeRef(node);
+    if (wrapperRef) {
+      wrapperRef(node!);
+    }
+  };
+
   return (
     <TreeItem
       ref={setDraggableNodeRef}
-      wrapperRef={setDroppableNodeRef}
+      wrapperRef={combinedWrapperRef}
       style={style}
       depth={depth}
       ghost={isDragging}

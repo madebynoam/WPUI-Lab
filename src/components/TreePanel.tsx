@@ -313,6 +313,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
 	// Auto-scroll to selected item
 	useEffect(() => {
+		// Don't auto-scroll during drag operations
+		if (activeId) return;
 		if (selectedNodeIds.length === 0) return;
 
 		const selectedId = selectedNodeIds[0];
@@ -327,7 +329,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 				});
 			}, 100);
 		}
-	}, [selectedNodeIds, flattenedItems]);
+	}, [selectedNodeIds, activeId]);
 
 	// Handle adding component
 	const handleAddComponent = (componentType: string) => {
