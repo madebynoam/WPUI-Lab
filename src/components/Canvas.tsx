@@ -381,6 +381,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
               overflow: "auto",
               display: "flex",
               justifyContent: "center",
+              alignItems: "flex-start",
             }}
             onMouseDown={(e) => {
               // Check if the click was on empty space (not on a component)
