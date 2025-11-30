@@ -1,5 +1,5 @@
 import { ComponentTreeAction } from './ComponentTreeTypes';
-import { ComponentNode, Page, HistoryState } from './types';
+import { ComponentNode, Page, Project, HistoryState } from './types';
 import { componentRegistry } from './componentRegistry';
 import {
   ROOT_VSTACK_ID,
@@ -23,8 +23,8 @@ const DEBUG = false;
 // State managed by the reducer
 export interface ComponentTreeState {
   // Core data
-  pages: Page[];
-  currentPageId: string;
+  projects: Project[];
+  currentProjectId: string;
 
   // UI state
   selectedNodeIds: string[];
@@ -61,6 +61,11 @@ const HISTORY_ACTIONS = new Set([
   'PASTE_COMPONENT',
   'RESET_TREE',
   'SET_CURRENT_PAGE',
+  'CREATE_PROJECT',
+  'SET_CURRENT_PROJECT',
+  'DELETE_PROJECT',
+  'RENAME_PROJECT',
+  'DUPLICATE_PROJECT',
 ]);
 
 // Actions that should be debounced (for history)
@@ -68,19 +73,64 @@ const DEBOUNCED_ACTIONS = new Set([
   'UPDATE_COMPONENT_PROPS',
   'UPDATE_COMPONENT_NAME',
   'RENAME_PAGE',
+  'RENAME_PROJECT',
 ]);
+
+/**
+ * Helper to get current project from projects array
+ */
+function getCurrentProject(projects: Project[], currentProjectId: string): Project {
+  const project = projects.find(p => p.id === currentProjectId);
+  if (!project) {
+    throw new Error(`Project not found: ${currentProjectId}`);
+  }
+  return project;
+}
+
+/**
+ * Helper to get current tree from projects
+ */
+function getCurrentTreeFromProjects(projects: Project[], currentProjectId: string): ComponentNode[] {
+  const project = getCurrentProject(projects, currentProjectId);
+  return getCurrentTree(project.pages, project.currentPageId);
+}
+
+/**
+ * Helper to update tree in a project
+ */
+function updateTreeInProject(project: Project, newTree: ComponentNode[]): Project {
+  const newPages = updateTreeForPage(project.pages, project.currentPageId, newTree);
+  return {
+    ...project,
+    pages: newPages,
+    lastModified: Date.now(),
+  };
+}
+
+/**
+ * Helper to update a project in projects array
+ */
+function updateProjectInProjects(
+  projects: Project[],
+  projectId: string,
+  updateFn: (project: Project) => Project
+): Project[] {
+  return projects.map(project =>
+    project.id === projectId ? updateFn(project) : project
+  );
+}
 
 /**
  * Helper to update history when state changes
  */
 function updateHistory(
   state: ComponentTreeState,
-  newPages: Page[],
-  newCurrentPageId: string
+  newProjects: Project[],
+  newCurrentProjectId: string
 ): ComponentTreeState {
   const newPresent: HistoryState = {
-    pages: JSON.parse(JSON.stringify(newPages)),
-    currentPageId: newCurrentPageId,
+    projects: JSON.parse(JSON.stringify(newProjects)),
+    currentProjectId: newCurrentProjectId,
   };
 
   const MAX_HISTORY = 50;
@@ -91,8 +141,8 @@ function updateHistory(
 
   return {
     ...state,
-    pages: newPages,
-    currentPageId: newCurrentPageId,
+    projects: newProjects,
+    currentProjectId: newCurrentProjectId,
     history: {
       past: newPast,
       present: newPresent,
@@ -113,41 +163,50 @@ export function componentTreeReducer(
 
     case 'UPDATE_COMPONENT_PROPS': {
       const { id, props } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, id, (node) => ({
         ...node,
         props: { ...node.props, ...props },
       }));
 
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
-      return updateHistory(state, newPages, state.currentPageId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'UPDATE_MULTIPLE_COMPONENT_PROPS': {
       const { ids, props } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateMultipleNodesInTree(currentTree, ids, (node) => ({
         ...node,
         props: { ...node.props, ...props },
       }));
 
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
-      return updateHistory(state, newPages, state.currentPageId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'UPDATE_COMPONENT_NAME': {
       const { id, name } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, id, (node) => ({
         ...node,
         name: name || undefined,
       }));
 
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
-      return updateHistory(state, newPages, state.currentPageId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'INSERT_COMPONENT': {
@@ -157,17 +216,19 @@ export function componentTreeReducer(
         console.log('[Reducer] INSERT_COMPONENT - Parent ID:', parentId, 'Index:', index);
       }
 
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = insertNodeInTree(currentTree, node, parentId, index);
       if (DEBUG) {
         console.log('[Reducer] INSERT_COMPONENT - New tree after insertion:', JSON.stringify(newTree, null, 2));
       }
 
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       return {
-        ...updateHistory(state, newPages, state.currentPageId),
+        ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: [node.id],
       };
     }
@@ -176,50 +237,62 @@ export function componentTreeReducer(
       const { id } = action.payload;
       if (id === ROOT_VSTACK_ID) return state; // Prevent deletion of root
 
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
       const newTree = removeNodeFromTree(currentTree, id);
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
+
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       const newSelectedNodeIds = state.selectedNodeIds.filter(selectedId => selectedId !== id);
       const selectedIds = newSelectedNodeIds.length > 0 ? newSelectedNodeIds : [ROOT_VSTACK_ID];
 
       return {
-        ...updateHistory(state, newPages, state.currentPageId),
+        ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: selectedIds,
       };
     }
 
     case 'DUPLICATE_COMPONENT': {
       const { id } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const { tree: newTree, newNodeId } = duplicateNodeInTree(currentTree, id);
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
+
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       return {
-        ...updateHistory(state, newPages, state.currentPageId),
+        ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: newNodeId ? [newNodeId] : state.selectedNodeIds,
       };
     }
 
     case 'MOVE_COMPONENT': {
       const { id, direction } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = moveNodeInTree(currentTree, id, direction);
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
 
-      return updateHistory(state, newPages, state.currentPageId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'REORDER_COMPONENT': {
       const { activeId, overId, position } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = reorderNodeInTree(currentTree, activeId, overId, position);
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
 
-      return updateHistory(state, newPages, state.currentPageId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'SET_TREE': {
@@ -233,8 +306,11 @@ export function componentTreeReducer(
         throw new Error(`Invalid tree structure:\n${errorMessage}`);
       }
 
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, tree);
-      return updateHistory(state, newPages, state.currentPageId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, tree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     // ===== Selection Actions =====
@@ -246,7 +322,7 @@ export function componentTreeReducer(
 
     case 'TOGGLE_NODE_SELECTION': {
       const { id, multiSelect, rangeSelect, allNodes } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
       const treeToUse = allNodes || currentTree;
 
       let newSelectedNodeIds: string[];
@@ -285,17 +361,24 @@ export function componentTreeReducer(
     }
 
     // ===== Page Actions =====
+    // Note: Page actions now work within the current project context
 
     case 'SET_CURRENT_PAGE': {
       const { pageId } = action.payload;
-      return updateHistory(state, state.pages, pageId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = { ...currentProject, currentPageId: pageId, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'ADD_PAGE': {
       const { page } = action.payload;
-      const newPages = [...state.pages, page];
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const newPages = [...currentProject.pages, page];
+      const updatedProject = { ...currentProject, pages: newPages, currentPageId: page.id, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
       return {
-        ...updateHistory(state, newPages, page.id),
+        ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: [ROOT_VSTACK_ID],
         gridLinesVisible: new Set(),
       };
@@ -303,30 +386,38 @@ export function componentTreeReducer(
 
     case 'DELETE_PAGE': {
       const { pageId } = action.payload;
-      if (state.pages.length === 1) return state; // Don't delete last page
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      if (currentProject.pages.length === 1) return state; // Don't delete last page
 
-      const newPages = state.pages.filter(p => p.id !== pageId);
-      const newCurrentPageId = state.currentPageId === pageId
+      const newPages = currentProject.pages.filter(p => p.id !== pageId);
+      const newCurrentPageId = currentProject.currentPageId === pageId
         ? newPages[0].id
-        : state.currentPageId;
+        : currentProject.currentPageId;
+
+      const updatedProject = { ...currentProject, pages: newPages, currentPageId: newCurrentPageId, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       return {
-        ...updateHistory(state, newPages, newCurrentPageId),
+        ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: [ROOT_VSTACK_ID],
       };
     }
 
     case 'RENAME_PAGE': {
       const { pageId, name } = action.payload;
-      const newPages = state.pages.map(page =>
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const newPages = currentProject.pages.map(page =>
         page.id === pageId ? { ...page, name } : page
       );
-      return updateHistory(state, newPages, state.currentPageId);
+      const updatedProject = { ...currentProject, pages: newPages, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'DUPLICATE_PAGE': {
       const { pageId } = action.payload;
-      const pageToDuplicate = state.pages.find(p => p.id === pageId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const pageToDuplicate = currentProject.pages.find(p => p.id === pageId);
       if (!pageToDuplicate) return state;
 
       const newPageId = `page-${Date.now()}`;
@@ -336,26 +427,35 @@ export function componentTreeReducer(
         name: `${pageToDuplicate.name} Copy`,
       };
 
-      const newPages = [...state.pages, newPage];
+      const newPages = [...currentProject.pages, newPage];
+      const updatedProject = { ...currentProject, pages: newPages, currentPageId: newPageId, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
       return {
-        ...updateHistory(state, newPages, newPageId),
+        ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: [ROOT_VSTACK_ID],
       };
     }
 
     case 'UPDATE_PAGE_THEME': {
       const { pageId, theme } = action.payload;
-      const newPages = state.pages.map(page =>
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const newPages = currentProject.pages.map(page =>
         page.id === pageId
           ? { ...page, theme: { ...page.theme, ...theme } }
           : page
       );
-      return updateHistory(state, newPages, state.currentPageId);
+      const updatedProject = { ...currentProject, pages: newPages, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'SET_PAGES': {
       const { pages } = action.payload;
-      return { ...state, pages };
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = { ...currentProject, pages, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      return { ...state, projects: newProjects };
     }
 
     // ===== Clipboard Actions =====
@@ -368,13 +468,16 @@ export function componentTreeReducer(
     case 'CUT_COMPONENT': {
       const { node, nodeId } = action.payload;
       // Cut should remove the component immediately from the tree (like delete)
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
       const newTree = removeNodeFromTree(currentTree, nodeId);
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
+
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       // Update selection to root after cutting
       return {
-        ...updateHistory(state, newPages, state.currentPageId),
+        ...updateHistory(state, newProjects, state.currentProjectId),
         clipboard: JSON.parse(JSON.stringify(node)),
         cutNodeId: nodeId,
         selectedNodeIds: [ROOT_VSTACK_ID],
@@ -388,7 +491,7 @@ export function componentTreeReducer(
       // If no parentId specified, use smart paste logic
       if (!parentId && state.selectedNodeIds.length > 0) {
         const selectedId = state.selectedNodeIds[0];
-        const currentTree = getCurrentTree(state.pages, state.currentPageId);
+        const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
         // Find selected node and check if it accepts children
         const findNodeWithParent = (
@@ -433,13 +536,16 @@ export function componentTreeReducer(
       });
 
       const newNode = deepCloneWithNewIds(state.clipboard);
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
       const newTree = insertNodeInTree(currentTree, newNode, parentId);
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
+
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       // Cut components are already removed from tree, so just insert
       return {
-        ...updateHistory(state, newPages, state.currentPageId),
+        ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: [newNode.id],
         cutNodeId: null, // Clear cut state after paste
       };
@@ -474,33 +580,39 @@ export function componentTreeReducer(
 
     case 'ADD_INTERACTION': {
       const { nodeId, interaction } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, nodeId, (node) => ({
         ...node,
         interactions: [...(node.interactions || []), interaction],
       }));
 
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
-      return { ...state, pages: newPages };
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return { ...state, projects: newProjects };
     }
 
     case 'REMOVE_INTERACTION': {
       const { nodeId, interactionId } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, nodeId, (node) => ({
         ...node,
         interactions: node.interactions?.filter(i => i.id !== interactionId) || [],
       }));
 
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
-      return { ...state, pages: newPages };
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return { ...state, projects: newProjects };
     }
 
     case 'UPDATE_INTERACTION': {
       const { nodeId, interactionId, interaction } = action.payload;
-      const currentTree = getCurrentTree(state.pages, state.currentPageId);
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, nodeId, (node) => ({
         ...node,
@@ -509,8 +621,11 @@ export function componentTreeReducer(
         ) || [],
       }));
 
-      const newPages = updateTreeForPage(state.pages, state.currentPageId, newTree);
-      return { ...state, pages: newPages };
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return { ...state, projects: newProjects };
     }
 
     // ===== History Actions =====
@@ -523,8 +638,8 @@ export function componentTreeReducer(
 
       return {
         ...state,
-        pages: previous.pages,
-        currentPageId: previous.currentPageId,
+        projects: previous.projects,
+        currentProjectId: previous.currentProjectId,
         selectedNodeIds: [ROOT_VSTACK_ID],
         gridLinesVisible: new Set(),
         history: {
@@ -543,8 +658,8 @@ export function componentTreeReducer(
 
       return {
         ...state,
-        pages: next.pages,
-        currentPageId: next.currentPageId,
+        projects: next.projects,
+        currentProjectId: next.currentProjectId,
         selectedNodeIds: [ROOT_VSTACK_ID],
         gridLinesVisible: new Set(),
         history: {
@@ -566,21 +681,91 @@ export function componentTreeReducer(
       };
     }
 
+    // ===== Project Actions =====
+
+    case 'CREATE_PROJECT': {
+      const { project } = action.payload;
+      const newProjects = [...state.projects, project];
+      return {
+        ...updateHistory(state, newProjects, project.id),
+        selectedNodeIds: [ROOT_VSTACK_ID],
+        gridLinesVisible: new Set(),
+      };
+    }
+
+    case 'SET_CURRENT_PROJECT': {
+      const { projectId } = action.payload;
+      return {
+        ...updateHistory(state, state.projects, projectId),
+        selectedNodeIds: [ROOT_VSTACK_ID],
+        gridLinesVisible: new Set(),
+      };
+    }
+
+    case 'DELETE_PROJECT': {
+      const { projectId } = action.payload;
+      if (state.projects.length === 1) return state; // Don't delete last project
+
+      const newProjects = state.projects.filter(p => p.id !== projectId);
+      const newCurrentProjectId = state.currentProjectId === projectId
+        ? newProjects[0].id
+        : state.currentProjectId;
+
+      return {
+        ...updateHistory(state, newProjects, newCurrentProjectId),
+        selectedNodeIds: [ROOT_VSTACK_ID],
+      };
+    }
+
+    case 'RENAME_PROJECT': {
+      const { projectId, name } = action.payload;
+      const newProjects = state.projects.map(project =>
+        project.id === projectId ? { ...project, name, lastModified: Date.now() } : project
+      );
+      return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    case 'DUPLICATE_PROJECT': {
+      const { projectId } = action.payload;
+      const projectToDuplicate = state.projects.find(p => p.id === projectId);
+      if (!projectToDuplicate) return state;
+
+      const newProjectId = `project-${Date.now()}`;
+      const newProject: Project = {
+        ...JSON.parse(JSON.stringify(projectToDuplicate)),
+        id: newProjectId,
+        name: `${projectToDuplicate.name} Copy`,
+        createdAt: Date.now(),
+        lastModified: Date.now(),
+      };
+
+      const newProjects = [...state.projects, newProject];
+      return {
+        ...updateHistory(state, newProjects, newProjectId),
+        selectedNodeIds: [ROOT_VSTACK_ID],
+      };
+    }
+
+    case 'SET_PROJECTS': {
+      const { projects } = action.payload;
+      return { ...state, projects };
+    }
+
     // ===== Bulk Actions =====
 
     case 'RESET_TREE': {
-      const { defaultPage } = action.payload;
+      const { defaultProject } = action.payload;
       return {
         ...state,
-        pages: [defaultPage],
-        currentPageId: defaultPage.id,
+        projects: [defaultProject],
+        currentProjectId: defaultProject.id,
         selectedNodeIds: [ROOT_VSTACK_ID],
         gridLinesVisible: new Set(),
         history: {
           past: [],
           present: {
-            pages: [defaultPage],
-            currentPageId: defaultPage.id,
+            projects: [defaultProject],
+            currentProjectId: defaultProject.id,
           },
           future: [],
         },

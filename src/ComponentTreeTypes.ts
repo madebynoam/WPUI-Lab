@@ -1,4 +1,4 @@
-import { ComponentNode, Page, Interaction } from './types';
+import { ComponentNode, Page, Interaction, Project } from './types';
 
 // Action types for the component tree reducer
 export type ComponentTreeAction =
@@ -26,6 +26,14 @@ export type ComponentTreeAction =
   | { type: 'UPDATE_PAGE_THEME'; payload: { pageId: string; theme: { primaryColor?: string; backgroundColor?: string } } }
   | { type: 'SET_PAGES'; payload: { pages: Page[] } }
 
+  // Project actions
+  | { type: 'CREATE_PROJECT'; payload: { project: Project } }
+  | { type: 'SET_CURRENT_PROJECT'; payload: { projectId: string } }
+  | { type: 'DELETE_PROJECT'; payload: { projectId: string } }
+  | { type: 'RENAME_PROJECT'; payload: { projectId: string; name: string } }
+  | { type: 'DUPLICATE_PROJECT'; payload: { projectId: string } }
+  | { type: 'SET_PROJECTS'; payload: { projects: Project[] } }
+
   // Clipboard actions
   | { type: 'COPY_COMPONENT'; payload: { node: ComponentNode } }
   | { type: 'CUT_COMPONENT'; payload: { node: ComponentNode; nodeId: string } }
@@ -49,7 +57,7 @@ export type ComponentTreeAction =
   | { type: 'CLEAR_HISTORY' }
 
   // Bulk actions
-  | { type: 'RESET_TREE'; payload: { defaultPage: Page } };
+  | { type: 'RESET_TREE'; payload: { defaultProject: Project } };
 
 // Metadata for actions to control history behavior
 export interface ActionMetadata {

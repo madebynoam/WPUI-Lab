@@ -35,6 +35,19 @@ export interface Page {
   };
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  pages: Page[];
+  currentPageId: string;
+  createdAt: number;
+  lastModified: number;
+  theme?: {
+    primaryColor?: string;
+    backgroundColor?: string;
+  };
+}
+
 export interface ComponentDefinition {
   name: string;
   component: React.ComponentType<any>;
@@ -54,6 +67,6 @@ export interface PropDefinition {
 }
 
 export interface HistoryState {
-  pages: Page[];
-  currentPageId: string;
+  projects: Project[];
+  currentProjectId: string;
 }
