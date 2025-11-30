@@ -5,7 +5,7 @@ import { componentRegistry } from '../componentRegistry';
  * Normalizes a component node to ensure consistent data structure.
  *
  * This function:
- * - Converts props.content → props.children for Text/Heading components
+ * - Converts props.content → props.children for Text/Heading/Badge components
  * - Removes empty children arrays when they shouldn't exist
  * - Recursively normalizes all child nodes
  * - Validates component types exist in registry
@@ -33,8 +33,8 @@ export function normalizeComponentNode(node: ComponentNode): ComponentNode {
     interactions: node.interactions || [],
   };
 
-  // CRITICAL: Transform props.content → props.children for Text and Heading
-  if (node.type === 'Text' || node.type === 'Heading') {
+  // CRITICAL: Transform props.content → props.children for Text, Heading, and Badge
+  if (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge') {
     const hasContent = 'content' in normalized.props && normalized.props.content;
     const hasValidChildren = Array.isArray(normalized.children) && normalized.children.length > 0;
     const hasChildrenProp = 'children' in normalized.props && normalized.props.children;
@@ -49,7 +49,7 @@ export function normalizeComponentNode(node: ComponentNode): ComponentNode {
       delete normalized.props.content;
     }
 
-    // Clear the children array for Text/Heading (they don't have child components)
+    // Clear the children array for Text/Heading/Badge (they don't have child components)
     normalized.children = [];
   }
 
