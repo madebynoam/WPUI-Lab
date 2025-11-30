@@ -293,12 +293,20 @@ Respond with ONLY the JSON array, no explanation.`;
     // Add current user message
     messages.push({ role: 'user', content: userMessage });
 
-    const response = await llm.chat({
+    // Build chat options - GPT-5 models don't support custom temperature
+    const isGPT5 = config.model.startsWith('gpt-5');
+    const chatOptions: any = {
       messages,
-      temperature: 0.1, // Low temperature for consistent parsing
       max_tokens: 500,
       signal,
-    });
+    };
+
+    // Only set temperature for models that support it
+    if (!isGPT5) {
+      chatOptions.temperature = 0.1; // Low temperature for consistent parsing
+    }
+
+    const response = await llm.chat(chatOptions);
 
     const content = response.content || '[]';
 

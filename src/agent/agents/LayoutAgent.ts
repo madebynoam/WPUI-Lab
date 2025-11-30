@@ -23,13 +23,14 @@ interface LayoutAgentResult {
  */
 export class LayoutAgent {
   private llm: ReturnType<typeof createLLMProvider>;
+  private config: ReturnType<typeof getAgentModel>;
 
   constructor(apiKey: string) {
-    const config = getAgentModel('layout');
+    this.config = getAgentModel('layout');
     this.llm = createLLMProvider({
-      provider: config.provider,
+      provider: this.config.provider,
       apiKey,
-      model: config.model,
+      model: this.config.model,
     });
   }
 
@@ -49,7 +50,9 @@ export class LayoutAgent {
       const systemPrompt = this.buildSystemPrompt();
       const contextInfo = this.buildContext(context);
 
-      const response = await this.llm.chat({
+      // Build chat options - GPT-5 models don't support custom temperature
+      const isGPT5 = this.config.model.startsWith('gpt-5');
+      const chatOptions: any = {
         messages: [
           { role: 'system', content: systemPrompt },
           {
@@ -57,11 +60,17 @@ export class LayoutAgent {
             content: `${userMessage}\n\nCurrent context:\n${contextInfo}`,
           },
         ],
-        temperature: 0.3,
         max_tokens: 1000,
         signal,
         tools: this.getTools(),
-      });
+      };
+
+      // Only set temperature for models that support it
+      if (!isGPT5) {
+        chatOptions.temperature = 0.3;
+      }
+
+      const response = await this.llm.chat(chatOptions);
 
       // Execute tool calls
       const toolCalls = response.tool_calls || [];

@@ -25,13 +25,14 @@ interface ComponentAgentResult {
  */
 export class ComponentAgent {
   private llm: ReturnType<typeof createLLMProvider>;
+  private config: ReturnType<typeof getAgentModel>;
 
   constructor(apiKey: string) {
-    const config = getAgentModel('component');
+    this.config = getAgentModel('component');
     this.llm = createLLMProvider({
-      provider: config.provider,
+      provider: this.config.provider,
       apiKey,
-      model: config.model,
+      model: this.config.model,
     });
   }
 
@@ -56,8 +57,9 @@ export class ComponentAgent {
 
       console.log('[ComponentAgent] Context sent to LLM:\n', contextInfo);
 
-      // Call LLM with tool definitions
-      const response = await this.llm.chat({
+      // Build chat options - GPT-5 models don't support custom temperature
+      const isGPT5 = this.config.model.startsWith('gpt-5');
+      const chatOptions: any = {
         messages: [
           { role: 'system', content: systemPrompt },
           {
@@ -65,11 +67,18 @@ export class ComponentAgent {
             content: `${userMessage}\n\nCurrent context:\n${contextInfo}`,
           },
         ],
-        temperature: 0.3,
         max_tokens: 4000, // Increased for large component trees (e.g., 12 cards)
         signal,
         tools: this.getTools(),
-      });
+      };
+
+      // Only set temperature for models that support it
+      if (!isGPT5) {
+        chatOptions.temperature = 0.3;
+      }
+
+      // Call LLM with tool definitions
+      const response = await this.llm.chat(chatOptions);
 
       // Debug logging
       console.log('[ComponentAgent] LLM response:', {

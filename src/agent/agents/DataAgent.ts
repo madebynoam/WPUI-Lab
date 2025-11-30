@@ -23,13 +23,14 @@ interface DataAgentResult {
  */
 export class DataAgent {
   private llm: ReturnType<typeof createLLMProvider>;
+  private config: ReturnType<typeof getAgentModel>;
 
   constructor(apiKey: string) {
-    const config = getAgentModel('data');
+    this.config = getAgentModel('data');
     this.llm = createLLMProvider({
-      provider: config.provider,
+      provider: this.config.provider,
       apiKey,
-      model: config.model,
+      model: this.config.model,
     });
   }
 
@@ -48,16 +49,24 @@ export class DataAgent {
     try {
       const systemPrompt = this.buildSystemPrompt();
 
-      const response = await this.llm.chat({
+      // Build chat options - GPT-5 models don't support custom temperature
+      const isGPT5 = this.config.model.startsWith('gpt-5');
+      const chatOptions: any = {
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },
         ],
-        temperature: 0.7,
         max_tokens: 2000,
         signal,
         tools: this.getTools(),
-      });
+      };
+
+      // Only set temperature for models that support it
+      if (!isGPT5) {
+        chatOptions.temperature = 0.7;
+      }
+
+      const response = await this.llm.chat(chatOptions);
 
       // Execute tool calls
       const toolCalls = response.tool_calls || [];
