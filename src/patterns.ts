@@ -467,51 +467,107 @@ export const patterns: Pattern[] = [
     },
   },
 
-  // Testimonial Card
+  // Testimonials
   {
-    id: 'testimonial-card',
-    name: 'Testimonial Card',
-    description: 'Single testimonial with quote and attribution',
+    id: 'testimonials',
+    name: 'Testimonials',
+    description: 'Customer testimonials with quotes and attribution',
     category: 'Testimonials',
     tree: {
-      type: 'Card',
-      props: {},
+      type: 'Grid',
+      props: { columns: 12, gap: 4 },
       children: [
         {
-          type: 'CardBody',
-          props: {},
+          type: 'Card',
+          props: { gridColumnSpan: 6 },
           children: [
             {
-              type: 'VStack',
-              props: { spacing: 4 },
+              type: 'CardBody',
+              props: {},
               children: [
                 {
-                  type: 'Text',
-                  props: { children: '"This product has transformed how we work. The interface is intuitive and the results are outstanding."' },
-                  children: [],
-                },
-                {
-                  type: 'HStack',
-                  props: { spacing: 3 },
+                  type: 'VStack',
+                  props: { spacing: 4 },
                   children: [
                     {
-                      type: 'Icon',
-                      props: {},
+                      type: 'Text',
+                      props: { children: '"This product has transformed how we work. The interface is intuitive and the results are outstanding. It has streamlined collaboration across teams and shortened onboarding for new hires."' },
                       children: [],
                     },
                     {
-                      type: 'VStack',
-                      props: { spacing: 0 },
+                      type: 'HStack',
+                      props: { spacing: 3 },
                       children: [
                         {
-                          type: 'Text',
-                          props: { children: 'Sarah Johnson' },
+                          type: 'Icon',
+                          props: {},
                           children: [],
                         },
                         {
-                          type: 'Text',
-                          props: { children: 'CEO, TechCorp' },
+                          type: 'VStack',
+                          props: { spacing: 0 },
+                          children: [
+                            {
+                              type: 'Text',
+                              props: { children: 'Sarah Johnson' },
+                              children: [],
+                            },
+                            {
+                              type: 'Text',
+                              props: { children: 'CEO, TechCorp — North America' },
+                              children: [],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'Card',
+          props: { gridColumnSpan: 6 },
+          children: [
+            {
+              type: 'CardBody',
+              props: {},
+              children: [
+                {
+                  type: 'VStack',
+                  props: { spacing: 4 },
+                  children: [
+                    {
+                      type: 'Text',
+                      props: { children: '"This product has changed how we approach work. The interface remains intuitive, and the outcomes have been impressive. It also accelerated cross-team collaboration and simplified training for new staff."' },
+                      children: [],
+                    },
+                    {
+                      type: 'HStack',
+                      props: { spacing: 3 },
+                      children: [
+                        {
+                          type: 'Icon',
+                          props: {},
                           children: [],
+                        },
+                        {
+                          type: 'VStack',
+                          props: { spacing: 0 },
+                          children: [
+                            {
+                              type: 'Text',
+                              props: { children: 'Alex Kim' },
+                              children: [],
+                            },
+                            {
+                              type: 'Text',
+                              props: { children: 'Founder & CEO, TechCorp' },
+                              children: [],
+                            },
+                          ],
                         },
                       ],
                     },

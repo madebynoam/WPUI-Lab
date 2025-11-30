@@ -376,6 +376,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
             style={{
               flex: 1,
               padding: `${pagePadding * 4}px`,
+              paddingBottom: showBreadcrumb && !isPlayMode ? `${pagePadding * 4 + 25}px` : `${pagePadding * 4}px`,
               backgroundColor: pageBackgroundColor,
               overflow: "auto",
               display: "flex",

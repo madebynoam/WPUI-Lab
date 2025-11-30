@@ -82,15 +82,23 @@ export async function handleUserMessage(
   signal?: AbortSignal,
   conversationHistory?: AgentMessage[]
 ): Promise<AgentMessage> {
-  // If no API key, fall back to basic rule-based responses
-  if (!claudeApiKey || !claudeApiKey.trim()) {
+  // Check for the API key that matches the configured provider
+  const orchestratorConfig = getAgentModel('orchestrator');
+  const requiredProvider = orchestratorConfig.provider;
+  const requiredKey = requiredProvider === 'anthropic' ? claudeApiKey : openaiApiKey;
+  const providerName = requiredProvider === 'anthropic' ? 'Claude' : 'OpenAI';
+  const providerUrl = requiredProvider === 'anthropic'
+    ? 'https://console.anthropic.com/'
+    : 'https://platform.openai.com/api-keys';
+
+  if (!requiredKey || !requiredKey.trim()) {
     return {
       id: `agent-${Date.now()}`,
       role: 'agent',
       content: [
         {
           type: 'text',
-          text: 'Please add your Claude API key to use the AI assistant. Get your key at https://console.anthropic.com/',
+          text: `Please add your ${providerName} API key to use the AI assistant. The system is configured to use ${providerName}. Get your key at ${providerUrl}`,
         },
       ],
       timestamp: Date.now(),
@@ -425,7 +433,7 @@ export function generateSuggestions(context: ToolContext) {
     {
       id: 'pages',
       label: 'Show my pages',
-      prompt: 'What pages do I have?',
+      prompt: 'Can you show me all the pages I have created in this project and their current structure?',
     },
   ];
 
@@ -434,7 +442,7 @@ export function generateSuggestions(context: ToolContext) {
     suggestions.push({
       id: 'delete',
       label: 'Delete selected',
-      prompt: 'Delete the selected component',
+      prompt: 'Please remove the currently selected component from the page for me',
     });
   }
 
@@ -442,7 +450,7 @@ export function generateSuggestions(context: ToolContext) {
   suggestions.push({
     id: 'add-button',
     label: 'Add a button',
-    prompt: 'Add a button to the current page',
+    prompt: 'I would like to add a new button component to the current page',
   });
 
   return suggestions;

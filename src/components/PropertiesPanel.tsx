@@ -152,8 +152,12 @@ export const PropertiesPanel: React.FC = () => {
     return shared;
   }, [selectedNodes, isMultiSelect, firstNode]);
 
-  if (selectedNodes.length === 0) {
-    // Show Project Settings when nothing is selected
+  // Show Project Settings when nothing is selected OR when root VStack is selected
+  const isProjectSettingsView = selectedNodes.length === 0 ||
+    (selectedNodes.length === 1 && selectedNodes[0].id === ROOT_VSTACK_ID);
+
+  if (isProjectSettingsView) {
+    // Show Project Settings
     const currentProject = projects.find((p) => p.id === currentProjectId);
     const projectTheme = currentProject?.theme ?? {
       primaryColor: "#3858e9",

@@ -30,7 +30,7 @@ export const Breadcrumb: React.FC = () => {
     return path;
   };
 
-  const path = getNodePath(selectedNodeIds.length > 0 ? selectedNodeIds[0] : null);
+  const path = getNodePath(selectedNodeIds.length > 0 ? selectedNodeIds[0] : ROOT_VSTACK_ID);
 
   if (path.length === 0) {
     return null;
@@ -39,43 +39,44 @@ export const Breadcrumb: React.FC = () => {
   return (
     <div
       style={{
-        borderTop: '1px solid #ccc',
+        borderTop: '1px solid #ddd',
         backgroundColor: '#fff',
-        padding: '8px 12px',
+        padding: '0 12px',
         display: 'flex',
         alignItems: 'center',
-        gap: '4px',
+        gap: '0px',
         fontSize: '13px',
-        minHeight: '40px',
+        height: '25px',
         flexShrink: 0,
       }}
     >
       {path.map((node, index) => (
         <React.Fragment key={node.id}>
           {index > 0 && (
-            <span style={{ color: '#999', margin: '0 4px' }}>/</span>
+            <span style={{ color: '#8c8f94', margin: '0 6px', fontSize: '12px' }}>›</span>
           )}
           <button
             onClick={() => toggleNodeSelection(node.id, false)}
             style={{
-              background: index === path.length - 1 ? '#e0e0e0' : 'transparent',
+              background: 'transparent',
               border: 'none',
-              padding: '4px 8px',
-              borderRadius: '3px',
+              padding: '0',
               cursor: 'pointer',
               fontSize: '13px',
-              fontWeight: index === path.length - 1 ? 600 : 400,
+              fontWeight: 400,
               color: '#1e1e1e',
-              transition: 'background-color 0.1s ease',
+              transition: 'opacity 0.1s ease',
+              textDecoration: 'none',
+              opacity: index === path.length - 1 ? 1 : 0.7,
             }}
             onMouseEnter={(e) => {
               if (index !== path.length - 1) {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
+                e.currentTarget.style.opacity = '1';
               }
             }}
             onMouseLeave={(e) => {
               if (index !== path.length - 1) {
-                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.opacity = '0.7';
               }
             }}
           >
