@@ -52,6 +52,8 @@ export class ComponentAgent {
       // Build focused context
       const contextInfo = this.buildContext(context);
 
+      console.log('[ComponentAgent] Context sent to LLM:\n', contextInfo);
+
       // Call LLM with tool definitions
       const response = await this.llm.chat({
         messages: [
@@ -169,8 +171,14 @@ Available component types:
 
 Tools:
 1. insertPattern(patternId, parentId?, index?): Insert a pre-built pattern
-2. createComponent(tree): Create custom component from tree structure
+2. createComponent(tree, parentId?, index?): Create custom component from tree structure
 3. modifyComponent(componentId, updates): Update existing component
+
+CRITICAL WORKFLOW:
+1. ALWAYS check the "Current context" section to see what's selected
+2. If a component is selected, add new components INSIDE it using parentId parameter
+3. If nothing is selected, components will be added to the page root
+4. Consider if the selection makes sense as a parent (e.g., VStack, Card, Grid can contain children; Button cannot)
 
 CRITICAL - Tree Structure Format:
 Every node MUST have exactly these three fields:
@@ -207,23 +215,54 @@ Instructions:
 7. Confirm what you created
 
 Examples:
-"add a contact form" → insertPattern({patternId: "contact-form"})
-"add a kanban board" → insertPattern({patternId: "crud-kanban-view"})
-"create 3 pricing cards" → createComponent({tree: {type: "Grid", props: {columns: 3}, children: [...]}})`;
+
+User: "add a contact form"
+Context: SELECTION: Card (ID: card-123)
+→ insertPattern({patternId: "contact-form", parentId: "card-123"})
+
+User: "add a kanban board"
+Context: SELECTION: Nothing selected
+→ insertPattern({patternId: "crud-kanban-view"})
+
+User: "add a button"
+Context: SELECTION: VStack (ID: vstack-456)
+→ createComponent({tree: {type: "Button", props: {text: "Click me"}, children: []}, parentId: "vstack-456"})
+
+User: "create 3 pricing cards"
+Context: SELECTION: Nothing selected
+→ createComponent({tree: {type: "Grid", props: {columns: 3}, children: [...]}})`;
   }
 
   /**
    * Build focused context for the agent
    */
   private buildContext(context: ToolContext): string {
-    const selectedInfo =
-      context.selectedNodeIds.length > 0
-        ? `Selected components: ${context.selectedNodeIds.join(', ')}`
-        : 'No selection';
+    const parts: string[] = [];
+    parts.push(`Current page: ${context.currentPageId}`);
+    parts.push('');
 
-    const pageInfo = `Current page: ${context.currentPageId}`;
+    if (context.selectedNodeIds.length === 0) {
+      parts.push('SELECTION: Nothing selected');
+      parts.push('Components will be added to the page root.');
+      return parts.join('\n');
+    }
 
-    return `${pageInfo}\n${selectedInfo}`;
+    const selectedId = context.selectedNodeIds[0];
+    const selectedNode = context.getNodeById(selectedId);
+
+    if (!selectedNode) {
+      parts.push('SELECTION: Nothing selected');
+      parts.push('Components will be added to the page root.');
+      return parts.join('\n');
+    }
+
+    const nodeName = selectedNode.name || selectedNode.type;
+    parts.push(`SELECTION: ${nodeName} (ID: ${selectedId})`);
+    parts.push(`Type: ${selectedNode.type}`);
+    parts.push('');
+    parts.push('When adding components, they will be added inside this selected component.');
+
+    return parts.join('\n');
   }
 
   /**
@@ -267,6 +306,14 @@ Examples:
               tree: {
                 type: 'object',
                 description: 'Component tree structure (type, props, children)',
+              },
+              parentId: {
+                type: 'string',
+                description: 'Optional parent component ID (use selected component ID to add inside it)',
+              },
+              index: {
+                type: 'number',
+                description: 'Optional index in parent children array',
               },
             },
             required: ['tree'],
@@ -336,12 +383,14 @@ Examples:
     params: any,
     context: ToolContext
   ): Promise<ComponentAgentResult> {
-    const { tree } = params;
+    const { tree, parentId, index } = params;
 
     // Debug logging
     console.log('[ComponentAgent] createComponent params:', params);
     console.log('[ComponentAgent] tree type:', typeof tree);
     console.log('[ComponentAgent] tree value:', tree);
+    console.log('[ComponentAgent] parentId:', parentId);
+    console.log('[ComponentAgent] index:', index);
 
     // Validate tree structure before processing
     const validation = this.validateTreeStructure(tree);
@@ -360,11 +409,15 @@ Examples:
     }
 
     const componentTree: ComponentNode = assignIds(tree);
-    context.addComponent(componentTree);
+    context.addComponent(componentTree, parentId, index);
+
+    const whereAdded = parentId
+      ? `inside ${context.getNodeById(parentId)?.name || context.getNodeById(parentId)?.type || 'selected component'}`
+      : 'to the page';
 
     return {
       success: true,
-      message: `Created custom ${tree.type}`,
+      message: `Created ${tree.type} ${whereAdded}`,
       componentId: componentTree.id,
       duration: 0,
       cost: 0,
