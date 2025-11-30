@@ -1,11 +1,11 @@
 import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo } from 'react';
-import { ComponentNode, Page, Interaction, PatternNode } from './types';
+import { ComponentNode, Page, Project, Interaction, PatternNode } from './types';
 import { componentRegistry } from './componentRegistry';
 import { componentTreeReducer, ComponentTreeState } from './ComponentTreeReducer';
 import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent, generateId } from './utils/treeHelpers';
 import { normalizeComponentNode, normalizeComponentNodes } from './utils/normalizeComponent';
 
-const STORAGE_KEY = 'wp-designer-pages';
+const STORAGE_KEY = 'wp-designer-projects';
 
 interface ComponentTreeContextType {
   // Current page's tree
@@ -52,7 +52,7 @@ interface ComponentTreeContextType {
   pasteComponent: (parentId?: string) => void;
   canPaste: boolean;
 
-  // Pages management
+  // Pages management (within current project)
   pages: Page[];
   currentPageId: string;
   setCurrentPage: (pageId: string) => void;
@@ -62,6 +62,15 @@ interface ComponentTreeContextType {
   renamePage: (pageId: string, name: string) => void;
   duplicatePage: (pageId: string) => void;
   updatePageTheme: (pageId: string, theme: { primaryColor?: string; backgroundColor?: string }) => void;
+
+  // Projects management
+  projects: Project[];
+  currentProjectId: string;
+  createProject: (name: string) => void;
+  setCurrentProject: (projectId: string) => void;
+  deleteProject: (projectId: string) => void;
+  renameProject: (projectId: string, name: string) => void;
+  duplicateProject: (projectId: string) => void;
 
   // History management
   canUndo: boolean;
@@ -97,53 +106,49 @@ const createInitialPage = (id: string, name: string): Page => ({
   },
 });
 
+const createInitialProject = (id: string, name: string): Project => ({
+  id,
+  name,
+  pages: [createInitialPage('page-1', 'Page 1')],
+  currentPageId: 'page-1',
+  createdAt: Date.now(),
+  lastModified: Date.now(),
+  theme: {
+    primaryColor: '#3858e9',
+    backgroundColor: '#ffffff',
+  },
+});
+
 // Initialize state from localStorage
 function initializeState(): ComponentTreeState {
   const saved = localStorage.getItem(STORAGE_KEY);
   console.log('[ComponentTreeContext] Loading from localStorage:', saved ? `Found ${saved.length} chars` : 'No data');
 
-  let pages: Page[] = [createInitialPage('page-1', 'Page 1')];
-  let currentPageId = 'page-1';
+  let projects: Project[] = [createInitialProject('project-1', 'My First Project')];
+  let currentProjectId = 'project-1';
 
   if (saved) {
     try {
       const data = JSON.parse(saved);
       console.log('[ComponentTreeContext] Parsed data:', {
-        hasPages: !!data.pages,
-        pagesLength: data.pages?.length,
-        pageNames: data.pages?.map((p: Page) => p.name),
+        hasProjects: !!data.projects,
+        projectsLength: data.projects?.length,
+        projectNames: data.projects?.map((p: Project) => p.name),
       });
 
-      if (Array.isArray(data.pages) && data.pages.length > 0) {
-        console.log('[ComponentTreeContext] Loading pages from localStorage:', data.pages.length);
-        pages = data.pages;
-        currentPageId = data.currentPageId || pages[0].id;
+      if (Array.isArray(data.projects) && data.projects.length > 0) {
+        console.log('[ComponentTreeContext] Loading projects from localStorage:', data.projects.length);
+        projects = data.projects;
+        currentProjectId = data.currentProjectId || projects[0].id;
       }
     } catch (e) {
-      console.error('Failed to parse saved pages:', e);
-    }
-  }
-
-  // Try to migrate from old storage key
-  if (pages.length === 1 && pages[0].id === 'page-1') {
-    const oldTree = localStorage.getItem('wp-designer-tree');
-    if (oldTree) {
-      try {
-        const parsedTree = JSON.parse(oldTree);
-        console.log('[ComponentTreeContext] Migrating from old storage format');
-        pages = [{
-          ...pages[0],
-          tree: parsedTree,
-        }];
-      } catch (e) {
-        console.error('Failed to migrate old tree:', e);
-      }
+      console.error('Failed to parse saved projects:', e);
     }
   }
 
   return {
-    pages,
-    currentPageId,
+    projects,
+    currentProjectId,
     selectedNodeIds: [ROOT_VSTACK_ID],
     gridLinesVisible: new Set(),
     clipboard: null,
@@ -152,8 +157,8 @@ function initializeState(): ComponentTreeState {
     history: {
       past: [],
       present: {
-        pages: JSON.parse(JSON.stringify(pages)),
-        currentPageId,
+        projects: JSON.parse(JSON.stringify(projects)),
+        currentProjectId,
       },
       future: [],
     },
@@ -178,23 +183,36 @@ function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNod
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(componentTreeReducer, undefined, initializeState);
 
+  // Get current project
+  const currentProject = useMemo(
+    () => state.projects.find(p => p.id === state.currentProjectId),
+    [state.projects, state.currentProjectId]
+  );
+
   // Get current tree for convenience
   const tree = useMemo(
-    () => getCurrentTree(state.pages, state.currentPageId),
-    [state.pages, state.currentPageId]
+    () => {
+      if (!currentProject) return [];
+      return getCurrentTree(currentProject.pages, currentProject.currentPageId);
+    },
+    [currentProject]
   );
+
+  // Get current pages and pageId from current project
+  const pages = currentProject?.pages || [];
+  const currentPageId = currentProject?.currentPageId || '';
 
   // Save to localStorage whenever state changes
   useEffect(() => {
-    const dataToSave = { pages: state.pages, currentPageId: state.currentPageId };
+    const dataToSave = { projects: state.projects, currentProjectId: state.currentProjectId };
     console.log('[ComponentTreeContext] Saving to localStorage:', {
-      pageCount: state.pages.length,
-      pageNames: state.pages.map(p => p.name),
-      currentPageId: state.currentPageId,
+      projectCount: state.projects.length,
+      projectNames: state.projects.map(p => p.name),
+      currentProjectId: state.currentProjectId,
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
     console.log('[ComponentTreeContext] Saved successfully');
-  }, [state.pages, state.currentPageId]);
+  }, [state.projects, state.currentProjectId]);
 
   // ===== Tree Operations =====
 
@@ -295,10 +313,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const resetTree = () => {
-    const defaultPage = createInitialPage('page-1', 'Page 1');
+    const defaultProject = createInitialProject('project-1', 'My First Project');
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('wp-designer-agent-messages');
-    dispatch({ type: 'RESET_TREE', payload: { defaultPage } });
+    dispatch({ type: 'RESET_TREE', payload: { defaultProject } });
   };
 
   const getNodeById = (id: string): ComponentNode | null => {
@@ -344,7 +362,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const addPage = (name?: string) => {
-    const newPageNumber = state.pages.length + 1;
+    const newPageNumber = pages.length + 1;
     const newPage = createInitialPage(
       `page-${Date.now()}`,
       name || `Page ${newPageNumber}`
@@ -352,14 +370,14 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     console.log('[ComponentTreeContext] addPage called:', {
       newPageName: newPage.name,
       newPageId: newPage.id,
-      currentPagesCount: state.pages.length,
+      currentPagesCount: pages.length,
     });
     dispatch({ type: 'ADD_PAGE', payload: { page: newPage } });
     console.log('[ComponentTreeContext] addPage completed');
   };
 
   const createPageWithId = (name?: string): string => {
-    const newPageNumber = state.pages.length + 1;
+    const newPageNumber = pages.length + 1;
     const newPage = createInitialPage(
       `page-${Date.now()}`,
       name || `Page ${newPageNumber}`
@@ -385,6 +403,34 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     theme: { primaryColor?: string; backgroundColor?: string }
   ) => {
     dispatch({ type: 'UPDATE_PAGE_THEME', payload: { pageId, theme } });
+  };
+
+  // ===== Projects Management =====
+
+  const createProject = (name: string) => {
+    const newProject = createInitialProject(`project-${Date.now()}`, name);
+    console.log('[ComponentTreeContext] createProject called:', {
+      newProjectName: newProject.name,
+      newProjectId: newProject.id,
+    });
+    dispatch({ type: 'CREATE_PROJECT', payload: { project: newProject } });
+    console.log('[ComponentTreeContext] createProject completed');
+  };
+
+  const setCurrentProject = (projectId: string) => {
+    dispatch({ type: 'SET_CURRENT_PROJECT', payload: { projectId } });
+  };
+
+  const deleteProject = (projectId: string) => {
+    dispatch({ type: 'DELETE_PROJECT', payload: { projectId } });
+  };
+
+  const renameProject = (projectId: string, name: string) => {
+    dispatch({ type: 'RENAME_PROJECT', payload: { projectId, name } });
+  };
+
+  const duplicateProject = (projectId: string) => {
+    dispatch({ type: 'DUPLICATE_PROJECT', payload: { projectId } });
   };
 
   // ===== History =====
@@ -457,8 +503,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     cutComponent,
     pasteComponent,
     canPaste: state.clipboard !== null,
-    pages: state.pages,
-    currentPageId: state.currentPageId,
+    pages,
+    currentPageId,
     setCurrentPage,
     addPage,
     createPageWithId,
@@ -466,6 +512,13 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     renamePage,
     duplicatePage,
     updatePageTheme,
+    projects: state.projects,
+    currentProjectId: state.currentProjectId,
+    createProject,
+    setCurrentProject,
+    deleteProject,
+    renameProject,
+    duplicateProject,
     canUndo: state.history.past.length > 0,
     canRedo: state.history.future.length > 0,
     undo,

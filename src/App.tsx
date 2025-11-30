@@ -7,12 +7,27 @@ import { Canvas } from './components/Canvas';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { CodePanel } from './components/CodePanel';
 import { AgentPanel } from './components/AgentPanel';
+import { ProjectsScreen } from './components/ProjectsScreen';
 import '@wordpress/components/build-style/style.css';
 import '@wordpress/block-editor/build-style/style.css';
 import '@wordpress/dataviews/build-style/style.css';
 
+type View = 'projects' | 'editor';
+
 function AppContent() {
-  const { isPlayMode, setSelectedNodeIds } = useComponentTree();
+  const {
+    isPlayMode,
+    setSelectedNodeIds,
+    projects,
+    currentProjectId,
+    createProject,
+    setCurrentProject,
+    deleteProject,
+    renameProject,
+    duplicateProject,
+  } = useComponentTree();
+
+  const [view, setView] = useState<View>('editor');
   const [showPanels, setShowPanels] = useState(true);
   const [showInserter, setShowInserter] = useState(false);
   const [showTreePanel, setShowTreePanel] = useState(true);
@@ -93,6 +108,35 @@ function AppContent() {
   // Hide panels when in play mode, even if showPanels is true
   const shouldShowPanels = showPanels && !isPlayMode;
 
+  // Handle project actions
+  const handleCreateProject = (name: string) => {
+    createProject(name);
+    setView('editor');
+  };
+
+  const handleOpenProject = (projectId: string) => {
+    setCurrentProject(projectId);
+    setView('editor');
+  };
+
+  const handleNavigateToProjects = () => {
+    setView('projects');
+  };
+
+  // Render projects screen or editor
+  if (view === 'projects') {
+    return (
+      <ProjectsScreen
+        projects={projects}
+        onCreateProject={handleCreateProject}
+        onOpenProject={handleOpenProject}
+        onDeleteProject={deleteProject}
+        onRenameProject={renameProject}
+        onDuplicateProject={duplicateProject}
+      />
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {showHeader && (
@@ -118,6 +162,7 @@ function AppContent() {
             }}
             rightPanel={rightPanel}
             onToggleRightPanel={setRightPanel}
+            onNavigateToProjects={handleNavigateToProjects}
           />
         </div>
       )}

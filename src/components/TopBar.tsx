@@ -17,6 +17,7 @@ interface TopBarProps {
   onToggleTreePanel: () => void;
   rightPanel: "props" | "code" | "agent" | "none";
   onToggleRightPanel: (panel: "props" | "code" | "agent" | "none") => void;
+  onNavigateToProjects?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -26,6 +27,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onToggleTreePanel,
   rightPanel,
   onToggleRightPanel,
+  onNavigateToProjects,
 }) => {
   const { pages, currentPageId, isPlayMode, setPlayMode } = useComponentTree();
   const playModeState = usePlayModeState();
@@ -69,6 +71,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       ) : (
         <div
           className="editor-header__toolbar"
+          onClick={onNavigateToProjects}
           style={{
             height: "60px",
             width: "60px",
@@ -78,7 +81,18 @@ export const TopBar: React.FC<TopBarProps> = ({
             justifyContent: "center",
             borderRadius: 0,
             gap: "4px",
+            cursor: onNavigateToProjects ? "pointer" : "default",
+            transition: "opacity 0.2s",
           }}
+          onMouseEnter={(e) => {
+            if (onNavigateToProjects) {
+              e.currentTarget.style.opacity = "0.8";
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+          title={onNavigateToProjects ? "Back to projects" : undefined}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

@@ -11,7 +11,7 @@ import {
   MenuGroup,
   MenuItem,
 } from '@wordpress/components';
-import { moreVertical, trash, edit, copy } from '@wordpress/icons';
+import { moreVertical, trash, pencil, copy } from '@wordpress/icons';
 import { Project } from '../types';
 import { NewProjectModal } from './NewProjectModal';
 
@@ -188,7 +188,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                             {() => (
                               <MenuGroup>
                                 <MenuItem
-                                  icon={edit}
+                                  icon={pencil}
                                   onClick={() => handleRenameStart(project)}
                                 >
                                   Rename
