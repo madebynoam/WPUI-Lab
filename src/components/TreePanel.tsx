@@ -152,7 +152,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		insertComponent,
 		selectedNodeIds,
 		toggleNodeSelection,
-		resetTree,
 		removeComponent,
 		duplicateComponent,
 		moveComponent,
@@ -856,30 +855,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 					)}
 				</DndContext>
 			</div>
-
-			{/* Reset Button */}
-			{tree.length > 0 && (
-				<div style={{ padding: '8px', borderTop: '1px solid #ccc' }}>
-					<Button
-						variant="secondary"
-						size="small"
-						onClick={() => {
-							if (
-								confirm(
-									'Are you sure you want to reset the entire tree? This will also clear the AI assistant chat history.'
-								)
-							) {
-								resetTree();
-								window.location.reload();
-							}
-						}}
-						isDestructive
-						style={{ width: '100%' }}
-					>
-						Reset All
-					</Button>
-				</div>
-			)}
 		</div>
 	);
 };
