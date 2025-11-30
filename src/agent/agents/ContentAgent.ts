@@ -6,6 +6,7 @@
 
 import { createLLMProvider } from '../llm/factory';
 import { ToolContext } from '../types';
+import { getAgentModel } from '../agentConfig';
 
 interface ContentAgentResult {
   success: boolean;
@@ -22,10 +23,11 @@ export class ContentAgent {
   private llm: ReturnType<typeof createLLMProvider>;
 
   constructor(apiKey: string) {
+    const config = getAgentModel('content');
     this.llm = createLLMProvider({
-      provider: 'anthropic',
+      provider: config.provider,
       apiKey,
-      model: 'claude-haiku-4-5', // Haiku 4.5 for speed + quality
+      model: config.model,
     });
   }
 

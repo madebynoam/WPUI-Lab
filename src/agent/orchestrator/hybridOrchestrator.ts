@@ -15,6 +15,7 @@ import { DataAgent } from '../agents/DataAgent';
 import { LayoutAgent } from '../agents/LayoutAgent';
 import { PageAgent } from '../agents/PageAgent';
 import { createLLMProvider } from '../llm/factory';
+import { getAgentModel } from '../agentConfig';
 
 export interface OrchestratorResult {
   success: boolean;
@@ -205,10 +206,11 @@ async function decomposeRequest(
   signal?: AbortSignal,
   conversationHistory?: AgentMessage[]
 ): Promise<RequestStep[]> {
+  const config = getAgentModel('orchestrator');
   const llm = createLLMProvider({
-    provider: 'anthropic',
+    provider: config.provider,
     apiKey,
-    model: 'claude-haiku-4-5',
+    model: config.model,
   });
 
   const systemPrompt = `You are a request decomposer. Break user requests into sequential steps.

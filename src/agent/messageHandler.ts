@@ -3,6 +3,7 @@ import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
 import { handleHybridRequest } from './orchestrator/hybridOrchestrator';
+import { getAgentModel } from './agentConfig';
 
 // Token estimation utility (rough estimate: 4 chars ≈ 1 token)
 function estimateTokens(text: string): number {
@@ -121,12 +122,12 @@ export async function handleUserMessage(
     // === v2.0 SINGLE-AGENT YAML DSL ===
     console.log('[Agent] Using v2.0 single-agent YAML DSL');
 
-    // Create LLM provider
-    // ACTIVE: Claude Haiku 4.5 (cheaper alternative)
+    // Create LLM provider using centralized config
+    const config = getAgentModel('orchestrator');
     const llm = createLLMProvider({
-      provider: 'anthropic',
+      provider: config.provider,
       apiKey: claudeApiKey!,
-      model: 'claude-haiku-4-5',
+      model: config.model,
     });
 
     // FALLBACK: OpenAI (uncomment to switch back)

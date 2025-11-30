@@ -8,6 +8,7 @@ import { createLLMProvider } from '../llm/factory';
 import { ToolContext } from '../types';
 import { assignIds } from '../../patterns/';
 import { ComponentNode } from '../../types';
+import { getAgentModel } from '../agentConfig';
 
 interface LayoutAgentResult {
   success: boolean;
@@ -24,10 +25,11 @@ export class LayoutAgent {
   private llm: ReturnType<typeof createLLMProvider>;
 
   constructor(apiKey: string) {
+    const config = getAgentModel('layout');
     this.llm = createLLMProvider({
-      provider: 'anthropic',
+      provider: config.provider,
       apiKey,
-      model: 'claude-haiku-4-5', // Haiku 4.5
+      model: config.model,
     });
   }
 

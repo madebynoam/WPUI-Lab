@@ -10,6 +10,7 @@
 
 import { createLLMProvider } from '../llm/factory';
 import { MODEL_PRICING } from './types';
+import { getAgentModel } from '../agentConfig';
 
 // Token estimation utility
 function estimateTokens(text: string): number {
@@ -41,10 +42,11 @@ export async function generateTableData(params: {
   console.log(`[AI Helper] Generating ${rowCount} rows of table data for: ${topic}`);
 
   // Create LLM provider
+  const config = getAgentModel('orchestrator');
   const llm = createLLMProvider({
-    provider: 'anthropic',
+    provider: config.provider,
     apiKey,
-    model: 'claude-haiku-4-5',
+    model: config.model,
   });
 
   // System prompt for structured data generation
@@ -88,7 +90,7 @@ Include ${rowCount} rows with relevant columns.`;
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   const outputTokens = estimateTokens(response.content || '');
-  const pricing = MODEL_PRICING['claude-haiku-4-5'];
+  const pricing = MODEL_PRICING[config.model as keyof typeof MODEL_PRICING];
   const cost = (inputTokens / 1000000) * pricing.input + (outputTokens / 1000000) * pricing.output;
 
   // Parse response
@@ -138,10 +140,11 @@ export async function generateCopy(params: {
   console.log(`[AI Helper] Generating ${tone} copy for: ${request}`);
 
   // Create LLM provider
+  const config = getAgentModel('orchestrator');
   const llm = createLLMProvider({
-    provider: 'anthropic',
+    provider: config.provider,
     apiKey,
-    model: 'claude-haiku-4-5',
+    model: config.model,
   });
 
   // System prompt for copy generation
@@ -170,7 +173,7 @@ Output ONLY the text content, no quotes, no formatting, no explanations.`;
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   const outputTokens = estimateTokens(response.content || '');
-  const pricing = MODEL_PRICING['claude-haiku-4-5'];
+  const pricing = MODEL_PRICING[config.model as keyof typeof MODEL_PRICING];
   const cost = (inputTokens / 1000000) * pricing.input + (outputTokens / 1000000) * pricing.output;
 
   const text = (response.content || '').trim();
@@ -209,10 +212,11 @@ export async function generateComponentProps(params: {
   console.log(`[AI Helper] Generating props for ${componentType}: ${request}`);
 
   // Create LLM provider
+  const config = getAgentModel('orchestrator');
   const llm = createLLMProvider({
-    provider: 'anthropic',
+    provider: config.provider,
     apiKey,
-    model: 'claude-haiku-4-5',
+    model: config.model,
   });
 
   // System prompt for props generation
@@ -248,7 +252,7 @@ NO markdown formatting, ONLY raw JSON object.`;
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   const outputTokens = estimateTokens(response.content || '');
-  const pricing = MODEL_PRICING['claude-haiku-4-5'];
+  const pricing = MODEL_PRICING[config.model as keyof typeof MODEL_PRICING];
   const cost = (inputTokens / 1000000) * pricing.input + (outputTokens / 1000000) * pricing.output;
 
   // Parse response
@@ -294,10 +298,11 @@ export async function generateComponentStructure(params: {
   console.log(`[AI Helper] Generating component structure: ${request}`);
 
   // Create LLM provider
+  const config = getAgentModel('orchestrator');
   const llm = createLLMProvider({
-    provider: 'anthropic',
+    provider: config.provider,
     apiKey,
-    model: 'claude-haiku-4-5',
+    model: config.model,
   });
 
   // System prompt for component structure generation
@@ -361,7 +366,7 @@ Example for "3 pricing cards":
   // Calculate costs
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   const outputTokens = estimateTokens(response.content || '');
-  const pricing = MODEL_PRICING['claude-haiku-4-5'];
+  const pricing = MODEL_PRICING[config.model as keyof typeof MODEL_PRICING];
   const cost = (inputTokens / 1000000) * pricing.input + (outputTokens / 1000000) * pricing.output;
 
   // Parse response
