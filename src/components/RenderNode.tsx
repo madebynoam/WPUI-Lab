@@ -1409,19 +1409,13 @@ export const RenderNode: React.FC<{
         });
       }
 
-      // Pass editor props directly to DataViews
+      // DataViews needs a wrapper to be selectable (doesn't accept ref/event handlers)
       const editorProps = getEditorProps({ minHeight: '400px', height: '100%' });
-      const finalProps = {
-        ...mergedProps,
-        ...editorProps,
-        style: {
-          ...editorProps.style,
-          ...mergedProps.style,
-        },
-      };
 
       return (
-        <Component key={`${node.id}-${dataSource}-${viewType}`} {...finalProps} />
+        <div {...editorProps}>
+          <Component key={`${node.id}-${dataSource}-${viewType}`} {...mergedProps} />
+        </div>
       );
     } catch (error) {
       console.error('DataViews rendering error:', error);
