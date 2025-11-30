@@ -38,13 +38,18 @@ interface RequestStep {
   params: Record<string, any>;
 }
 
+export interface ApiKeys {
+  anthropicApiKey?: string;
+  openaiApiKey?: string;
+}
+
 /**
  * Main orchestrator - routes to tools or agents
  */
 export async function handleHybridRequest(
   userMessage: string,
   context: ToolContext,
-  anthropicApiKey: string,
+  apiKeys: ApiKeys,
   onProgress?: (update: ProgressUpdate) => void,
   signal?: AbortSignal,
   conversationHistory?: AgentMessage[]
@@ -73,7 +78,7 @@ export async function handleHybridRequest(
     // STEP 2: Use LLM to decompose request into steps
     onProgress?.({ phase: 'routing', message: 'Planning steps...' });
 
-    const steps = await decomposeRequest(userMessage, anthropicApiKey, signal, conversationHistory);
+    const steps = await decomposeRequest(userMessage, apiKeys, signal, conversationHistory);
 
     if (steps.length === 0) {
       return {
@@ -96,7 +101,7 @@ export async function handleHybridRequest(
       const step = steps[i];
       onProgress?.({ phase: 'executing', message: `Step ${i + 1}/${steps.length}: ${step.operation}` });
 
-      const stepResult = await executeStep(step, context, anthropicApiKey, signal);
+      const stepResult = await executeStep(step, context, apiKeys, signal);
       totalCost += stepResult.cost;
       lastResult = stepResult;
 
@@ -202,11 +207,19 @@ function trySimpleDeterministicTools(
  */
 async function decomposeRequest(
   userMessage: string,
-  apiKey: string,
+  apiKeys: ApiKeys,
   signal?: AbortSignal,
   conversationHistory?: AgentMessage[]
 ): Promise<RequestStep[]> {
   const config = getAgentModel('orchestrator');
+
+  // Get the correct API key based on the provider
+  const apiKey = config.provider === 'anthropic' ? apiKeys.anthropicApiKey : apiKeys.openaiApiKey;
+
+  if (!apiKey) {
+    throw new Error(`Missing API key for provider: ${config.provider}`);
+  }
+
   const llm = createLLMProvider({
     provider: config.provider,
     apiKey,
@@ -312,10 +325,20 @@ Respond with ONLY the JSON array, no explanation.`;
 async function executeStep(
   step: RequestStep,
   context: ToolContext,
-  apiKey: string,
+  apiKeys: ApiKeys,
   signal?: AbortSignal
 ): Promise<any> {
   console.log(`[HybridOrchestrator] Executing step:`, step);
+
+  // Helper to get the correct API key for the agent
+  const getApiKeyForAgent = (agentType: keyof typeof import('../agentConfig').AGENT_MODELS): string => {
+    const config = getAgentModel(agentType);
+    const apiKey = config.provider === 'anthropic' ? apiKeys.anthropicApiKey : apiKeys.openaiApiKey;
+    if (!apiKey) {
+      throw new Error(`Missing API key for provider: ${config.provider} (agent: ${agentType})`);
+    }
+    return apiKey;
+  };
 
   switch (step.agent) {
     case 'page': {
@@ -328,24 +351,28 @@ async function executeStep(
     }
 
     case 'component': {
+      const apiKey = getApiKeyForAgent('component');
       const agent = new ComponentAgent(apiKey);
       const description = step.params.description || JSON.stringify(step.params);
       return await agent.handle(description, context, signal);
     }
 
     case 'content': {
+      const apiKey = getApiKeyForAgent('content');
       const agent = new ContentAgent(apiKey);
       const description = step.params.description || JSON.stringify(step.params);
       return await agent.handle(description, context, signal);
     }
 
     case 'data': {
+      const apiKey = getApiKeyForAgent('data');
       const agent = new DataAgent(apiKey);
       const description = step.params.description || JSON.stringify(step.params);
       return await agent.handle(description, context, signal);
     }
 
     case 'layout': {
+      const apiKey = getApiKeyForAgent('layout');
       const agent = new LayoutAgent(apiKey);
       const description = step.params.description || JSON.stringify(step.params);
       return await agent.handle(description, context, signal);

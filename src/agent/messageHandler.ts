@@ -107,7 +107,10 @@ export async function handleUserMessage(
       const result = await handleHybridRequest(
         userMessage,
         context,
-        claudeApiKey!,
+        {
+          anthropicApiKey: claudeApiKey,
+          openaiApiKey: openaiApiKey,
+        },
         onProgress,
         signal,
         conversationHistory
