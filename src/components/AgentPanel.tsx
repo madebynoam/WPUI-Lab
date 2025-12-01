@@ -322,7 +322,6 @@ export const AgentPanel: React.FC = () => {
     <div
       style={{
         width: `${PANEL_WIDTH}px`,
-        borderLeft: "1px solid rgba(0, 0, 0, 0.133)",
         backgroundColor: "#fff",
         display: "flex",
         flexDirection: "column",
@@ -330,7 +329,7 @@ export const AgentPanel: React.FC = () => {
         height: "100%",
       }}
     >
-      <div style={{ padding: "12px", borderBottom: "1px solid #e0e0e0" }}>
+      <div style={{ padding: "12px" }}>
         <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>
           AI Assistant
         </h3>

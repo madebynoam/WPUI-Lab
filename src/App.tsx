@@ -34,10 +34,10 @@ function AppContent() {
   const [showInserter, setShowInserter] = useState(false);
   const [showTreePanel, setShowTreePanel] = useState(true);
   const [showHeader, setShowHeader] = useState(true);
-  const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'agent' | 'none'>(() => {
+  const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'none'>(() => {
     // Load saved panel from localStorage, default to 'props'
     const saved = localStorage.getItem('wp-designer-right-panel');
-    return (saved as 'props' | 'code' | 'agent' | 'none') || 'props';
+    return (saved as 'props' | 'code' | 'none') || 'props';
   });
   const [rightPanelWidth, setRightPanelWidth] = useState(() => {
     // Load saved width from localStorage, default to 280
@@ -45,6 +45,11 @@ function AppContent() {
     return saved ? parseInt(saved, 10) : 280;
   });
   const [isResizing, setIsResizing] = useState(false);
+  const [showAgentPanel, setShowAgentPanel] = useState(() => {
+    // Load saved state from localStorage, default to false
+    const saved = localStorage.getItem('wp-designer-show-agent-panel');
+    return saved === 'true';
+  });
 
   // Save right panel selection to localStorage whenever it changes
   useEffect(() => {
@@ -55,6 +60,11 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('wp-designer-code-panel-width', rightPanelWidth.toString());
   }, [rightPanelWidth]);
+
+  // Save agent panel visibility to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('wp-designer-show-agent-panel', showAgentPanel.toString());
+  }, [showAgentPanel]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -140,47 +150,75 @@ function AppContent() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      {showHeader && (
-        <div style={{ height: '60px' }}>
-          <TopBar
-            showInserter={showInserter}
-            onToggleInserter={() => {
-              if (showInserter) {
-                setShowInserter(false);
-              } else {
-                setShowInserter(true);
-                setShowTreePanel(false);
-              }
-            }}
-            showTreePanel={showTreePanel}
-            onToggleTreePanel={() => {
-              if (showTreePanel) {
-                setShowTreePanel(false);
-              } else {
-                setShowTreePanel(true);
-                setShowInserter(false);
-              }
-            }}
-            rightPanel={rightPanel}
-            onToggleRightPanel={setRightPanel}
-            onNavigateToProjects={handleNavigateToProjects}
-          />
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      {/* Outer wrapper - adds padding when agent is active */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          overflow: 'hidden',
+          padding: showAgentPanel && shouldShowPanels ? '10px' : '0',
+          transition: 'padding 0.3s ease-in-out',
+        }}
+      >
+        {/* Inner editor wrapper - gets border and rounded corners when agent is active */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            overflow: 'hidden',
+            border: showAgentPanel && shouldShowPanels ? '1px solid #E9E9E9' : 'none',
+            borderRadius: showAgentPanel && shouldShowPanels ? '8px' : '0',
+            transition: 'border 0.3s ease-in-out, border-radius 0.3s ease-in-out',
+          }}
+        >
+          {showHeader && (
+            <div style={{ height: '60px' }}>
+              <TopBar
+                showInserter={showInserter}
+                onToggleInserter={() => {
+                  if (showInserter) {
+                    setShowInserter(false);
+                  } else {
+                    setShowInserter(true);
+                    setShowTreePanel(false);
+                  }
+                }}
+                showTreePanel={showTreePanel}
+                onToggleTreePanel={() => {
+                  if (showTreePanel) {
+                    setShowTreePanel(false);
+                  } else {
+                    setShowTreePanel(true);
+                    setShowInserter(false);
+                  }
+                }}
+                rightPanel={rightPanel}
+                onToggleRightPanel={setRightPanel}
+                showAgentPanel={showAgentPanel}
+                onToggleAgentPanel={() => setShowAgentPanel(prev => !prev)}
+                onNavigateToProjects={handleNavigateToProjects}
+              />
+            </div>
+          )}
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
+            <Canvas showBreadcrumb={showHeader && !isPlayMode} />
+            {shouldShowPanels && rightPanel === 'props' && (
+              <PropertiesPanel />
+            )}
+            {shouldShowPanels && rightPanel === 'code' && (
+              <CodePanel width={rightPanelWidth} onResizeStart={() => setIsResizing(true)} />
+            )}
+          </div>
         </div>
-      )}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
-        <Canvas showBreadcrumb={showHeader && !isPlayMode} />
-        {shouldShowPanels && rightPanel === 'props' && (
-          <PropertiesPanel />
-        )}
-        {shouldShowPanels && rightPanel === 'code' && (
-          <CodePanel width={rightPanelWidth} onResizeStart={() => setIsResizing(true)} />
-        )}
-        {shouldShowPanels && rightPanel === 'agent' && (
-          <AgentPanel />
-        )}
       </div>
+      {/* Agent panel - completely outside editor wrapper */}
+      {shouldShowPanels && showAgentPanel && (
+        <AgentPanel />
+      )}
     </div>
   );
 }
