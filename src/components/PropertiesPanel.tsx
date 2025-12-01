@@ -681,19 +681,6 @@ export const PropertiesPanel: React.FC = () => {
                         }}
                       >
                         <div style={{ padding: "16px", minWidth: "280px" }}>
-                          <h3
-                            style={{
-                              margin: "0 0 16px 0",
-                              fontSize: "14px",
-                              fontWeight: 600,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.5px",
-                              color: "#666",
-                            }}
-                          >
-                            {type.label.toUpperCase()}
-                          </h3>
-
                           {existingInteraction.action === "navigate" && (
                             <SelectControl
                               label="Navigate to page"
