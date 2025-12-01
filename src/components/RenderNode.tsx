@@ -934,8 +934,9 @@ export const RenderNode: React.FC<{
   // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') {
     // Button uses 'text' prop, others use 'children'
+    // For Button: if no text but has icon, allow icon-only (empty text)
     const content = node.type === 'Button'
-      ? (props.text || definition.defaultProps?.children || 'Button')
+      ? (props.text || (props.icon ? '' : (definition.defaultProps?.children || 'Button')))
       : (props.children || definition.defaultProps?.children);
 
     // For Button, handle special props
