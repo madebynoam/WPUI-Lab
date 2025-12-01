@@ -469,16 +469,11 @@ export function componentTreeReducer(
     case 'UPDATE_PROJECT_LAYOUT': {
       const { layout } = action.payload;
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);
-      // Update root VStack props on all pages
-      const newPages = currentProject.pages.map(page => {
-        const newTree = page.tree.map(node =>
-          node.id === ROOT_VSTACK_ID
-            ? { ...node, props: { ...node.props, ...layout } }
-            : node
-        );
-        return { ...page, tree: newTree };
-      });
-      const updatedProject = { ...currentProject, pages: newPages, lastModified: Date.now() };
+      const updatedProject = {
+        ...currentProject,
+        layout: { ...currentProject.layout, ...layout },
+        lastModified: Date.now(),
+      };
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
       return updateHistory(state, newProjects, state.currentProjectId);
     }

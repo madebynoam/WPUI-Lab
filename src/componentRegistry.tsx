@@ -429,6 +429,44 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: false,
         description: 'Allow items to wrap'
       },
+      {
+        name: 'maxWidth',
+        type: 'select',
+        options: [
+          { label: 'sm (640px)', value: 'sm' },
+          { label: 'md (960px)', value: 'md' },
+          { label: 'lg (1280px)', value: 'lg' },
+          { label: 'xl (1440px)', value: 'xl' },
+          { label: 'full (100%)', value: 'full' },
+          { label: 'custom', value: 'custom' },
+        ],
+        defaultValue: 'full',
+        description: 'Maximum width constraint'
+      },
+      {
+        name: 'maxWidthCustom',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom max-width value (e.g., "800px", "50rem"). Only used when maxWidth is "custom"'
+      },
+      {
+        name: 'alignSelf',
+        type: 'select',
+        options: [
+          { label: 'start (left)', value: 'start' },
+          { label: 'center', value: 'center' },
+          { label: 'end (right)', value: 'end' },
+          { label: 'stretch (full width)', value: 'stretch' },
+        ],
+        defaultValue: 'stretch',
+        description: 'Horizontal alignment'
+      },
+      {
+        name: 'padding',
+        type: 'string',
+        defaultValue: '',
+        description: 'Padding (e.g., "16px", "1rem 2rem")'
+      },
     ],
   },
   VStack: {
@@ -476,6 +514,44 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'boolean',
         defaultValue: false,
         description: 'Allow items to wrap'
+      },
+      {
+        name: 'maxWidth',
+        type: 'select',
+        options: [
+          { label: 'sm (640px)', value: 'sm' },
+          { label: 'md (960px)', value: 'md' },
+          { label: 'lg (1280px)', value: 'lg' },
+          { label: 'xl (1440px)', value: 'xl' },
+          { label: 'full (100%)', value: 'full' },
+          { label: 'custom', value: 'custom' },
+        ],
+        defaultValue: 'full',
+        description: 'Maximum width constraint'
+      },
+      {
+        name: 'maxWidthCustom',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom max-width value (e.g., "800px", "50rem"). Only used when maxWidth is "custom"'
+      },
+      {
+        name: 'alignSelf',
+        type: 'select',
+        options: [
+          { label: 'start (left)', value: 'start' },
+          { label: 'center', value: 'center' },
+          { label: 'end (right)', value: 'end' },
+          { label: 'stretch (full width)', value: 'stretch' },
+        ],
+        defaultValue: 'stretch',
+        description: 'Horizontal alignment'
+      },
+      {
+        name: 'padding',
+        type: 'string',
+        defaultValue: '',
+        description: 'Padding (e.g., "16px", "1rem 2rem")'
       },
     ],
   },

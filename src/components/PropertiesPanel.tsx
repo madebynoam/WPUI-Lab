@@ -184,11 +184,15 @@ export const PropertiesPanel: React.FC = () => {
       backgroundColor: "#ffffff",
     };
 
-    // Get layout settings from first page's root VStack
-    const rootVStack = getNodeById(ROOT_VSTACK_ID);
-    const maxWidth = rootVStack?.props.maxWidth ?? 1440;
-    const padding = rootVStack?.props.padding ?? 20;
-    const spacing = rootVStack?.props.spacing ?? 2;
+    // Get layout settings from project (applies to all pages)
+    const projectLayout = currentProject?.layout ?? {
+      maxWidth: 0, // 0 means no constraint (100%)
+      padding: 0,
+      spacing: 4,
+    };
+    const maxWidth = projectLayout.maxWidth ?? 0;
+    const padding = projectLayout.padding ?? 0;
+    const spacing = projectLayout.spacing ?? 4;
 
     return (
       <div
@@ -462,10 +466,11 @@ export const PropertiesPanel: React.FC = () => {
                       <SelectControl
                         label={propDef.name}
                         value={currentValue}
-                        options={propDef.options.map((opt) => ({
-                          label: opt,
-                          value: opt,
-                        }))}
+                        options={propDef.options.map((opt) =>
+                          typeof opt === 'string'
+                            ? { label: opt, value: opt }
+                            : opt
+                        )}
                         onChange={(value) =>
                           handlePropChange(propDef.name, value)
                         }

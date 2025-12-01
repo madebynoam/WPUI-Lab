@@ -1537,6 +1537,46 @@ export const RenderNode: React.FC<{
     },
   };
 
+  // Apply layout constraints for VStack and HStack
+  const maxWidthPresets: Record<string, string> = {
+    sm: '640px',
+    md: '960px',
+    lg: '1280px',
+    xl: '1440px',
+    full: '100%',
+  };
+
+  if (node.type === 'VStack' || node.type === 'HStack') {
+    const maxWidth = props.maxWidth || 'full';
+    const maxWidthCustom = props.maxWidthCustom || '';
+    const alignSelf = props.alignSelf || 'stretch';
+    const padding = props.padding || '';
+
+    // Apply maxWidth - always set width to 100% to ensure stretching
+    if (maxWidth === 'custom' && maxWidthCustom) {
+      mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthCustom };
+    } else if (maxWidth !== 'full') {
+      mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[maxWidth] || '100%' };
+    } else {
+      // Even for 'full', ensure width is 100%
+      mergedProps.style = { ...mergedProps.style, width: '100%' };
+    }
+
+    // Apply alignSelf (for horizontal positioning when maxWidth is set)
+    if (alignSelf === 'center') {
+      mergedProps.style = { ...mergedProps.style, marginLeft: 'auto', marginRight: 'auto' };
+    } else if (alignSelf === 'start') {
+      mergedProps.style = { ...mergedProps.style, marginRight: 'auto' };
+    } else if (alignSelf === 'end') {
+      mergedProps.style = { ...mergedProps.style, marginLeft: 'auto' };
+    }
+
+    // Apply padding
+    if (padding) {
+      mergedProps.style = { ...mergedProps.style, padding };
+    }
+  }
+
   // Check if this is a Grid with grid lines enabled
   const showGridLines = node.type === 'Grid' && gridLinesVisible.has(node.id);
 

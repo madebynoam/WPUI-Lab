@@ -1,8 +1,7 @@
 'use client';
 
-import { StrictMode, useState, useEffect } from 'react';
-import { __experimentalStyleProvider as StyleProvider } from '@wordpress/components';
-import { ComponentTreeProvider, useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
+import { useState, useEffect } from 'react';
+import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { PlayModeProvider } from '../PlayModeContext';
 import { TopBar } from './TopBar';
 import { TreePanel } from './TreePanel';
@@ -11,10 +10,6 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { AgentPanel } from './AgentPanel';
 import { useRouter } from 'next/navigation';
-import '@wordpress/components/build-style/style.css';
-import '@wordpress/block-editor/build-style/style.css';
-import '@wordpress/dataviews/build-style/style.css';
-import '../index.css';
 
 interface EditorProps {
   projectId: string;
@@ -254,14 +249,8 @@ function EditorContent({ projectId, pageId }: EditorProps) {
 
 export default function Editor({ projectId, pageId }: EditorProps) {
   return (
-    <StrictMode>
-      <StyleProvider document={typeof window !== 'undefined' ? document : undefined}>
-        <ComponentTreeProvider>
-          <PlayModeProvider>
-            <EditorContent projectId={projectId} pageId={pageId} />
-          </PlayModeProvider>
-        </ComponentTreeProvider>
-      </StyleProvider>
-    </StrictMode>
+    <PlayModeProvider>
+      <EditorContent projectId={projectId} pageId={pageId} />
+    </PlayModeProvider>
   );
 }

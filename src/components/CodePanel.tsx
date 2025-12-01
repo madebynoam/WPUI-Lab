@@ -24,8 +24,9 @@ export const CodePanel: React.FC<CodePanelProps> = ({ width = 280, onResizeStart
 
     // Get the selected node
     const node = getNodeById(selectedNodeIds[0]);
+    // If node doesn't exist (e.g., deleted), fall back to page code
     if (!node) {
-      return '// No component selected';
+      return generatePageCode(tree);
     }
 
     // Generate code with interactions if available

@@ -1,14 +1,8 @@
 'use client';
 
-import { StrictMode } from 'react';
-import { __experimentalStyleProvider as StyleProvider } from '@wordpress/components';
-import { ComponentTreeProvider, useComponentTree } from '../ComponentTreeContext';
+import { useComponentTree } from '../ComponentTreeContext';
 import { ProjectsScreen } from './ProjectsScreen';
 import { useRouter } from 'next/navigation';
-import '@wordpress/components/build-style/style.css';
-import '@wordpress/block-editor/build-style/style.css';
-import '@wordpress/dataviews/build-style/style.css';
-import '../index.css';
 
 function ProjectsPageContent() {
   const router = useRouter();
@@ -54,13 +48,5 @@ function ProjectsPageContent() {
 }
 
 export default function ProjectsPage() {
-  return (
-    <StrictMode>
-      <StyleProvider document={typeof window !== 'undefined' ? document : undefined}>
-        <ComponentTreeProvider>
-          <ProjectsPageContent />
-        </ComponentTreeProvider>
-      </StyleProvider>
-    </StrictMode>
-  );
+  return <ProjectsPageContent />;
 }

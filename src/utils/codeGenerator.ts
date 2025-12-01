@@ -56,6 +56,16 @@ function generateNodeCode(
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
 
+  // Extract layout constraint props for VStack/HStack
+  const maxWidth = props.maxWidth;
+  const maxWidthCustom = props.maxWidthCustom;
+  const alignSelf = props.alignSelf;
+  const padding = props.padding;
+  delete props.maxWidth;
+  delete props.maxWidthCustom;
+  delete props.alignSelf;
+  delete props.padding;
+
   // Track if Button has stretchFullWidth for comment generation
   const hasStretchFullWidth = componentName === 'Button' && props.stretchFullWidth;
 
@@ -70,6 +80,44 @@ function generateNodeCode(
   // Handle gridRowSpan - convert to CSS Grid style
   if (gridRowSpan !== undefined) {
     styleObj.gridRow = `span ${gridRowSpan}`;
+  }
+
+  // Handle layout constraints for VStack/HStack
+  if (componentName === 'VStack' || componentName === 'HStack') {
+    const maxWidthPresets: Record<string, string> = {
+      sm: '640px',
+      md: '960px',
+      lg: '1280px',
+      xl: '1440px',
+      full: '100%',
+    };
+
+    // Apply maxWidth - always set width to 100% to ensure stretching
+    if (maxWidth === 'custom' && maxWidthCustom) {
+      styleObj.width = '100%';
+      styleObj.maxWidth = maxWidthCustom;
+    } else if (maxWidth && maxWidth !== 'full') {
+      styleObj.width = '100%';
+      styleObj.maxWidth = maxWidthPresets[maxWidth] || '100%';
+    } else {
+      // Even for 'full', ensure width is 100%
+      styleObj.width = '100%';
+    }
+
+    // Apply alignSelf (for horizontal positioning when maxWidth is set)
+    if (alignSelf === 'center') {
+      styleObj.marginLeft = 'auto';
+      styleObj.marginRight = 'auto';
+    } else if (alignSelf === 'start') {
+      styleObj.marginRight = 'auto';
+    } else if (alignSelf === 'end') {
+      styleObj.marginLeft = 'auto';
+    }
+
+    // Apply padding
+    if (padding) {
+      styleObj.padding = padding;
+    }
   }
 
   // Handle Button stretchFullWidth - convert to style prop (not native to WordPress Button)

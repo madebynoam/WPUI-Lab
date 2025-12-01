@@ -46,6 +46,11 @@ export interface Project {
     primaryColor?: string;
     backgroundColor?: string;
   };
+  layout?: {
+    maxWidth?: number;
+    padding?: number;
+    spacing?: number;
+  };
 }
 
 export interface ComponentDefinition {

@@ -45,17 +45,25 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
-  const pageMaxWidth = rootVStack?.props.maxWidth ?? 1440;
   const pageBackgroundColor =
     rootVStack?.props.backgroundColor ?? "rgb(249, 250, 251)";
-  const pagePadding = rootVStack?.props.padding ?? 20;
 
-  // Get current project theme
+  // Get current project and layout settings (project-wide)
   const currentProject = projects.find((p) => p.id === currentProjectId);
   const projectTheme = currentProject?.theme ?? {
     primaryColor: "#3858e9",
     backgroundColor: "#ffffff",
   };
+  const projectLayout = currentProject?.layout ?? {
+    maxWidth: 0, // 0 means no constraint (100%)
+    padding: 0,
+    spacing: 4,
+  };
+
+  // Use project-level layout settings (applies to all pages)
+  const pageMaxWidth = projectLayout.maxWidth ?? 0;
+  const pagePadding = projectLayout.padding ?? 0;
+  const pageSpacing = projectLayout.spacing ?? 4;
 
   // Find if a node is inside an interactive component
   const findInteractiveAncestor = useCallback(

@@ -119,6 +119,11 @@ const createInitialProject = (id: string, name: string): Project => ({
     primaryColor: '#3858e9',
     backgroundColor: '#ffffff',
   },
+  layout: {
+    maxWidth: 0, // 0 means no constraint (100% width)
+    padding: 0,
+    spacing: 4,
+  },
 });
 
 // Initialize state from localStorage
