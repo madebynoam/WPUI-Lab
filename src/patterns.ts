@@ -1187,7 +1187,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'HStack',
-                  props: { spacing: 2, justify: 'flex-start', alignment: 'center' },
+                  props: { spacing: 2, justify: 'space-between', alignment: 'center' },
                   children: [
                     {
                       type: 'HStack',
@@ -1240,7 +1240,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'HStack',
-                  props: { spacing: 2, justify: 'flex-start', alignment: 'center' },
+                  props: { spacing: 2, justify: 'space-between', alignment: 'center' },
                   children: [
                     {
                       type: 'HStack',
@@ -1293,7 +1293,7 @@ export const patterns: Pattern[] = [
               children: [
                 {
                   type: 'HStack',
-                  props: { spacing: 2, justify: 'flex-start', alignment: 'center' },
+                  props: { spacing: 2, justify: 'space-between', alignment: 'center' },
                   children: [
                     {
                       type: 'HStack',
@@ -1355,7 +1355,7 @@ export const patterns: Pattern[] = [
           children: [
             {
               type: 'HStack',
-              props: { spacing: 2, justify: 'flex-start', alignment: 'center' },
+              props: { spacing: 2, justify: 'space-between', alignment: 'center' },
               children: [
                 {
                   type: 'HStack',
