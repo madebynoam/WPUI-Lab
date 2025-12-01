@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
-import { ComponentNode } from '../types';
+import { ComponentNode, PatternNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
 import { patterns, assignIds } from '../patterns';
+import { generateId } from '../utils/treeHelpers';
+import { normalizeComponentNode, normalizeComponentNodes } from '../utils/normalizeComponent';
 import './TreePanel.css';
 import {
 	Button,
@@ -128,6 +130,21 @@ export const INTERACTIVE_COMPONENT_TYPES = [
 	'Tooltip',
 	'Notice',
 ];
+
+// Helper: Convert PatternNode to ComponentNode with IDs
+function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNode[] {
+	const nodes = patternNodes.map(patternNode => ({
+		id: generateId(),
+		type: patternNode.type,
+		name: patternNode.name || '',
+		props: { ...patternNode.props },
+		children: patternNode.children ? patternNodesToComponentNodes(patternNode.children) : [],
+		interactions: [],
+	}));
+
+	// Normalize all nodes to ensure consistent data structure
+	return normalizeComponentNodes(nodes);
+}
 
 interface TreePanelProps {
 	showInserter: boolean;
@@ -334,30 +351,67 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 	const handleAddComponent = (componentType: string) => {
 		const targetId = selectedNodeIds[0] || ROOT_VSTACK_ID;
 		const targetNode = getNodeById(targetId);
+
+		// Special case: root VStack always accepts children
+		if (targetId === ROOT_VSTACK_ID) {
+			addComponent(componentType, ROOT_VSTACK_ID);
+			setSearchTerm('');
+			return;
+		}
+
 		const canAcceptChildren =
 			targetNode && componentRegistry[targetNode.type]?.acceptsChildren;
+		const isEmpty = !targetNode?.children || targetNode.children.length === 0;
 
-		let parentId = targetId;
-
-		// If target doesn't accept children, find the nearest parent container
-		if (!canAcceptChildren && targetId !== ROOT_VSTACK_ID) {
-			let currentNode = targetNode;
-			while (currentNode) {
-				const parent = getParentById(currentNode.id);
-				if (!parent) break;
-				if (componentRegistry[parent.type]?.acceptsChildren) {
-					parentId = parent.id;
-					break;
-				}
-				currentNode = parent;
-			}
-		}
-
-		if (canAcceptChildren) {
+		// If it's an empty container, insert as child
+		if (canAcceptChildren && isEmpty) {
 			addComponent(componentType, targetId);
-		} else {
-			addComponent(componentType, parentId);
+			setSearchTerm('');
+			return;
 		}
+
+		// Otherwise, insert as sibling (after the selected node)
+		const parent = getParentById(targetId);
+		if (!parent) {
+			// Fallback: add to root if no parent found
+			addComponent(componentType, ROOT_VSTACK_ID);
+			setSearchTerm('');
+			return;
+		}
+
+		// Find the index of the selected node in parent's children
+		const siblingIndex = parent.children?.findIndex(child => child.id === targetId) ?? -1;
+		if (siblingIndex === -1) {
+			// Fallback: add to parent if index not found
+			addComponent(componentType, parent.id);
+			setSearchTerm('');
+			return;
+		}
+
+		// Create the new component node
+		const definition = componentRegistry[componentType];
+		if (!definition) {
+			setSearchTerm('');
+			return;
+		}
+
+		const children = definition.defaultChildren
+			? patternNodesToComponentNodes(definition.defaultChildren)
+			: [];
+
+		const newNode: ComponentNode = {
+			id: generateId(),
+			type: componentType,
+			name: '',
+			props: { ...definition.defaultProps },
+			children,
+			interactions: [],
+		};
+
+		const normalizedNode = normalizeComponentNode(newNode);
+
+		// Insert component as sibling after selected node
+		insertComponent(normalizedNode, parent.id, siblingIndex + 1);
 		setSearchTerm('');
 	};
 
@@ -369,28 +423,55 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 		let patternWithIds = assignIds(pattern.tree);
 		const targetId = selectedNodeIds[0] || ROOT_VSTACK_ID;
 		const targetNode = getNodeById(targetId);
+
+		// Special case: root VStack always accepts children
+		if (targetId === ROOT_VSTACK_ID) {
+			insertComponent(patternWithIds, undefined);
+			setSearchTerm('');
+			return;
+		}
+
 		const canAcceptChildren =
 			targetNode && componentRegistry[targetNode.type]?.acceptsChildren;
+		const isEmpty = !targetNode?.children || targetNode.children.length === 0;
 
-		let parentId = targetId;
-
-		// If target doesn't accept children, find the nearest parent container
-		if (!canAcceptChildren && targetId !== ROOT_VSTACK_ID) {
-			let currentNode = targetNode;
-			while (currentNode) {
-				const parent = getParentById(currentNode.id);
-				if (!parent) break;
-				if (componentRegistry[parent.type]?.acceptsChildren) {
-					parentId = parent.id;
-					break;
-				}
-				currentNode = parent;
+		// If it's an empty container, insert as child
+		if (canAcceptChildren && isEmpty) {
+			// If target is a Grid, set default gridColumnSpan for the pattern root
+			if (targetNode.type === 'Grid') {
+				patternWithIds = {
+					...patternWithIds,
+					props: {
+						...patternWithIds.props,
+						gridColumnSpan: 12,
+					},
+				};
 			}
+			insertComponent(patternWithIds, targetId);
+			setSearchTerm('');
+			return;
+		}
+
+		// Otherwise, insert as sibling (after the selected node)
+		const parent = getParentById(targetId);
+		if (!parent) {
+			// Fallback: add to root if no parent found
+			insertComponent(patternWithIds, undefined);
+			setSearchTerm('');
+			return;
+		}
+
+		// Find the index of the selected node in parent's children
+		const siblingIndex = parent.children?.findIndex(child => child.id === targetId) ?? -1;
+		if (siblingIndex === -1) {
+			// Fallback: add to parent if index not found
+			insertComponent(patternWithIds, parent.id);
+			setSearchTerm('');
+			return;
 		}
 
 		// If parent is a Grid, set default gridColumnSpan for the pattern root
-		const parentNode = getNodeById(parentId);
-		if (parentNode?.type === 'Grid') {
+		if (parent.type === 'Grid') {
 			patternWithIds = {
 				...patternWithIds,
 				props: {
@@ -400,11 +481,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 			};
 		}
 
-		insertComponent(
-			patternWithIds,
-			parentId === ROOT_VSTACK_ID ? undefined : parentId
-		);
-
+		// Insert pattern as sibling after selected node
+		insertComponent(patternWithIds, parent.id, siblingIndex + 1);
 		setSearchTerm('');
 	};
 
