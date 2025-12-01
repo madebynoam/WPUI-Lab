@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo, useRef } from 'react';
 import { Popover, SearchControl, Icon, Button } from '@wordpress/components';
 import * as WordPressIcons from '@wordpress/icons';

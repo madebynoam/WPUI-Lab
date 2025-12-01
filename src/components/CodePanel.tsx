@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useMemo, useState } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { generatePageCode, generateComponentCode, generateComponentWithInteractions } from '../utils/codeGenerator';

@@ -66,8 +66,8 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
   };
 
   return (
-    <>
-      <VStack spacing={12} style={{ padding: '40px', maxWidth: '1440px', margin: '0 auto', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh' }}>
+      <VStack spacing={12} style={{ padding: '40px', maxWidth: '1440px', margin: '0 auto' }}>
         <VStack spacing={2} style={{ width: '100%', alignItems: 'center' }}>
           <VStack spacing={2} style={{ width: '100%', maxWidth: '800px' }}>
             {/* Header */}
@@ -135,10 +135,10 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                       }}
                       onClick={() => onOpenProject(project.id)}
                     >
-                      <HStack spacing={2} style={{ alignItems: 'flex-start', flex: 0 }}>
+                      <HStack spacing={2} style={{ alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
                         <Icon icon={pages} size={24} />
-                        <VStack spacing={1}>
-                          <Heading level={4}>{project.name}</Heading>
+                        <VStack spacing={1} style={{ flex: 1, minWidth: 0 }}>
+                          <Heading level={4} style={{ margin: 0 }}>{project.name}</Heading>
                           <Text variant="muted">
                             {project.description || formatDate(project.createdAt || project.lastModified)}
                           </Text>
@@ -213,6 +213,6 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
           }}
         />
       )}
-    </>
+    </div>
   );
 };

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
 import { usePlayModeState } from '../PlayModeContext';

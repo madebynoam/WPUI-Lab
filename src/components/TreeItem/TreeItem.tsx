@@ -1,3 +1,5 @@
+'use client';
+
 import React, { forwardRef, HTMLAttributes, CSSProperties, useState, useEffect, useRef } from 'react';
 import { DropdownMenu, MenuGroup, MenuItem, Icon } from '@wordpress/components';
 import { moreVertical, page } from '@wordpress/icons';

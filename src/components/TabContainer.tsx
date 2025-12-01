@@ -1,8 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { privateApis as blockEditorPrivateApis } from '@wordpress/block-editor';
-import { unlock } from '../utils/lock-unlock';
+'use client';
 
-const { TabbedSidebar } = unlock(blockEditorPrivateApis);
+import React, { useEffect, useRef, useState } from 'react';
 
 export interface Tab {
   name: string;
@@ -29,8 +27,22 @@ export const TabContainer: React.FC<TabContainerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Lazy load TabbedSidebar only on client
+  const [TabbedSidebar, setTabbedSidebar] = useState<any>(null);
+
   useEffect(() => {
-    if (!onClose && containerRef.current) {
+    if (typeof window !== 'undefined' && !TabbedSidebar) {
+      (async () => {
+        const blockEditor = await import('@wordpress/block-editor');
+        const lockUnlock = await import('../utils/lock-unlock');
+        const component = lockUnlock.unlock(blockEditor.privateApis).TabbedSidebar;
+        setTabbedSidebar(() => component);
+      })();
+    }
+  }, [TabbedSidebar]);
+
+  useEffect(() => {
+    if (!onClose && containerRef.current && TabbedSidebar) {
       // Use a MutationObserver to continuously watch for and hide close buttons
       const hideCloseButtons = () => {
         const buttons = containerRef.current?.querySelectorAll('button');
@@ -56,7 +68,12 @@ export const TabContainer: React.FC<TabContainerProps> = ({
 
       return () => observer.disconnect();
     }
-  }, [onClose, selectedTab]);
+  }, [onClose, selectedTab, TabbedSidebar]);
+
+  // Return null during SSR or while loading
+  if (!TabbedSidebar) {
+    return null;
+  }
 
   // If no onClose is provided, wrap in a div and hide the close button
   if (!onClose) {

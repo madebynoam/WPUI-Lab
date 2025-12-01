@@ -1,35 +1,13 @@
 'use client';
 
-import { StrictMode } from 'react';
-import { __experimentalStyleProvider as StyleProvider } from '@wordpress/components';
-import '@wordpress/components/build-style/style.css';
-import '@wordpress/block-editor/build-style/style.css';
-import '@wordpress/dataviews/build-style/style.css';
-import '../src/index.css';
-import App from '../src/App';
+import dynamic from 'next/dynamic';
 
-// Suppress WordPress package warnings about Node.js modules in browser
-if (typeof window !== 'undefined') {
-  const originalWarn = console.warn;
-  console.warn = (...args: any[]) => {
-    const message = args[0]?.toString() || '';
-    // Filter out externalized module warnings and deprecated size warnings
-    if (
-      message.includes('externalized for browser compatibility') ||
-      message.includes('36px default size for wp.components.NumberControl is deprecated')
-    ) {
-      return;
-    }
-    originalWarn.apply(console, args);
-  };
-}
+// Dynamically import the App with SSR disabled to avoid WordPress component SSR issues
+const DynamicApp = dynamic(() => import('../src/ClientApp'), {
+  ssr: false,
+  loading: () => <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Loading...</div>
+});
 
 export default function EditorPage() {
-  return (
-    <StrictMode>
-      <StyleProvider document={typeof window !== 'undefined' ? document : undefined}>
-        <App />
-      </StyleProvider>
-    </StrictMode>
-  );
+  return <DynamicApp />;
 }

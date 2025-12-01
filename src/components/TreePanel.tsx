@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';

@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { ComponentTreeProvider, useComponentTree, ROOT_VSTACK_ID } from './ComponentTreeContext';
 import { PlayModeProvider } from './PlayModeContext';
