@@ -128,28 +128,31 @@ const createInitialProject = (id: string, name: string): Project => ({
 
 // Initialize state from localStorage
 function initializeState(): ComponentTreeState {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  console.log('[ComponentTreeContext] Loading from localStorage:', saved ? `Found ${saved.length} chars` : 'No data');
-
   let projects: Project[] = [createInitialProject('project-1', 'My First Project')];
   let currentProjectId = 'project-1';
 
-  if (saved) {
-    try {
-      const data = JSON.parse(saved);
-      console.log('[ComponentTreeContext] Parsed data:', {
-        hasProjects: !!data.projects,
-        projectsLength: data.projects?.length,
-        projectNames: data.projects?.map((p: Project) => p.name),
-      });
+  // Only access localStorage on client
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    console.log('[ComponentTreeContext] Loading from localStorage:', saved ? `Found ${saved.length} chars` : 'No data');
 
-      if (Array.isArray(data.projects) && data.projects.length > 0) {
-        console.log('[ComponentTreeContext] Loading projects from localStorage:', data.projects.length);
-        projects = data.projects;
-        currentProjectId = data.currentProjectId || projects[0].id;
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        console.log('[ComponentTreeContext] Parsed data:', {
+          hasProjects: !!data.projects,
+          projectsLength: data.projects?.length,
+          projectNames: data.projects?.map((p: Project) => p.name),
+        });
+
+        if (Array.isArray(data.projects) && data.projects.length > 0) {
+          console.log('[ComponentTreeContext] Loading projects from localStorage:', data.projects.length);
+          projects = data.projects;
+          currentProjectId = data.currentProjectId || projects[0].id;
+        }
+      } catch (e) {
+        console.error('Failed to parse saved projects:', e);
       }
-    } catch (e) {
-      console.error('Failed to parse saved projects:', e);
     }
   }
 
@@ -211,14 +214,17 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   // Save to localStorage whenever state changes
   useEffect(() => {
-    const dataToSave = { projects: state.projects, currentProjectId: state.currentProjectId };
-    console.log('[ComponentTreeContext] Saving to localStorage:', {
-      projectCount: state.projects.length,
-      projectNames: state.projects.map(p => p.name),
-      currentProjectId: state.currentProjectId,
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-    console.log('[ComponentTreeContext] Saved successfully');
+    // Only access localStorage on client
+    if (typeof window !== 'undefined') {
+      const dataToSave = { projects: state.projects, currentProjectId: state.currentProjectId };
+      console.log('[ComponentTreeContext] Saving to localStorage:', {
+        projectCount: state.projects.length,
+        projectNames: state.projects.map(p => p.name),
+        currentProjectId: state.currentProjectId,
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      console.log('[ComponentTreeContext] Saved successfully');
+    }
   }, [state.projects, state.currentProjectId]);
 
   // ===== Tree Operations =====
@@ -321,8 +327,11 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   const resetTree = () => {
     const defaultProject = createInitialProject('project-1', 'My First Project');
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem('wp-designer-agent-messages');
+    // Only access localStorage on client
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('wp-designer-agent-messages');
+    }
     dispatch({ type: 'RESET_TREE', payload: { defaultProject } });
   };
 
