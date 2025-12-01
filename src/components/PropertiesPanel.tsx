@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo, useState } from "react";
 import { useComponentTree, ROOT_VSTACK_ID } from "../ComponentTreeContext";
 import { componentRegistry } from "../componentRegistry";
@@ -12,11 +14,24 @@ import {
   PanelBody,
   Popover,
   Icon,
+  DropdownMenu,
+  MenuGroup,
+  MenuItem,
+  __experimentalHStack as HStack,
+  __experimentalVStack as VStack,
+  __experimentalItemGroup as ItemGroup,
+  __experimentalItem as Item,
 } from "@wordpress/components";
 import {
   plus as plusIcon,
   trash as trashIcon,
   blockDefault,
+  moreVertical,
+  chevronRight,
+  button,
+  seen,
+  dragHandle,
+  justifyTop,
 } from "@wordpress/icons";
 import { IconPicker } from "./IconPicker";
 import { ColorVariantPicker } from "./ColorVariantPicker";
@@ -96,6 +111,10 @@ export const PropertiesPanel: React.FC = () => {
     gridLayout: true,
     theme: true,
   });
+  const [openInteractionId, setOpenInteractionId] = useState<string | null>(
+    null
+  );
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const {
     selectedNodeIds,
     getNodeById,
@@ -153,7 +172,8 @@ export const PropertiesPanel: React.FC = () => {
   }, [selectedNodes, isMultiSelect, firstNode]);
 
   // Show Project Settings when nothing is selected OR when root VStack is selected
-  const isProjectSettingsView = selectedNodes.length === 0 ||
+  const isProjectSettingsView =
+    selectedNodes.length === 0 ||
     (selectedNodes.length === 1 && selectedNodes[0].id === ROOT_VSTACK_ID);
 
   if (isProjectSettingsView) {
@@ -199,9 +219,7 @@ export const PropertiesPanel: React.FC = () => {
             <ColorSwatchButton
               color={projectTheme.primaryColor || "#3858e9"}
               label="Primary Color"
-              onChange={(color) =>
-                updateProjectTheme({ primaryColor: color })
-              }
+              onChange={(color) => updateProjectTheme({ primaryColor: color })}
               help="Theme primary color for buttons and interactive elements"
             />
           </PanelBody>
@@ -426,15 +444,16 @@ export const PropertiesPanel: React.FC = () => {
                     />
                   )}
 
-                  {propDef.type === "select" && propDef.name === "colorVariant" && (
-                    <ColorVariantPicker
-                      label={propDef.name}
-                      value={currentValue || "default"}
-                      onChange={(value) =>
-                        handlePropChange(propDef.name, value)
-                      }
-                    />
-                  )}
+                  {propDef.type === "select" &&
+                    propDef.name === "colorVariant" && (
+                      <ColorVariantPicker
+                        label={propDef.name}
+                        value={currentValue || "default"}
+                        onChange={(value) =>
+                          handlePropChange(propDef.name, value)
+                        }
+                      />
+                    )}
 
                   {propDef.type === "select" &&
                     propDef.name !== "icon" &&
@@ -527,79 +546,197 @@ export const PropertiesPanel: React.FC = () => {
     );
   };
 
-  const renderInteractionsTab = () => (
-    <div style={{ flex: 1, overflow: "auto" }}>
-      <PanelBody title="Interactions" initialOpen={true}>
-        {(firstNode.interactions || []).map((interaction) => (
-          <div
-            key={interaction.id}
+  const renderInteractionsTab = () => {
+    const interactionTypes = [
+      {
+        id: "click",
+        label: "Click",
+        trigger: "onClick",
+        icon: button,
+        enabled: true,
+      },
+      {
+        id: "appear",
+        label: "Appear",
+        trigger: "onAppear",
+        icon: seen,
+        enabled: false,
+        comingSoon: true,
+      },
+      {
+        id: "hover",
+        label: "Hover",
+        trigger: "onHover",
+        icon: dragHandle,
+        enabled: false,
+        comingSoon: true,
+      },
+    ];
+
+    const getExistingInteraction = (trigger: string) => {
+      return (firstNode.interactions || []).find(
+        (int) => int.trigger === trigger
+      );
+    };
+
+    return (
+      <div style={{ flex: 1, overflow: "auto" }}>
+        <PanelBody title="Interactions" initialOpen={true}>
+          <ItemGroup isBordered isSeparated>
+            {interactionTypes.map((type) => {
+              const existingInteraction = getExistingInteraction(type.trigger);
+              const isActive = !!existingInteraction;
+
+              return (
+                <React.Fragment key={type.id}>
+                  <Item
+                    style={{
+                      opacity: type.enabled ? 1 : 0.5,
+                    }}
+                  >
+                    <HStack
+                      spacing={2}
+                      style={{
+                        alignItems: "center",
+                        width: "100%",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Button
+                        variant="tertiary"
+                        style={{
+                          flex: 1,
+                          justifyContent: "flex-start",
+                          padding: "0",
+                          minHeight: "auto",
+                          textAlign: "left",
+                        }}
+                        disabled={!type.enabled}
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          if (!type.enabled) return;
+
+                          // If no interaction exists, create one
+                          if (!existingInteraction) {
+                            const targetPageId =
+                              pages.length > 0 ? pages[0].id : "unknown";
+                            addInteraction(selectedNodeIds[0], {
+                              trigger: type.trigger,
+                              action: "navigate",
+                              targetId: targetPageId,
+                            });
+                          }
+
+                          // Open popover
+                          setAnchorEl(e.currentTarget);
+                          setOpenInteractionId(type.id);
+                        }}
+                        icon={type.icon}
+                        title={type.comingSoon ? "Coming soon" : undefined}
+                      >
+                        {type.label}
+                      </Button>
+
+                      {isActive && (
+                        <HStack
+                          spacing={1}
+                          style={{ justifyContent: "flex-end" }}
+                        >
+                          <DropdownMenu
+                            icon={moreVertical}
+                            label="Interaction options"
+                            popoverProps={{ placement: "left-start" }}
+                          >
+                            {() => (
+                              <MenuGroup>
+                                <MenuItem
+                                  onClick={() => {
+                                    if (existingInteraction) {
+                                      removeInteraction(
+                                        selectedNodeIds[0],
+                                        existingInteraction.id
+                                      );
+                                    }
+                                  }}
+                                >
+                                  Reset
+                                </MenuItem>
+                              </MenuGroup>
+                            )}
+                          </DropdownMenu>
+                        </HStack>
+                      )}
+                    </HStack>
+                  </Item>
+
+                  {/* Popover for interaction settings */}
+                  {openInteractionId === type.id &&
+                    anchorEl &&
+                    existingInteraction && (
+                      <Popover
+                        anchor={anchorEl}
+                        placement="left-start"
+                        onClose={() => {
+                          setOpenInteractionId(null);
+                          setAnchorEl(null);
+                        }}
+                      >
+                        <div style={{ padding: "16px", minWidth: "280px" }}>
+                          <h3
+                            style={{
+                              margin: "0 0 16px 0",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                            }}
+                          >
+                            {type.label.toUpperCase()}
+                          </h3>
+
+                          {existingInteraction.action === "navigate" && (
+                            <SelectControl
+                              label="Navigate to page"
+                              value={existingInteraction.targetId}
+                              options={pages.map((page) => ({
+                                label: page.name,
+                                value: page.id,
+                              }))}
+                              onChange={(newPageId) => {
+                                updateInteraction(
+                                  selectedNodeIds[0],
+                                  existingInteraction.id,
+                                  {
+                                    trigger: existingInteraction.trigger,
+                                    action: existingInteraction.action,
+                                    targetId: newPageId,
+                                  }
+                                );
+                              }}
+                            />
+                          )}
+                        </div>
+                      </Popover>
+                    )}
+                </React.Fragment>
+              );
+            })}
+          </ItemGroup>
+
+          <p
             style={{
-              padding: "12px",
-              backgroundColor: "#f5f5f5",
-              borderRadius: "2px",
-              marginBottom: "8px",
-              fontSize: "12px",
+              fontSize: "11px",
+              color: "#666",
+              margin: "12px 0 0",
+              fontStyle: "italic",
             }}
           >
-            <div style={{ fontWeight: 500, marginBottom: "8px" }}>
-              {interaction.trigger === "onClick"
-                ? "On Click"
-                : interaction.trigger}
-            </div>
-
-            {interaction.action === "navigate" && (
-              <div style={{ marginBottom: "8px" }}>
-                <SelectControl
-                  label="Navigate to page"
-                  value={interaction.targetId}
-                  options={pages.map((page) => ({
-                    label: page.name,
-                    value: page.id,
-                  }))}
-                  onChange={(newPageId) => {
-                    updateInteraction(selectedNodeIds[0], interaction.id, {
-                      trigger: interaction.trigger,
-                      action: interaction.action,
-                      targetId: newPageId,
-                    });
-                  }}
-                />
-              </div>
-            )}
-
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button
-                icon={trashIcon}
-                iconSize={16}
-                onClick={() =>
-                  removeInteraction(selectedNodeIds[0], interaction.id)
-                }
-                style={{ flexShrink: 0 }}
-              />
-            </div>
-          </div>
-        ))}
-
-        {/* Add interaction button */}
-        <Button
-          variant="secondary"
-          size="small"
-          icon={plusIcon}
-          onClick={() => {
-            // Add default navigate interaction - use first page if available
-            const targetPageId = pages.length > 0 ? pages[0].id : "unknown";
-            addInteraction(selectedNodeIds[0], {
-              trigger: "onClick",
-              action: "navigate",
-              targetId: targetPageId,
-            });
-          }}
-        >
-          Add Interaction
-        </Button>
-      </PanelBody>
-    </div>
-  );
+            Add interactions for the selected block.
+          </p>
+        </PanelBody>
+      </div>
+    );
+  };
 
   return (
     <div
