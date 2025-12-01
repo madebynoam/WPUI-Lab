@@ -410,6 +410,13 @@ export async function handleUserMessage(
 export function generateSuggestions(context: ToolContext) {
   const suggestions = [];
 
+  // Always offer to create complex layouts - show first
+  suggestions.push({
+    id: 'add-page',
+    label: 'Add a new page',
+    prompt: 'Add a new page titled pricing and add pricing cards to it',
+  });
+
   // If something is selected, offer contextual actions
   if (context.selectedNodeIds.length > 0) {
     suggestions.push({
@@ -423,13 +430,6 @@ export function generateSuggestions(context: ToolContext) {
       prompt: 'Rename the titles in the selection to match a software product',
     });
   }
-
-  // Always offer to create complex layouts
-  suggestions.push({
-    id: 'add-page',
-    label: 'Add a new page',
-    prompt: 'Add a new page titled pricing and add pricing cards to it',
-  });
 
   return suggestions;
 }

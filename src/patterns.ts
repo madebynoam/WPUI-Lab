@@ -582,52 +582,6 @@ export const patterns: Pattern[] = [
   },
 
   // Call to Action
-  {
-    id: 'cta-banner',
-    name: 'CTA Banner',
-    description: 'Full-width call-to-action banner',
-    category: 'CTAs',
-    tree: {
-      type: 'Panel',
-      props: {},
-      children: [
-        {
-          type: 'PanelBody',
-          props: {},
-          children: [
-            {
-              type: 'HStack',
-              props: { spacing: 6, alignment: 'center' },
-              children: [
-                {
-                  type: 'VStack',
-                  props: { spacing: 2 },
-                  children: [
-                    {
-                      type: 'Heading',
-                      props: { level: 2, children: 'Ready to Get Started?' },
-                      children: [],
-                    },
-                    {
-                      type: 'Text',
-                      props: { children: 'Join thousands of users already building amazing experiences.' },
-                      children: [],
-                    },
-                  ],
-                },
-                {
-                  type: 'Button',
-                  props: { text: 'Start Free Trial', variant: 'primary' },
-                  children: [],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  },
-
   // Stats Section
   {
     id: 'stats-4col',
