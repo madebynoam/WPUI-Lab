@@ -919,6 +919,18 @@ export const RenderNode: React.FC<{
     };
   };
 
+  // Handle Button component - convert icon name to icon component
+  if (node.type === 'Button' && props.icon) {
+    const iconName = props.icon;
+    const iconComponent = (wpIcons as Record<string, any>)[iconName];
+    if (iconComponent) {
+      props.icon = iconComponent;
+    } else {
+      // If icon name not found, remove it to avoid errors
+      delete props.icon;
+    }
+  }
+
   // Handle components with special text/content props
   if (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') {
     // Button uses 'text' prop, others use 'children'
@@ -1061,18 +1073,6 @@ export const RenderNode: React.FC<{
         {content}
       </Component>
     );
-  }
-
-  // Handle Button component - convert icon name to icon component
-  if (node.type === 'Button' && props.icon) {
-    const iconName = props.icon;
-    const iconComponent = (wpIcons as Record<string, any>)[iconName];
-    if (iconComponent) {
-      props.icon = iconComponent;
-    } else {
-      // If icon name not found, remove it to avoid errors
-      delete props.icon;
-    }
   }
 
   // Handle Icon component - needs icon prop from @wordpress/icons
