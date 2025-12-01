@@ -38,6 +38,7 @@ export const componentIconMap: Record<string, any> = {
   FlexItem: column,
   // Containers
   Card: box,
+  ActionCard: box,
   CardBody: box,
   CardHeader: box,
   CardFooter: box,

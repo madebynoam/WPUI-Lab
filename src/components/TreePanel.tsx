@@ -66,6 +66,7 @@ export const componentGroups: ComponentGroup[] = [
 		icon: box,
 		components: [
 			'Card',
+			'ActionCard',
 			'CardBody',
 			'CardHeader',
 			'Panel',
