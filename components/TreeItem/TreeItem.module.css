@@ -1,0 +1,138 @@
+.Wrapper {
+  list-style: none;
+  box-sizing: border-box;
+  padding-left: var(--spacing);
+}
+
+.TreeItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding-right: 8px;
+  padding-left: 8px;
+  margin: 0 4px;
+  border-radius: 2px;
+  transition: background-color 0.05s ease;
+  user-select: none;
+}
+
+.TreeItem:hover {
+  background-color: #f0f0f1;
+}
+
+.TreeItem.selected {
+  background-color: #3858e9;
+  color: #fff;
+}
+
+.TreeItem.selected:hover {
+  background-color: #3858e9;
+}
+
+.TreeItem.ghost {
+  opacity: 0.5;
+}
+
+.TreeItem.indicator {
+  opacity: 1;
+  background-color: rgba(56, 88, 233, 0.12);
+}
+
+.TreeItem.disableInteraction {
+  pointer-events: none;
+}
+
+.Chevron {
+  background: none;
+  border: none;
+  padding: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  margin-right: 4px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.Chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.Chevron.collapsed {
+  transform: rotate(0deg);
+}
+
+.Spacer {
+  width: 20px;
+  margin-right: 4px;
+}
+
+.Text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: auto;
+}
+
+.Input {
+  flex: 1;
+  font-size: 13px;
+  padding: 2px 4px;
+  border: 1px solid #3858e9;
+  border-radius: 2px;
+  outline: none;
+  background-color: #fff;
+}
+
+.Actions {
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.TreeItem:hover .Actions,
+.TreeItem.selected .Actions {
+  opacity: 1;
+}
+
+.Clone {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 2px;
+  background-color: #3858e9;
+  color: #fff;
+  font-size: 13px;
+  opacity: 0.8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ProjectionIndicator {
+  position: relative;
+  height: 2px;
+  background-color: #3858e9;
+  margin-left: var(--projection-spacing);
+  margin-right: 8px;
+  margin-top: -1px;
+  margin-bottom: -1px;
+  border-radius: 1px;
+  opacity: 0.8;
+}
+
+.ProjectionIndicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #3858e9;
+  margin-left: -3px;
+}

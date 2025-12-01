@@ -82,9 +82,30 @@ export async function handleUserMessage(
   signal?: AbortSignal,
   conversationHistory?: AgentMessage[]
 ): Promise<AgentMessage> {
-  // API keys are now handled server-side via Next.js API routes
-  // No client-side validation needed
+  // Check for the API key that matches the configured provider
+  const orchestratorConfig = getAgentModel('orchestrator');
+  const requiredProvider = orchestratorConfig.provider;
+  const requiredKey = requiredProvider === 'anthropic' ? claudeApiKey : openaiApiKey;
+  const providerName = requiredProvider === 'anthropic' ? 'Claude' : 'OpenAI';
+  const providerUrl = requiredProvider === 'anthropic'
+    ? 'https://console.anthropic.com/'
+    : 'https://platform.openai.com/api-keys';
 
+  if (!requiredKey || !requiredKey.trim()) {
+    return {
+      id: `agent-${Date.now()}`,
+      role: 'agent',
+      content: [
+        {
+          type: 'text',
+          text: `Please add your ${providerName} API key to use the AI assistant. The system is configured to use ${providerName}. Get your key at ${providerUrl}`,
+        },
+      ],
+      timestamp: Date.now(),
+      archived: false,
+      showIcon: true,
+    };
+  }
 
   try {
     // === v3.0 HYBRID ORCHESTRATOR (Deterministic Tools + Small Agents) ===

@@ -1,16 +1,7 @@
 import { LLMProvider, LLMConfig } from './types';
-import { OpenAIProvider } from './openai';
-import { AnthropicProvider } from './anthropic';
+import { NextJSProxyProvider } from './nextjs-proxy';
 
 export function createLLMProvider(config: LLMConfig): LLMProvider {
-  switch (config.provider) {
-    case 'openai':
-      return new OpenAIProvider(config.apiKey, config.model);
-
-    case 'anthropic':
-      return new AnthropicProvider(config.apiKey, config.model);
-
-    default:
-      throw new Error(`Unknown LLM provider: ${config.provider}`);
-  }
+  // Use Next.js proxy provider to keep API keys secure on server
+  return new NextJSProxyProvider(config.provider);
 }
