@@ -3,6 +3,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { AgentUI } from "@automattic/agenttic-ui";
 import "@automattic/agenttic-ui/index.css";
+import { Button } from "@wordpress/components";
+import { close } from "@wordpress/icons";
 import { useComponentTree } from "../ComponentTreeContext";
 import {
   AgentMessage,
@@ -11,7 +13,11 @@ import {
   generateSuggestions,
 } from "../agent";
 
-export const AgentPanel: React.FC = () => {
+interface AgentPanelProps {
+  onClose: () => void;
+}
+
+export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   const PANEL_WIDTH = 280;
   const componentTreeContext = useComponentTree();
 
@@ -329,10 +335,28 @@ export const AgentPanel: React.FC = () => {
         height: "100%",
       }}
     >
-      <div style={{ padding: "12px" }}>
-        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>
-          AI Assistant
-        </h3>
+      <div style={{
+        padding: "12px",
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "center",
+      }}>
+        <Button
+          icon={close}
+          onClick={onClose}
+          title="Close AI assistant"
+          style={{
+            backgroundColor: "transparent",
+            color: "#666",
+            border: "none",
+            outline: "none",
+            boxShadow: "none",
+            borderRadius: "2px",
+            cursor: "pointer",
+            minWidth: "auto",
+            padding: "4px",
+          }}
+        />
       </div>
 
       <div
