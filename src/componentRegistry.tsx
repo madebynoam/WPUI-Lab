@@ -434,7 +434,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     component: VStack,
     acceptsChildren: true,
     description: 'Stack child elements vertically with spacing control.',
-    defaultProps: { spacing: 2, alignment: 'left' },
+    defaultProps: { spacing: 2, alignment: 'stretch' },
     propDefinitions: [
       {
         name: 'spacing',
@@ -446,7 +446,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'alignment',
         type: 'select',
         options: ['top', 'topLeft', 'topRight', 'left', 'center', 'right', 'bottom', 'bottomLeft', 'bottomRight', 'edge', 'stretch'],
-        defaultValue: 'left',
+        defaultValue: 'stretch',
         description: 'Horizontal alignment'
       },
       {

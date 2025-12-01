@@ -953,6 +953,9 @@ export const RenderNode: React.FC<{
       delete buttonProps.stretchFullWidth;
       if (stretchFullWidth) {
         buttonStyle = { width: '100%', justifyContent: 'center' };
+      } else {
+        // Prevent button from stretching in VStack with alignment='stretch'
+        buttonStyle = { alignSelf: 'flex-start' };
       }
 
       // Handle disabled styling in design mode
