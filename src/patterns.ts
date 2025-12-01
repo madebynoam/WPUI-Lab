@@ -1338,6 +1338,64 @@ export const patterns: Pattern[] = [
       ],
     },
   },
+
+  // Single Action Card
+  {
+    id: 'action-card-single',
+    name: 'Action Card',
+    description: 'Interactive card with icon, title, description, and chevron indicator',
+    category: 'Actions',
+    tree: {
+      type: 'Card',
+      props: { size: 'medium' },
+      children: [
+        {
+          type: 'CardBody',
+          props: { size: 'small' },
+          children: [
+            {
+              type: 'HStack',
+              props: { spacing: 2, justify: 'flex-start', alignment: 'center' },
+              children: [
+                {
+                  type: 'HStack',
+                  props: { spacing: 4, alignment: 'top', expanded: false },
+                  children: [
+                    {
+                      type: 'Icon',
+                      props: { icon: 'globe', size: 24 },
+                      children: [],
+                    },
+                    {
+                      type: 'VStack',
+                      props: { spacing: 1 },
+                      children: [
+                        {
+                          type: 'Heading',
+                          props: { level: 4, children: 'Deployments' },
+                          children: [],
+                        },
+                        {
+                          type: 'Text',
+                          props: { variant: 'muted', children: 'Automate deployments from GitHub to streamline your workflow.' },
+                          children: [],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  type: 'Icon',
+                  props: { icon: 'chevronRight', size: 24 },
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 // Pattern categories for organization
