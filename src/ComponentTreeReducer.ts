@@ -759,11 +759,10 @@ export function componentTreeReducer(
     }
 
     case 'DUPLICATE_PROJECT': {
-      const { projectId } = action.payload;
+      const { projectId, newProjectId } = action.payload;
       const projectToDuplicate = state.projects.find(p => p.id === projectId);
       if (!projectToDuplicate) return state;
 
-      const newProjectId = `project-${Date.now()}`;
       const newProject: Project = {
         ...JSON.parse(JSON.stringify(projectToDuplicate)),
         id: newProjectId,

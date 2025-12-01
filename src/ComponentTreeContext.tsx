@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo } from 'react';
+import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo, useCallback } from 'react';
 import { ComponentNode, Page, Project, Interaction, PatternNode } from './types';
 import { componentRegistry } from './componentRegistry';
 import { componentTreeReducer, ComponentTreeState } from './ComponentTreeReducer';
@@ -359,9 +359,9 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   // ===== Pages Management =====
 
-  const setCurrentPage = (pageId: string) => {
+  const setCurrentPage = useCallback((pageId: string) => {
     dispatch({ type: 'SET_CURRENT_PAGE', payload: { pageId } });
-  };
+  }, [dispatch]);
 
   const addPage = (name?: string) => {
     const newPageNumber = pages.length + 1;
@@ -409,7 +409,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   // ===== Projects Management =====
 
-  const createProject = (name: string) => {
+  const createProject = (name: string): string => {
     const newProject = createInitialProject(`project-${Date.now()}`, name);
     console.log('[ComponentTreeContext] createProject called:', {
       newProjectName: newProject.name,
@@ -417,11 +417,12 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     });
     dispatch({ type: 'CREATE_PROJECT', payload: { project: newProject } });
     console.log('[ComponentTreeContext] createProject completed');
+    return newProject.id;
   };
 
-  const setCurrentProject = (projectId: string) => {
+  const setCurrentProject = useCallback((projectId: string) => {
     dispatch({ type: 'SET_CURRENT_PROJECT', payload: { projectId } });
-  };
+  }, [dispatch]);
 
   const deleteProject = (projectId: string) => {
     dispatch({ type: 'DELETE_PROJECT', payload: { projectId } });
@@ -431,8 +432,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'RENAME_PROJECT', payload: { projectId, name } });
   };
 
-  const duplicateProject = (projectId: string) => {
-    dispatch({ type: 'DUPLICATE_PROJECT', payload: { projectId } });
+  const duplicateProject = (projectId: string): string => {
+    const newProjectId = `project-${Date.now()}`;
+    dispatch({ type: 'DUPLICATE_PROJECT', payload: { projectId, newProjectId } });
+    return newProjectId;
   };
 
   const updateProjectTheme = (theme: { primaryColor?: string; backgroundColor?: string }) => {

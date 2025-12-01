@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { useComponentTree, ROOT_VSTACK_ID } from "../ComponentTreeContext";
 import { ComponentNode, PatternNode } from "../types";
 import { componentRegistry } from "../componentRegistry";
@@ -176,6 +177,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
   showInserter,
   onCloseInserter,
 }) => {
+  const router = useRouter();
   const {
     tree,
     addComponent,
@@ -188,6 +190,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     updateComponentName,
     pages,
     currentPageId,
+    currentProjectId,
     setCurrentPage,
     addPage,
     deletePage,
@@ -735,6 +738,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
               onMouseDown={() => {
                 if (editingPageId !== page.id) {
                   setCurrentPage(page.id);
+                  if (currentProjectId) {
+                    router.push(`/editor/${currentProjectId}/${page.id}`);
+                  }
                 }
               }}
             >
