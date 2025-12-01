@@ -204,6 +204,82 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       },
     ],
   },
+  ActionCard: {
+    name: 'Action Card',
+    component: Card,
+    acceptsChildren: true,
+    description: 'Interactive card with icon, title, description, and chevron indicator.',
+    defaultProps: { size: 'medium' },
+    defaultChildren: [
+      {
+        type: 'CardBody',
+        props: { size: 'small' },
+        children: [
+          {
+            type: 'HStack',
+            props: { spacing: 2, justify: 'flex-start', alignment: 'center' },
+            children: [
+              {
+                type: 'HStack',
+                props: { spacing: 4, alignment: 'top', expanded: false },
+                children: [
+                  {
+                    type: 'Icon',
+                    props: { icon: 'globe', size: 24 },
+                  },
+                  {
+                    type: 'VStack',
+                    props: { spacing: 1 },
+                    children: [
+                      {
+                        type: 'Heading',
+                        props: { level: 4, children: 'Deployments' },
+                      },
+                      {
+                        type: 'Text',
+                        props: { variant: 'muted', children: 'Automate deployments from GitHub to streamline your workflow.' },
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: 'Icon',
+                props: { icon: 'chevronRight', size: 24 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    propDefinitions: [
+      {
+        name: 'size',
+        type: 'select',
+        options: ['none', 'xSmall', 'small', 'medium', 'large'],
+        defaultValue: 'medium',
+        description: 'Card size'
+      },
+      {
+        name: 'elevation',
+        type: 'number',
+        defaultValue: 0,
+        description: 'Shadow depth (0-5)'
+      },
+      {
+        name: 'isBorderless',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Remove border'
+      },
+      {
+        name: 'isRounded',
+        type: 'boolean',
+        defaultValue: true,
+        description: 'Rounded corners'
+      },
+    ],
+  },
   CardBody: {
     name: 'CardBody',
     component: CardBody,

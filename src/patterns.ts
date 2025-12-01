@@ -1167,66 +1167,6 @@ export const patterns: Pattern[] = [
 
   // Action Cards
   {
-    id: 'action-card',
-    name: 'Action Card',
-    description: 'Single interactive action card with icon, title, description, and chevron',
-    category: 'Actions',
-    tree: {
-      type: 'Card',
-      name: 'Deployments',
-      props: { size: 'medium' },
-      children: [
-        {
-          type: 'CardBody',
-          props: { size: 'small' },
-          children: [
-            {
-              type: 'HStack',
-              props: { spacing: 2, justify: 'flex-start', alignment: 'center' },
-              children: [
-                {
-                  type: 'HStack',
-                  name: 'Content',
-                  props: { spacing: 4, alignment: 'top', expanded: false },
-                  children: [
-                    {
-                      type: 'Icon',
-                      props: { icon: 'globe', size: 24 },
-                      children: [],
-                    },
-                    {
-                      type: 'VStack',
-                      props: { spacing: 1 },
-                      children: [
-                        {
-                          type: 'Heading',
-                          props: { level: 4, children: 'Deployments' },
-                          children: [],
-                        },
-                        {
-                          type: 'Text',
-                          props: { variant: 'muted', children: 'Automate deployments from GitHub to streamline your workflow.' },
-                          children: [],
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: 'Icon',
-                  name: 'Chevron',
-                  props: { icon: 'chevronRight', size: 24 },
-                  children: [],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  },
-
-  {
     id: 'action-cards-3col',
     name: 'Action Cards - 3 Column',
     description: 'Three interactive action cards with icons, titles, descriptions, and chevrons',
