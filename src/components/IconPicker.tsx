@@ -72,24 +72,41 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
         {label || 'Icon'}
       </label>
 
-      <Button
-        ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
-        variant="secondary"
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          gap: '8px',
-          padding: '8px 12px',
-        }}
-      >
-        {currentIcon && <Icon icon={currentIcon} size={20} />}
-        <span style={{ flex: 1, textAlign: 'left', fontSize: '13px' }}>
-          {value || 'Select an icon'}
-        </span>
-      </Button>
+      <div style={{ display: 'flex', gap: '4px' }}>
+        <Button
+          ref={buttonRef}
+          onClick={() => setIsOpen(!isOpen)}
+          variant="secondary"
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '8px',
+            padding: '8px 12px',
+          }}
+        >
+          {currentIcon && <Icon icon={currentIcon} size={20} />}
+          <span style={{ flex: 1, textAlign: 'left', fontSize: '13px' }}>
+            {value || 'Select an icon'}
+          </span>
+        </Button>
+
+        {value && (
+          <Button
+            onClick={() => onChange('')}
+            variant="secondary"
+            icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 5L15 15M5 15L15 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>}
+            title="Clear icon"
+            style={{
+              padding: '8px',
+              minWidth: '36px',
+            }}
+          />
+        )}
+      </div>
 
       {isOpen && buttonRef.current ? (
         <Popover
