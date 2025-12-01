@@ -27,8 +27,9 @@ export class ComponentAgent {
   private llm: ReturnType<typeof createLLMProvider>;
   private config: ReturnType<typeof getAgentModel>;
 
-  constructor(apiKey: string) {
+  constructor(apiKey?: string) {
     this.config = getAgentModel('component');
+    // API key is optional - uses Next.js proxy when not provided
     this.llm = createLLMProvider({
       provider: this.config.provider,
       apiKey,

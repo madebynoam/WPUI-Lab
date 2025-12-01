@@ -408,28 +408,27 @@ export async function handleUserMessage(
 
 // Generate suggestions based on context
 export function generateSuggestions(context: ToolContext) {
-  const suggestions = [
-    {
-      id: 'pages',
-      label: 'Show my pages',
-      prompt: 'Can you show me all the pages I have created in this project and their current structure?',
-    },
-  ];
+  const suggestions = [];
 
-  // If something is selected, offer to delete it
+  // If something is selected, offer contextual actions
   if (context.selectedNodeIds.length > 0) {
     suggestions.push({
       id: 'delete',
       label: 'Delete selected',
       prompt: 'Please remove the currently selected component from the page for me',
     });
+    suggestions.push({
+      id: 'rename-titles',
+      label: 'Rename the titles',
+      prompt: 'Rename the titles in the selection to match a software product',
+    });
   }
 
-  // Always offer to add common components
+  // Always offer to create complex layouts
   suggestions.push({
-    id: 'add-button',
-    label: 'Add a button',
-    prompt: 'I would like to add a new button component to the current page',
+    id: 'add-page',
+    label: 'Add a new page',
+    prompt: 'Add a new page titled pricing and add pricing cards to it',
   });
 
   return suggestions;

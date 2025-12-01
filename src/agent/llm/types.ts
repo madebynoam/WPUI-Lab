@@ -52,6 +52,6 @@ export interface LLMProvider {
 
 export interface LLMConfig {
   provider: 'openai' | 'anthropic';
-  apiKey: string;
+  apiKey?: string; // Optional - handled server-side via Next.js proxy
   model?: string;
 }

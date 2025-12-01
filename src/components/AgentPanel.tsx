@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useCallback, useEffect } from "react";
 import { AgentUI } from "@automattic/agenttic-ui";
 import "@automattic/agenttic-ui/index.css";
@@ -12,11 +14,6 @@ import {
 export const AgentPanel: React.FC = () => {
   const PANEL_WIDTH = 280;
   const componentTreeContext = useComponentTree();
-
-  const [apiKey, setApiKey] = useState<string>("");
-  const [showKey, setShowKey] = useState(false);
-  const [openaiApiKey, setOpenaiApiKey] = useState<string>("");
-  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
 
   // Progress state
   const [progressState, setProgressState] = useState<{
@@ -70,22 +67,6 @@ export const AgentPanel: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
 
-  // Load Claude API key from localStorage
-  useEffect(() => {
-    const savedKey = localStorage.getItem("wp-designer-claude-key");
-    if (savedKey) {
-      setApiKey(savedKey);
-    }
-  }, []);
-
-  // Load OpenAI API key from localStorage
-  useEffect(() => {
-    const savedKey = localStorage.getItem("wp-designer-openai-key");
-    if (savedKey) {
-      setOpenaiApiKey(savedKey);
-    }
-  }, []);
-
   // Save messages to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem(
@@ -93,18 +74,6 @@ export const AgentPanel: React.FC = () => {
       JSON.stringify(messages)
     );
   }, [messages]);
-
-  // Save Claude API key to localStorage when it changes
-  const handleKeyChange = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem("wp-designer-claude-key", key);
-  };
-
-  // Save OpenAI API key to localStorage when it changes
-  const handleOpenaiKeyChange = (key: string) => {
-    setOpenaiApiKey(key);
-    localStorage.setItem("wp-designer-openai-key", key);
-  };
 
   // Handle stop button
   const handleStop = useCallback(() => {
@@ -254,8 +223,8 @@ export const AgentPanel: React.FC = () => {
         const agentResponse = await handleUserMessage(
           userMessageText,
           toolContext,
-          apiKey,
-          openaiApiKey,
+          undefined, // API keys now handled server-side
+          undefined, // API keys now handled server-side
           (update) => {
             console.log("[AgentPanel] Progress update:", update);
 
@@ -343,7 +312,7 @@ export const AgentPanel: React.FC = () => {
         });
       }
     },
-    [createToolContext, apiKey, openaiApiKey]
+    [createToolContext, messages]
   );
 
   // Generate contextual suggestions
@@ -365,109 +334,6 @@ export const AgentPanel: React.FC = () => {
         <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>
           AI Assistant
         </h3>
-      </div>
-
-      {/* API Keys Input */}
-      <div
-        style={{
-          padding: "12px",
-          borderBottom: "1px solid #e0e0e0",
-          backgroundColor: "#f9fafb",
-        }}
-      >
-        {/* Claude API Key */}
-        <div style={{ marginBottom: "12px" }}>
-          <label
-            style={{
-              display: "block",
-              fontSize: "11px",
-              fontWeight: 500,
-              color: "#1e1e1e",
-              marginBottom: "6px",
-            }}
-          >
-            Claude API Key
-          </label>
-          <div style={{ display: "flex", gap: "4px" }}>
-            <input
-              type={showKey ? "text" : "password"}
-              value={apiKey}
-              onChange={(e) => handleKeyChange(e.target.value)}
-              placeholder="sk-ant-..."
-              style={{
-                flex: 1,
-                padding: "6px 8px",
-                fontSize: "12px",
-                border: "1px solid #ddd",
-                borderRadius: "2px",
-                outline: "none",
-                fontFamily: "monospace",
-              }}
-            />
-            <button
-              onClick={() => setShowKey(!showKey)}
-              style={{
-                padding: "6px 8px",
-                fontSize: "11px",
-                border: "1px solid #ddd",
-                borderRadius: "2px",
-                backgroundColor: "#fff",
-                cursor: "pointer",
-                color: "#666",
-              }}
-              title={showKey ? "Hide key" : "Show key"}
-            >
-              {showKey ? "👁️" : "👁️‍🗨️"}
-            </button>
-          </div>
-        </div>
-
-        {/* OpenAI API Key */}
-        <div>
-          <label
-            style={{
-              display: "block",
-              fontSize: "11px",
-              fontWeight: 500,
-              color: "#1e1e1e",
-              marginBottom: "6px",
-            }}
-          >
-            OpenAI API Key
-          </label>
-          <div style={{ display: "flex", gap: "4px" }}>
-            <input
-              type={showOpenaiKey ? "text" : "password"}
-              value={openaiApiKey}
-              onChange={(e) => handleOpenaiKeyChange(e.target.value)}
-              placeholder="sk-proj-..."
-              style={{
-                flex: 1,
-                padding: "6px 8px",
-                fontSize: "12px",
-                border: "1px solid #ddd",
-                borderRadius: "2px",
-                outline: "none",
-                fontFamily: "monospace",
-              }}
-            />
-            <button
-              onClick={() => setShowOpenaiKey(!showOpenaiKey)}
-              style={{
-                padding: "6px 8px",
-                fontSize: "11px",
-                border: "1px solid #ddd",
-                borderRadius: "2px",
-                backgroundColor: "#fff",
-                cursor: "pointer",
-                color: "#666",
-              }}
-              title={showOpenaiKey ? "Hide key" : "Show key"}
-            >
-              {showOpenaiKey ? "👁️" : "👁️‍🗨️"}
-            </button>
-          </div>
-        </div>
       </div>
 
       <div

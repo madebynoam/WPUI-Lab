@@ -25,8 +25,9 @@ export class LayoutAgent {
   private llm: ReturnType<typeof createLLMProvider>;
   private config: ReturnType<typeof getAgentModel>;
 
-  constructor(apiKey: string) {
+  constructor(apiKey?: string) {
     this.config = getAgentModel('layout');
+    // API key is optional - uses Next.js proxy when not provided
     this.llm = createLLMProvider({
       provider: this.config.provider,
       apiKey,

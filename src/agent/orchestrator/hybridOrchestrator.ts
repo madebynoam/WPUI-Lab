@@ -156,14 +156,22 @@ function trySimpleDeterministicTools(
   if (context.selectedNodeIds.length > 0) {
     const componentId = context.selectedNodeIds[0];
 
-    // Delete selected
-    if (matches(normalized, ['delete', 'this']) || matches(normalized, ['remove', 'this'])) {
+    // Delete selected - match various patterns
+    const isDeleteRequest =
+      (normalized.includes('delete') || normalized.includes('remove')) &&
+      (normalized.includes('selected') || normalized.includes('this') || normalized.includes('current'));
+
+    if (isDeleteRequest) {
       context.removeComponent(componentId);
       return { success: true, message: 'Deleted component' };
     }
 
     // Duplicate selected
-    if (matches(normalized, ['duplicate', 'this']) || matches(normalized, ['copy', 'this'])) {
+    const isDuplicateRequest =
+      (normalized.includes('duplicate') || normalized.includes('copy')) &&
+      (normalized.includes('selected') || normalized.includes('this') || normalized.includes('current'));
+
+    if (isDuplicateRequest) {
       context.duplicateComponent(componentId);
       return { success: true, message: 'Duplicated component' };
     }
@@ -213,16 +221,10 @@ async function decomposeRequest(
 ): Promise<RequestStep[]> {
   const config = getAgentModel('orchestrator');
 
-  // Get the correct API key based on the provider
-  const apiKey = config.provider === 'anthropic' ? apiKeys.anthropicApiKey : apiKeys.openaiApiKey;
-
-  if (!apiKey) {
-    throw new Error(`Missing API key for provider: ${config.provider}`);
-  }
-
+  // API keys are now handled server-side via Next.js proxy
+  // Factory will automatically route to /api/chat
   const llm = createLLMProvider({
     provider: config.provider,
-    apiKey,
     model: config.model,
   });
 
@@ -332,15 +334,8 @@ async function executeStep(
 ): Promise<any> {
   console.log(`[HybridOrchestrator] Executing step:`, step);
 
-  // Helper to get the correct API key for the agent
-  const getApiKeyForAgent = (agentType: keyof typeof import('../agentConfig').AGENT_MODELS): string => {
-    const config = getAgentModel(agentType);
-    const apiKey = config.provider === 'anthropic' ? apiKeys.anthropicApiKey : apiKeys.openaiApiKey;
-    if (!apiKey) {
-      throw new Error(`Missing API key for provider: ${config.provider} (agent: ${agentType})`);
-    }
-    return apiKey;
-  };
+  // API keys are now handled server-side via Next.js proxy
+  // Agents no longer need API keys passed to them
 
   switch (step.agent) {
     case 'page': {
@@ -353,29 +348,25 @@ async function executeStep(
     }
 
     case 'component': {
-      const apiKey = getApiKeyForAgent('component');
-      const agent = new ComponentAgent(apiKey);
+      const agent = new ComponentAgent();
       const description = step.params.description || JSON.stringify(step.params);
       return await agent.handle(description, context, signal);
     }
 
     case 'content': {
-      const apiKey = getApiKeyForAgent('content');
-      const agent = new ContentAgent(apiKey);
+      const agent = new ContentAgent();
       const description = step.params.description || JSON.stringify(step.params);
       return await agent.handle(description, context, signal);
     }
 
     case 'data': {
-      const apiKey = getApiKeyForAgent('data');
-      const agent = new DataAgent(apiKey);
+      const agent = new DataAgent();
       const description = step.params.description || JSON.stringify(step.params);
       return await agent.handle(description, context, signal);
     }
 
     case 'layout': {
-      const apiKey = getApiKeyForAgent('layout');
-      const agent = new LayoutAgent(apiKey);
+      const agent = new LayoutAgent();
       const description = step.params.description || JSON.stringify(step.params);
       return await agent.handle(description, context, signal);
     }
