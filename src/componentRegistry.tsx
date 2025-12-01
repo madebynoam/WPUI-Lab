@@ -1547,6 +1547,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     acceptsChildren: false,
     description: 'Display tabular data with sorting, filtering, and pagination.',
     defaultProps: {
+      dataSource: 'sites',
       // Don't set data/fields in defaultProps - let RenderNode generate them based on dataSource
       view: {
         type: 'table',
@@ -1557,8 +1558,8 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'dataSource',
         type: 'select',
-        options: ['blog', 'products', 'users', 'custom'],
-        defaultValue: 'blog',
+        options: ['sites', 'blog', 'products', 'users', 'custom'],
+        defaultValue: 'sites',
         description: 'Data source to display (use "custom" for inline data)',
       },
       {

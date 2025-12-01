@@ -1205,7 +1205,7 @@ export const RenderNode: React.FC<{
   // DataViews component - special handling for data-driven component
   if (node.type === 'DataViews') {
     try {
-      const dataSource = (props.dataSource || 'blog') as DataSetType;
+      const dataSource = (props.dataSource || 'sites') as DataSetType;
       const viewType = props.viewType || 'table';
       const itemsPerPage = props.itemsPerPage || 10;
 
@@ -1274,7 +1274,8 @@ export const RenderNode: React.FC<{
 
       // Ensure valid sort field and visible fields
       const sortField = fields && fields.length > 0 ? fields[0].id : 'id';
-      const visibleFieldIds = fields ? fields.map(f => f.id) : [];
+      // Exclude 'thumbnail' from visible fields since it's used as mediaField
+      const visibleFieldIds = fields ? fields.map(f => f.id).filter(id => id !== 'thumbnail') : [];
 
       // Default view state based on design-time props
       const defaultView = {
@@ -1288,6 +1289,8 @@ export const RenderNode: React.FC<{
           field: sortField,
           direction: 'asc' as const,
         },
+        // Specify thumbnail as the media field for grid/list views
+        mediaField: 'thumbnail',
       };
 
       // In play mode, use runtime view state; in design mode, use default
