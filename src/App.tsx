@@ -26,6 +26,7 @@ function AppContent() {
     setSelectedNodeIds,
     projects,
     currentProjectId,
+    currentPageId,
     createProject,
     setCurrentProject,
     deleteProject,
@@ -211,6 +212,8 @@ function AppContent() {
                 rightPanel={rightPanel}
                 onToggleRightPanel={setRightPanel}
                 onNavigateToProjects={handleNavigateToProjects}
+                projectId={currentProjectId}
+                pageId={currentPageId}
               />
             </div>
           )}

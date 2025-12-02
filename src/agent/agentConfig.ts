@@ -144,29 +144,6 @@ export const AVAILABLE_MODELS = {
       supportsMaxTokens: false,
     },
   },
-  [Models.OpenAI.GPT_4O_MINI]: {
-    provider: Providers.OPENAI,
-    description:
-      "Previous generation mini model ($0.15/MTok input, $0.60/MTok output)",
-    bestFor: "Legacy compatibility, standard tasks",
-    pricing: { input: 0.00015, output: 0.0006 },
-    capabilities: {
-      supportsCustomTemperature: true,
-      supportsMaxTokens: true,
-      maxTokensParam: 'max_completion_tokens' as const,
-    },
-  },
-  [Models.OpenAI.GPT_4O]: {
-    provider: Providers.OPENAI,
-    description: "Full-size GPT-4o model ($2.50/MTok input, $10/MTok output)",
-    bestFor: "Complex reasoning, multimodal tasks",
-    pricing: { input: 0.0025, output: 0.01 },
-    capabilities: {
-      supportsCustomTemperature: true,
-      supportsMaxTokens: true,
-      maxTokensParam: 'max_completion_tokens' as const,
-    },
-  },
 } as const;
 
 /**

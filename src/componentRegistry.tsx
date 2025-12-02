@@ -432,16 +432,9 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'maxWidth',
         type: 'select',
-        options: [
-          { label: 'sm (640px)', value: 'sm' },
-          { label: 'md (960px)', value: 'md' },
-          { label: 'lg (1280px)', value: 'lg' },
-          { label: 'xl (1440px)', value: 'xl' },
-          { label: 'full (100%)', value: 'full' },
-          { label: 'custom', value: 'custom' },
-        ],
+        options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
         defaultValue: 'full',
-        description: 'Maximum width constraint'
+        description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
       },
       {
         name: 'maxWidthCustom',
@@ -452,14 +445,9 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'alignSelf',
         type: 'select',
-        options: [
-          { label: 'start (left)', value: 'start' },
-          { label: 'center', value: 'center' },
-          { label: 'end (right)', value: 'end' },
-          { label: 'stretch (full width)', value: 'stretch' },
-        ],
+        options: ['start', 'center', 'end', 'stretch'],
         defaultValue: 'stretch',
-        description: 'Horizontal alignment'
+        description: 'Horizontal alignment (start=left, end=right, stretch=full width)'
       },
       {
         name: 'padding',
@@ -518,16 +506,9 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'maxWidth',
         type: 'select',
-        options: [
-          { label: 'sm (640px)', value: 'sm' },
-          { label: 'md (960px)', value: 'md' },
-          { label: 'lg (1280px)', value: 'lg' },
-          { label: 'xl (1440px)', value: 'xl' },
-          { label: 'full (100%)', value: 'full' },
-          { label: 'custom', value: 'custom' },
-        ],
+        options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
         defaultValue: 'full',
-        description: 'Maximum width constraint'
+        description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
       },
       {
         name: 'maxWidthCustom',
@@ -538,14 +519,9 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'alignSelf',
         type: 'select',
-        options: [
-          { label: 'start (left)', value: 'start' },
-          { label: 'center', value: 'center' },
-          { label: 'end (right)', value: 'end' },
-          { label: 'stretch (full width)', value: 'stretch' },
-        ],
+        options: ['start', 'center', 'end', 'stretch'],
         defaultValue: 'stretch',
-        description: 'Horizontal alignment'
+        description: 'Horizontal alignment (start=left, end=right, stretch=full width)'
       },
       {
         name: 'padding',
@@ -1640,13 +1616,13 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       },
       {
         name: 'data',
-        type: 'array',
+        type: 'object',
         defaultValue: [],
         description: 'Custom data array (only used when dataSource is "custom"). Array of objects with consistent keys.',
       },
       {
         name: 'columns',
-        type: 'array',
+        type: 'object',
         defaultValue: [],
         description: 'Column definitions for custom data. Array of objects with {id, label} properties.',
       },

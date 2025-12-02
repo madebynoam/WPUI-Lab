@@ -1287,8 +1287,6 @@ export const RenderNode: React.FC<{
         if (dataSource === 'custom') {
           return (
             <div
-              ref={isSelectable ? elementRef : undefined}
-              onClick={handleNodeClick}
               style={{
                 padding: '20px',
                 border: '2px dashed #e0e0e0',
@@ -1303,7 +1301,7 @@ export const RenderNode: React.FC<{
               </p>
               <p style={{ margin: '0', fontSize: '14px' }}>
                 This DataViews component has dataSource set to "custom" but no data is provided.
-                {isSelectable && ' Select this component and ask the agent to generate data for it.'}
+                 Select this component and ask the agent to generate data for it.
               </p>
             </div>
           );
@@ -1315,8 +1313,6 @@ export const RenderNode: React.FC<{
         if (dataSource === 'custom') {
           return (
             <div
-              ref={isSelectable ? elementRef : undefined}
-              onClick={handleNodeClick}
               style={{
                 padding: '20px',
                 border: '2px dashed #e0e0e0',
@@ -1331,7 +1327,7 @@ export const RenderNode: React.FC<{
               </p>
               <p style={{ margin: '0', fontSize: '14px' }}>
                 This DataViews component has dataSource set to "custom" but no columns are defined.
-                {isSelectable && ' Select this component and ask the agent to generate data for it.'}
+                 Select this component and ask the agent to generate data for it.
               </p>
             </div>
           );
@@ -1595,15 +1591,15 @@ export const RenderNode: React.FC<{
         }
       }
 
-      mergedProps[statePropName] = runtimeValue;
+      (mergedProps as any)[statePropName] = runtimeValue;
 
       // Wire up real onChange handler
-      mergedProps.onChange = (newValue: any) => {
+      (mergedProps as any).onChange = (newValue: any) => {
         playModeState.setState(node.id, statePropName, newValue);
       };
     } else {
       // In design mode: disable interaction
-      mergedProps.onChange = () => {};
+      (mergedProps as any).onChange = () => {};
     }
 
     // Pass editor props directly to form controls
@@ -1742,9 +1738,9 @@ export const RenderNode: React.FC<{
             >
               {(() => {
                 // Get grid properties
-                const columns = mergedProps.columns || 2;
+                const columns = (mergedProps as any).columns || 2;
                 // gap is a multiplier of 4px in WordPress components
-                const gapMultiplier = typeof mergedProps.gap === 'number' ? mergedProps.gap : 0;
+                const gapMultiplier = typeof (mergedProps as any).gap === 'number' ? (mergedProps as any).gap : 0;
                 const gapPx = gapMultiplier * 4;
 
                 const elements = [];

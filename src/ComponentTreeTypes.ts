@@ -23,6 +23,7 @@ export type ComponentTreeAction =
   | { type: 'DELETE_PAGE'; payload: { pageId: string } }
   | { type: 'RENAME_PAGE'; payload: { pageId: string; name: string } }
   | { type: 'DUPLICATE_PAGE'; payload: { pageId: string } }
+  | { type: 'REORDER_PAGES'; payload: { fromIndex: number; toIndex: number } }
   | { type: 'UPDATE_PAGE_THEME'; payload: { pageId: string; theme: { primaryColor?: string; backgroundColor?: string } } }
   | { type: 'SET_PAGES'; payload: { pages: Page[] } }
 
@@ -31,7 +32,7 @@ export type ComponentTreeAction =
   | { type: 'SET_CURRENT_PROJECT'; payload: { projectId: string } }
   | { type: 'DELETE_PROJECT'; payload: { projectId: string } }
   | { type: 'RENAME_PROJECT'; payload: { projectId: string; name: string } }
-  | { type: 'DUPLICATE_PROJECT'; payload: { projectId: string } }
+  | { type: 'DUPLICATE_PROJECT'; payload: { projectId: string; newProjectId: string } }
   | { type: 'UPDATE_PROJECT_THEME'; payload: { theme: { primaryColor?: string; backgroundColor?: string } } }
   | { type: 'UPDATE_PROJECT_LAYOUT'; payload: { layout: { maxWidth?: number; padding?: number; spacing?: number } } }
   | { type: 'SET_PROJECTS'; payload: { projects: Project[] } }

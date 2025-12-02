@@ -142,7 +142,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                         <VStack spacing={1} style={{ flex: 1, minWidth: 0 }}>
                           <Heading level={4} style={{ margin: 0 }}>{project.name}</Heading>
                           <Text variant="muted">
-                            {project.description || formatDate(project.createdAt || project.lastModified)}
+                            {formatDate(project.createdAt || project.lastModified)}
                           </Text>
                         </VStack>
                       </HStack>

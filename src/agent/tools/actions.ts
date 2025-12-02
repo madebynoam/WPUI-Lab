@@ -181,36 +181,10 @@ export const batchCreateComponentsTool: AgentTool = {
   parameters: {
     components: {
       type: 'array',
-      description: 'Array of component definitions to create',
+      description: 'Array of component definitions to create. Each item should be an object with: type (string), props (object), content (object for Cards/Panels), children (array for nested components), parentId (string, optional), index (number, optional)',
       required: true,
       items: {
         type: 'object',
-        properties: {
-          type: {
-            type: 'string',
-            description: 'Component type (e.g., "Card", "Button", "VStack")',
-          },
-          props: {
-            type: 'object',
-            description: 'Component properties',
-          },
-          content: {
-            type: 'object',
-            description: 'Content parameter for Cards/Panels (e.g., { title: "...", body: "..." })',
-          },
-          children: {
-            type: 'array',
-            description: 'Nested child components (recursive structure)',
-          },
-          parentId: {
-            type: 'string',
-            description: 'Parent component ID (optional, defaults to root)',
-          },
-          index: {
-            type: 'number',
-            description: 'Position in parent (optional)',
-          },
-        },
       },
     },
   },
@@ -289,6 +263,9 @@ export const batchCreateComponentsTool: AgentTool = {
         // Add custom children if provided
         if (compDef.children && Array.isArray(compDef.children)) {
           const customChildren = patternNodesToComponentNodes(compDef.children);
+          if (!newComponent.children) {
+            newComponent.children = [];
+          }
           newComponent.children.push(...customChildren);
         }
 
@@ -1115,13 +1092,13 @@ export const buildFromYAMLTool: AgentTool = {
             const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
 
             const cardHeader = defaultChildrenNodes.find(c => c.type === 'CardHeader');
-            if (cardHeader) {
+            if (cardHeader && cardHeader.children) {
               const heading = cardHeader.children.find(c => c.type === 'Heading');
               if (heading) heading.props.children = pattern.props.title;
             }
 
             const cardBody = defaultChildrenNodes.find(c => c.type === 'CardBody');
-            if (cardBody) {
+            if (cardBody && cardBody.children) {
               const text = cardBody.children.find(c => c.type === 'Text');
               if (text) text.props.children = pattern.props.body;
             }
@@ -1135,7 +1112,7 @@ export const buildFromYAMLTool: AgentTool = {
           if (definition.defaultChildren) {
             const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
             const panelBody = defaultChildrenNodes.find(c => c.type === 'PanelBody');
-            if (panelBody) {
+            if (panelBody && panelBody.children) {
               const text = panelBody.children.find(c => c.type === 'Text');
               if (text) text.props.children = pattern.props.body;
             }

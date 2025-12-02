@@ -62,6 +62,7 @@ interface ComponentTreeContextType {
   deletePage: (pageId: string) => void;
   renamePage: (pageId: string, name: string) => void;
   duplicatePage: (pageId: string) => void;
+  reorderPages: (fromIndex: number, toIndex: number) => void;
   updatePageTheme: (pageId: string, theme: { primaryColor?: string; backgroundColor?: string }) => void;
 
   // Projects management

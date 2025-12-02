@@ -12,7 +12,7 @@ interface IconPickerProps {
 }
 
 // Group icons logically
-const ICON_GROUPS = {
+const ICON_GROUPS: Record<string, string[]> = {
   'Navigation': ['arrowUp', 'arrowDown', 'arrowLeft', 'arrowRight', 'chevronUp', 'chevronDown', 'chevronLeft', 'chevronRight'],
   'Content': ['paragraph', 'heading', 'quote', 'code', 'html', 'list', 'listItem', 'columns', 'table'],
   'Media': ['image', 'gallery', 'video', 'audio', 'media', 'file'],
@@ -42,7 +42,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, label }
 
     // Remove grouped icons from ungrouped set
     Object.values(groups).forEach(iconList => {
-      iconList.forEach(icon => ungroupedIcons.delete(icon));
+      iconList.forEach(icon => ungroupedIcons.delete(icon as typeof WORDPRESS_ICON_NAMES[number]));
     });
 
     // Add ungrouped icons to Other

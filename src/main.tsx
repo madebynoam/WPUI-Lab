@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { __experimentalStyleProvider as StyleProvider } from '@wordpress/components'
 import '@wordpress/components/build-style/style.css'
 import './index.css'
-import App from './App.tsx'
+import App from './App'
 import { privateApis as themePrivateApis } from '@wordpress/theme'
 import { unlock } from './utils/lock-unlock'
 

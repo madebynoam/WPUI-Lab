@@ -1,4 +1,4 @@
-import { ToolContext, ToolResult, LLMMessage } from '../types';
+import { ToolContext, ToolResult } from '../types';
 
 /**
  * Supported agent types for specialized tasks

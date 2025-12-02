@@ -117,7 +117,7 @@ export async function executePropertyUpdate(params: {
 
   try {
     // Update properties directly
-    context.updateComponent(componentId, { props });
+    context.updateComponentProps(componentId, props);
 
     const duration = Date.now() - startTime;
     console.log(`[Executor] ✓ Properties updated in ${duration}ms`);
@@ -164,7 +164,7 @@ export async function executeComponentDeletion(params: {
   try {
     // Delete each component
     for (const id of componentIds) {
-      context.deleteComponent(id);
+      context.removeComponent(id);
     }
 
     const duration = Date.now() - startTime;
@@ -292,7 +292,7 @@ export async function executeCustomCopyUpdate(params: {
 
   try {
     // Get current component to understand context
-    const component = context.getComponent(componentId);
+    const component = context.getNodeById(componentId);
     if (!component) {
       throw new Error('Component not found');
     }
@@ -320,7 +320,7 @@ export async function executeCustomCopyUpdate(params: {
       updatedProps.children = aiResult.text;
     }
 
-    context.updateComponent(componentId, { props: updatedProps });
+    context.updateComponentProps(componentId, updatedProps);
 
     const duration = Date.now() - startTime;
     console.log(`[Executor] ✓ Copy updated in ${duration}ms`);
@@ -372,7 +372,7 @@ export async function executeCustomPropsUpdate(params: {
 
   try {
     // Get current component
-    const component = context.getComponent(componentId);
+    const component = context.getNodeById(componentId);
     if (!component) {
       throw new Error('Component not found');
     }
@@ -387,9 +387,7 @@ export async function executeCustomPropsUpdate(params: {
     });
 
     // Update component with AI-generated props
-    context.updateComponent(componentId, {
-      props: { ...component.props, ...aiResult.props }
-    });
+    context.updateComponentProps(componentId, { ...component.props, ...aiResult.props });
 
     const duration = Date.now() - startTime;
     console.log(`[Executor] ✓ Props updated in ${duration}ms`);
@@ -440,13 +438,13 @@ export async function executeComponentMove(params: {
 
   try {
     // Get component
-    const component = context.getComponent(componentId);
+    const component = context.getNodeById(componentId);
     if (!component) {
       throw new Error('Component not found');
     }
 
     // Delete from current location
-    context.deleteComponent(componentId);
+    context.removeComponent(componentId);
 
     // Re-add at new location
     context.addComponent(component, newParentId, newIndex);

@@ -33,6 +33,7 @@ export const TabContainer: React.FC<TabContainerProps> = ({
   useEffect(() => {
     if (typeof window !== 'undefined' && !TabbedSidebar) {
       (async () => {
+        // @ts-ignore - No types available for @wordpress/block-editor
         const blockEditor = await import('@wordpress/block-editor');
         const lockUnlock = await import('../utils/lock-unlock');
         const component = lockUnlock.unlock(blockEditor.privateApis).TabbedSidebar;

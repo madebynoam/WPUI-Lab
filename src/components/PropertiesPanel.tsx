@@ -240,7 +240,7 @@ export const PropertiesPanel: React.FC = () => {
             <div style={{ marginBottom: "16px" }}>
               <SelectControl
                 label="Max Width"
-                value={maxWidth === 0 ? "none" : String(maxWidth)}
+                value={(maxWidth === 0 ? "none" : String(maxWidth)) as "none" | "1920" | "1440" | "1200" | "1024" | "768"}
                 options={[
                   { label: "None (100%)", value: "none" },
                   { label: "1920px", value: "1920" },
@@ -618,7 +618,7 @@ export const PropertiesPanel: React.FC = () => {
                           const targetPageId =
                             pages.length > 0 ? pages[0].id : "unknown";
                           addInteraction(selectedNodeIds[0], {
-                            trigger: type.trigger,
+                            trigger: type.trigger as 'onClick',
                             action: "navigate",
                             targetId: targetPageId,
                           });
