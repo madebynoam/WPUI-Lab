@@ -143,6 +143,22 @@ export const INTERACTIVE_COMPONENT_TYPES = [
   "Notice",
 ];
 
+// Containers that should accept children when selected for insertion
+const INSERTION_CONTAINERS = [
+  "HStack",
+  "VStack",
+  "Grid",
+  "Flex",
+  "FlexBlock",
+  "FlexItem",
+  "CardBody",
+  "CardHeader",
+  "CardFooter",
+  "TabPanel",
+  "PanelBody",
+  "PanelRow",
+];
+
 // Helper: Convert PatternNode to ComponentNode with IDs
 function patternNodesToComponentNodes(
   patternNodes: PatternNode[]
@@ -216,10 +232,10 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
         color: "#1e1e1e",
         borderRadius: "2px",
         fontSize: "13px",
+        cursor: "default",
       }}
       {...attributes}
       onClick={(e) => {
-        // Allow clicking to select page if not editing
         if (!isEditing) {
           onPageClick();
         }
@@ -278,7 +294,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
               fontWeight: isCurrent ? 500 : 400,
               userSelect: "none",
               pointerEvents: "auto",
-              cursor: "pointer",
+              cursor: "default",
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -571,12 +587,12 @@ export const TreePanel: React.FC<TreePanelProps> = ({
       return;
     }
 
-    const canAcceptChildren =
-      targetNode && componentRegistry[targetNode.type]?.acceptsChildren;
-    const isEmpty = !targetNode?.children || targetNode.children.length === 0;
+    // Check if target is an insertion container
+    const isInsertionContainer =
+      targetNode && INSERTION_CONTAINERS.includes(targetNode.type);
 
-    // If it's an empty container, insert as child
-    if (canAcceptChildren && isEmpty) {
+    // If it's an insertion container, insert as child
+    if (isInsertionContainer) {
       addComponent(componentType, targetId);
       setSearchTerm("");
       return;
@@ -644,12 +660,12 @@ export const TreePanel: React.FC<TreePanelProps> = ({
       return;
     }
 
-    const canAcceptChildren =
-      targetNode && componentRegistry[targetNode.type]?.acceptsChildren;
-    const isEmpty = !targetNode?.children || targetNode.children.length === 0;
+    // Check if target is an insertion container
+    const isInsertionContainer =
+      targetNode && INSERTION_CONTAINERS.includes(targetNode.type);
 
-    // If it's an empty container, insert as child
-    if (canAcceptChildren && isEmpty) {
+    // If it's an insertion container, insert as child
+    if (isInsertionContainer) {
       // If target is a Grid, set default gridColumnSpan for the pattern root
       if (targetNode.type === "Grid") {
         patternWithIds = {
@@ -942,6 +958,13 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                     pageClickCountRef.current[page.id] += 1;
 
                     if (pageClickCountRef.current[page.id] === 1) {
+                      // Select page on first click
+                      if (editingPageId !== page.id) {
+                        setCurrentPage(page.id);
+                        if (currentProjectId) {
+                          router.push(`/editor/${currentProjectId}/${page.id}`);
+                        }
+                      }
                       pageClickTimeoutRef.current[page.id] = setTimeout(() => {
                         pageClickCountRef.current[page.id] = 0;
                       }, 350);

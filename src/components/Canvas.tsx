@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import { useComponentTree, ROOT_VSTACK_ID } from "../ComponentTreeContext";
 import { ComponentNode } from "../types";
 import { Breadcrumb } from "./Breadcrumb";
@@ -64,6 +64,22 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   const pageMaxWidth = projectLayout.maxWidth ?? 0;
   const pagePadding = projectLayout.padding ?? 0;
   const pageSpacing = projectLayout.spacing ?? 4;
+
+  // Apply pageSpacing to root VStack
+  const modifiedTree = useMemo(() => {
+    return tree.map((node) => {
+      if (node.id === ROOT_VSTACK_ID) {
+        return {
+          ...node,
+          props: {
+            ...node.props,
+            spacing: pageSpacing,
+          },
+        };
+      }
+      return node;
+    });
+  }, [tree, pageSpacing]);
 
   // Find if a node is inside an interactive component
   const findInteractiveAncestor = useCallback(
@@ -441,7 +457,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
                 ) : (
                   // Render full page tree with simple custom drag-drop
                   <>
-                    {tree.map((node) => (
+                    {modifiedTree.map((node) => (
                       <RenderNode
                         key={node.id}
                         node={node}

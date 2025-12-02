@@ -1047,6 +1047,12 @@ export const RenderNode: React.FC<{
               // Save and exit on Enter (for single-line text and buttons only, not headings)
               if (e.key === 'Enter' && (node.type === 'Text' || node.type === 'Button')) {
                 e.preventDefault();
+                const newContent = editableRef.current?.textContent || '';
+                if (node.type === 'Button') {
+                  updateComponentProps(node.id, { text: newContent });
+                } else {
+                  updateComponentProps(node.id, { children: newContent });
+                }
                 setIsEditingText(false);
                 return;
               }
