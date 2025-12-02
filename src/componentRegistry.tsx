@@ -388,7 +388,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     component: HStack,
     acceptsChildren: true,
     description: 'Stack child elements horizontally with spacing control.',
-    defaultProps: { spacing: 2 },
+    defaultProps: { spacing: 2, justify: 'flex-start' },
     propDefinitions: [
       {
         name: 'spacing',
@@ -474,7 +474,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     component: VStack,
     acceptsChildren: true,
     description: 'Stack child elements vertically with spacing control.',
-    defaultProps: { spacing: 2, alignment: 'stretch' },
+    defaultProps: { spacing: 2, alignment: 'stretch', justify: 'flex-start' },
     propDefinitions: [
       {
         name: 'spacing',
