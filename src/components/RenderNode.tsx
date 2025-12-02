@@ -1388,13 +1388,24 @@ export const RenderNode: React.FC<{
         });
       }
 
+      // Calculate pagination
+      const perPage = currentView.perPage || itemsPerPage;
+      const currentPage = currentView.page || 1;
+      const totalItems = processedData.length;
+      const totalPages = Math.ceil(totalItems / perPage);
+
+      // Slice data for current page
+      const startIndex = (currentPage - 1) * perPage;
+      const endIndex = startIndex + perPage;
+      const paginatedData = processedData.slice(startIndex, endIndex);
+
       const mergedProps = {
-        data: processedData,
+        data: paginatedData,
         fields: fields || [],
         view: currentView,
         paginationInfo: {
-          totalItems: processedData.length,
-          totalPages: Math.ceil(processedData.length / (currentView.perPage || itemsPerPage)),
+          totalItems,
+          totalPages,
         },
         // REQUIRED: defaultLayouts tells DataViews which layout types are available
         // Without this, DataViews crashes with "Cannot convert undefined or null to object"
