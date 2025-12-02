@@ -9,6 +9,7 @@ import {
 } from "@wordpress/icons";
 import { useComponentTree } from "../ComponentTreeContext";
 import { usePlayModeState } from "../PlayModeContext";
+import { useRouter } from "next/navigation";
 
 interface TopBarProps {
   showInserter: boolean;
@@ -18,6 +19,8 @@ interface TopBarProps {
   rightPanel: "props" | "code" | "none";
   onToggleRightPanel: (panel: "props" | "code" | "none") => void;
   onNavigateToProjects?: () => void;
+  projectId: string;
+  pageId: string;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -28,7 +31,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   rightPanel,
   onToggleRightPanel,
   onNavigateToProjects,
+  projectId,
+  pageId,
 }) => {
+  const router = useRouter();
   const { pages, currentPageId, isPlayMode, setPlayMode } = useComponentTree();
   const playModeState = usePlayModeState();
   const currentPage = pages.find((p) => p.id === currentPageId);
@@ -234,7 +240,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           />
 
           <Button
-            onClick={() => setPlayMode(true)}
+            onClick={() => router.push(`/play/${projectId}/${pageId}`)}
             variant="primary"
             style={{
               backgroundColor: "#3858e9",

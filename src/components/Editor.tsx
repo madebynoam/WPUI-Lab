@@ -180,6 +180,8 @@ function EditorContent({ projectId, pageId }: EditorProps) {
                 rightPanel={rightPanel}
                 onToggleRightPanel={setRightPanel}
                 onNavigateToProjects={handleNavigateToProjects}
+                projectId={projectId}
+                pageId={pageId}
               />
             </div>
           )}
