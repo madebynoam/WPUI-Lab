@@ -6,15 +6,30 @@ import { PlayModeProvider } from '../../../../src/PlayModeContext';
 import { Canvas } from '../../../../src/components/Canvas';
 
 export default function PlayModeContent({ projectId, pageId }: { projectId: string; pageId: string }) {
-  const { setCurrentProject, setCurrentPage, setSelectedNodeIds } = useComponentTree();
+  const { currentProjectId, currentPageId, setCurrentProject, setCurrentPage, setSelectedNodeIds, setPlayMode } = useComponentTree();
 
-  // Set the current project and page when the component mounts
+  // Set the current project and page when they change
   useEffect(() => {
-    setCurrentProject(projectId);
-    setCurrentPage(pageId);
-    // Clear selection in play mode
+    // Only update if the values are different to avoid infinite loops
+    if (currentProjectId !== projectId) {
+      setCurrentProject(projectId);
+    }
+    if (currentPageId !== pageId) {
+      setCurrentPage(pageId);
+    }
+    // Clear selection in play mode (do this once on mount)
     setSelectedNodeIds([]);
-  }, [projectId, pageId, setCurrentProject, setCurrentPage, setSelectedNodeIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, pageId]);
+
+  // Enable play mode on mount, disable on unmount
+  useEffect(() => {
+    setPlayMode(true);
+    return () => {
+      setPlayMode(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
