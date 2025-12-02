@@ -607,39 +607,52 @@ export const PropertiesPanel: React.FC = () => {
                         justifyContent: "space-between",
                       }}
                     >
-                      <Button
-                        variant="tertiary"
-                        style={{
-                          flex: 1,
-                          justifyContent: "flex-start",
-                          padding: "0",
-                          minHeight: "auto",
-                          textAlign: "left",
-                        }}
-                        disabled={!type.enabled}
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          if (!type.enabled) return;
+                      <VStack spacing={0} style={{ flex: 1, alignItems: "flex-start" }}>
+                        <Button
+                          variant="tertiary"
+                          style={{
+                            width: "100%",
+                            justifyContent: "flex-start",
+                            padding: "0",
+                            minHeight: "auto",
+                            textAlign: "left",
+                          }}
+                          disabled={!type.enabled}
+                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                            if (!type.enabled) return;
 
-                          // If no interaction exists, create one
-                          if (!existingInteraction) {
-                            const targetPageId =
-                              pages.length > 0 ? pages[0].id : "unknown";
-                            addInteraction(selectedNodeIds[0], {
-                              trigger: type.trigger,
-                              action: "navigate",
-                              targetId: targetPageId,
-                            });
-                          }
+                            // If no interaction exists, create one
+                            if (!existingInteraction) {
+                              const targetPageId =
+                                pages.length > 0 ? pages[0].id : "unknown";
+                              addInteraction(selectedNodeIds[0], {
+                                trigger: type.trigger,
+                                action: "navigate",
+                                targetId: targetPageId,
+                              });
+                            }
 
-                          // Open popover
-                          setAnchorEl(e.currentTarget);
-                          setOpenInteractionId(type.id);
-                        }}
-                        icon={type.icon}
-                        title={type.comingSoon ? "Coming soon" : undefined}
-                      >
-                        {type.label}
-                      </Button>
+                            // Open popover
+                            setAnchorEl(e.currentTarget);
+                            setOpenInteractionId(type.id);
+                          }}
+                          icon={type.icon}
+                          title={type.comingSoon ? "Coming soon" : undefined}
+                        >
+                          {type.label}
+                        </Button>
+                        {isActive && existingInteraction && (
+                          <div style={{ fontSize: "11px", color: "#757575", paddingLeft: "32px", marginTop: "-2px" }}>
+                            {existingInteraction.action === "navigate" ? (
+                              <>Go to: {pages.find(p => p.id === existingInteraction.targetId)?.name || existingInteraction.targetId}</>
+                            ) : existingInteraction.action === "showModal" ? (
+                              <>Show modal</>
+                            ) : (
+                              <>{existingInteraction.action}</>
+                            )}
+                          </div>
+                        )}
+                      </VStack>
 
                       {isActive && (
                         <HStack
