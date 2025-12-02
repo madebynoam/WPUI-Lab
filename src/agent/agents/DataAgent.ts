@@ -127,6 +127,7 @@ CRITICAL WORKFLOW:
 2. If a DataViews component is selected AND user wants to change its data → use updateTable with the component ID
 3. If nothing is selected OR user wants a new table → use createTable
 4. NEVER ask for component IDs - extract them from the context!
+5. ALWAYS generate at least 10-15 rows of realistic data (NOT just columns!)
 
 Instructions:
 1. Generate realistic, varied data (NOT generic "Item 1", "Item 2", "Item 3")
@@ -137,14 +138,26 @@ Instructions:
    - Emails: realistic format (not test@test.com)
 3. Always include an "id" column (sequential: 1, 2, 3...)
 4. Use proper field names (camelCase or snake_case)
-5. Return structure: {columns: [{id, label}], data: [{id, field1, field2}]}
 
-Examples:
-"users table with 10 rows" (nothing selected) → createTable with users data
+CRITICAL: You MUST provide BOTH columns AND rows. Never send just columns!
 
-"change this to show domains and expiry dates" (DataViews selected) → updateTable with selected component ID
-
-"products with prices" → Include id, name, price, category, stock fields`;
+Example updateTable call:
+{
+  "componentId": "node-123",
+  "topic": "domains",
+  "columns": [
+    {"id": "id", "label": "ID"},
+    {"id": "domainName", "label": "Domain"},
+    {"id": "expiryDate", "label": "Expiry Date"},
+    {"id": "status", "label": "Status"}
+  ],
+  "rows": [
+    {"id": 1, "domainName": "example.com", "expiryDate": "2025-06-15", "status": "Active"},
+    {"id": 2, "domainName": "mysite.org", "expiryDate": "2024-12-20", "status": "Expiring Soon"},
+    {"id": 3, "domainName": "business.co", "expiryDate": "2026-03-10", "status": "Active"},
+    ... (at least 10-15 total rows)
+  ]
+}`;
   }
 
   private buildContext(context: ToolContext): string {
