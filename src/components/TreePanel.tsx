@@ -211,21 +211,40 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
         alignItems: "center",
         height: "36px",
         paddingRight: "8px",
-        paddingLeft: "8px",
+        paddingLeft: "4px",
         backgroundColor: isCurrent ? "#f0f0f0" : "transparent",
         color: "#1e1e1e",
         borderRadius: "2px",
         fontSize: "13px",
       }}
       {...attributes}
-      {...listeners}
       onClick={(e) => {
         // Allow clicking to select page if not editing
-        if (!isEditing && !isDragging) {
+        if (!isEditing) {
           onPageClick();
         }
       }}
     >
+      {/* Drag handle */}
+      {!isEditing && (
+        <div
+          {...listeners}
+          style={{
+            cursor: "grab",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 4px",
+            marginRight: "4px",
+            opacity: 0.4,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm4-16h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
+          </svg>
+        </div>
+      )}
+
       {isEditing ? (
         <input
           type="text"
