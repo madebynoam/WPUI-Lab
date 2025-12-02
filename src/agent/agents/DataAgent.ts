@@ -49,12 +49,18 @@ export class DataAgent {
 
     try {
       const systemPrompt = this.buildSystemPrompt();
+      const contextInfo = this.buildContext(context);
+
+      console.log('[DataAgent] Context sent to LLM:\n', contextInfo);
 
       // Call LLM - provider will handle model-specific parameter constraints
       const chatOptions: any = {
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage },
+          {
+            role: 'user',
+            content: `${userMessage}\n\nCurrent context:\n${contextInfo}`,
+          },
         ],
         max_tokens: 2000,
         temperature: 0.7,
@@ -79,6 +85,8 @@ export class DataAgent {
 
         if (toolName === 'createTable') {
           result = await this.createTable(toolInput, context);
+        } else if (toolName === 'updateTable') {
+          result = await this.updateTable(toolInput, context);
         }
       }
 
@@ -108,8 +116,15 @@ export class DataAgent {
   private buildSystemPrompt(): string {
     return `You are a data generator for tables.
 
-Tool:
-- createTable(topic, columns, rows): Create table with realistic data
+Tools:
+- createTable(topic, columns, rows): Create NEW table with realistic data
+- updateTable(componentId, topic, columns, rows): UPDATE EXISTING table with new data
+
+CRITICAL WORKFLOW:
+1. ALWAYS check the "Current context" section first to see what's selected
+2. If a DataViews component is selected AND user wants to change its data → use updateTable with the component ID
+3. If nothing is selected OR user wants a new table → use createTable
+4. NEVER ask for component IDs - extract them from the context!
 
 Instructions:
 1. Generate realistic, varied data (NOT generic "Item 1", "Item 2", "Item 3")
@@ -123,12 +138,46 @@ Instructions:
 5. Return structure: {columns: [{id, label}], data: [{id, field1, field2}]}
 
 Examples:
-"users table with 10 rows" → {
-  columns: [{id: "id", label: "ID"}, {id: "name", label: "Name"}, ...],
-  data: [{id: 1, name: "Sarah Martinez", email: "sarah@example.com", ...}, ...]
-}
+"users table with 10 rows" (nothing selected) → createTable with users data
+
+"change this to show domains and expiry dates" (DataViews selected) → updateTable with selected component ID
 
 "products with prices" → Include id, name, price, category, stock fields`;
+  }
+
+  private buildContext(context: ToolContext): string {
+    if (context.selectedNodeIds.length === 0) {
+      return 'SELECTION: Nothing selected\n\nNo component is selected. Use createTable to create a new table.';
+    }
+
+    const selectedId = context.selectedNodeIds[0];
+    const selectedNode = context.getNodeById(selectedId);
+
+    if (!selectedNode) {
+      return 'SELECTION: Nothing selected\n\nNo component is selected. Use createTable to create a new table.';
+    }
+
+    const nodeName = selectedNode.name || selectedNode.type;
+    const contextParts: string[] = [];
+    contextParts.push(`SELECTION: ${nodeName} (ID: ${selectedId})`);
+
+    // If it's a DataViews component, show current data structure
+    if (selectedNode.type === 'DataViews') {
+      contextParts.push('');
+      contextParts.push('This is a DataViews component. Use updateTable to change its data.');
+
+      if (selectedNode.props?.columns) {
+        contextParts.push(`Current columns: ${selectedNode.props.columns.length}`);
+      }
+      if (selectedNode.props?.data) {
+        contextParts.push(`Current rows: ${selectedNode.props.data.length}`);
+      }
+    } else {
+      contextParts.push('');
+      contextParts.push('This is NOT a DataViews component. Use createTable to create a new table.');
+    }
+
+    return contextParts.join('\n');
   }
 
   private getTools() {
@@ -137,7 +186,7 @@ Examples:
         type: 'function' as const,
         function: {
           name: 'createTable',
-          description: 'Create a table with realistic data',
+          description: 'Create a NEW table with realistic data',
           parameters: {
             type: 'object',
             properties: {
@@ -170,6 +219,47 @@ Examples:
           },
         },
       },
+      {
+        type: 'function' as const,
+        function: {
+          name: 'updateTable',
+          description: 'Update an EXISTING table with new data',
+          parameters: {
+            type: 'object',
+            properties: {
+              componentId: {
+                type: 'string',
+                description: 'ID of the existing DataViews component to update',
+              },
+              topic: {
+                type: 'string',
+                description: 'Topic/type of data (e.g., "users", "products")',
+              },
+              columns: {
+                type: 'array',
+                description: 'Column definitions',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    label: { type: 'string' },
+                  },
+                  required: ['id', 'label'],
+                },
+              },
+              rows: {
+                type: 'array',
+                description: 'Row data',
+                items: {
+                  type: 'object',
+                  description: 'Row object with column values',
+                },
+              },
+            },
+            required: ['componentId', 'topic', 'columns', 'rows'],
+          },
+        },
+      },
     ];
   }
 
@@ -197,6 +287,29 @@ Examples:
     return {
       success: true,
       message: `Created ${topic} table with ${rows.length} rows`,
+      duration: 0,
+      cost: 0,
+    };
+  }
+
+  private async updateTable(
+    params: any,
+    context: ToolContext
+  ): Promise<DataAgentResult> {
+    const { componentId, topic, columns, rows } = params;
+
+    // Update existing DataViews component with new data
+    context.updateComponent(componentId, {
+      dataSource: 'custom',
+      data: rows,
+      columns: columns,
+      viewType: 'table',
+      itemsPerPage: 10,
+    });
+
+    return {
+      success: true,
+      message: `Updated ${topic} table with ${rows.length} rows`,
       duration: 0,
       cost: 0,
     };

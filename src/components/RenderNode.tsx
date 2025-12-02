@@ -1267,9 +1267,59 @@ export const RenderNode: React.FC<{
       // Validate data and fields exist
       if (!mockData || !Array.isArray(mockData) || mockData.length === 0) {
         console.warn(`DataViews: No data available for source "${dataSource}"`);
+        // For custom datasource, show helpful error message
+        if (dataSource === 'custom') {
+          return (
+            <div
+              ref={isSelectable ? elementRef : undefined}
+              onClick={handleNodeClick}
+              style={{
+                padding: '20px',
+                border: '2px dashed #e0e0e0',
+                borderRadius: '8px',
+                backgroundColor: '#fafafa',
+                color: '#666',
+                textAlign: 'center',
+              }}
+            >
+              <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>
+                DataViews: Missing Data
+              </p>
+              <p style={{ margin: '0', fontSize: '14px' }}>
+                This DataViews component has dataSource set to "custom" but no data is provided.
+                {isSelectable && ' Select this component and ask the agent to generate data for it.'}
+              </p>
+            </div>
+          );
+        }
       }
       if (!fields || !Array.isArray(fields) || fields.length === 0) {
         console.warn(`DataViews: No field definitions available for source "${dataSource}"`);
+        // For custom datasource, show helpful error message
+        if (dataSource === 'custom') {
+          return (
+            <div
+              ref={isSelectable ? elementRef : undefined}
+              onClick={handleNodeClick}
+              style={{
+                padding: '20px',
+                border: '2px dashed #e0e0e0',
+                borderRadius: '8px',
+                backgroundColor: '#fafafa',
+                color: '#666',
+                textAlign: 'center',
+              }}
+            >
+              <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>
+                DataViews: Missing Columns
+              </p>
+              <p style={{ margin: '0', fontSize: '14px' }}>
+                This DataViews component has dataSource set to "custom" but no columns are defined.
+                {isSelectable && ' Select this component and ask the agent to generate data for it.'}
+              </p>
+            </div>
+          );
+        }
       }
 
       // Ensure valid sort field and visible fields

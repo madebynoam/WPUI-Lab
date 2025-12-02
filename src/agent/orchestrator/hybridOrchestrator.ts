@@ -234,12 +234,13 @@ Available agents:
 - page: Create/delete/rename pages (use for "create page", "add page")
 - component: Create/add/insert UI components (use for "add button", "add heading", "create cards", "add form", "insert component")
 - content: Update text in EXISTING components ONLY (use for "change the text to X", "update heading text", "modify content")
-- data: Generate table data (use for "create table", "generate data")
+- data: Generate table data (use for "create table", "generate data", "change datasource", "update table data")
 - layout: Arrange components (use for "arrange in columns", "center this")
 
 CRITICAL ROUTING RULES:
 - "add X" / "create X" / "insert X" → ALWAYS use "component" agent (creating new components)
 - "change text" / "update text" / "edit text" → ALWAYS use "content" agent (updating existing components)
+- "change datasource" / "update this table" / "change this to show" → ALWAYS use "data" agent (updating DataViews data)
 - If user says "add heading" / "add button" / "add card" → use "component" agent
 
 Rules:
@@ -264,6 +265,8 @@ Examples:
 ]
 
 "create a users table with 20 rows" → [{"agent": "data", "operation": "createTable", "params": {"topic": "users", "rows": 20}}]
+
+"change the datasource to show domains and expiry dates" → [{"agent": "data", "operation": "update", "params": {"description": "change datasource to show domains and expiry dates"}}]
 
 "change the heading text to Welcome" → [{"agent": "content", "operation": "update", "params": {"description": "change heading text to Welcome"}}]
 
