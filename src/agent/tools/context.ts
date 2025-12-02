@@ -333,3 +333,53 @@ export const searchComponentsTool: AgentTool = {
     };
   },
 };
+
+// Get component schema (available props and their types/options)
+export const getComponentSchemaTool: AgentTool = {
+  name: 'getComponentSchema',
+  description: 'Get the available properties (props) for a component type, including their types, options, and descriptions. Use this to discover what props you can set on a component.',
+  category: 'context',
+  parameters: {
+    componentType: {
+      type: 'string',
+      description: 'Type of component to get schema for (e.g., "HStack", "Button", "DataViews")',
+      required: true,
+    },
+  },
+  execute: async (params: { componentType: string }, _context: ToolContext): Promise<ToolResult> => {
+    const definition = componentRegistry[params.componentType];
+
+    if (!definition) {
+      return {
+        success: false,
+        message: `Component type "${params.componentType}" not found. Use getAvailableComponentTypes to see all available types.`,
+        error: 'Component type not found',
+      };
+    }
+
+    const props = (definition.propDefinitions || []).map(prop => ({
+      name: prop.name,
+      type: prop.type,
+      description: prop.description,
+      defaultValue: prop.defaultValue,
+      ...(prop.options ? { options: prop.options } : {}),
+    }));
+
+    const summary = props.length > 0
+      ? `${params.componentType} has ${props.length} configurable properties: ${props.map(p => p.name).join(', ')}`
+      : `${params.componentType} has no configurable properties`;
+
+    return {
+      success: true,
+      message: summary,
+      data: {
+        componentType: params.componentType,
+        displayName: definition.name,
+        description: definition.description,
+        acceptsChildren: definition.acceptsChildren,
+        defaultProps: definition.defaultProps,
+        properties: props,
+      },
+    };
+  },
+};

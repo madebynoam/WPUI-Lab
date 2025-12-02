@@ -1,20 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { ComponentTreeProvider, useComponentTree, ROOT_VSTACK_ID } from './ComponentTreeContext';
-import { PlayModeProvider } from './PlayModeContext';
-import { TopBar } from './components/TopBar';
-import { TreePanel } from './components/TreePanel';
-import { Canvas } from './components/Canvas';
-import { PropertiesPanel } from './components/PropertiesPanel';
-import { CodePanel } from './components/CodePanel';
-import { AgentPanel } from './components/AgentPanel';
-import { ProjectsScreen } from './components/ProjectsScreen';
-import '@wordpress/components/build-style/style.css';
-import '@wordpress/block-editor/build-style/style.css';
-import '@wordpress/dataviews/build-style/style.css';
+import { useState, useEffect } from "react";
+import {
+  ComponentTreeProvider,
+  useComponentTree,
+  ROOT_VSTACK_ID,
+} from "./ComponentTreeContext";
+import { PlayModeProvider } from "./PlayModeContext";
+import { TopBar } from "./components/TopBar";
+import { TreePanel } from "./components/TreePanel";
+import { Canvas } from "./components/Canvas";
+import { PropertiesPanel } from "./components/PropertiesPanel";
+import { CodePanel } from "./components/CodePanel";
+import { AgentPanel } from "./components/AgentPanel";
+import { ProjectsScreen } from "./components/ProjectsScreen";
+import "@wordpress/components/build-style/style.css";
+import "@wordpress/block-editor/build-style/style.css";
+import "@wordpress/dataviews/build-style/style.css";
 
-type View = 'projects' | 'editor';
+type View = "projects" | "editor";
 
 function AppContent() {
   const {
@@ -29,61 +33,69 @@ function AppContent() {
     duplicateProject,
   } = useComponentTree();
 
-  const [view, setView] = useState<View>('editor');
+  const [view, setView] = useState<View>("editor");
   const [showPanels, setShowPanels] = useState(true);
   const [showInserter, setShowInserter] = useState(false);
   const [showTreePanel, setShowTreePanel] = useState(true);
   const [showHeader, setShowHeader] = useState(true);
-  const [rightPanel, setRightPanel] = useState<'props' | 'code' | 'none'>(() => {
-    // Load saved panel from localStorage, default to 'props'
-    const saved = localStorage.getItem('wp-designer-right-panel');
-    return (saved as 'props' | 'code' | 'none') || 'props';
-  });
+  const [rightPanel, setRightPanel] = useState<"props" | "code" | "none">(
+    () => {
+      // Load saved panel from localStorage, default to 'props'
+      const saved = localStorage.getItem("wp-designer-right-panel");
+      return (saved as "props" | "code" | "none") || "props";
+    }
+  );
   const [rightPanelWidth, setRightPanelWidth] = useState(() => {
     // Load saved width from localStorage, default to 280
-    const saved = localStorage.getItem('wp-designer-code-panel-width');
+    const saved = localStorage.getItem("wp-designer-code-panel-width");
     return saved ? parseInt(saved, 10) : 280;
   });
   const [isResizing, setIsResizing] = useState(false);
   const [showAgentPanel, setShowAgentPanel] = useState(() => {
     // Load saved state from localStorage, default to false
-    const saved = localStorage.getItem('wp-designer-show-agent-panel');
-    return saved === 'true';
+    const saved = localStorage.getItem("wp-designer-show-agent-panel");
+    return saved === "true";
   });
 
   // Save right panel selection to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('wp-designer-right-panel', rightPanel);
+    localStorage.setItem("wp-designer-right-panel", rightPanel);
   }, [rightPanel]);
 
   // Save code panel width to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('wp-designer-code-panel-width', rightPanelWidth.toString());
+    localStorage.setItem(
+      "wp-designer-code-panel-width",
+      rightPanelWidth.toString()
+    );
   }, [rightPanelWidth]);
 
   // Save agent panel visibility to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('wp-designer-show-agent-panel', showAgentPanel.toString());
+    localStorage.setItem(
+      "wp-designer-show-agent-panel",
+      showAgentPanel.toString()
+    );
   }, [showAgentPanel]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl+\ to toggle header and sidebars with animation
-      if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
         e.preventDefault();
-        setShowHeader(prev => !prev);
-        setShowPanels(prev => !prev);
+        setShowHeader((prev) => !prev);
+        setShowPanels((prev) => !prev);
       }
 
       // Escape to deselect and select page (root vstack)
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.preventDefault();
         setSelectedNodeIds([ROOT_VSTACK_ID]);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [setSelectedNodeIds, ROOT_VSTACK_ID]);
 
   // Handle panel resize
@@ -104,16 +116,16 @@ function AppContent() {
       setIsResizing(false);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = 'auto';
-      document.body.style.cursor = 'auto';
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "auto";
+      document.body.style.cursor = "auto";
     };
   }, [isResizing]);
 
@@ -123,20 +135,20 @@ function AppContent() {
   // Handle project actions
   const handleCreateProject = (name: string) => {
     createProject(name);
-    setView('editor');
+    setView("editor");
   };
 
   const handleOpenProject = (projectId: string) => {
     setCurrentProject(projectId);
-    setView('editor');
+    setView("editor");
   };
 
   const handleNavigateToProjects = () => {
-    setView('projects');
+    setView("projects");
   };
 
   // Render projects screen or editor
-  if (view === 'projects') {
+  if (view === "projects") {
     return (
       <ProjectsScreen
         projects={projects}
@@ -150,32 +162,33 @@ function AppContent() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       {/* Outer wrapper - adds padding when agent is active */}
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
           flex: 1,
-          overflow: 'hidden',
-          padding: showAgentPanel && shouldShowPanels ? '10px' : '0',
-          transition: 'padding 0.3s ease-in-out',
+          overflow: "hidden",
+          padding: showAgentPanel && shouldShowPanels ? "10px" : "0",
+          transition: "padding 0.3s ease-in-out",
+          backgroundColor: "#1F1F1F",
         }}
       >
         {/* Inner editor wrapper - gets border and rounded corners when agent is active */}
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
+            display: "flex",
+            flexDirection: "column",
             flex: 1,
-            overflow: 'hidden',
-            border: showAgentPanel && shouldShowPanels ? '1px solid #E9E9E9' : 'none',
-            borderRadius: showAgentPanel && shouldShowPanels ? '8px' : '0',
-            transition: 'border 0.3s ease-in-out, border-radius 0.3s ease-in-out',
+            overflow: "hidden",
+            border: "none",
+            borderRadius: showAgentPanel && shouldShowPanels ? "8px" : "0",
+            transition: "border-radius 0.3s ease-in-out",
           }}
         >
           {showHeader && (
-            <div style={{ height: '60px' }}>
+            <div style={{ height: "60px" }}>
               <TopBar
                 showInserter={showInserter}
                 onToggleInserter={() => {
@@ -201,14 +214,20 @@ function AppContent() {
               />
             </div>
           )}
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-            {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
-            <Canvas showBreadcrumb={showHeader && !isPlayMode} />
-            {shouldShowPanels && rightPanel === 'props' && (
-              <PropertiesPanel />
+          <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+            {shouldShowPanels && (showTreePanel || showInserter) && (
+              <TreePanel
+                showInserter={showInserter}
+                onCloseInserter={() => setShowInserter(false)}
+              />
             )}
-            {shouldShowPanels && rightPanel === 'code' && (
-              <CodePanel width={rightPanelWidth} onResizeStart={() => setIsResizing(true)} />
+            <Canvas showBreadcrumb={showHeader && !isPlayMode} />
+            {shouldShowPanels && rightPanel === "props" && <PropertiesPanel />}
+            {shouldShowPanels && rightPanel === "code" && (
+              <CodePanel
+                width={rightPanelWidth}
+                onResizeStart={() => setIsResizing(true)}
+              />
             )}
           </div>
         </div>
@@ -223,27 +242,27 @@ function AppContent() {
         <button
           onClick={() => setShowAgentPanel(true)}
           style={{
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            width: '56px',
-            height: '56px',
-            borderRadius: '50%',
-            backgroundColor: '#fff',
-            border: 'none',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            width: "56px",
+            height: "56px",
+            borderRadius: "50%",
+            backgroundColor: "#fff",
+            border: "none",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 9999,
-            transition: 'opacity 0.3s ease-in-out, transform 0.2s ease',
+            transition: "opacity 0.3s ease-in-out, transform 0.2s ease",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.transform = "scale(1.05)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.transform = "scale(1)";
           }}
           title="Open AI assistant"
         >

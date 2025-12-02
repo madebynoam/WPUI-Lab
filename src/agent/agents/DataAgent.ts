@@ -299,9 +299,11 @@ Example updateTable call:
 
     context.addComponent(tableComponent);
 
+    const rowWord = rows.length === 1 ? 'entry' : 'entries';
+
     return {
       success: true,
-      message: `Created ${topic} table with ${rows.length} rows`,
+      message: `Created a ${topic} table with ${rows.length} ${rowWord}`,
       duration: 0,
       cost: 0,
     };
@@ -350,9 +352,11 @@ Example updateTable call:
       itemsPerPage: 10,
     });
 
+    const rowWord = rows.length === 1 ? 'entry' : 'entries';
+
     return {
       success: true,
-      message: `Updated ${topic} table with ${rows.length} rows`,
+      message: `Updated the table to show ${topic} data (${rows.length} ${rowWord})`,
       duration: 0,
       cost: 0,
     };

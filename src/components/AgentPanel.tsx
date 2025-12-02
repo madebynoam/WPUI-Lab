@@ -196,23 +196,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
       const controller = new AbortController();
       setAbortController(controller);
 
-      // Add temporary progress message
-      const progressMessageId = `progress-${Date.now()}`;
-      const progressMessage: AgentMessage = {
-        id: progressMessageId,
-        role: "agent",
-        content: [
-          {
-            type: "text",
-            text: "Starting...",
-          },
-        ],
-        timestamp: Date.now(),
-        archived: false,
-        showIcon: true,
-      };
-      setMessages((prev) => [...prev, progressMessage]);
-
       // Set initial progress state
       setProgressState({
         isProcessing: true,
@@ -234,25 +217,21 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           (update) => {
             console.log("[AgentPanel] Progress update:", update);
 
-            // Update progress message in chat
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === progressMessageId
-                  ? {
-                      ...msg,
-                      content: [
-                        {
-                          type: "text",
-                          text:
-                            update.agent && update.total
-                              ? `${update.agent} (${update.current}/${update.total}): ${update.message}`
-                              : update.message,
-                        },
-                      ],
-                    }
-                  : msg
-              )
-            );
+            // Append new progress message to chat
+            const progressMessage: AgentMessage = {
+              id: `progress-${Date.now()}-${Math.random()}`,
+              role: "agent",
+              content: [
+                {
+                  type: "text",
+                  text: update.message,
+                },
+              ],
+              timestamp: Date.now(),
+              archived: false,
+              showIcon: true,
+            };
+            setMessages((prev) => [...prev, progressMessage]);
 
             setProgressState({
               isProcessing: true,
@@ -267,19 +246,9 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           messages  // Pass conversation history for context
         );
 
-        // Remove progress message and add actual response
-        setMessages((prev) =>
-          prev.filter((msg) => msg.id !== progressMessageId)
-        );
-
         // Add agent response to chat
         setMessages((prev) => [...prev, agentResponse]);
       } catch (err) {
-        // Remove progress message
-        setMessages((prev) =>
-          prev.filter((msg) => msg.id !== progressMessageId)
-        );
-
         // Handle abort (user clicked stop) - don't show error
         if (err instanceof Error && err.name === "AbortError") {
           console.log("Request aborted by user");
@@ -325,39 +294,49 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   const suggestions = generateSuggestions(createToolContext());
 
   return (
-    <div
-      style={{
-        width: `${PANEL_WIDTH}px`,
-        backgroundColor: "#fff",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        height: "100%",
-      }}
-    >
-      <div style={{
-        padding: "12px",
-        display: "flex",
-        justifyContent: "flex-end",
-        alignItems: "center",
-      }}>
-        <Button
-          icon={close}
-          onClick={onClose}
-          title="Close AI assistant"
-          style={{
-            backgroundColor: "transparent",
-            color: "#666",
-            border: "none",
-            outline: "none",
-            boxShadow: "none",
-            borderRadius: "2px",
-            cursor: "pointer",
-            minWidth: "auto",
-            padding: "4px",
-          }}
-        />
-      </div>
+    <>
+      <style>{`
+        .agenttic {
+          --color-background: #1F1F1F;
+          --color-foreground: #FFFFFF;
+        }
+        .agenttic [data-slot='chat-footer'] {
+          --color-background: #1F1F1F;
+        }
+      `}</style>
+      <div
+        style={{
+          width: `${PANEL_WIDTH}px`,
+          backgroundColor: "#1F1F1F",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          height: "100%",
+        }}
+      >
+        <div style={{
+          padding: "12px",
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+        }}>
+          <Button
+            icon={close}
+            onClick={onClose}
+            title="Close AI assistant"
+            style={{
+              backgroundColor: "transparent",
+              color: "#999",
+              border: "none",
+              outline: "none",
+              boxShadow: "none",
+              borderRadius: "2px",
+              cursor: "pointer",
+              minWidth: "auto",
+              padding: "4px",
+            }}
+          />
+        </div>
 
       <div
         style={{
@@ -383,5 +362,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         />
       </div>
     </div>
+    </>
   );
 };

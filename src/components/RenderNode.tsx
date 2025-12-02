@@ -11,6 +11,7 @@ import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockData
 import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } from '../utils/treeHelpers';
 import { useSelection } from './SelectionContext';
 import { useSimpleDrag } from './SimpleDragContext';
+import { useRouter } from 'next/navigation';
 
 // Simple Figma-style drag-and-drop component
 export const RenderNode: React.FC<{
@@ -19,6 +20,7 @@ export const RenderNode: React.FC<{
 }> = ({ node, renderInteractive = true }) => {
   const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, currentProjectId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent } = useComponentTree();
   const playModeState = usePlayModeState();
+  const router = useRouter();
   const definition = componentRegistry[node.type];
 
   // Shared click tracking for Figma-style selection
@@ -379,12 +381,14 @@ export const RenderNode: React.FC<{
           // Navigate to the target page
           const targetPage = pages.find(p => p.id === interaction.targetId);
           if (targetPage) {
-            // In play mode, update the browser URL
+            // In play mode, use router for smooth client-side navigation
             if (isPlayMode && currentProjectId) {
-              window.location.pathname = `/play/${currentProjectId}/${interaction.targetId}`;
+              router.push(`/play/${currentProjectId}/${interaction.targetId}`);
             } else {
-              // In editor mode, just update the state
-              setCurrentPage(interaction.targetId);
+              // In editor mode, use router for navigation
+              if (currentProjectId) {
+                router.push(`/editor/${currentProjectId}/${interaction.targetId}`);
+              }
             }
           }
         } else if (interaction.action === 'showModal') {

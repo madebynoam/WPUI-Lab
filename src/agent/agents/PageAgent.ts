@@ -87,7 +87,7 @@ export class PageAgent {
 
     return {
       success: true,
-      message: `Created page "${name}"`,
+      message: `Created a new ${name} page at ${pagePath}`,
       pageId,
       duration: Date.now() - startTime,
       cost: 0, // Deterministic - no LLM cost

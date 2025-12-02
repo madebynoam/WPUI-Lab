@@ -247,9 +247,14 @@ Examples:
     }
     context.addComponent(container);
 
+    const componentWord = componentIds.length === 1 ? 'component' : 'components';
+    const containerName = containerType === 'HStack' ? 'horizontal stack'
+                        : containerType === 'VStack' ? 'vertical stack'
+                        : containerType;
+
     return {
       success: true,
-      message: `Wrapped ${componentIds.length} component(s) in ${containerType}`,
+      message: `Organized ${componentIds.length} ${componentWord} into a ${containerName}`,
       duration: 0,
       cost: 0,
     };
@@ -274,9 +279,11 @@ Examples:
 
     context.updateComponentProps(componentId, layoutProps);
 
+    const componentName = component.name || component.type;
+
     return {
       success: true,
-      message: `Updated layout properties`,
+      message: `Adjusted layout for ${componentName}`,
       duration: 0,
       cost: 0,
     };

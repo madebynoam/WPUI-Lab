@@ -57,7 +57,7 @@ export async function handleHybridRequest(
   const startTime = Date.now();
 
   console.log('[HybridOrchestrator] Processing:', userMessage);
-  onProgress?.({ phase: 'routing', message: 'Analyzing request...' });
+  onProgress?.({ phase: 'routing', message: 'Analyzing your request...' });
 
   const normalized = userMessage.toLowerCase();
 
@@ -76,7 +76,7 @@ export async function handleHybridRequest(
     }
 
     // STEP 2: Use LLM to decompose request into steps
-    onProgress?.({ phase: 'routing', message: 'Planning steps...' });
+    onProgress?.({ phase: 'routing', message: 'Planning how to approach this...' });
 
     const steps = await decomposeRequest(userMessage, apiKeys, signal, conversationHistory);
 
@@ -99,7 +99,7 @@ export async function handleHybridRequest(
 
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
-      onProgress?.({ phase: 'executing', message: `Step ${i + 1}/${steps.length}: ${step.operation}` });
+      onProgress?.({ phase: 'executing', message: humanizeStepMessage(step, i, steps.length) });
 
       const stepResult = await executeStep(step, context, apiKeys, signal);
       totalCost += stepResult.cost;
@@ -380,6 +380,46 @@ async function executeStep(
         message: `Unknown agent: ${step.agent}`,
         cost: 0,
       };
+  }
+}
+
+/**
+ * Generate human-readable progress message for a step
+ */
+function humanizeStepMessage(step: RequestStep, index: number, total: number): string {
+  const prefix = total > 1 ? `(${index + 1}/${total}) ` : '';
+
+  switch (step.agent) {
+    case 'page':
+      if (step.operation === 'create') {
+        return `${prefix}Creating the ${step.params.name || 'new'} page...`;
+      } else if (step.operation === 'delete') {
+        return `${prefix}Removing the page...`;
+      } else if (step.operation === 'rename') {
+        return `${prefix}Renaming the page...`;
+      }
+      return `${prefix}Working on the page...`;
+
+    case 'component':
+      const compDesc = step.params.description || 'component';
+      return `${prefix}Adding ${compDesc}...`;
+
+    case 'content':
+      return `${prefix}Updating the content...`;
+
+    case 'data':
+      if (step.operation === 'createTable') {
+        return `${prefix}Generating table data...`;
+      } else if (step.operation === 'update') {
+        return `${prefix}Updating table data...`;
+      }
+      return `${prefix}Working with data...`;
+
+    case 'layout':
+      return `${prefix}Arranging components...`;
+
+    default:
+      return `${prefix}${step.operation}...`;
   }
 }
 

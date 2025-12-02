@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 // Dynamically import the PlayModeContent with SSR disabled to avoid WordPress component SSR issues
 const DynamicPlayModeContent = dynamic(() => import('./PlayModeContent'), {
   ssr: false,
-  loading: () => <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Loading play mode...</div>
+  loading: () => null
 });
 
 export default function PlayModePage({ params }: { params: Promise<{ projectId: string; pageId: string }> }) {

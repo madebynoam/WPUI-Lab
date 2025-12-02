@@ -142,6 +142,7 @@ function EditorContent({ projectId, pageId }: EditorProps) {
           overflow: 'hidden',
           padding: showAgentPanel && shouldShowPanels ? '10px' : '0',
           transition: 'padding 0.3s ease-in-out',
+          backgroundColor: '#1F1F1F',
         }}
       >
         {/* Inner editor wrapper - gets border and rounded corners when agent is active */}
@@ -151,9 +152,9 @@ function EditorContent({ projectId, pageId }: EditorProps) {
             flexDirection: 'column',
             flex: 1,
             overflow: 'hidden',
-            border: showAgentPanel && shouldShowPanels ? '1px solid #E9E9E9' : 'none',
+            border: 'none',
             borderRadius: showAgentPanel && shouldShowPanels ? '8px' : '0',
-            transition: 'border 0.3s ease-in-out, border-radius 0.3s ease-in-out',
+            transition: 'border-radius 0.3s ease-in-out',
           }}
         >
           {showHeader && (

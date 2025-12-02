@@ -374,9 +374,13 @@ Context: SELECTION: Nothing selected
     const componentTree: ComponentNode = assignIds(pattern.tree);
     context.addComponent(componentTree, parentId, index);
 
+    const whereAdded = parentId
+      ? `inside ${context.getNodeById(parentId)?.name || context.getNodeById(parentId)?.type || 'selected component'}`
+      : 'on the page';
+
     return {
       success: true,
-      message: `Created ${pattern.name}`,
+      message: `Added a ${pattern.name} ${whereAdded}`,
       componentId: componentTree.id,
       duration: 0,
       cost: 0,
@@ -420,11 +424,14 @@ Context: SELECTION: Nothing selected
 
     const whereAdded = parentId
       ? `inside ${context.getNodeById(parentId)?.name || context.getNodeById(parentId)?.type || 'selected component'}`
-      : 'to the page';
+      : 'on the page';
+
+    // Create a friendlier component name
+    const componentName = tree.name || tree.type;
 
     return {
       success: true,
-      message: `Created ${tree.type} ${whereAdded}`,
+      message: `Added ${componentName} ${whereAdded}`,
       componentId: componentTree.id,
       duration: 0,
       cost: 0,
@@ -455,9 +462,11 @@ Context: SELECTION: Nothing selected
       context.updateComponentProps(componentId, updates.props);
     }
 
+    const componentName = component.name || component.type;
+
     return {
       success: true,
-      message: `Modified component`,
+      message: `Updated ${componentName} properties`,
       componentId,
       duration: 0,
       cost: 0,

@@ -8,6 +8,7 @@ import {
   getComponentDetailsTool,
   getSelectedComponentsTool,
   searchComponentsTool,
+  getComponentSchemaTool,
 } from './tools/context';
 import {
   createComponentTool,
@@ -40,6 +41,7 @@ registerTool(getPageComponentsTool);
 registerTool(getComponentDetailsTool);
 registerTool(getSelectedComponentsTool);
 registerTool(searchComponentsTool);
+registerTool(getComponentSchemaTool);
 
 // Register PRIMARY tree manipulation tools
 registerTool(modifyComponentTreeTool);

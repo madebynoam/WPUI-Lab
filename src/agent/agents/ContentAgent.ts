@@ -292,9 +292,12 @@ Context: Nothing selected or wrong component selected
       context.updateComponentProps(componentId, { children: text });
     }
 
+    const componentName = component.name || component.type;
+    const truncatedText = text.length > 40 ? text.substring(0, 40) + '...' : text;
+
     return {
       success: true,
-      message: `Updated text to: "${text}"`,
+      message: `Changed ${componentName} to "${truncatedText}"`,
       duration: 0,
       cost: 0,
     };
@@ -310,9 +313,11 @@ Context: Nothing selected or wrong component selected
       await this.updateText(update, context);
     }
 
+    const componentWord = updates.length === 1 ? 'component' : 'components';
+
     return {
       success: true,
-      message: `Updated ${updates.length} component(s)`,
+      message: `Updated content in ${updates.length} ${componentWord}`,
       duration: 0,
       cost: 0,
     };

@@ -406,28 +406,176 @@ export async function handleUserMessage(
   }
 }
 
+// Contextual suggestions map by component type
+const CONTEXTUAL_SUGGESTIONS: Record<string, Array<{id: string, label: string, prompt: string}>> = {
+  DataViews: [
+    {
+      id: 'change-datasource',
+      label: 'Change table data',
+      prompt: 'Change this table to show active subscriptions with columns for customer name, plan type, monthly revenue, start date, and status',
+    },
+    {
+      id: 'switch-to-grid',
+      label: 'Switch to grid view',
+      prompt: 'Change this table to a grid view layout',
+    },
+  ],
+  Button: [
+    {
+      id: 'change-button-text',
+      label: 'Change button text',
+      prompt: 'Change this button text to "Get Started"',
+    },
+    {
+      id: 'add-button-action',
+      label: 'Add click action',
+      prompt: 'Make this button navigate to the pricing page when clicked',
+    },
+  ],
+  Card: [
+    {
+      id: 'change-card-title',
+      label: 'Change card title',
+      prompt: 'Change the card title to "Premium Plan"',
+    },
+    {
+      id: 'add-card-content',
+      label: 'Add content to card',
+      prompt: 'Add a description and pricing details to this card',
+    },
+  ],
+  CardHeader: [
+    {
+      id: 'change-header-title',
+      label: 'Change header title',
+      prompt: 'Change the header text to "Dashboard Overview"',
+    },
+  ],
+  Heading: [
+    {
+      id: 'change-heading-text',
+      label: 'Change heading text',
+      prompt: 'Change this heading to "Welcome to Our Platform"',
+    },
+    {
+      id: 'change-heading-level',
+      label: 'Change heading level',
+      prompt: 'Make this a level 1 heading',
+    },
+  ],
+  Text: [
+    {
+      id: 'change-text-content',
+      label: 'Change text content',
+      prompt: 'Change this text to "Learn more about our features"',
+    },
+  ],
+  Modal: [
+    {
+      id: 'change-modal-title',
+      label: 'Change modal title',
+      prompt: 'Change the modal title to "Confirm Action"',
+    },
+    {
+      id: 'add-modal-content',
+      label: 'Add content to modal',
+      prompt: 'Add a confirmation message and action buttons to this modal',
+    },
+  ],
+  Popover: [
+    {
+      id: 'change-popover-content',
+      label: 'Change popover content',
+      prompt: 'Update the popover to show help text about this feature',
+    },
+  ],
+  VStack: [
+    {
+      id: 'change-spacing',
+      label: 'Change spacing',
+      prompt: 'Increase the spacing between items in this stack',
+    },
+    {
+      id: 'change-alignment',
+      label: 'Change alignment',
+      prompt: 'Center-align all items in this stack',
+    },
+  ],
+  HStack: [
+    {
+      id: 'change-spacing',
+      label: 'Change spacing',
+      prompt: 'Increase the spacing between items in this stack',
+    },
+    {
+      id: 'change-alignment',
+      label: 'Change alignment',
+      prompt: 'Center-align all items in this stack',
+    },
+  ],
+  Grid: [
+    {
+      id: 'change-grid-columns',
+      label: 'Change grid columns',
+      prompt: 'Change this grid to have 3 columns',
+    },
+    {
+      id: 'change-grid-gap',
+      label: 'Change grid spacing',
+      prompt: 'Increase the gap between grid items',
+    },
+  ],
+  Flex: [
+    {
+      id: 'change-flex-direction',
+      label: 'Change flex direction',
+      prompt: 'Switch this to a horizontal layout',
+    },
+    {
+      id: 'change-flex-alignment',
+      label: 'Change alignment',
+      prompt: 'Center-align items in this flex container',
+    },
+  ],
+};
+
+// Component types that should NOT show the "Add a new page" suggestion
+const CONTEXT_SPECIFIC_COMPONENTS = Object.keys(CONTEXTUAL_SUGGESTIONS);
+
 // Generate suggestions based on context
 export function generateSuggestions(context: ToolContext) {
   const suggestions = [];
 
-  // Always offer to create complex layouts - show first
-  suggestions.push({
-    id: 'add-page',
-    label: 'Add a new page',
-    prompt: 'Add a new page titled pricing and add pricing cards to it',
-  });
-
   // If something is selected, offer contextual actions
   if (context.selectedNodeIds.length > 0) {
+    const selectedNode = context.getNodeById(context.selectedNodeIds[0]);
+    const componentType = selectedNode?.type;
+
+    // Check if this component has contextual suggestions
+    if (componentType && CONTEXTUAL_SUGGESTIONS[componentType]) {
+      // Add contextual suggestions for this component type
+      suggestions.push(...CONTEXTUAL_SUGGESTIONS[componentType]);
+    } else {
+      // For components without specific suggestions, show generic "Add a new page"
+      suggestions.push({
+        id: 'add-page',
+        label: 'Add a new page',
+        prompt: 'Add a new page titled pricing and add pricing cards to it',
+      });
+    }
+
+    // Always show "Delete selected" when something is selected
     suggestions.push({
       id: 'delete',
       label: 'Delete selected',
       prompt: 'Please remove the currently selected component from the page for me',
     });
+  } else {
+    // Nothing selected - show only "Add a new page"
     suggestions.push({
-      id: 'rename-titles',
-      label: 'Rename the titles',
-      prompt: 'Rename the titles in the selection to match a software product',
+      id: 'add-page',
+      label: 'Add a new page',
+      prompt: 'Add a new page titled pricing and add pricing cards to it',
     });
   }
 
