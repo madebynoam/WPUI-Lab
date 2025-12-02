@@ -240,7 +240,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           />
 
           <Button
-            onClick={() => router.push(`/play/${projectId}/${pageId}`)}
+            onClick={() => window.open(`/play/${projectId}/${pageId}`, '_blank')}
             variant="primary"
             style={{
               backgroundColor: "#3858e9",
@@ -254,7 +254,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               cursor: "pointer",
             }}
           >
-            Play
+            Play ↗
           </Button>
         </div>
       )}
