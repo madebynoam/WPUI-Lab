@@ -299,7 +299,7 @@ Examples:
     const { componentId, topic, columns, rows } = params;
 
     // Update existing DataViews component with new data
-    context.updateComponent(componentId, {
+    context.updateComponentProps(componentId, {
       dataSource: 'custom',
       data: rows,
       columns: columns,
