@@ -218,10 +218,11 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
         fontSize: "13px",
       }}
       {...attributes}
-      onMouseDown={(e) => {
-        // Allow drag but prevent page switch during drag
-        if (!isEditing) {
-          listeners?.onMouseDown?.(e as any);
+      {...listeners}
+      onClick={(e) => {
+        // Allow clicking to select page if not editing
+        if (!isEditing && !isDragging) {
+          onPageClick();
         }
       }}
     >
