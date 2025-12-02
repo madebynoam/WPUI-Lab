@@ -1562,7 +1562,23 @@ export const RenderNode: React.FC<{
       const statePropName = ['ToggleControl', 'CheckboxControl'].includes(node.type) ? 'checked' : 'value';
 
       // Get runtime value or fall back to design-time default
-      const runtimeValue = playModeState.getState(node.id, statePropName) ?? props[statePropName];
+      let runtimeValue = playModeState.getState(node.id, statePropName) ?? props[statePropName];
+
+      // CRITICAL: Ensure controlled inputs always have a defined value (never undefined)
+      // React throws warning if value changes from defined to undefined
+      if (runtimeValue === undefined) {
+        if (statePropName === 'checked') {
+          // Checkboxes and toggles default to false
+          runtimeValue = false;
+        } else if (node.type === 'RangeControl') {
+          // RangeControl defaults to min value or 0
+          runtimeValue = props.min ?? 0;
+        } else {
+          // Text inputs default to empty string
+          runtimeValue = '';
+        }
+      }
+
       mergedProps[statePropName] = runtimeValue;
 
       // Wire up real onChange handler
