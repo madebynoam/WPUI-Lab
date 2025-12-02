@@ -83,6 +83,8 @@ export class DataAgent {
         const toolName = toolCall.function.name;
         const toolInput = JSON.parse(toolCall.function.arguments);
 
+        console.log('[DataAgent] Tool call:', toolName, 'with params:', toolInput);
+
         if (toolName === 'createTable') {
           result = await this.createTable(toolInput, context);
         } else if (toolName === 'updateTable') {
@@ -297,6 +299,34 @@ Examples:
     context: ToolContext
   ): Promise<DataAgentResult> {
     const { componentId, topic, columns, rows } = params;
+
+    // Validate required parameters
+    if (!componentId) {
+      return {
+        success: false,
+        message: 'Missing componentId for table update',
+        duration: 0,
+        cost: 0,
+      };
+    }
+
+    if (!columns || !Array.isArray(columns) || columns.length === 0) {
+      return {
+        success: false,
+        message: 'Missing or invalid columns for table update',
+        duration: 0,
+        cost: 0,
+      };
+    }
+
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      return {
+        success: false,
+        message: 'Missing or invalid rows for table update',
+        duration: 0,
+        cost: 0,
+      };
+    }
 
     // Update existing DataViews component with new data
     context.updateComponentProps(componentId, {
