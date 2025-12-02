@@ -599,92 +599,88 @@ export const PropertiesPanel: React.FC = () => {
                       opacity: type.enabled ? 1 : 0.5,
                     }}
                   >
-                    <HStack
-                      spacing={2}
+                    <Button
+                      variant="tertiary"
                       style={{
-                        alignItems: "center",
                         width: "100%",
-                        justifyContent: "space-between",
+                        justifyContent: "flex-start",
+                        padding: "0",
+                        minHeight: "auto",
+                        textAlign: "left",
+                      }}
+                      disabled={!type.enabled}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        if (!type.enabled) return;
+
+                        // If no interaction exists, create one
+                        if (!existingInteraction) {
+                          const targetPageId =
+                            pages.length > 0 ? pages[0].id : "unknown";
+                          addInteraction(selectedNodeIds[0], {
+                            trigger: type.trigger,
+                            action: "navigate",
+                            targetId: targetPageId,
+                          });
+                        }
+
+                        // Open popover
+                        setAnchorEl(e.currentTarget);
+                        setOpenInteractionId(type.id);
+                      }}
+                      icon={type.icon}
+                      title={type.comingSoon ? "Coming soon" : undefined}
+                    >
+                      {type.label}
+                    </Button>
+                  </Item>
+
+                  {/* Interaction description row with X button */}
+                  {isActive && existingInteraction && (
+                    <Item
+                      style={{
+                        backgroundColor: "#f6f7f7",
+                        padding: "8px 12px",
+                        borderRadius: "2px",
                       }}
                     >
-                      <VStack spacing={0} style={{ flex: 1, alignItems: "flex-start" }}>
+                      <HStack
+                        spacing={2}
+                        style={{
+                          alignItems: "center",
+                          width: "100%",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div style={{ fontSize: "12px", color: "#1e1e1e", flex: 1 }}>
+                          {existingInteraction.action === "navigate" ? (
+                            <>Go to: {pages.find(p => p.id === existingInteraction.targetId)?.name || existingInteraction.targetId}</>
+                          ) : existingInteraction.action === "showModal" ? (
+                            <>Show modal</>
+                          ) : (
+                            <>{existingInteraction.action}</>
+                          )}
+                        </div>
                         <Button
+                          icon={trashIcon}
                           variant="tertiary"
-                          style={{
-                            width: "100%",
-                            justifyContent: "flex-start",
-                            padding: "0",
-                            minHeight: "auto",
-                            textAlign: "left",
-                          }}
-                          disabled={!type.enabled}
-                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                            if (!type.enabled) return;
-
-                            // If no interaction exists, create one
-                            if (!existingInteraction) {
-                              const targetPageId =
-                                pages.length > 0 ? pages[0].id : "unknown";
-                              addInteraction(selectedNodeIds[0], {
-                                trigger: type.trigger,
-                                action: "navigate",
-                                targetId: targetPageId,
-                              });
+                          isSmall
+                          onClick={() => {
+                            if (existingInteraction) {
+                              removeInteraction(
+                                selectedNodeIds[0],
+                                existingInteraction.id
+                              );
                             }
-
-                            // Open popover
-                            setAnchorEl(e.currentTarget);
-                            setOpenInteractionId(type.id);
                           }}
-                          icon={type.icon}
-                          title={type.comingSoon ? "Coming soon" : undefined}
-                        >
-                          {type.label}
-                        </Button>
-                        {isActive && existingInteraction && (
-                          <div style={{ fontSize: "11px", color: "#757575", paddingLeft: "32px", marginTop: "-2px" }}>
-                            {existingInteraction.action === "navigate" ? (
-                              <>Go to: {pages.find(p => p.id === existingInteraction.targetId)?.name || existingInteraction.targetId}</>
-                            ) : existingInteraction.action === "showModal" ? (
-                              <>Show modal</>
-                            ) : (
-                              <>{existingInteraction.action}</>
-                            )}
-                          </div>
-                        )}
-                      </VStack>
-
-                      {isActive && (
-                        <HStack
-                          spacing={1}
-                          style={{ justifyContent: "flex-end" }}
-                        >
-                          <DropdownMenu
-                            icon={moreVertical}
-                            label="Interaction options"
-                            popoverProps={{ placement: "left-start" }}
-                          >
-                            {() => (
-                              <MenuGroup>
-                                <MenuItem
-                                  onClick={() => {
-                                    if (existingInteraction) {
-                                      removeInteraction(
-                                        selectedNodeIds[0],
-                                        existingInteraction.id
-                                      );
-                                    }
-                                  }}
-                                >
-                                  Reset
-                                </MenuItem>
-                              </MenuGroup>
-                            )}
-                          </DropdownMenu>
-                        </HStack>
-                      )}
-                    </HStack>
-                  </Item>
+                          style={{
+                            minWidth: "auto",
+                            padding: "4px",
+                          }}
+                          label="Remove interaction"
+                        />
+                      </HStack>
+                    </Item>
+                  )}
 
                   {/* Popover for interaction settings */}
                   {openInteractionId === type.id &&
