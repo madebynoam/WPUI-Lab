@@ -152,17 +152,23 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                           icon={moreVertical}
                           label="Project actions"
                         >
-                          {() => (
+                          {({ onClose }) => (
                             <MenuGroup>
                               <MenuItem
                                 icon={pencil}
-                                onClick={() => handleRenameStart(project)}
+                                onClick={() => {
+                                  handleRenameStart(project);
+                                  onClose();
+                                }}
                               >
                                 Rename
                               </MenuItem>
                               <MenuItem
                                 icon={copy}
-                                onClick={() => onDuplicateProject(project.id)}
+                                onClick={() => {
+                                  onDuplicateProject(project.id);
+                                  onClose();
+                                }}
                               >
                                 Duplicate
                               </MenuItem>
@@ -171,6 +177,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                                 onClick={() => {
                                   if (confirm(`Delete "${project.name}"? This cannot be undone.`)) {
                                     onDeleteProject(project.id);
+                                    onClose();
                                   }
                                 }}
                                 isDestructive
