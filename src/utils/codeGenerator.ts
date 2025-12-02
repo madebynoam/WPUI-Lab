@@ -289,7 +289,7 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
 
         if (interaction.trigger === 'onClick' && interaction.action === 'navigate') {
           handlers.push(
-            `  const ${handlerName} = (e) => {\n    e?.stopPropagation();\n    window.location.pathname = window.location.pathname.replace(/\\/page-[^\\/]+$/, '/${interaction.targetId}');\n  };`
+            `  const ${handlerName} = (e) => {\n    e?.stopPropagation();\n    window.location.pathname = window.location.pathname.replace(/\\/[^\\/]+$/, '/${interaction.targetId}');\n  };`
           );
         }
       });
