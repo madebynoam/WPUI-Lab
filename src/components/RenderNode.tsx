@@ -17,7 +17,7 @@ export const RenderNode: React.FC<{
   node: ComponentNode;
   renderInteractive?: boolean;
 }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, currentProjectId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent } = useComponentTree();
   const playModeState = usePlayModeState();
   const definition = componentRegistry[node.type];
 
@@ -379,7 +379,13 @@ export const RenderNode: React.FC<{
           // Navigate to the target page
           const targetPage = pages.find(p => p.id === interaction.targetId);
           if (targetPage) {
-            setCurrentPage(interaction.targetId);
+            // In play mode, update the browser URL
+            if (isPlayMode && currentProjectId) {
+              window.location.pathname = `/play/${currentProjectId}/${interaction.targetId}`;
+            } else {
+              // In editor mode, just update the state
+              setCurrentPage(interaction.targetId);
+            }
           }
         } else if (interaction.action === 'showModal') {
           // Find the target component (modal) and show it
