@@ -414,6 +414,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'DUPLICATE_PAGE', payload: { pageId } });
   };
 
+  const reorderPages = (fromIndex: number, toIndex: number) => {
+    dispatch({ type: 'REORDER_PAGES', payload: { fromIndex, toIndex } });
+  };
+
   const updatePageTheme = (
     pageId: string,
     theme: { primaryColor?: string; backgroundColor?: string }
@@ -538,6 +542,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     deletePage,
     renamePage,
     duplicatePage,
+    reorderPages,
     updatePageTheme,
     projects: state.projects,
     currentProjectId: state.currentProjectId,

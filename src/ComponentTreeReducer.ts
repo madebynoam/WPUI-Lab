@@ -56,6 +56,7 @@ const HISTORY_ACTIONS = new Set([
   'DELETE_PAGE',
   'RENAME_PAGE',
   'DUPLICATE_PAGE',
+  'REORDER_PAGES',
   'UPDATE_PAGE_THEME',
   'UPDATE_PROJECT_THEME',
   'UPDATE_PROJECT_LAYOUT',
@@ -439,6 +440,18 @@ export function componentTreeReducer(
         ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: [ROOT_VSTACK_ID],
       };
+    }
+
+    case 'REORDER_PAGES': {
+      const { fromIndex, toIndex } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const newPages = [...currentProject.pages];
+      const [movedPage] = newPages.splice(fromIndex, 1);
+      newPages.splice(toIndex, 0, movedPage);
+
+      const updatedProject = { ...currentProject, pages: newPages, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      return updateHistory(state, newProjects, state.currentProjectId);
     }
 
     case 'UPDATE_PAGE_THEME': {

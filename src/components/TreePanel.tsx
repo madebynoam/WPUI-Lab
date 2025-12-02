@@ -48,7 +48,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
   arrayMove,
+  useSortable,
 } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   flattenTree,
   buildTree,
@@ -160,6 +162,162 @@ function patternNodesToComponentNodes(
   return normalizeComponentNodes(nodes);
 }
 
+// Sortable Page Item Component
+interface SortablePageItemProps {
+  page: any;
+  isEditing: boolean;
+  isCurrent: boolean;
+  editingName: string;
+  onEditNameChange: (name: string) => void;
+  onEditSubmit: () => void;
+  onEditCancel: () => void;
+  onPageClick: () => void;
+  onNameClick: (e: React.MouseEvent) => void;
+  onEditStart: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  canDelete: boolean;
+}
+
+const SortablePageItem: React.FC<SortablePageItemProps> = ({
+  page,
+  isEditing,
+  isCurrent,
+  editingName,
+  onEditNameChange,
+  onEditSubmit,
+  onEditCancel,
+  onPageClick,
+  onNameClick,
+  onEditStart,
+  onDuplicate,
+  onDelete,
+  canDelete,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: page.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        display: "flex",
+        alignItems: "center",
+        height: "36px",
+        paddingRight: "8px",
+        paddingLeft: "8px",
+        backgroundColor: isCurrent ? "#f0f0f0" : "transparent",
+        color: "#1e1e1e",
+        borderRadius: "2px",
+        fontSize: "13px",
+      }}
+      {...attributes}
+      onMouseDown={(e) => {
+        // Allow drag but prevent page switch during drag
+        if (!isEditing) {
+          listeners?.onMouseDown?.(e as any);
+        }
+      }}
+    >
+      {isEditing ? (
+        <input
+          type="text"
+          value={editingName}
+          onChange={(e) => onEditNameChange(e.target.value)}
+          onBlur={onEditSubmit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onEditSubmit();
+            } else if (e.key === "Escape") {
+              onEditCancel();
+            }
+          }}
+          autoFocus
+          style={{
+            flex: 1,
+            fontSize: "13px",
+            padding: "2px 4px",
+            border: "1px solid #3858e9",
+            borderRadius: "2px",
+            outline: "none",
+            backgroundColor: "#fff",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <>
+          <span
+            style={{
+              flex: 1,
+              fontWeight: isCurrent ? 500 : 400,
+              userSelect: "none",
+              pointerEvents: "auto",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onNameClick(e);
+            }}
+          >
+            {page.name}
+          </span>
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <DropdownMenu
+              icon={moreVertical}
+              label="Page options"
+              popoverProps={{ placement: "left-start" }}
+            >
+              {({ onClose }) => (
+                <MenuGroup>
+                  <MenuItem
+                    onClick={() => {
+                      onEditStart();
+                      onClose();
+                    }}
+                  >
+                    Rename
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      onDuplicate();
+                      onClose();
+                    }}
+                  >
+                    Duplicate
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      onDelete();
+                      onClose();
+                    }}
+                    isDestructive
+                    disabled={!canDelete}
+                  >
+                    Delete
+                  </MenuItem>
+                </MenuGroup>
+              )}
+            </DropdownMenu>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 interface TreePanelProps {
   showInserter: boolean;
   onCloseInserter: () => void;
@@ -196,6 +354,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     deletePage,
     renamePage,
     duplicatePage,
+    reorderPages,
     setTree,
     getParentById,
     getNodeById,
@@ -719,73 +878,44 @@ export const TreePanel: React.FC<TreePanelProps> = ({
             </svg>
           </button>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          {pages.map((page) => (
-            <div
-              key={page.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                height: "36px",
-                paddingRight: "8px",
-                paddingLeft: "8px",
-                backgroundColor:
-                  currentPageId === page.id ? "#f0f0f0" : "transparent",
-                color: currentPageId === page.id ? "#1e1e1e" : "#1e1e1e",
-                borderRadius: "2px",
-                fontSize: "13px",
-              }}
-              onMouseDown={() => {
-                if (editingPageId !== page.id) {
-                  setCurrentPage(page.id);
-                  if (currentProjectId) {
-                    router.push(`/editor/${currentProjectId}/${page.id}`);
-                  }
-                }
-              }}
-            >
-              {editingPageId === page.id ? (
-                <input
-                  type="text"
-                  value={editingPageName}
-                  onChange={(e) => setEditingPageName(e.target.value)}
-                  onBlur={() => {
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(event) => {
+            const { active, over } = event;
+            if (over && active.id !== over.id) {
+              const oldIndex = pages.findIndex((p) => p.id === active.id);
+              const newIndex = pages.findIndex((p) => p.id === over.id);
+              reorderPages(oldIndex, newIndex);
+            }
+          }}
+        >
+          <SortableContext items={pages.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              {pages.map((page) => (
+                <SortablePageItem
+                  key={page.id}
+                  page={page}
+                  isEditing={editingPageId === page.id}
+                  isCurrent={currentPageId === page.id}
+                  editingName={editingPageName}
+                  onEditNameChange={setEditingPageName}
+                  onEditSubmit={() => {
                     if (editingPageName.trim()) {
                       renamePage(page.id, editingPageName.trim());
                     }
                     setEditingPageId(null);
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      if (editingPageName.trim()) {
-                        renamePage(page.id, editingPageName.trim());
+                  onEditCancel={() => setEditingPageId(null)}
+                  onPageClick={() => {
+                    if (editingPageId !== page.id) {
+                      setCurrentPage(page.id);
+                      if (currentProjectId) {
+                        router.push(`/editor/${currentProjectId}/${page.id}`);
                       }
-                      setEditingPageId(null);
-                    } else if (e.key === "Escape") {
-                      setEditingPageId(null);
                     }
                   }}
-                  autoFocus
-                  style={{
-                    flex: 1,
-                    fontSize: "13px",
-                    padding: "2px 4px",
-                    border: "1px solid #3858e9",
-                    borderRadius: "2px",
-                    outline: "none",
-                    backgroundColor: "#fff",
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <span
-                  style={{
-                    flex: 1,
-                    fontWeight: currentPageId === page.id ? 500 : 400,
-                    userSelect: "none",
-                    pointerEvents: "auto",
-                  }}
-                  onClick={(e: React.MouseEvent) => {
+                  onNameClick={(e: React.MouseEvent) => {
                     if (!pageClickCountRef.current[page.id]) {
                       pageClickCountRef.current[page.id] = 0;
                     }
@@ -803,54 +933,26 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                       setEditingPageName(page.name);
                     }
                   }}
-                >
-                  {page.name}
-                </span>
-              )}
-              <div
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <DropdownMenu
-                  icon={moreVertical}
-                  label="Page options"
-                  popoverProps={{ placement: "left-start" }}
-                >
-                  {() => (
-                    <MenuGroup>
-                      <MenuItem
-                        onClick={() => {
-                          setEditingPageId(page.id);
-                          setEditingPageName(page.name);
-                        }}
-                      >
-                        Rename
-                      </MenuItem>
-                      <MenuItem onClick={() => duplicatePage(page.id)}>
-                        Duplicate
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => {
-                          if (pages.length > 1) {
-                            if (confirm(`Delete page "${page.name}"?`)) {
-                              deletePage(page.id);
-                            }
-                          } else {
-                            alert("Cannot delete the last page");
-                          }
-                        }}
-                        isDestructive
-                        disabled={pages.length === 1}
-                      >
-                        Delete
-                      </MenuItem>
-                    </MenuGroup>
-                  )}
-                </DropdownMenu>
-              </div>
+                  onEditStart={() => {
+                    setEditingPageId(page.id);
+                    setEditingPageName(page.name);
+                  }}
+                  onDuplicate={() => duplicatePage(page.id)}
+                  onDelete={() => {
+                    if (pages.length > 1) {
+                      if (confirm(`Delete page "${page.name}"?`)) {
+                        deletePage(page.id);
+                      }
+                    } else {
+                      alert("Cannot delete the last page");
+                    }
+                  }}
+                  canDelete={pages.length > 1}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Layers Label */}
