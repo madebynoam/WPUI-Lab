@@ -4,6 +4,7 @@ import { componentRegistry } from './componentRegistry';
 import { componentTreeReducer, ComponentTreeState } from './ComponentTreeReducer';
 import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent, generateId } from './utils/treeHelpers';
 import { normalizeComponentNode, normalizeComponentNodes } from './utils/normalizeComponent';
+import { DEMO_PROJECT } from './demoProject';
 
 const STORAGE_KEY = 'wp-designer-projects';
 
@@ -128,8 +129,9 @@ const createInitialProject = (id: string, name: string): Project => ({
 
 // Initialize state from localStorage
 function initializeState(): ComponentTreeState {
-  let projects: Project[] = [createInitialProject('project-1', 'My First Project')];
-  let currentProjectId = 'project-1';
+  // Default to demo project for first-time users
+  let projects: Project[] = [DEMO_PROJECT];
+  let currentProjectId = DEMO_PROJECT.id;
 
   // Only access localStorage on client
   if (typeof window !== 'undefined') {
@@ -149,10 +151,17 @@ function initializeState(): ComponentTreeState {
           console.log('[ComponentTreeContext] Loading projects from localStorage:', data.projects.length);
           projects = data.projects;
           currentProjectId = data.currentProjectId || projects[0].id;
+        } else {
+          // Empty projects array in localStorage - use demo project
+          console.log('[ComponentTreeContext] Empty projects in localStorage, using demo project');
         }
       } catch (e) {
         console.error('Failed to parse saved projects:', e);
+        // On parse error, use demo project
       }
+    } else {
+      // No saved data - first time user, use demo project
+      console.log('[ComponentTreeContext] No saved data, using demo project for first-time user');
     }
   }
 

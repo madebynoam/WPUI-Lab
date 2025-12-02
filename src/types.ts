@@ -42,6 +42,7 @@ export interface Project {
   currentPageId: string;
   createdAt: number;
   lastModified: number;
+  isExampleProject?: boolean; // If true, this project cannot be deleted
   theme?: {
     primaryColor?: string;
     backgroundColor?: string;

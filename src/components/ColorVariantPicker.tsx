@@ -17,6 +17,7 @@ interface ColorVariant {
   label: string;
   description: string;
   cssVar: string;
+  color: string; // Actual color value for display
   group: string;
 }
 
@@ -26,6 +27,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Default',
     description: 'Inherits current text color',
     cssVar: 'currentColor',
+    color: '#1e1e1e',
     group: 'Default',
   },
   // Content - Brand
@@ -34,6 +36,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Brand',
     description: 'Brand content color',
     cssVar: 'var(--wpds-color-fg-content-brand)',
+    color: '#3858e9',
     group: 'Content',
   },
   // Content - Neutral
@@ -42,6 +45,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral',
     description: 'Standard content color',
     cssVar: 'var(--wpds-color-fg-content-neutral)',
+    color: '#1e1e1e',
     group: 'Content',
   },
   {
@@ -49,6 +53,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral Weak',
     description: 'Subtle content color',
     cssVar: 'var(--wpds-color-fg-content-neutral-weak)',
+    color: '#757575',
     group: 'Content',
   },
   // Content - Status Colors
@@ -57,6 +62,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Error',
     description: 'Error state color',
     cssVar: 'var(--wpds-color-fg-content-error)',
+    color: '#d63638',
     group: 'Content',
   },
   {
@@ -64,6 +70,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Error Weak',
     description: 'Subtle error color',
     cssVar: 'var(--wpds-color-fg-content-error-weak)',
+    color: '#e65054',
     group: 'Content',
   },
   {
@@ -71,6 +78,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Success',
     description: 'Success state color',
     cssVar: 'var(--wpds-color-fg-content-success)',
+    color: '#00a32a',
     group: 'Content',
   },
   {
@@ -78,6 +86,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Success Weak',
     description: 'Subtle success color',
     cssVar: 'var(--wpds-color-fg-content-success-weak)',
+    color: '#00ba37',
     group: 'Content',
   },
   {
@@ -85,6 +94,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Caution',
     description: 'Caution/warning color',
     cssVar: 'var(--wpds-color-fg-content-caution)',
+    color: '#f0b849',
     group: 'Content',
   },
   {
@@ -92,6 +102,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Caution Weak',
     description: 'Subtle caution color',
     cssVar: 'var(--wpds-color-fg-content-caution-weak)',
+    color: '#f2c765',
     group: 'Content',
   },
   {
@@ -99,6 +110,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Info',
     description: 'Informational color',
     cssVar: 'var(--wpds-color-fg-content-info)',
+    color: '#0783be',
     group: 'Content',
   },
   {
@@ -106,6 +118,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Info Weak',
     description: 'Subtle info color',
     cssVar: 'var(--wpds-color-fg-content-info-weak)',
+    color: '#33b3db',
     group: 'Content',
   },
   {
@@ -113,6 +126,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Warning',
     description: 'Warning color',
     cssVar: 'var(--wpds-color-fg-content-warning)',
+    color: '#f56e28',
     group: 'Content',
   },
   {
@@ -120,6 +134,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Warning Weak',
     description: 'Subtle warning color',
     cssVar: 'var(--wpds-color-fg-content-warning-weak)',
+    color: '#f78b5b',
     group: 'Content',
   },
   // Interactive - Brand
@@ -128,6 +143,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Brand',
     description: 'Interactive brand color',
     cssVar: 'var(--wpds-color-fg-interactive-brand)',
+    color: '#3858e9',
     group: 'Interactive',
   },
   {
@@ -135,6 +151,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Brand Active',
     description: 'Active brand color',
     cssVar: 'var(--wpds-color-fg-interactive-brand-active)',
+    color: '#1e40af',
     group: 'Interactive',
   },
   {
@@ -142,6 +159,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Brand Disabled',
     description: 'Disabled brand color',
     cssVar: 'var(--wpds-color-fg-interactive-brand-disabled)',
+    color: '#a5b3d6',
     group: 'Interactive',
   },
   {
@@ -149,6 +167,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Brand Strong',
     description: 'Strong brand color',
     cssVar: 'var(--wpds-color-fg-interactive-brand-strong)',
+    color: '#1e40af',
     group: 'Interactive',
   },
   {
@@ -156,6 +175,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Brand Strong Active',
     description: 'Active strong brand color',
     cssVar: 'var(--wpds-color-fg-interactive-brand-strong-active)',
+    color: '#1e3a8a',
     group: 'Interactive',
   },
   {
@@ -163,6 +183,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Brand Strong Disabled',
     description: 'Disabled strong brand color',
     cssVar: 'var(--wpds-color-fg-interactive-brand-strong-disabled)',
+    color: '#93a5c7',
     group: 'Interactive',
   },
   // Interactive - Neutral
@@ -171,6 +192,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral',
     description: 'Interactive neutral color',
     cssVar: 'var(--wpds-color-fg-interactive-neutral)',
+    color: '#1e1e1e',
     group: 'Interactive',
   },
   {
@@ -178,6 +200,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral Active',
     description: 'Active neutral color',
     cssVar: 'var(--wpds-color-fg-interactive-neutral-active)',
+    color: '#000000',
     group: 'Interactive',
   },
   {
@@ -185,6 +208,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral Disabled',
     description: 'Disabled neutral color',
     cssVar: 'var(--wpds-color-fg-interactive-neutral-disabled)',
+    color: '#a0a0a0',
     group: 'Interactive',
   },
   {
@@ -192,6 +216,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral Strong',
     description: 'Strong neutral color',
     cssVar: 'var(--wpds-color-fg-interactive-neutral-strong)',
+    color: '#000000',
     group: 'Interactive',
   },
   {
@@ -199,6 +224,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral Strong Active',
     description: 'Active strong neutral color',
     cssVar: 'var(--wpds-color-fg-interactive-neutral-strong-active)',
+    color: '#000000',
     group: 'Interactive',
   },
   {
@@ -206,6 +232,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral Strong Disabled',
     description: 'Disabled strong neutral color',
     cssVar: 'var(--wpds-color-fg-interactive-neutral-strong-disabled)',
+    color: '#8f8f8f',
     group: 'Interactive',
   },
   {
@@ -213,6 +240,7 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral Weak',
     description: 'Weak neutral color',
     cssVar: 'var(--wpds-color-fg-interactive-neutral-weak)',
+    color: '#757575',
     group: 'Interactive',
   },
   {
@@ -220,9 +248,25 @@ const COLOR_VARIANTS: ColorVariant[] = [
     label: 'Neutral Weak Disabled',
     description: 'Disabled weak neutral color',
     cssVar: 'var(--wpds-color-fg-interactive-neutral-weak-disabled)',
+    color: '#b8b8b8',
     group: 'Interactive',
   },
 ];
+
+// Helper function to determine if a color is light or dark
+function isLightColor(hexColor: string): boolean {
+  // Convert hex to RGB
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  // Calculate relative luminance using the formula
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  // Return true if light (luminance > 0.5)
+  return luminance > 0.5;
+}
 
 export const ColorVariantPicker: React.FC<ColorVariantPickerProps> = ({ value, onChange, label }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -281,7 +325,7 @@ export const ColorVariantPicker: React.FC<ColorVariantPickerProps> = ({ value, o
             width: '20px',
             height: '20px',
             borderRadius: '3px',
-            backgroundColor: currentVariant.cssVar,
+            backgroundColor: currentVariant.color,
             border: '1px solid rgba(0, 0, 0, 0.1)',
             flexShrink: 0,
           }}
@@ -374,7 +418,7 @@ export const ColorVariantPicker: React.FC<ColorVariantPickerProps> = ({ value, o
                             width: '28px',
                             height: '28px',
                             borderRadius: '4px',
-                            backgroundColor: variant.cssVar,
+                            backgroundColor: variant.color,
                             border: '1px solid rgba(0, 0, 0, 0.1)',
                             flexShrink: 0,
                             position: 'relative',
@@ -387,7 +431,7 @@ export const ColorVariantPicker: React.FC<ColorVariantPickerProps> = ({ value, o
                                 top: '50%',
                                 left: '50%',
                                 transform: 'translate(-50%, -50%)',
-                                color: variant.value.includes('weak') || variant.value === 'default' ? '#000' : '#fff',
+                                color: isLightColor(variant.color) ? '#000' : '#fff',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',

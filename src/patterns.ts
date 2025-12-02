@@ -154,9 +154,20 @@ export const patterns: Pattern[] = [
                           props: { spacing: 2 },
                           children: [
                             {
-                              type: 'Heading',
-                              props: { level: 3, children: '$12' },
-                              children: [],
+                              type: 'HStack',
+                              props: { spacing: 2, justify: 'flex-start' },
+                              children: [
+                                {
+                                  type: 'Heading',
+                                  props: { level: 3, children: '$12' },
+                                  children: [],
+                                },
+                                {
+                                  type: 'Badge',
+                                  props: { children: '20% off', intent: 'success' },
+                                  children: [],
+                                },
+                              ],
                             },
                             {
                               type: 'Text',
@@ -164,11 +175,6 @@ export const patterns: Pattern[] = [
                               children: [],
                             },
                           ],
-                        },
-                        {
-                          type: 'Badge',
-                          props: { children: '20% off', intent: 'success' },
-                          children: [],
                         },
                       ],
                     },

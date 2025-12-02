@@ -747,6 +747,13 @@ export function componentTreeReducer(
       const { projectId } = action.payload;
       if (state.projects.length === 1) return state; // Don't delete last project
 
+      // Check if the project is an example project
+      const projectToDelete = state.projects.find(p => p.id === projectId);
+      if (projectToDelete?.isExampleProject) {
+        console.warn('[ComponentTreeReducer] Cannot delete example project:', projectToDelete.name);
+        return state; // Don't delete example projects
+      }
+
       const newProjects = state.projects.filter(p => p.id !== projectId);
       const newCurrentProjectId = state.currentProjectId === projectId
         ? newProjects[0].id
@@ -760,6 +767,14 @@ export function componentTreeReducer(
 
     case 'RENAME_PROJECT': {
       const { projectId, name } = action.payload;
+
+      // Check if the project is an example project
+      const projectToRename = state.projects.find(p => p.id === projectId);
+      if (projectToRename?.isExampleProject) {
+        console.warn('[ComponentTreeReducer] Cannot rename example project:', projectToRename.name);
+        return state; // Don't rename example projects
+      }
+
       const newProjects = state.projects.map(project =>
         project.id === projectId ? { ...project, name, lastModified: Date.now() } : project
       );
@@ -774,9 +789,10 @@ export function componentTreeReducer(
       const newProject: Project = {
         ...JSON.parse(JSON.stringify(projectToDuplicate)),
         id: newProjectId,
-        name: `${projectToDuplicate.name} Copy`,
+        name: `${projectToDuplicate.name} (Copy)`,
         createdAt: Date.now(),
         lastModified: Date.now(),
+        isExampleProject: false, // Duplicates are never example projects
       };
 
       const newProjects = [...state.projects, newProject];

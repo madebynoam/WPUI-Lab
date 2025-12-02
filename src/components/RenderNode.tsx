@@ -1644,6 +1644,12 @@ export const RenderNode: React.FC<{
     const maxWidthCustom = props.maxWidthCustom || '';
     const alignSelf = props.alignSelf || 'stretch';
     const padding = props.padding || '';
+    const spacing = props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2);
+
+    // Apply explicit gap to ensure spacing works correctly
+    // WordPress VStack/HStack uses spacing as multiplier of 4px
+    const gapValue = `${spacing * 4}px`;
+    mergedProps.style = { ...mergedProps.style, gap: gapValue };
 
     // Apply maxWidth - always set width to 100% to ensure stretching
     if (maxWidth === 'custom' && maxWidthCustom) {

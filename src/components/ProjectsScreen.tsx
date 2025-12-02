@@ -160,8 +160,9 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                                   handleRenameStart(project);
                                   onClose();
                                 }}
+                                disabled={project.isExampleProject}
                               >
-                                Rename
+                                {project.isExampleProject ? 'Cannot rename example project' : 'Rename'}
                               </MenuItem>
                               <MenuItem
                                 icon={copy}
@@ -181,9 +182,9 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                                   }
                                 }}
                                 isDestructive
-                                disabled={projects.length === 1}
+                                disabled={projects.length === 1 || project.isExampleProject}
                               >
-                                Delete
+                                {project.isExampleProject ? 'Cannot delete example project' : 'Delete'}
                               </MenuItem>
                             </MenuGroup>
                           )}
