@@ -25,6 +25,7 @@ import {
 import {
   plus as plusIcon,
   trash as trashIcon,
+  close,
   blockDefault,
   moreVertical,
   chevronRight,
@@ -661,7 +662,8 @@ export const PropertiesPanel: React.FC = () => {
                           )}
                         </div>
                         <Button
-                          icon={trashIcon}
+                          icon={close}
+                          iconSize={16}
                           variant="tertiary"
                           isSmall
                           onClick={() => {
