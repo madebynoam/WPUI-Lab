@@ -283,13 +283,13 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
 
         // Add short unique ID suffix for uniqueness (last 4 chars of interaction ID, alphanumeric)
         const uniqueSuffix = interaction.id.replace(/[^a-zA-Z0-9]/g, '').slice(-4);
-        const handlerName = `handle${triggerBase}-${uniqueSuffix}`;
+        const handlerName = `handle${triggerBase}_${uniqueSuffix}`;
 
         handlerMap[node.id] = handlerName;
 
         if (interaction.trigger === 'onClick' && interaction.action === 'navigate') {
           handlers.push(
-            `  const ${handlerName} = () => {\n    window.location.hash = '/${interaction.targetId}';\n  };`
+            `  const ${handlerName} = (e) => {\n    e?.stopPropagation();\n    window.location.pathname = window.location.pathname.replace(/\\/page-[^\\/]+$/, '/${interaction.targetId}');\n  };`
           );
         }
       });
