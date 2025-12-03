@@ -46,7 +46,7 @@ export interface ModelCapabilities {
   supportsCustomTemperature: boolean;
   defaultTemperature?: number;
   supportsMaxTokens: boolean;
-  maxTokensParam?: 'max_tokens' | 'max_completion_tokens';
+  maxTokensParam?: "max_tokens" | "max_completion_tokens";
 }
 
 /**
@@ -84,7 +84,7 @@ export const AVAILABLE_MODELS = {
     capabilities: {
       supportsCustomTemperature: true,
       supportsMaxTokens: true,
-      maxTokensParam: 'max_tokens' as const,
+      maxTokensParam: "max_tokens" as const,
     },
   },
   [Models.Anthropic.CLAUDE_HAIKU_4_5]: {
@@ -95,7 +95,7 @@ export const AVAILABLE_MODELS = {
     capabilities: {
       supportsCustomTemperature: true,
       supportsMaxTokens: true,
-      maxTokensParam: 'max_tokens' as const,
+      maxTokensParam: "max_tokens" as const,
     },
   },
 
@@ -146,15 +146,18 @@ export function getAllAgentModels() {
  * Get model capabilities for a specific model
  */
 export function getModelCapabilities(modelName: string): ModelCapabilities {
-  const modelConfig = AVAILABLE_MODELS[modelName as keyof typeof AVAILABLE_MODELS];
+  const modelConfig =
+    AVAILABLE_MODELS[modelName as keyof typeof AVAILABLE_MODELS];
 
   if (!modelConfig?.capabilities) {
     // Default to safe capabilities if model not found
-    console.warn(`[AgentConfig] Model "${modelName}" not found, using default capabilities`);
+    console.warn(
+      `[AgentConfig] Model "${modelName}" not found, using default capabilities`
+    );
     return {
       supportsCustomTemperature: true,
       supportsMaxTokens: true,
-      maxTokensParam: 'max_tokens',
+      maxTokensParam: "max_tokens",
     };
   }
 

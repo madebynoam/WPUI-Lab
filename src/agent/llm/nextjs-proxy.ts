@@ -9,9 +9,11 @@ import { LLMProvider, LLMChatOptions, LLMResponse } from "./types";
 export class NextJSProxyProvider implements LLMProvider {
   name = "nextjs-proxy";
   private provider: string;
+  private model: string;
 
-  constructor(provider: string) {
+  constructor(provider: string, model: string) {
     this.provider = provider;
+    this.model = model;
   }
 
   async chat(options: LLMChatOptions): Promise<LLMResponse> {
@@ -36,6 +38,7 @@ export class NextJSProxyProvider implements LLMProvider {
         max_tokens,
         tool_choice,
         provider: this.provider,
+        model: this.model,
       }),
       signal,
     });
