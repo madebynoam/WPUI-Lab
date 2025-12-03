@@ -49,8 +49,11 @@ export function normalizeComponentNode(node: ComponentNode): ComponentNode {
       delete normalized.props.content;
     }
 
-    // Clear the children array for Text/Heading/Badge (they don't have child components)
-    normalized.children = [];
+    // Clear the children array ONLY if using props.children (not child Text nodes)
+    // buildFromYAML may create Text child nodes for Headings with string content
+    if (hasChildrenProp || hasContent) {
+      normalized.children = [];
+    }
   }
 
   // Recursively normalize all children
