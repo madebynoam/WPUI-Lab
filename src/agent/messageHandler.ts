@@ -61,6 +61,7 @@ TOOL USAGE:
 - For bulk creation (3+ components): Use buildFromYAML or section_create
 - For single updates: Use component_update with selected componentId
 - For searches: Use context_searchComponents
+- IMPORTANT: Trust tool success messages - do NOT call context_getProject to verify after createPage, component_update, etc. The success message is accurate.
 
 BUILDYAML SYNTAX:
 buildFromYAML({
