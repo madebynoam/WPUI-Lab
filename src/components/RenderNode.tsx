@@ -1636,7 +1636,7 @@ export const RenderNode: React.FC<{
   };
 
   if (node.type === 'VStack' || node.type === 'HStack' || node.type === 'Grid') {
-    const maxWidth = props.maxWidth || 'full';
+    const maxWidth = props.maxWidth || 'xl';
     const maxWidthCustom = props.maxWidthCustom || '';
     const alignSelf = props.alignSelf || 'stretch';
     const padding = props.padding || '';
@@ -1652,11 +1652,9 @@ export const RenderNode: React.FC<{
     // Apply maxWidth - always set width to 100% to ensure stretching
     if (maxWidth === 'custom' && maxWidthCustom) {
       mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthCustom };
-    } else if (maxWidth !== 'full') {
-      mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[maxWidth] || '100%' };
     } else {
-      // Even for 'full', ensure width is 100%
-      mergedProps.style = { ...mergedProps.style, width: '100%' };
+      // Apply maxWidth from presets (including 'full' which is '100%')
+      mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[maxWidth] || '100%' };
     }
 
     // Apply alignSelf (for horizontal positioning when maxWidth is set)

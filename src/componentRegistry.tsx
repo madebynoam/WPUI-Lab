@@ -137,7 +137,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'maxWidth',
         type: 'select',
         options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
-        defaultValue: 'full',
+        defaultValue: 'xl',
         description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
       },
       {
@@ -446,7 +446,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'maxWidth',
         type: 'select',
         options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
-        defaultValue: 'full',
+        defaultValue: 'xl',
         description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
       },
       {
@@ -520,7 +520,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         name: 'maxWidth',
         type: 'select',
         options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
-        defaultValue: 'full',
+        defaultValue: 'xl',
         description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
       },
       {
