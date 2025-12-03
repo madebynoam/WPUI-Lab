@@ -3,6 +3,7 @@ import { ComponentNode, PatternNode } from '../../types';
 import { componentRegistry } from '../../componentRegistry';
 import { ROOT_VSTACK_ID } from '../../ComponentTreeContext';
 import { normalizeComponentNodes } from '../../utils/normalizeComponent';
+import { getAgentComponentList } from '../../config/availableComponents';
 import * as yaml from 'js-yaml';
 
 // Generate unique ID for components
@@ -919,7 +920,12 @@ export const updatePageThemeTool: AgentTool = {
 // Build component tree from YAML DSL (token-efficient bulk operations)
 export const buildFromYAMLTool: AgentTool = {
   name: 'buildFromYAML',
-  description: '🎯 PRIMARY TOOL for creating multiple components! Use this for ANY bulk operation (3+ items). YAML is 20% more token-efficient and more reliable than other tools. Pass YAML as the "yaml" parameter. Example: {yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Spring Special\\n        children:\\n          - Text: 20% off!\\n          - Button:\\n              text: Shop Now"}',
+  description: `🎯 PRIMARY TOOL for creating multiple components! Use this for ANY bulk operation (3+ items). YAML is 20% more token-efficient and more reliable than other tools. Pass YAML as the "yaml" parameter. Example: {yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Spring Special\\n        children:\\n          - Text: 20% off!\\n          - Button:\\n              text: Shop Now"}
+
+VALID COMPONENT TYPES (${getAgentComponentList().length} total):
+${getAgentComponentList().join(', ')}
+
+IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the components listed above.`,
   category: 'action',
   parameters: {
     yaml: {

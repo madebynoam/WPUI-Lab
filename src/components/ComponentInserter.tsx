@@ -26,7 +26,10 @@ import {
   chevronDown,
 } from "@wordpress/icons";
 import { patterns, patternCategories } from "../patterns";
-import { componentGroups } from "./TreePanel";
+import {
+  componentGroups,
+  hiddenPrimitives,
+} from "../config/availableComponents";
 import { TabContainer } from "./TabContainer";
 
 // Map component types to WordPress icons
@@ -115,16 +118,6 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
   if (!showInserter) {
     return null;
   }
-
-  // Primitive components to hide (auto-created by parent components)
-  const hiddenPrimitives = new Set([
-    "CardHeader",
-    "CardBody",
-    "PanelBody",
-    "PanelRow",
-    "FlexItem",
-    "FlexBlock",
-  ]);
 
   // Filter components based on search term and hide primitives
   const filteredGroups = componentGroups

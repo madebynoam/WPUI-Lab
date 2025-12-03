@@ -61,78 +61,10 @@ import {
 } from "../utils/dndTreeHelpers";
 import { SortableTreeItem } from "./TreeItem/SortableTreeItem";
 import { TreeItem } from "./TreeItem/TreeItem";
-
-// Component groups for the inserter
-export interface ComponentGroup {
-  name: string;
-  icon: JSX.Element;
-  components: string[];
-}
-
-export const componentGroups: ComponentGroup[] = [
-  {
-    name: "Layout",
-    icon: layout,
-    components: ["VStack", "HStack", "Grid", "Flex", "FlexBlock", "FlexItem"],
-  },
-  {
-    name: "Containers",
-    icon: box,
-    components: [
-      "Card",
-      "CardBody",
-      "CardHeader",
-      // 'Panel',
-      "PanelBody",
-      "PanelRow",
-      "Tabs",
-    ],
-  },
-  {
-    name: "Content",
-    icon: pencil,
-    components: ["Text", "Heading", "Button", "Badge", "Icon"],
-  },
-  {
-    name: "Form Inputs",
-    icon: tag,
-    components: [
-      "TextControl",
-      "TextareaControl",
-      "SelectControl",
-      "NumberControl",
-      "SearchControl",
-      "ToggleControl",
-      "CheckboxControl",
-      "RadioControl",
-      "RangeControl",
-      "DateTimePicker",
-    ],
-  },
-  // {
-  // 	name: 'Interactive',
-  // 	icon: plugins,
-  // 	components: [
-  // 		'Modal',
-  // 		'Popover',
-  // 		'Dropdown',
-  // 		'MenuGroup',
-  // 		'MenuItem',
-  // 		'Tooltip',
-  // 		'Notice',
-  // 	],
-  // },
-  {
-    name: "Utilities",
-    icon: plus,
-    components: ["Spacer", "Divider", "Spinner"],
-  },
-  {
-    name: "Data Display",
-    icon: table,
-    components: ["DataViews"],
-  },
-];
+import {
+  componentGroups,
+  type ComponentGroup,
+} from "../config/availableComponents";
 
 // Interactive component types that should be rendered in isolation when selected
 export const INTERACTIVE_COMPONENT_TYPES = [

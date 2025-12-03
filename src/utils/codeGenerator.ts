@@ -56,7 +56,7 @@ function generateNodeCode(
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
 
-  // Extract layout constraint props for VStack/HStack
+  // Extract layout constraint props for VStack/HStack/Grid
   const maxWidth = props.maxWidth;
   const maxWidthCustom = props.maxWidthCustom;
   const alignSelf = props.alignSelf;
@@ -82,8 +82,8 @@ function generateNodeCode(
     styleObj.gridRow = `span ${gridRowSpan}`;
   }
 
-  // Handle layout constraints for VStack/HStack
-  if (componentName === 'VStack' || componentName === 'HStack') {
+  // Handle layout constraints for VStack/HStack/Grid
+  if (componentName === 'VStack' || componentName === 'HStack' || componentName === 'Grid') {
     const maxWidthPresets: Record<string, string> = {
       sm: '640px',
       md: '960px',

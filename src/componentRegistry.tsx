@@ -133,6 +133,19 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: false,
         description: 'Display as inline-grid',
       },
+      {
+        name: 'maxWidth',
+        type: 'select',
+        options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
+        defaultValue: 'full',
+        description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
+      },
+      {
+        name: 'maxWidthCustom',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom max-width value (e.g., "800px", "50rem"). Only used when maxWidth is "custom"'
+      },
     ],
   },
 

@@ -4,10 +4,36 @@ import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
 import { handleHybridRequest } from './orchestrator/hybridOrchestrator';
 import { getAgentModel } from './agentConfig';
+import { getAgentComponentSummary } from '../config/availableComponents';
 
 // Token estimation utility (rough estimate: 4 chars ≈ 1 token)
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
+}
+
+// Humanize tool names for progress messages
+function humanizeToolName(toolName: string, toolArgs?: any): string {
+  const humanized: Record<string, string> = {
+    context_getProject: 'Getting project context...',
+    context_searchComponents: 'Searching components...',
+    component_update: 'Updating component...',
+    component_delete: 'Deleting component...',
+    component_move: 'Moving component...',
+    section_create: `Creating ${toolArgs?.template || ''} section...`,
+    buildFromYAML: 'Building components...',
+    modifyComponentTree: 'Modifying layout...',
+    duplicateComponent: 'Duplicating component...',
+    copyComponent: 'Copying component...',
+    pasteComponent: 'Pasting component...',
+    addInteraction: 'Adding interaction...',
+    removeInteraction: 'Removing interaction...',
+    updateInteraction: 'Updating interaction...',
+    createPage: `Creating page "${toolArgs?.name || ''}"...`,
+    switchPage: 'Switching page...',
+    updatePageTheme: 'Updating theme...',
+  };
+
+  return humanized[toolName] || `Running ${toolName}...`;
 }
 
 // Model pricing (per 1K tokens)
@@ -46,30 +72,32 @@ const PRICE_PER_1K_INPUT = MODEL_PRICING['claude-haiku-4-5'].input;
 const PRICE_PER_1K_OUTPUT = MODEL_PRICING['claude-haiku-4-5'].output;
 
 // Feature flag: Enable v3.0 multi-agent orchestrator
-// Set to true to use multi-agent system, false for v2.0 single-agent YAML DSL
-const USE_ORCHESTRATOR = true;
+// Set to true to use multi-agent system, false to use new refactored tools directly
+const USE_ORCHESTRATOR = false;
 
 const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer.
 
-CRITICAL: Use buildFromYAML to build UIs. Pass YAML as the "yaml" parameter!
+CRITICAL WORKFLOW:
+1. ALWAYS call context_getProject FIRST to see what's selected and get page context
+2. If user says "change the button" and a Button is SELECTED, use its componentId directly - DO NOT ask which one
+3. If nothing is selected and multiple components match, THEN use disambiguation
 
-Example:
+SELECTION PRIORITY:
+- Selected component = user wants to edit THIS specific component
+- Use the selected component's ID directly in component_update
+- Only search/disambiguate when nothing is selected
+
+TOOL USAGE:
+- For bulk creation (3+ components): Use buildFromYAML or section_create
+- For single updates: Use component_update with selected componentId
+- For searches: Use context_searchComponents
+
+BUILDYAML SYNTAX:
 buildFromYAML({
-  yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Starter\\n        children:\\n          - Text: $9/mo\\n          - Button:\\n              text: Buy Now\\n    - Card:\\n        title: Pro\\n        children:\\n          - Text: $29/mo\\n          - Button:\\n              text: Buy Now\\n    - Card:\\n        title: Enterprise\\n        children:\\n          - Text: $99/mo\\n          - Button:\\n              text: Buy Now"
+  yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Starter\\n        children:\\n          - Text: $9/mo\\n          - Button:\\n              text: Buy Now"
 })
 
-Available components: Grid, VStack, HStack, Card, Panel, Text, Heading, Button, Icon, DataViews
-
-Cards auto-create CardHeader/CardBody. Use shortcuts: Card: { title: "Title", children: [...] }
-
-DataViews displays tables/grids with sorting and pagination. Just provide data:
-DataViews:
-  data:
-    - {id: 1, name: "Item 1", price: "$10"}
-    - {id: 2, name: "Item 2", price: "$20"}
-  columns:
-    - {id: name, label: "Name"}
-    - {id: price, label: "Price"}
+${getAgentComponentSummary()}
 
 Be conversational and friendly!`;
 
@@ -247,6 +275,12 @@ export async function handleUserMessage(
           args: toolArgs,
         });
 
+        // Send progress message before executing tool
+        onProgress?.({
+          phase: 'executing',
+          message: humanizeToolName(toolName, toolArgs),
+        });
+
         // Get the tool
         const tool = getTool(toolName);
         if (!tool) {
@@ -272,6 +306,14 @@ export async function handleUserMessage(
             success: result.success,
             message: result.message,
           });
+
+          // Send progress message with tool result
+          if (result.success && result.message) {
+            onProgress?.({
+              phase: 'executing',
+              message: result.message,
+            });
+          }
 
           // Add tool result to conversation
           messages.push({

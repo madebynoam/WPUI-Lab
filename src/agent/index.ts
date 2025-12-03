@@ -1,5 +1,19 @@
 // Register all tools
 import { registerTool } from './tools/registry';
+
+// NEW: Refactored job-level tools (Anthropic's "Writing effective tools for agents" principles)
+import {
+  context_getProject,
+  context_searchComponents,
+} from './tools/consolidatedContext';
+import { section_create } from './tools/sectionTemplates';
+import {
+  component_update,
+  component_delete,
+  component_move,
+} from './tools/smartUpdate';
+
+// Legacy context tools (kept for backward compatibility)
 import {
   getPagesTool,
   getCurrentPageTool,
@@ -33,26 +47,50 @@ import {
   createPatternTool,
 } from './tools/patterns';
 
-// Register context tools
-registerTool(getPagesTool);
-registerTool(getCurrentPageTool);
-registerTool(getAvailableComponentTypesTool);
-registerTool(getPageComponentsTool);
-registerTool(getComponentDetailsTool);
-registerTool(getSelectedComponentsTool);
-registerTool(searchComponentsTool);
-registerTool(getComponentSchemaTool);
+// ===== PREFERRED TOOLS (Refactored for Anthropic's best practices) =====
+// These tools consolidate functionality and follow job-level patterns
 
-// Register PRIMARY tree manipulation tools
+// Consolidated context tool (replaces 4 separate tools)
+registerTool(context_getProject);
+
+// Smart search with disambiguation
+registerTool(context_searchComponents);
+
+// Job-level section creation (pricing, hero, features, etc.)
+registerTool(section_create);
+
+// Smart component operations with disambiguation
+registerTool(component_update);
+registerTool(component_delete);
+registerTool(component_move);
+
+// ===== LEGACY TOOLS (DISABLED - Use new refactored tools instead) =====
+// Context tools replaced by: context_getProject, context_searchComponents
+// CRUD tools replaced by: component_update, component_delete, component_move
+// Section creation replaced by: section_create
+
+// COMMENTED OUT - Use context_getProject instead
+// registerTool(getPagesTool);
+// registerTool(getCurrentPageTool);
+// registerTool(getAvailableComponentTypesTool);
+// registerTool(getPageComponentsTool);
+// registerTool(getComponentDetailsTool);
+// registerTool(getSelectedComponentsTool);
+// registerTool(searchComponentsTool);
+// registerTool(getComponentSchemaTool);
+
+// Register PRIMARY tree manipulation tools (KEEP - still useful)
 registerTool(modifyComponentTreeTool);
 registerTool(buildFromYAMLTool); // YAML DSL - most token-efficient for bulk operations (3+ items)
 
-// Register legacy action tools (for backward compatibility - will be deprecated)
-registerTool(createComponentTool);
-registerTool(batchCreateComponentsTool);
-registerTool(updateComponentTool);
-registerTool(updateMultipleComponentsTool);
-registerTool(deleteComponentTool);
+// COMMENTED OUT - Use component_update, component_delete, section_create instead
+// registerTool(createComponentTool);
+// registerTool(batchCreateComponentsTool);
+// registerTool(updateComponentTool);
+// registerTool(updateMultipleComponentsTool);
+// registerTool(deleteComponentTool);
+
+// KEEP - Not replaced yet
 registerTool(duplicateComponentTool);
 registerTool(copyComponentTool);
 registerTool(pasteComponentTool);

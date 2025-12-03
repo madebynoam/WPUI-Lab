@@ -31,6 +31,10 @@ export interface ToolResult {
   message: string;
   data?: any;
   error?: string;
+  // Disambiguation support (Anthropic's tool design principles)
+  requiresDisambiguation?: boolean;
+  requiresConfirmation?: boolean;
+  suggestions?: Array<{ id: string; displayName: string; [key: string]: any }>;
 }
 
 // Tool definition
