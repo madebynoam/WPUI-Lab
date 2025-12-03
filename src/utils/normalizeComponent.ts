@@ -39,21 +39,25 @@ export function normalizeComponentNode(node: ComponentNode): ComponentNode {
     const hasValidChildren = Array.isArray(normalized.children) && normalized.children.length > 0;
     const hasChildrenProp = 'children' in normalized.props && normalized.props.children;
 
-    // Priority: props.children (if valid) > props.content > empty
+    // Priority: props.children (if valid) > props.content > single Text child > empty
     if (!hasChildrenProp && hasContent) {
       // Move content to children prop
       normalized.props.children = normalized.props.content;
       delete normalized.props.content;
+    } else if (!hasChildrenProp && hasValidChildren && normalized.children.length === 1 && normalized.children[0].type === 'Text') {
+      // buildFromYAML creates Heading → Text child structure
+      // Flatten single Text child into props.children
+      const textChild = normalized.children[0];
+      if ('children' in textChild.props) {
+        normalized.props.children = textChild.props.children;
+      }
     } else if (hasChildrenProp) {
       // Already has children prop, just remove content if it exists
       delete normalized.props.content;
     }
 
-    // Clear the children array ONLY if using props.children (not child Text nodes)
-    // buildFromYAML may create Text child nodes for Headings with string content
-    if (hasChildrenProp || hasContent) {
-      normalized.children = [];
-    }
+    // Always clear children array for Text/Heading/Badge (they don't render child components)
+    normalized.children = [];
   }
 
   // Recursively normalize all children
