@@ -1633,7 +1633,12 @@ export const RenderNode: React.FC<{
   };
 
   if (node.type === 'VStack' || node.type === 'HStack' || node.type === 'Grid') {
-    const maxWidth = props.maxWidth || 'content';
+    // Normalize old maxWidth values (sm/md/lg/xl/custom) to new system
+    let maxWidth = props.maxWidth || 'content';
+    if (!['content', 'full'].includes(maxWidth)) {
+      maxWidth = 'content'; // Treat old values as content width
+    }
+
     const alignSelf = props.alignSelf || 'center';
     const padding = props.padding || '';
     const spacing = props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2);

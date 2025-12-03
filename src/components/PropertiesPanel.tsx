@@ -483,8 +483,8 @@ export const PropertiesPanel: React.FC = () => {
                               flex: 1,
                               height: '36px',
                               justifyContent: 'center',
-                              backgroundColor: currentValue === 'content' ? '#1e1e1e' : 'transparent',
-                              color: currentValue === 'content' ? '#fff' : '#1e1e1e',
+                              backgroundColor: (currentValue === 'content' || !['content', 'full'].includes(currentValue)) ? '#1e1e1e' : 'transparent',
+                              color: (currentValue === 'content' || !['content', 'full'].includes(currentValue)) ? '#fff' : '#1e1e1e',
                               border: '1px solid #ddd',
                             }}
                             label="Content Width (1344px, centered)"
