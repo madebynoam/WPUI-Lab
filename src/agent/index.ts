@@ -7,6 +7,7 @@ import {
   context_searchComponents,
 } from './tools/consolidatedContext';
 import { section_create } from './tools/sectionTemplates';
+import { table_create } from './tools/tableCreate';
 import {
   component_update,
   component_delete,
@@ -40,6 +41,9 @@ registerTool(context_searchComponents);
 
 // Job-level section creation
 registerTool(section_create);
+
+// Job-level table creation
+registerTool(table_create);
 
 // Smart component operations
 registerTool(component_update);

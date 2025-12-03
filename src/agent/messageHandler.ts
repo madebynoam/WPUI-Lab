@@ -19,6 +19,7 @@ function humanizeToolName(toolName: string, toolArgs?: any): string {
     component_delete: 'Deleting component...',
     component_move: 'Moving component...',
     section_create: `Creating ${toolArgs?.template || ''} section...`,
+    table_create: `Creating ${toolArgs?.template || ''} table...`,
     buildFromMarkup: 'Building components...',
     modifyComponentTree: 'Modifying layout...',
     duplicateComponent: 'Duplicating component...',
@@ -59,9 +60,16 @@ SELECTION PRIORITY:
 
 TOOL USAGE:
 - For bulk creation (3+ components): Use buildFromMarkup or section_create
+- For tables/data display: Use table_create (NEVER manually create DataViews)
 - For single updates: Use component_update with selected componentId
 - For searches: Use context_searchComponents
 - IMPORTANT: Trust tool success messages - do NOT call context_getProject to verify after createPage, component_update, etc. The success message is accurate.
+
+TABLES & DATA:
+- User says "add a table" or "create a users table" → Use table_create tool
+- table_create has templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads
+- Example: table_create({template: "users"}) creates a complete users table
+- NEVER manually create DataViews components - always use table_create instead
 
 MARKUP SYNTAX (JSX-like):
 buildFromMarkup({
