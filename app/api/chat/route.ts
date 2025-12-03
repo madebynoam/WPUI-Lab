@@ -7,11 +7,12 @@ import type { LLMChatOptions } from '@/src/agent/llm/types';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, tools, temperature, max_tokens, tool_choice, provider: requestedProvider } = body as LLMChatOptions & { provider?: string };
+    const { messages, tools, temperature, max_tokens, tool_choice, provider: requestedProvider, model: requestedModel } = body as LLMChatOptions & { provider?: string; model?: string };
 
-    // Determine which provider to use
-    const orchestratorConfig = getAgentModel('orchestrator');
-    const provider = requestedProvider || orchestratorConfig.provider;
+    // Determine which provider and model to use
+    const agentConfig = getAgentModel('agent');
+    const provider = requestedProvider || agentConfig.provider;
+    const model = requestedModel || agentConfig.model;
 
     if (provider === 'anthropic') {
       const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const anthropic = new AnthropicProvider(apiKey, orchestratorConfig.model);
+      const anthropic = new AnthropicProvider(apiKey, model);
       const response = await anthropic.chat({
         messages,
         tools,
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const openai = new OpenAIProvider(apiKey, orchestratorConfig.model);
+      const openai = new OpenAIProvider(apiKey, model);
       const response = await openai.chat({
         messages,
         tools,
