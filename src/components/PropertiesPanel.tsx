@@ -33,6 +33,8 @@ import {
   seen,
   dragHandle,
   justifyTop,
+  stretchFullWidth,
+  positionCenter,
 } from "@wordpress/icons";
 import { IconPicker } from "./IconPicker";
 import { ColorVariantPicker } from "./ColorVariantPicker";
@@ -461,8 +463,63 @@ export const PropertiesPanel: React.FC = () => {
                     )}
 
                   {propDef.type === "select" &&
+                    propDef.name === "maxWidth" && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          textTransform: 'uppercase',
+                          marginBottom: '8px',
+                          color: '#1e1e1e'
+                        }}>
+                          Width
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <Button
+                            icon={positionCenter}
+                            onClick={() => handlePropChange(propDef.name, 'content')}
+                            style={{
+                              flex: 1,
+                              height: '36px',
+                              justifyContent: 'center',
+                              backgroundColor: currentValue === 'content' ? '#1e1e1e' : 'transparent',
+                              color: currentValue === 'content' ? '#fff' : '#1e1e1e',
+                              border: '1px solid #ddd',
+                            }}
+                            label="Content Width (1344px, centered)"
+                          />
+                          <Button
+                            icon={stretchFullWidth}
+                            onClick={() => handlePropChange(propDef.name, 'full')}
+                            style={{
+                              flex: 1,
+                              height: '36px',
+                              justifyContent: 'center',
+                              backgroundColor: currentValue === 'full' ? '#1e1e1e' : 'transparent',
+                              color: currentValue === 'full' ? '#fff' : '#1e1e1e',
+                              border: '1px solid #ddd',
+                            }}
+                            label="Full Width (100%)"
+                          />
+                        </div>
+                        {propDef.description && (
+                          <p style={{
+                            margin: '8px 0 0',
+                            fontSize: '12px',
+                            fontStyle: 'normal',
+                            color: '#757575'
+                          }}>
+                            {propDef.description}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                  {propDef.type === "select" &&
                     propDef.name !== "icon" &&
                     propDef.name !== "colorVariant" &&
+                    propDef.name !== "maxWidth" &&
                     propDef.options && (
                       <SelectControl
                         label={propDef.name}

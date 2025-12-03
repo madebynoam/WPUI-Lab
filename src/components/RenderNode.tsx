@@ -1628,17 +1628,13 @@ export const RenderNode: React.FC<{
 
   // Apply layout constraints for VStack and HStack
   const maxWidthPresets: Record<string, string> = {
-    sm: '640px',
-    md: '960px',
-    lg: '1280px',
-    xl: '1440px',
+    content: '1344px',
     full: '100%',
   };
 
   if (node.type === 'VStack' || node.type === 'HStack' || node.type === 'Grid') {
-    const maxWidth = props.maxWidth || 'xl';
-    const maxWidthCustom = props.maxWidthCustom || '';
-    const alignSelf = props.alignSelf || 'stretch';
+    const maxWidth = props.maxWidth || 'content';
+    const alignSelf = props.alignSelf || 'center';
     const padding = props.padding || '';
     const spacing = props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2);
 
@@ -1650,12 +1646,8 @@ export const RenderNode: React.FC<{
     }
 
     // Apply maxWidth - always set width to 100% to ensure stretching
-    if (maxWidth === 'custom' && maxWidthCustom) {
-      mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthCustom };
-    } else {
-      // Apply maxWidth from presets (including 'full' which is '100%')
-      mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[maxWidth] || '100%' };
-    }
+    // content=1344px (centered), full=100% (full viewport width)
+    mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[maxWidth] || '1344px' };
 
     // Apply alignSelf (for horizontal positioning when maxWidth is set)
     if (alignSelf === 'center') {

@@ -136,15 +136,9 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'maxWidth',
         type: 'select',
-        options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
-        defaultValue: 'xl',
-        description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
-      },
-      {
-        name: 'maxWidthCustom',
-        type: 'string',
-        defaultValue: '',
-        description: 'Custom max-width value (e.g., "800px", "50rem"). Only used when maxWidth is "custom"'
+        options: ['content', 'full'],
+        defaultValue: 'content',
+        description: 'Width: content (1344px centered) or full (100%)'
       },
     ],
   },
@@ -445,15 +439,9 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'maxWidth',
         type: 'select',
-        options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
-        defaultValue: 'xl',
-        description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
-      },
-      {
-        name: 'maxWidthCustom',
-        type: 'string',
-        defaultValue: '',
-        description: 'Custom max-width value (e.g., "800px", "50rem"). Only used when maxWidth is "custom"'
+        options: ['content', 'full'],
+        defaultValue: 'content',
+        description: 'Width: content (1344px centered) or full (100%)'
       },
       {
         name: 'alignSelf',
@@ -519,15 +507,9 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'maxWidth',
         type: 'select',
-        options: ['sm', 'md', 'lg', 'xl', 'full', 'custom'],
-        defaultValue: 'xl',
-        description: 'Maximum width constraint (sm=640px, md=960px, lg=1280px, xl=1440px, full=100%)'
-      },
-      {
-        name: 'maxWidthCustom',
-        type: 'string',
-        defaultValue: '',
-        description: 'Custom max-width value (e.g., "800px", "50rem"). Only used when maxWidth is "custom"'
+        options: ['content', 'full'],
+        defaultValue: 'content',
+        description: 'Width: content (1344px centered) or full (100%)'
       },
       {
         name: 'alignSelf',
