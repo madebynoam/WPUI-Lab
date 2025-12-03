@@ -2,7 +2,6 @@ import { AgentMessage, ToolContext, ToolResult } from './types';
 import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
-import { handleHybridRequest } from './orchestrator/hybridOrchestrator';
 import { getAgentModel } from './agentConfig';
 import { getAgentComponentSummary } from '../config/availableComponents';
 
@@ -71,10 +70,6 @@ const MODEL_PRICING = {
 const PRICE_PER_1K_INPUT = MODEL_PRICING['claude-haiku-4-5'].input;
 const PRICE_PER_1K_OUTPUT = MODEL_PRICING['claude-haiku-4-5'].output;
 
-// Feature flag: Enable v3.0 multi-agent orchestrator
-// Set to true to use multi-agent system, false to use new refactored tools directly
-const USE_ORCHESTRATOR = false;
-
 const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer.
 
 CRITICAL WORKFLOW:
@@ -115,46 +110,6 @@ export async function handleUserMessage(
 
 
   try {
-    // === v3.0 HYBRID ORCHESTRATOR (Deterministic Tools + Small Agents) ===
-    if (USE_ORCHESTRATOR) {
-      console.log('[Agent] Using v3.0 hybrid orchestrator (tools + agents)');
-
-      const result = await handleHybridRequest(
-        userMessage,
-        context,
-        {
-          anthropicApiKey: claudeApiKey,
-          openaiApiKey: openaiApiKey,
-        },
-        onProgress,
-        signal,
-        conversationHistory
-      );
-
-      // Log cost breakdown
-      console.log('[Agent] 💰 Hybrid Orchestrator Summary:', {
-        source: result.source,
-        agent: result.agent || 'N/A',
-        cost: `$${result.cost.toFixed(6)}`,
-        duration: `${result.duration}ms`,
-        success: result.success,
-      });
-
-      return {
-        id: `agent-${Date.now()}`,
-        role: 'agent',
-        content: [
-          {
-            type: 'text',
-            text: result.message,
-          },
-        ],
-        timestamp: Date.now(),
-        archived: false,
-        showIcon: true,
-      };
-    }
-
     // === v2.0 SINGLE-AGENT YAML DSL ===
     console.log('[Agent] Using v2.0 single-agent YAML DSL');
 
