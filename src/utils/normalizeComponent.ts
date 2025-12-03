@@ -44,7 +44,7 @@ export function normalizeComponentNode(node: ComponentNode): ComponentNode {
       // Move content to children prop
       normalized.props.children = normalized.props.content;
       delete normalized.props.content;
-    } else if (!hasChildrenProp && hasValidChildren && normalized.children.length === 1 && normalized.children[0].type === 'Text') {
+    } else if (!hasChildrenProp && hasValidChildren && normalized.children && normalized.children.length === 1 && normalized.children[0].type === 'Text') {
       // buildFromYAML creates Heading → Text child structure
       // Flatten single Text child into props.children
       const textChild = normalized.children[0];

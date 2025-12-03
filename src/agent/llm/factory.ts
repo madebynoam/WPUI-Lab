@@ -3,5 +3,8 @@ import { NextJSProxyProvider } from './nextjs-proxy';
 
 export function createLLMProvider(config: LLMConfig): LLMProvider {
   // Use Next.js proxy provider to keep API keys secure on server
+  if (!config.model) {
+    throw new Error('Model is required in LLM configuration');
+  }
   return new NextJSProxyProvider(config.provider, config.model);
 }
