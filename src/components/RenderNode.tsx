@@ -1649,13 +1649,16 @@ export const RenderNode: React.FC<{
     // content=1344px (centered), full=100% (full viewport width)
     mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[maxWidth] || '1344px' };
 
-    // Apply alignSelf (for horizontal positioning when maxWidth is set)
-    if (alignSelf === 'center') {
-      mergedProps.style = { ...mergedProps.style, marginLeft: 'auto', marginRight: 'auto' };
-    } else if (alignSelf === 'start') {
-      mergedProps.style = { ...mergedProps.style, marginRight: 'auto' };
-    } else if (alignSelf === 'end') {
-      mergedProps.style = { ...mergedProps.style, marginLeft: 'auto' };
+    // Apply alignSelf (for horizontal positioning) - only for content width
+    // Full width should stretch without margins
+    if (maxWidth === 'content') {
+      if (alignSelf === 'center') {
+        mergedProps.style = { ...mergedProps.style, marginLeft: 'auto', marginRight: 'auto' };
+      } else if (alignSelf === 'start') {
+        mergedProps.style = { ...mergedProps.style, marginRight: 'auto' };
+      } else if (alignSelf === 'end') {
+        mergedProps.style = { ...mergedProps.style, marginLeft: 'auto' };
+      }
     }
 
     // Apply padding
