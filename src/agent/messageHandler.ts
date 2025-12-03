@@ -19,7 +19,7 @@ function humanizeToolName(toolName: string, toolArgs?: any): string {
     component_delete: 'Deleting component...',
     component_move: 'Moving component...',
     section_create: `Creating ${toolArgs?.template || ''} section...`,
-    buildFromYAML: 'Building components...',
+    buildFromMarkup: 'Building components...',
     modifyComponentTree: 'Modifying layout...',
     duplicateComponent: 'Duplicating component...',
     copyComponent: 'Copying component...',
@@ -58,15 +58,20 @@ SELECTION PRIORITY:
 - Only search/disambiguate when nothing is selected
 
 TOOL USAGE:
-- For bulk creation (3+ components): Use buildFromYAML or section_create
+- For bulk creation (3+ components): Use buildFromMarkup or section_create
 - For single updates: Use component_update with selected componentId
 - For searches: Use context_searchComponents
 - IMPORTANT: Trust tool success messages - do NOT call context_getProject to verify after createPage, component_update, etc. The success message is accurate.
 
-BUILDYAML SYNTAX:
-buildFromYAML({
-  yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Starter\\n        children:\\n          - Text: $9/mo\\n          - Button:\\n              text: Buy Now"
+MARKUP SYNTAX (JSX-like):
+buildFromMarkup({
+  markup: "<Grid columns={3} gap={4}>\\n  <Card>\\n    <CardHeader>\\n      <Heading level={3}>Starter</Heading>\\n    </CardHeader>\\n    <CardBody>\\n      <Text>$9/mo</Text>\\n      <Button variant=\\"primary\\">Buy Now</Button>\\n    </CardBody>\\n  </Card>\\n</Grid>"
 })
+
+IMPORTANT CARD STRUCTURE:
+- Card components MUST contain CardHeader, CardBody, and/or CardFooter as direct children
+- NEVER put Heading, Text, Button, etc. directly in Card - wrap them in CardHeader/CardBody/CardFooter
+- Example: <Card><CardHeader><Heading>Title</Heading></CardHeader><CardBody><Text>Content</Text></CardBody></Card>
 
 ${getAgentComponentSummary()}
 
@@ -86,8 +91,8 @@ export async function handleUserMessage(
 
 
   try {
-    // === v2.0 SINGLE-AGENT YAML DSL ===
-    console.log('[Agent] Using v2.0 single-agent YAML DSL');
+    // === v2.0 SINGLE-AGENT JSX MARKUP ===
+    console.log('[Agent] Using v2.0 single-agent JSX markup');
 
     // Create LLM provider using centralized config
     const config = getAgentModel('agent');

@@ -15,7 +15,7 @@ import {
 
 // Active tools
 import {
-  buildFromYAMLTool,
+  buildFromMarkupTool,
   duplicateComponentTool,
   addInteractionTool,
   createPageTool,
@@ -48,7 +48,7 @@ registerTool(component_move);
 
 // Tree manipulation
 registerTool(modifyComponentTreeTool);
-registerTool(buildFromYAMLTool);
+registerTool(buildFromMarkupTool);
 
 // Component operations
 registerTool(duplicateComponentTool);

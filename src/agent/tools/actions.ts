@@ -4,7 +4,7 @@ import { componentRegistry } from '../../componentRegistry';
 import { ROOT_VSTACK_ID } from '../../ComponentTreeContext';
 import { normalizeComponentNodes } from '../../utils/normalizeComponent';
 import { getAgentComponentList } from '../../config/availableComponents';
-import * as yaml from 'js-yaml';
+import { parseMarkupWithRepair } from '../utils/repairMarkup';
 
 // Generate unique ID for components
 function generateId(): string {
@@ -917,10 +917,13 @@ export const updatePageThemeTool: AgentTool = {
   },
 };
 
-// Build component tree from YAML DSL (token-efficient bulk operations)
-export const buildFromYAMLTool: AgentTool = {
-  name: 'buildFromYAML',
-  description: `🎯 PRIMARY TOOL for creating multiple components! Use this for ANY bulk operation (3+ items). YAML is 20% more token-efficient and more reliable than other tools. Pass YAML as the "yaml" parameter. Example: {yaml: "Grid:\\n  columns: 3\\n  children:\\n    - Card:\\n        title: Spring Special\\n        children:\\n          - Text: 20% off!\\n          - Button:\\n              text: Shop Now"}
+// Build component tree from JSX markup (token-efficient bulk operations)
+export const buildFromMarkupTool: AgentTool = {
+  name: 'buildFromMarkup',
+  description: `🎯 PRIMARY TOOL for creating multiple components! Use this for ANY bulk operation (3+ items). Use JSX-like markup for natural HTML/JSX-style syntax. Supports automatic repair if markup has errors. Pass markup as the "markup" parameter.
+
+Example:
+{markup: "<Grid columns={3} gap={4}>\\n  <Card>\\n    <CardHeader>\\n      <Heading level={3}>Spring Special</Heading>\\n    </CardHeader>\\n    <CardBody>\\n      <Text>20% off!</Text>\\n      <Button variant=\\"primary\\">Shop Now</Button>\\n    </CardBody>\\n  </Card>\\n</Grid>"}
 
 VALID COMPONENT TYPES (${getAgentComponentList().length} total):
 ${getAgentComponentList().join(', ')}
@@ -928,9 +931,9 @@ ${getAgentComponentList().join(', ')}
 IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the components listed above.`,
   category: 'action',
   parameters: {
-    yaml: {
+    markup: {
       type: 'string',
-      description: 'YAML string defining component tree. Use natural YAML syntax with component names as keys.',
+      description: 'JSX-like markup defining component tree. Use HTML/JSX syntax with self-closing tags for components without children.',
       required: true,
     },
     parentId: {
@@ -940,236 +943,33 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
     },
   },
   execute: async (params: any, context: ToolContext): Promise<ToolResult> => {
-    console.log('[buildFromYAML] Received YAML:', params.yaml);
+    console.log('[buildFromMarkup] Received markup:', params.markup);
 
-    // Validate yaml parameter
-    if (!params.yaml || typeof params.yaml !== 'string') {
+    // Validate markup parameter
+    if (!params.markup || typeof params.markup !== 'string') {
       return {
         success: false,
-        message: 'Missing required "yaml" parameter. Pass YAML string as: {yaml: "Grid:\\n  columns: 3..."}',
-        error: `The yaml parameter is required but received: ${typeof params.yaml}`,
+        message: 'Missing required "markup" parameter. Pass JSX markup as: {markup: "<Grid columns={3}>...</Grid>"}',
+        error: `The markup parameter is required but received: ${typeof params.markup}`,
       };
     }
 
     try {
-      // Parse YAML
-      const parsed = yaml.load(params.yaml);
-      console.log('[buildFromYAML] Parsed YAML:', JSON.stringify(parsed, null, 2));
+      // Parse markup with repair loop
+      const result = await parseMarkupWithRepair(params.markup);
 
-      if (!parsed) {
+      if (!result.success || !result.nodes) {
         return {
           success: false,
-          message: 'Empty YAML input',
-          error: 'YAML string is empty or invalid',
+          message: `Failed to parse markup: ${result.error}`,
+          error: result.error || 'Parse error',
         };
       }
 
-      // Convert YAML structure to component nodes
-      const parseComponent = (data: any): PatternNode => {
-        // Handle different YAML structures
-        if (typeof data === 'string') {
-          // Simple text node
-          return {
-            type: 'Text',
-            props: { children: data },
-          };
-        }
-
-        if (Array.isArray(data)) {
-          // Array of components - wrap in VStack
-          return {
-            type: 'VStack',
-            props: {},
-            children: data.map(parseComponent),
-          };
-        }
-
-        if (typeof data === 'object') {
-          // Find the component type (first key)
-          const keys = Object.keys(data);
-          if (keys.length === 0) {
-            throw new Error('Empty component object');
-          }
-
-          const componentType = keys[0];
-          const componentData = data[componentType];
-
-          // Check if component exists
-          const definition = componentRegistry[componentType as keyof typeof componentRegistry];
-          if (!definition) {
-            throw new Error(`Unknown component type: "${componentType}"`);
-          }
-
-          const node: PatternNode = {
-            type: componentType,
-            props: {},
-          };
-
-          if (componentData) {
-            if (typeof componentData === 'string') {
-              // Shorthand: Card: "Text content"
-              node.props = { children: componentData };
-            } else if (typeof componentData === 'object' && !Array.isArray(componentData)) {
-              // Flatten explicit "props" wrapper if present
-              // Supports both: VStack: { spacing: 6 } and VStack: { props: { spacing: 6 } }
-              let actualData = componentData;
-              if ('props' in componentData && typeof componentData.props === 'object' && !Array.isArray(componentData.props)) {
-                // LLM generated explicit "props:" key - flatten it
-                const { props, children: childrenInRoot, ...rest } = componentData;
-                actualData = { ...props, ...rest };
-                // Preserve children at root level if present
-                if (childrenInRoot !== undefined) {
-                  actualData.children = childrenInRoot;
-                }
-              }
-
-              // Extract props and children
-              const { children, title, price, body, ...otherProps } = actualData;
-
-              // Set all props (including title if present)
-              node.props = { ...otherProps };
-              if (title !== undefined) node.props.title = title;
-              if (price !== undefined) node.props.price = price;
-              if (body !== undefined) node.props.body = body;
-
-              // Parse children
-              if (children) {
-                node.children = Array.isArray(children) ? children.map(parseComponent) : [parseComponent(children)];
-              }
-            } else if (Array.isArray(componentData)) {
-              // Array of children
-              node.children = componentData.map(parseComponent);
-            }
-          }
-
-          return node;
-        }
-
-        throw new Error(`Unsupported YAML structure: ${typeof data}`);
-      };
-
-      // Parse the root component(s)
-      let rootComponents: PatternNode[];
-      if (Array.isArray(parsed)) {
-        rootComponents = parsed.map(parseComponent);
-      } else {
-        rootComponents = [parseComponent(parsed)];
-      }
-
-      console.log('[buildFromYAML] Root components:', JSON.stringify(rootComponents, null, 2));
-
-      // Convert PatternNodes to ComponentNodes with IDs and default children
-      const createComponentNode = (pattern: PatternNode): ComponentNode => {
-        const definition = componentRegistry[pattern.type as keyof typeof componentRegistry];
-        if (!definition) {
-          throw new Error(`Unknown component type: "${pattern.type}"`);
-        }
-
-        const node: ComponentNode = {
-          id: generateId(),
-          type: pattern.type,
-          name: pattern.name || '',
-          props: { ...pattern.props },
-          children: [],
-          interactions: [],
-        };
-
-        // Handle Card/Panel content shortcuts from YAML
-        if (pattern.type === 'Card' && pattern.props.title && pattern.children && pattern.children.length > 0) {
-          // Card with BOTH title and custom children - wrap children in CardHeader + CardBody
-          const cardHeader: ComponentNode = {
-            id: generateId(),
-            type: 'CardHeader',
-            name: '',
-            props: {},
-            children: [{
-              id: generateId(),
-              type: 'Heading',
-              name: '',
-              props: { children: pattern.props.title, level: 3 },
-              children: [],
-              interactions: [],
-            }],
-            interactions: [],
-          };
-
-          const cardBody: ComponentNode = {
-            id: generateId(),
-            type: 'CardBody',
-            name: '',
-            props: {},
-            children: pattern.children.map(createComponentNode),
-            interactions: [],
-          };
-
-          node.children = [cardHeader, cardBody];
-          // Remove title from props since we used it
-          delete node.props.title;
-        } else if (pattern.type === 'Card' && pattern.props.title && pattern.props.body) {
-          // Card with title/body shortcuts - use default children and customize
-          if (definition.defaultChildren) {
-            const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
-
-            const cardHeader = defaultChildrenNodes.find(c => c.type === 'CardHeader');
-            if (cardHeader && cardHeader.children) {
-              const heading = cardHeader.children.find(c => c.type === 'Heading');
-              if (heading) heading.props.children = pattern.props.title;
-            }
-
-            const cardBody = defaultChildrenNodes.find(c => c.type === 'CardBody');
-            if (cardBody && cardBody.children) {
-              const text = cardBody.children.find(c => c.type === 'Text');
-              if (text) text.props.children = pattern.props.body;
-            }
-
-            node.children = defaultChildrenNodes;
-            delete node.props.title;
-            delete node.props.body;
-          }
-        } else if (pattern.type === 'Panel' && pattern.props.body) {
-          // Panel with body shortcut
-          if (definition.defaultChildren) {
-            const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
-            const panelBody = defaultChildrenNodes.find(c => c.type === 'PanelBody');
-            if (panelBody && panelBody.children) {
-              const text = panelBody.children.find(c => c.type === 'Text');
-              if (text) text.props.children = pattern.props.body;
-            }
-            node.children = defaultChildrenNodes;
-            delete node.props.body;
-          }
-        } else if (pattern.props.children && typeof pattern.props.children === 'string') {
-          // String content in props.children - convert to Text child node
-          node.children = [{
-            id: generateId(),
-            type: 'Text',
-            name: '',
-            props: { children: pattern.props.children },
-            children: [],
-            interactions: [],
-          }];
-          // Remove from props since we moved it to children
-          delete node.props.children;
-        } else if (pattern.children && pattern.children.length > 0) {
-          // Custom children provided
-          const customChildren = pattern.children.map(createComponentNode);
-          node.children = customChildren;
-        } else if (definition.defaultChildren) {
-          // No custom children - use defaults
-          const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
-          node.children = defaultChildrenNodes;
-        }
-
-        return node;
-      };
-
-      // Create component nodes from patterns
-      const componentNodes = rootComponents.map(createComponentNode);
+      console.log('[buildFromMarkup] Created component nodes:', result.nodes.length);
 
       // Normalize all nodes
-      const normalizedNodes = normalizeComponentNodes(componentNodes);
-
-      console.log('[buildFromYAML] Created component nodes:', normalizedNodes.length);
+      const normalizedNodes = normalizeComponentNodes(result.nodes);
 
       // Insert all nodes
       for (const node of normalizedNodes) {
@@ -1178,20 +978,22 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
 
       return {
         success: true,
-        message: `Created ${normalizedNodes.length} component(s) from YAML`,
+        message: `Created ${normalizedNodes.length} component(s) from markup${result.attempts > 0 ? ` (repaired in ${result.attempts} attempts, cost: $${result.cost.toFixed(6)})` : ''}`,
         data: {
           components: normalizedNodes.map(n => ({
             id: n.id,
             type: n.type,
           })),
+          repairAttempts: result.attempts,
+          repairCost: result.cost,
         },
       };
 
     } catch (error) {
-      console.error('[buildFromYAML] Error:', error);
+      console.error('[buildFromMarkup] Error:', error);
       return {
         success: false,
-        message: `Failed to parse YAML: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to parse markup: ${error instanceof Error ? error.message : 'Unknown error'}`,
         error: String(error),
       };
     }
