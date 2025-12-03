@@ -63,7 +63,7 @@ export interface ModelCapabilities {
  */
 export const AGENT_MODELS = {
   // Main agent for v2.0 single-agent system
-  orchestrator: {
+  agent: {
     provider: Providers.OPENAI,
     model: Models.OpenAI.GPT_5_MINI,
   } as AgentModelConfig,

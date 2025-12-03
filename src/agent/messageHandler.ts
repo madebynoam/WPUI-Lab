@@ -114,7 +114,7 @@ export async function handleUserMessage(
     console.log('[Agent] Using v2.0 single-agent YAML DSL');
 
     // Create LLM provider using centralized config
-    const config = getAgentModel('orchestrator');
+    const config = getAgentModel('agent');
     const llm = createLLMProvider({
       provider: config.provider,
       apiKey: claudeApiKey!,
