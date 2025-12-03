@@ -6,7 +6,7 @@
 
 import { AgentTool, ToolContext, ToolResult } from '../types';
 import { ComponentNode } from '../../types';
-import { generateSemanticId } from '../utils/semanticIds';
+import { generateSemanticId, getContentPreview } from '../utils/semanticIds';
 import * as yaml from 'js-yaml';
 
 type SectionTemplate = 'pricing' | 'hero' | 'features' | 'testimonials' | 'footer' | 'nav' | 'cta';
@@ -501,7 +501,7 @@ async function buildComponentTree(yamlObj: any, context: ToolContext): Promise<C
 
     const { semanticId, uuid, displayName } = generateSemanticId(type, {
       purpose: parent?.type,
-      content: props.children,
+      content: getContentPreview(props),
     });
 
     const node: ComponentNode = {
