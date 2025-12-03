@@ -1125,6 +1125,18 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
             node.children = defaultChildrenNodes;
             delete node.props.body;
           }
+        } else if (pattern.props.children && typeof pattern.props.children === 'string') {
+          // String content in props.children - convert to Text child node
+          node.children = [{
+            id: generateId(),
+            type: 'Text',
+            name: '',
+            props: { children: pattern.props.children },
+            children: [],
+            interactions: [],
+          }];
+          // Remove from props since we moved it to children
+          delete node.props.children;
         } else if (pattern.children && pattern.children.length > 0) {
           // Custom children provided
           const customChildren = pattern.children.map(createComponentNode);
