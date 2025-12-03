@@ -58,8 +58,8 @@ export interface ModelCapabilities {
  * To switch models:
  * - Anthropic Claude Sonnet 4.5: Most capable, expensive ($3/$15 per MTok)
  * - Anthropic Claude Haiku 4.5: Fast and affordable ($1/$5 per MTok)
- * - OpenAI GPT-5-Mini: Good balance ($0.40/$1.60 per MTok) ← Current
- * - OpenAI GPT-5-Nano: Cheapest, simple tasks ($0.30/$1.20 per MTok)
+ * - OpenAI GPT-5-Mini: Good balance ($0.25/$2.00 per MTok) ← Current
+ * - OpenAI GPT-5-Nano: Cheapest, simple tasks ($0.05/$0.40 per MTok)
  */
 export const AGENT_MODELS = {
   // Main agent for v2.0 single-agent system
@@ -103,9 +103,9 @@ export const AVAILABLE_MODELS = {
   [Models.OpenAI.GPT_5_NANO]: {
     provider: Providers.OPENAI,
     description:
-      "Ultra-fast and cheapest ($0.30/MTok input, $1.20/MTok output)",
+      "Ultra-fast and cheapest ($0.05/MTok input, $0.40/MTok output)",
     bestFor: "Simple tasks, high-volume operations, cost optimization",
-    pricing: { input: 0.0003, output: 0.0012 },
+    pricing: { input: 0.00005, output: 0.0004 },
     capabilities: {
       supportsCustomTemperature: false,
       defaultTemperature: 1,
@@ -115,9 +115,9 @@ export const AVAILABLE_MODELS = {
   [Models.OpenAI.GPT_5_MINI]: {
     provider: Providers.OPENAI,
     description:
-      "Fast and very affordable ($0.40/MTok input, $1.60/MTok output)",
+      "Fast and very affordable ($0.25/MTok input, $2.00/MTok output)",
     bestFor: "Standard tasks, agents, good balance of speed and cost",
-    pricing: { input: 0.0004, output: 0.0016 },
+    pricing: { input: 0.00025, output: 0.002 },
     capabilities: {
       supportsCustomTemperature: false,
       defaultTemperature: 1,
