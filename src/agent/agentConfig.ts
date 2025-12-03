@@ -1,8 +1,8 @@
 /**
  * Agent Configuration
  *
- * Centralized configuration for all AI agents and orchestrators.
- * Change models here to affect all agents at once.
+ * Centralized configuration for the v2.0 single-agent system.
+ * Change model here to switch between Anthropic and OpenAI providers.
  */
 
 /**
@@ -52,40 +52,20 @@ export interface ModelCapabilities {
 /**
  * Agent Model Configuration
  *
- * Configure which model each agent should use.
- * All agents currently use OpenAI models for cost optimization.
+ * Configure which model the v2.0 single-agent system should use.
+ * Currently using OpenAI GPT-5-Mini for cost optimization.
+ *
+ * To switch models:
+ * - Anthropic Claude Sonnet 4.5: Most capable, expensive ($3/$15 per MTok)
+ * - Anthropic Claude Haiku 4.5: Fast and affordable ($1/$5 per MTok)
+ * - OpenAI GPT-5-Mini: Good balance ($0.40/$1.60 per MTok) ← Current
+ * - OpenAI GPT-5-Nano: Cheapest, simple tasks ($0.30/$1.20 per MTok)
  */
 export const AGENT_MODELS = {
-  // Orchestrators
+  // Main agent for v2.0 single-agent system
   orchestrator: {
     provider: Providers.OPENAI,
     model: Models.OpenAI.GPT_5_MINI,
-  } as AgentModelConfig,
-
-  // Specialized Agents
-  component: {
-    provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_MINI,
-  } as AgentModelConfig,
-
-  content: {
-    provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_NANO,
-  } as AgentModelConfig,
-
-  data: {
-    provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_MINI,
-  } as AgentModelConfig,
-
-  layout: {
-    provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_NANO,
-  } as AgentModelConfig,
-
-  page: {
-    provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_NANO,
   } as AgentModelConfig,
 } as const;
 
