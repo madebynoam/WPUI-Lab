@@ -2,7 +2,7 @@ import { AgentMessage, ToolContext, ToolResult } from './types';
 import { getTool, getToolsForLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
-import { getAgentModel } from './agentConfig';
+import { getAgentModel, AVAILABLE_MODELS } from './agentConfig';
 import { getAgentComponentSummary } from '../config/availableComponents';
 
 // Token estimation utility (rough estimate: 4 chars ≈ 1 token)
@@ -35,40 +35,15 @@ function humanizeToolName(toolName: string, toolArgs?: any): string {
   return humanized[toolName] || `Running ${toolName}...`;
 }
 
-// Model pricing (per 1K tokens)
-const MODEL_PRICING = {
-  // Anthropic models
-  'claude-sonnet-4-5': {
-    input: 0.003,   // $3.00 per MTok (EXPENSIVE - avoid for agents)
-    output: 0.015,  // $15.00 per MTok
-  },
-  'claude-haiku-4-5': {
-    input: 0.001,   // $1.00 per MTok (orchestrator and agents)
-    output: 0.005,  // $5.00 per MTok
-  },
-
-  // OpenAI models
-  'gpt-5-nano': {
-    input: 0.0003,  // $0.30 per MTok (cheapest)
-    output: 0.0012, // $1.20 per MTok
-  },
-  'gpt-5-mini': {
-    input: 0.0004,  // $0.40 per MTok
-    output: 0.0016, // $1.60 per MTok
-  },
-  'gpt-4o-mini': {
-    input: 0.00015, // $0.15 per MTok
-    output: 0.0006, // $0.60 per MTok
-  },
-  'gpt-4o': {
-    input: 0.0025,  // $2.50 per MTok
-    output: 0.01,   // $10.00 per MTok
-  },
-};
-
-// Current model pricing (for v2.0 single-agent system - using Haiku)
-const PRICE_PER_1K_INPUT = MODEL_PRICING['claude-haiku-4-5'].input;
-const PRICE_PER_1K_OUTPUT = MODEL_PRICING['claude-haiku-4-5'].output;
+// Get pricing for the current model from centralized config
+function getModelPricing(modelName: string) {
+  const modelConfig = AVAILABLE_MODELS[modelName as keyof typeof AVAILABLE_MODELS];
+  if (modelConfig?.pricing) {
+    return modelConfig.pricing;
+  }
+  // Default fallback pricing
+  return { input: 0.001, output: 0.005 };
+}
 
 const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer.
 
@@ -120,6 +95,9 @@ export async function handleUserMessage(
       apiKey: claudeApiKey!,
       model: config.model,
     });
+
+    // Get pricing for current model
+    const pricing = getModelPricing(config.model);
 
     // FALLBACK: OpenAI (uncomment to switch back)
     // const llm = createLLMProvider({
@@ -353,9 +331,9 @@ export async function handleUserMessage(
       console.warn('[Agent] Max iterations reached, stopping tool execution loop');
     }
 
-    // Calculate estimated cost
-    const estimatedInputCost = (totalInputTokens / 1000) * PRICE_PER_1K_INPUT;
-    const estimatedOutputCost = (totalOutputTokens / 1000) * PRICE_PER_1K_OUTPUT;
+    // Calculate estimated cost using current model's pricing
+    const estimatedInputCost = (totalInputTokens / 1000) * pricing.input;
+    const estimatedOutputCost = (totalOutputTokens / 1000) * pricing.output;
     const totalEstimatedCost = estimatedInputCost + estimatedOutputCost;
 
     console.log('[Agent] 💰 Request Summary:', {
@@ -366,7 +344,8 @@ export async function handleUserMessage(
       estimatedInputCost: `$${estimatedInputCost.toFixed(4)}`,
       estimatedOutputCost: `$${estimatedOutputCost.toFixed(4)}`,
       totalEstimatedCost: `$${totalEstimatedCost.toFixed(4)}`,
-      pricing: 'Claude Haiku 4.5: $1/1M input, $5/1M output',
+      model: config.model,
+      pricing: `$${pricing.input}/1K input, $${pricing.output}/1K output`,
     });
 
     // Return agent response
