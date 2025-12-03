@@ -253,26 +253,52 @@ export const PropertiesPanel: React.FC = () => {
               <div style={{ display: 'flex', gap: '8px' }}>
                 <Button
                   icon={positionCenter}
-                  onClick={() => updateProjectLayout({ maxWidth: 1344 })}
+                  onClick={() => {
+                    const rootVStack = getNodeById(ROOT_VSTACK_ID);
+                    if (rootVStack) {
+                      updateComponentProps(ROOT_VSTACK_ID, { maxWidth: 'content' });
+                    }
+                  }}
                   style={{
                     flex: 1,
                     height: '36px',
                     justifyContent: 'center',
-                    backgroundColor: maxWidth !== 0 ? '#1e1e1e' : 'transparent',
-                    color: maxWidth !== 0 ? '#fff' : '#1e1e1e',
+                    backgroundColor: (() => {
+                      const rootVStack = getNodeById(ROOT_VSTACK_ID);
+                      const rootMaxWidth = rootVStack?.props.maxWidth;
+                      return (rootMaxWidth === 'content' || !['content', 'full'].includes(rootMaxWidth)) ? '#1e1e1e' : 'transparent';
+                    })(),
+                    color: (() => {
+                      const rootVStack = getNodeById(ROOT_VSTACK_ID);
+                      const rootMaxWidth = rootVStack?.props.maxWidth;
+                      return (rootMaxWidth === 'content' || !['content', 'full'].includes(rootMaxWidth)) ? '#fff' : '#1e1e1e';
+                    })(),
                     border: '1px solid #ddd',
                   }}
                   label="Content Width (1344px, centered)"
                 />
                 <Button
                   icon={stretchFullWidth}
-                  onClick={() => updateProjectLayout({ maxWidth: 0 })}
+                  onClick={() => {
+                    const rootVStack = getNodeById(ROOT_VSTACK_ID);
+                    if (rootVStack) {
+                      updateComponentProps(ROOT_VSTACK_ID, { maxWidth: 'full' });
+                    }
+                  }}
                   style={{
                     flex: 1,
                     height: '36px',
                     justifyContent: 'center',
-                    backgroundColor: maxWidth === 0 ? '#1e1e1e' : 'transparent',
-                    color: maxWidth === 0 ? '#fff' : '#1e1e1e',
+                    backgroundColor: (() => {
+                      const rootVStack = getNodeById(ROOT_VSTACK_ID);
+                      const rootMaxWidth = rootVStack?.props.maxWidth;
+                      return rootMaxWidth === 'full' ? '#1e1e1e' : 'transparent';
+                    })(),
+                    color: (() => {
+                      const rootVStack = getNodeById(ROOT_VSTACK_ID);
+                      const rootMaxWidth = rootVStack?.props.maxWidth;
+                      return rootMaxWidth === 'full' ? '#fff' : '#1e1e1e';
+                    })(),
                     border: '1px solid #ddd',
                   }}
                   label="Full Width (100%)"

@@ -436,7 +436,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
                 bg: projectTheme.backgroundColor,
               }}
             >
-              <div style={{ width: "100%", ...(pageMaxWidth > 0 && { maxWidth: `${pageMaxWidth}px` }) }}>
+              <div style={{ width: "100%" }}>
                 {isInteractiveSelected && interactiveAncestor ? (
                   // Render only the interactive component in isolation
                   <div
