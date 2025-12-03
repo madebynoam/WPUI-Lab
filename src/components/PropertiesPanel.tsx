@@ -240,24 +240,52 @@ export const PropertiesPanel: React.FC = () => {
             }
           >
             <div style={{ marginBottom: "16px" }}>
-              <SelectControl
-                label="Max Width"
-                value={(maxWidth === 0 ? "none" : String(maxWidth)) as "none" | "1920" | "1440" | "1200" | "1024" | "768"}
-                options={[
-                  { label: "None (100%)", value: "none" },
-                  { label: "1920px", value: "1920" },
-                  { label: "1440px", value: "1440" },
-                  { label: "1200px", value: "1200" },
-                  { label: "1024px", value: "1024" },
-                  { label: "768px", value: "768" },
-                ]}
-                onChange={(value) =>
-                  updateProjectLayout({
-                    maxWidth: value === "none" ? 0 : Number(value),
-                  })
-                }
-                help="Maximum width of the page content (applies to all pages)"
-              />
+              <label style={{
+                display: 'block',
+                fontSize: '11px',
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                marginBottom: '8px',
+                color: '#1e1e1e'
+              }}>
+                Width
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button
+                  icon={positionCenter}
+                  onClick={() => updateProjectLayout({ maxWidth: 1344 })}
+                  style={{
+                    flex: 1,
+                    height: '36px',
+                    justifyContent: 'center',
+                    backgroundColor: maxWidth !== 0 ? '#1e1e1e' : 'transparent',
+                    color: maxWidth !== 0 ? '#fff' : '#1e1e1e',
+                    border: '1px solid #ddd',
+                  }}
+                  label="Content Width (1344px, centered)"
+                />
+                <Button
+                  icon={stretchFullWidth}
+                  onClick={() => updateProjectLayout({ maxWidth: 0 })}
+                  style={{
+                    flex: 1,
+                    height: '36px',
+                    justifyContent: 'center',
+                    backgroundColor: maxWidth === 0 ? '#1e1e1e' : 'transparent',
+                    color: maxWidth === 0 ? '#fff' : '#1e1e1e',
+                    border: '1px solid #ddd',
+                  }}
+                  label="Full Width (100%)"
+                />
+              </div>
+              <p style={{
+                margin: '8px 0 0',
+                fontSize: '12px',
+                fontStyle: 'normal',
+                color: '#757575'
+              }}>
+                Width: content (1344px centered) or full (100%)
+              </p>
             </div>
 
             <div style={{ marginBottom: "16px" }}>
