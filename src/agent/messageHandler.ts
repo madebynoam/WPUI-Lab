@@ -63,12 +63,22 @@ TOOL USAGE:
 - For tables/data display: Use table_create (NEVER manually create DataViews)
 - For single updates: Use component_update with selected componentId
 - For searches: Use context_searchComponents
-- IMPORTANT: Trust tool success messages - do NOT call context_getProject to verify after createPage, component_update, etc. The success message is accurate.
+- CRITICAL: When a tool returns success=true, the operation is COMPLETE:
+  * Do NOT verify with context_getProject or context_searchComponents
+  * Do NOT try to duplicate/copy the created component
+  * Do NOT create additional components to wrap it
+  * STOP and respond to the user immediately
+  * The success message is the source of truth
 
 TABLES & DATA:
-- User says "add a table" or "create a users table" → Use table_create tool
+- User says "add a table" or "create a users table" → Use table_create tool ONCE and STOP
 - table_create has templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads
 - Example: table_create({template: "users"}) creates a complete users table
+- CRITICAL: table_create is a COMPLETE operation - do NOT:
+  * Try to copy/duplicate the table after creation
+  * Try to verify with context_getProject
+  * Try to create additional markup
+  * The success message means it's DONE - respond to user and STOP
 - NEVER manually create DataViews components - always use table_create instead
 
 MARKUP SYNTAX (JSX-like):
