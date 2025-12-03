@@ -1635,17 +1635,19 @@ export const RenderNode: React.FC<{
     full: '100%',
   };
 
-  if (node.type === 'VStack' || node.type === 'HStack') {
+  if (node.type === 'VStack' || node.type === 'HStack' || node.type === 'Grid') {
     const maxWidth = props.maxWidth || 'full';
     const maxWidthCustom = props.maxWidthCustom || '';
     const alignSelf = props.alignSelf || 'stretch';
     const padding = props.padding || '';
     const spacing = props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2);
 
-    // Apply explicit gap to ensure spacing works correctly
+    // Apply explicit gap to ensure spacing works correctly (VStack/HStack only)
     // WordPress VStack/HStack uses spacing as multiplier of 4px
-    const gapValue = `${spacing * 4}px`;
-    mergedProps.style = { ...mergedProps.style, gap: gapValue };
+    if (node.type !== 'Grid') {
+      const gapValue = `${spacing * 4}px`;
+      mergedProps.style = { ...mergedProps.style, gap: gapValue };
+    }
 
     // Apply maxWidth - always set width to 100% to ensure stretching
     if (maxWidth === 'custom' && maxWidthCustom) {
