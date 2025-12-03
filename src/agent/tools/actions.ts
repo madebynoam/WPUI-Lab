@@ -1010,8 +1010,21 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
               // Shorthand: Card: "Text content"
               node.props = { children: componentData };
             } else if (typeof componentData === 'object' && !Array.isArray(componentData)) {
+              // Flatten explicit "props" wrapper if present
+              // Supports both: VStack: { spacing: 6 } and VStack: { props: { spacing: 6 } }
+              let actualData = componentData;
+              if ('props' in componentData && typeof componentData.props === 'object' && !Array.isArray(componentData.props)) {
+                // LLM generated explicit "props:" key - flatten it
+                const { props, children: childrenInRoot, ...rest } = componentData;
+                actualData = { ...props, ...rest };
+                // Preserve children at root level if present
+                if (childrenInRoot !== undefined) {
+                  actualData.children = childrenInRoot;
+                }
+              }
+
               // Extract props and children
-              const { children, title, price, body, ...otherProps } = componentData;
+              const { children, title, price, body, ...otherProps } = actualData;
 
               // Set all props (including title if present)
               node.props = { ...otherProps };
