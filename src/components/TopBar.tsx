@@ -241,7 +241,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
           <Button
             onClick={() =>
-              window.open(`/play/${projectId}/${pageId}`, "_blank")
+              window.open(`/play/${projectId}/${currentPageId}`, "_blank")
             }
             variant="primary"
             style={{
