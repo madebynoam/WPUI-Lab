@@ -240,81 +240,6 @@ export const PropertiesPanel: React.FC = () => {
             }
           >
             <div style={{ marginBottom: "16px" }}>
-              <label style={{
-                display: 'block',
-                fontSize: '11px',
-                fontWeight: 500,
-                textTransform: 'uppercase',
-                marginBottom: '8px',
-                color: '#1e1e1e'
-              }}>
-                Width
-              </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <Button
-                  icon={positionCenter}
-                  onClick={() => {
-                    const rootVStack = getNodeById(ROOT_VSTACK_ID);
-                    if (rootVStack) {
-                      updateComponentProps(ROOT_VSTACK_ID, { maxWidth: 'content' });
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    height: '36px',
-                    justifyContent: 'center',
-                    backgroundColor: (() => {
-                      const rootVStack = getNodeById(ROOT_VSTACK_ID);
-                      const rootMaxWidth = rootVStack?.props.maxWidth;
-                      return (rootMaxWidth === 'content' || !['content', 'full'].includes(rootMaxWidth)) ? '#1e1e1e' : 'transparent';
-                    })(),
-                    color: (() => {
-                      const rootVStack = getNodeById(ROOT_VSTACK_ID);
-                      const rootMaxWidth = rootVStack?.props.maxWidth;
-                      return (rootMaxWidth === 'content' || !['content', 'full'].includes(rootMaxWidth)) ? '#fff' : '#1e1e1e';
-                    })(),
-                    border: '1px solid #ddd',
-                  }}
-                  label="Content Width (1344px, centered)"
-                />
-                <Button
-                  icon={stretchFullWidth}
-                  onClick={() => {
-                    const rootVStack = getNodeById(ROOT_VSTACK_ID);
-                    if (rootVStack) {
-                      updateComponentProps(ROOT_VSTACK_ID, { maxWidth: 'full' });
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    height: '36px',
-                    justifyContent: 'center',
-                    backgroundColor: (() => {
-                      const rootVStack = getNodeById(ROOT_VSTACK_ID);
-                      const rootMaxWidth = rootVStack?.props.maxWidth;
-                      return rootMaxWidth === 'full' ? '#1e1e1e' : 'transparent';
-                    })(),
-                    color: (() => {
-                      const rootVStack = getNodeById(ROOT_VSTACK_ID);
-                      const rootMaxWidth = rootVStack?.props.maxWidth;
-                      return rootMaxWidth === 'full' ? '#fff' : '#1e1e1e';
-                    })(),
-                    border: '1px solid #ddd',
-                  }}
-                  label="Full Width (100%)"
-                />
-              </div>
-              <p style={{
-                margin: '8px 0 0',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                color: '#757575'
-              }}>
-                Width: content (1344px centered) or full (100%)
-              </p>
-            </div>
-
-            <div style={{ marginBottom: "16px" }}>
               <NumberControl
                 label="Padding"
                 value={padding}
@@ -413,8 +338,142 @@ export const PropertiesPanel: React.FC = () => {
   }
 
   const renderStylesTab = () => {
+    // Layout containers that support width control
+    const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
+    const isLayoutContainer = layoutContainers.includes(firstNode.type);
+
     return (
       <div style={{ flex: 1, overflow: "auto" }}>
+        {/* Width Control (for layout containers only, but not when inside a Grid) */}
+        {isLayoutContainer && !isChildOfGrid && (
+          <PanelBody
+            title="Width"
+            initialOpen={openPanels["width"] !== false}
+            onToggle={() =>
+              setOpenPanels({
+                ...openPanels,
+                width: !openPanels["width"],
+              })
+            }
+          >
+            <div style={{ marginBottom: "16px" }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button
+                  icon={positionCenter}
+                  onClick={() => {
+                    if (selectedNodeIds.length > 1) {
+                      // Update width property on all selected nodes
+                      selectedNodeIds.forEach((id) => {
+                        const node = getNodeById(id);
+                        if (node) {
+                          updateComponentProps(id, { width: 'content' });
+                        }
+                      });
+                    } else {
+                      updateComponentProps(selectedNodeIds[0], { width: 'content' });
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    height: '36px',
+                    justifyContent: 'center',
+                    backgroundColor: (() => {
+                      const width = firstNode.width || 'content';
+                      return width === 'content' ? '#1e1e1e' : 'transparent';
+                    })(),
+                    color: (() => {
+                      const width = firstNode.width || 'content';
+                      return width === 'content' ? '#fff' : '#1e1e1e';
+                    })(),
+                    border: '1px solid #ddd',
+                  }}
+                  label="Content Width (1344px)"
+                />
+                <Button
+                  icon={stretchFullWidth}
+                  onClick={() => {
+                    if (selectedNodeIds.length > 1) {
+                      // Update width property on all selected nodes
+                      selectedNodeIds.forEach((id) => {
+                        const node = getNodeById(id);
+                        if (node) {
+                          updateComponentProps(id, { width: 'full' });
+                        }
+                      });
+                    } else {
+                      updateComponentProps(selectedNodeIds[0], { width: 'full' });
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    height: '36px',
+                    justifyContent: 'center',
+                    backgroundColor: (() => {
+                      const width = firstNode.width;
+                      return width === 'full' ? '#1e1e1e' : 'transparent';
+                    })(),
+                    color: (() => {
+                      const width = firstNode.width;
+                      return width === 'full' ? '#fff' : '#1e1e1e';
+                    })(),
+                    border: '1px solid #ddd',
+                  }}
+                  label="Full Width (100%)"
+                />
+              </div>
+              <p style={{
+                margin: '8px 0 0',
+                fontSize: '12px',
+                fontStyle: 'normal',
+                color: '#757575'
+              }}>
+                {isMultiSelect
+                  ? `Width: content (1344px) or full (100%). Applying to all ${selectedNodes.length} items.`
+                  : 'Width: content (1344px) or full (100%)'
+                }
+              </p>
+            </div>
+          </PanelBody>
+        )}
+
+        {/* Grid child properties - only for single select */}
+        {!isMultiSelect && isChildOfGrid && (
+          <PanelBody
+            title="Grid Layout"
+            initialOpen={openPanels["gridLayout"]}
+            onToggle={() =>
+              setOpenPanels({
+                ...openPanels,
+                gridLayout: !openPanels["gridLayout"],
+              })
+            }
+          >
+            <div style={{ marginBottom: "16px" }}>
+              <NumberControl
+                label="Column Span"
+                value={firstNode.props.gridColumnSpan || 1}
+                onChange={(value) =>
+                  handlePropChange("gridColumnSpan", Number(value))
+                }
+                help="Number of columns to span"
+                min={1}
+              />
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              <NumberControl
+                label="Row Span"
+                value={firstNode.props.gridRowSpan || 1}
+                onChange={(value) =>
+                  handlePropChange("gridRowSpan", Number(value))
+                }
+                help="Number of rows to span"
+                min={1}
+              />
+            </div>
+          </PanelBody>
+        )}
+
         {/* Properties */}
         {definition.propDefinitions.length > 0 && (
           <PanelBody
@@ -608,45 +667,6 @@ export const PropertiesPanel: React.FC = () => {
             )}
           </PanelBody>
         )}
-
-        {/* Grid child properties - only for single select */}
-        {!isMultiSelect && isChildOfGrid && (
-          <PanelBody
-            title="Grid Layout"
-            initialOpen={openPanels["gridLayout"]}
-            onToggle={() =>
-              setOpenPanels({
-                ...openPanels,
-                gridLayout: !openPanels["gridLayout"],
-              })
-            }
-          >
-            <div style={{ marginBottom: "16px" }}>
-              <NumberControl
-                label="Column Span"
-                value={firstNode.props.gridColumnSpan || 1}
-                onChange={(value) =>
-                  handlePropChange("gridColumnSpan", Number(value))
-                }
-                help="Number of columns to span"
-                min={1}
-              />
-            </div>
-
-            <div style={{ marginBottom: "16px" }}>
-              <NumberControl
-                label="Row Span"
-                value={firstNode.props.gridRowSpan || 1}
-                onChange={(value) =>
-                  handlePropChange("gridRowSpan", Number(value))
-                }
-                help="Number of rows to span"
-                min={1}
-              />
-            </div>
-          </PanelBody>
-        )}
-
         {definition.propDefinitions.length === 0 && !isChildOfGrid && (
           <div
             style={{

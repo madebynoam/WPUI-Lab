@@ -67,14 +67,14 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     acceptsChildren: true,
     description: 'Arrange child elements in a flexible grid layout.',
     defaultProps: {
-      columns: 3,
+      columns: 12,
       gap: 4,
     },
     propDefinitions: [
       {
         name: 'columns',
         type: 'number',
-        defaultValue: 3,
+        defaultValue: 12,
         description: 'Number of columns',
       },
       {
@@ -132,13 +132,6 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'boolean',
         defaultValue: false,
         description: 'Display as inline-grid',
-      },
-      {
-        name: 'maxWidth',
-        type: 'select',
-        options: ['content', 'full'],
-        defaultValue: 'content',
-        description: 'Width: content (1344px centered) or full (100%)'
       },
     ],
   },
@@ -437,20 +430,6 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         description: 'Allow items to wrap'
       },
       {
-        name: 'maxWidth',
-        type: 'select',
-        options: ['content', 'full'],
-        defaultValue: 'content',
-        description: 'Width: content (1344px centered) or full (100%)'
-      },
-      {
-        name: 'alignSelf',
-        type: 'select',
-        options: ['start', 'center', 'end', 'stretch'],
-        defaultValue: 'stretch',
-        description: 'Horizontal alignment (start=left, end=right, stretch=full width)'
-      },
-      {
         name: 'padding',
         type: 'string',
         defaultValue: '',
@@ -503,20 +482,6 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'boolean',
         defaultValue: false,
         description: 'Allow items to wrap'
-      },
-      {
-        name: 'maxWidth',
-        type: 'select',
-        options: ['content', 'full'],
-        defaultValue: 'content',
-        description: 'Width: content (1344px centered) or full (100%)'
-      },
-      {
-        name: 'alignSelf',
-        type: 'select',
-        options: ['start', 'center', 'end', 'stretch'],
-        defaultValue: 'stretch',
-        description: 'Horizontal alignment (start=left, end=right, stretch=full width)'
       },
       {
         name: 'padding',

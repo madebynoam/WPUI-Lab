@@ -1626,18 +1626,19 @@ export const RenderNode: React.FC<{
     },
   };
 
-  // Apply layout constraints for VStack and HStack
+  // Apply layout constraints for layout containers
   const maxWidthPresets: Record<string, string> = {
     content: '1344px',
     full: '100%',
   };
 
-  if (node.type === 'VStack' || node.type === 'HStack' || node.type === 'Grid') {
-    // Normalize old maxWidth values (sm/md/lg/xl/custom) to new system
-    let maxWidth = props.maxWidth || 'content';
-    if (!['content', 'full'].includes(maxWidth)) {
-      maxWidth = 'content'; // Treat old values as content width
-    }
+  // Layout containers that support width control
+  const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
+
+  // IMPORTANT: Exclude root VStack from width constraints - it should always be 100% width
+  if (layoutContainers.includes(node.type) && node.id !== ROOT_VSTACK_ID) {
+    // Read width from node.width property (defaults to 'content' = 1344px)
+    const width = node.width || 'content';
 
     const alignSelf = props.alignSelf || 'center';
     const padding = props.padding || '';
@@ -1645,18 +1646,18 @@ export const RenderNode: React.FC<{
 
     // Apply explicit gap to ensure spacing works correctly (VStack/HStack only)
     // WordPress VStack/HStack uses spacing as multiplier of 4px
-    if (node.type !== 'Grid') {
+    if (node.type === 'VStack' || node.type === 'HStack') {
       const gapValue = `${spacing * 4}px`;
       mergedProps.style = { ...mergedProps.style, gap: gapValue };
     }
 
     // Apply maxWidth - always set width to 100% to ensure stretching
-    // content=1344px (centered), full=100% (full viewport width)
-    mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[maxWidth] || '1344px' };
+    // content=1344px (centered by root VStack), full=100% (full viewport width)
+    mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[width] };
 
     // Apply alignSelf (for horizontal positioning) - only for content width
     // Full width should stretch without margins
-    if (maxWidth === 'content') {
+    if (width === 'content') {
       if (alignSelf === 'center') {
         mergedProps.style = { ...mergedProps.style, marginLeft: 'auto', marginRight: 'auto' };
       } else if (alignSelf === 'start') {

@@ -15,6 +15,7 @@ export interface ComponentNode {
   interactions?: Interaction[];
   children?: ComponentNode[];
   collapsed?: boolean;
+  width?: 'content' | 'full'; // Optional width override for layout containers
 }
 
 // Pattern node - same as ComponentNode but without id (assigned on insert)
@@ -38,6 +39,7 @@ export interface Page {
 export interface Project {
   id: string;
   name: string;
+  version: number; // Tree structure version (current: 2)
   pages: Page[];
   currentPageId: string;
   createdAt: number;

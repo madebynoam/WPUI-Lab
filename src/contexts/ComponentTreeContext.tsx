@@ -102,7 +102,11 @@ const createInitialPage = (id: string, name: string): Page => ({
   tree: [{
     id: ROOT_VSTACK_ID,
     type: 'VStack',
-    props: { spacing: 4 },
+    props: {
+      spacing: 4,
+      maxWidth: 0, // Always 100% width (0 = no constraint)
+      alignItems: 'center', // Centers children horizontally
+    },
     children: [],
   }],
   theme: {
@@ -114,6 +118,7 @@ const createInitialPage = (id: string, name: string): Page => ({
 const createInitialProject = (id: string, name: string): Project => ({
   id,
   name,
+  version: 2, // Tree structure version
   pages: [createInitialPage('page-1', 'Page 1')],
   currentPageId: 'page-1',
   createdAt: Date.now(),

@@ -170,9 +170,13 @@ export function componentTreeReducer(
       const { id, props } = action.payload;
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
+      // Separate node-level properties from component props
+      const { width, ...componentProps } = props;
+
       const newTree = updateNodeInTree(currentTree, id, (node) => ({
         ...node,
-        props: { ...node.props, ...props },
+        ...(width !== undefined ? { width } : {}),
+        props: { ...node.props, ...componentProps },
       }));
 
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);
@@ -186,9 +190,13 @@ export function componentTreeReducer(
       const { ids, props } = action.payload;
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
+      // Separate node-level properties from component props
+      const { width, ...componentProps } = props;
+
       const newTree = updateMultipleNodesInTree(currentTree, ids, (node) => ({
         ...node,
-        props: { ...node.props, ...props },
+        ...(width !== undefined ? { width } : {}),
+        props: { ...node.props, ...componentProps },
       }));
 
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);
