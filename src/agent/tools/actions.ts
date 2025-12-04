@@ -5,11 +5,7 @@ import { ROOT_VSTACK_ID } from '../../ComponentTreeContext';
 import { normalizeComponentNodes } from '../../utils/normalizeComponent';
 import { getAgentComponentList } from '../../config/availableComponents';
 import { parseMarkupWithRepair } from '../utils/repairMarkup';
-
-// Generate unique ID for components
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
+import { generateId } from '../../utils/idGenerator';
 
 // Helper: Convert PatternNode to ComponentNode with IDs
 function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNode[] {

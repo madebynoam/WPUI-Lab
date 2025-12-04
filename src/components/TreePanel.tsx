@@ -7,7 +7,7 @@ import { useComponentTree, ROOT_VSTACK_ID } from "../ComponentTreeContext";
 import { ComponentNode, PatternNode } from "../types";
 import { componentRegistry } from "../componentRegistry";
 import { patterns, assignIds } from "../patterns";
-import { generateId } from "../utils/treeHelpers";
+import { generateId } from "../utils/idGenerator";
 import {
   normalizeComponentNode,
   normalizeComponentNodes,

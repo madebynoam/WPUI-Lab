@@ -1,5 +1,6 @@
 import { ComponentNode } from '../types';
 import { componentRegistry } from '../componentRegistry';
+import { generateId } from './idGenerator';
 
 /**
  * Parse error with location information
@@ -19,11 +20,6 @@ export interface ParseResult {
   nodes?: ComponentNode[];
   error?: ParseError;
 }
-
-/**
- * Generate unique ID for component nodes
- */
-const generateId = () => `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 /**
  * Parse JSX-like markup into ComponentNode tree

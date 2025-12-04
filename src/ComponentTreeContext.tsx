@@ -2,7 +2,8 @@ import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo, u
 import { ComponentNode, Page, Project, Interaction, PatternNode } from './types';
 import { componentRegistry } from './componentRegistry';
 import { componentTreeReducer, ComponentTreeState } from './ComponentTreeReducer';
-import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent, generateId } from './utils/treeHelpers';
+import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent } from './utils/treeHelpers';
+import { generateId } from './utils/idGenerator';
 import { normalizeComponentNode, normalizeComponentNodes } from './utils/normalizeComponent';
 import { DEMO_PROJECT } from './demoProject';
 

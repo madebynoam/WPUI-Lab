@@ -1,13 +1,7 @@
 import { ComponentNode, Page } from '../types';
+import { generateId } from './idGenerator';
 
 export const ROOT_VSTACK_ID = 'root-vstack';
-
-/**
- * Generate a unique ID for components
- */
-export const generateId = (): string => {
-  return `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-};
 
 /**
  * Get the current tree for a given page

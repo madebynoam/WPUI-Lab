@@ -13,8 +13,8 @@ import {
   reorderNodeInTree,
   updateTreeForPage,
   flattenTree,
-  generateId,
 } from './utils/treeHelpers';
+import { generateId } from './utils/idGenerator';
 import { validateTree, formatValidationErrors } from './utils/treeValidation';
 
 // Debug flag - set to true to enable console logging
