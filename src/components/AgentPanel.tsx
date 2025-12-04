@@ -5,7 +5,7 @@ import { AgentUI } from "@automattic/agenttic-ui";
 import "@automattic/agenttic-ui/index.css";
 import { Button } from "@wordpress/components";
 import { close } from "@wordpress/icons";
-import { useComponentTree } from "../ComponentTreeContext";
+import { useComponentTree } from "@/src/contexts/ComponentTreeContext";
 import {
   AgentMessage,
   ToolContext,

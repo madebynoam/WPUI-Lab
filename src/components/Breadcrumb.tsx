@@ -1,5 +1,5 @@
 import React from 'react';
-import { useComponentTree } from '../ComponentTreeContext';
+import { useComponentTree } from '@/src/contexts/ComponentTreeContext';
 import { ComponentNode } from '../types';
 import { ROOT_VSTACK_ID } from '../utils/treeHelpers';
 

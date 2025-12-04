@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useComponentTree } from '@/src/ComponentTreeContext';
-import { PlayModeProvider } from '@/src/PlayModeContext';
+import { useComponentTree } from '@/src/contexts/ComponentTreeContext';
+import { PlayModeProvider } from '@/src/contexts/PlayModeContext';
 import { Canvas } from '@/src/components/Canvas';
 
 export default function PlayModeContent({ projectId, pageId }: { projectId: string; pageId: string }) {

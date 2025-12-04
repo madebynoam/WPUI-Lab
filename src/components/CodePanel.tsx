@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
+import { useComponentTree, ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
 import { generatePageCode, generateComponentCode, generateComponentWithInteractions } from '../utils/codeGenerator';
 import { highlightCode } from '../utils/syntaxHighlighter';
 import { Button } from '@wordpress/components';

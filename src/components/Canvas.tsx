@@ -1,15 +1,15 @@
 import React, { useEffect, useCallback, useMemo } from "react";
-import { useComponentTree, ROOT_VSTACK_ID } from "../ComponentTreeContext";
-import { ComponentNode } from "../types";
+import { useComponentTree, ROOT_VSTACK_ID } from "@/src/contexts/ComponentTreeContext";
+import { ComponentNode } from "@/src/types";
 import { Breadcrumb } from "./Breadcrumb";
-import { findParent } from "../utils/treeHelpers";
+import { findParent } from "@/src/utils/treeHelpers";
 import { RenderNode } from "./RenderNode";
-import { SelectionProvider } from "./SelectionContext";
-import { SimpleDragProvider } from "./SimpleDragContext";
+import { SelectionProvider } from "@/src/contexts/SelectionContext";
+import { SimpleDragProvider } from "@/src/contexts/SimpleDragContext";
 import { INTERACTIVE_COMPONENT_TYPES } from "./TreePanel";
-import { componentRegistry } from "../componentRegistry";
+import { componentRegistry } from "@/src/componentRegistry";
 import { privateApis as themePrivateApis } from "@wordpress/theme";
-import { unlock } from "../utils/lock-unlock";
+import { unlock } from "@/src/utils/wordpressPrivateApis";
 
 const { ThemeProvider } = unlock(themePrivateApis);
 

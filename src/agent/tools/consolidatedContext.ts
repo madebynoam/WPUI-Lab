@@ -5,8 +5,8 @@
  */
 
 import { AgentTool, ToolContext, ToolResult } from '../types';
-import { componentRegistry } from '../../componentRegistry';
-import { ROOT_VSTACK_ID } from '../../ComponentTreeContext';
+import { componentRegistry } from '@/src/componentRegistry';
+import { ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
 import { buildDisplayName, getContentPreview } from '../utils/semanticIds';
 
 type ResponseFormat = 'concise' | 'detailed';

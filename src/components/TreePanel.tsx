@@ -3,9 +3,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { useComponentTree, ROOT_VSTACK_ID } from "../ComponentTreeContext";
+import { useComponentTree, ROOT_VSTACK_ID } from "@/src/contexts/ComponentTreeContext";
 import { ComponentNode, PatternNode } from "../types";
-import { componentRegistry } from "../componentRegistry";
+import { componentRegistry } from "@/src/componentRegistry";
 import { patterns, assignIds } from "../patterns";
 import { generateId } from "../utils/idGenerator";
 import {
@@ -52,7 +52,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  flattenTree,
+  flattenTreeForDnd,
   buildTree,
   getProjection,
   removeChildrenOf,
@@ -366,7 +366,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
   // Flatten tree with collapsed filtering (matches dnd-kit SortableTree example)
   const flattenedItems = React.useMemo(() => {
-    const flattenedTree = flattenTree(tree);
+    const flattenedTree = flattenTreeForDnd(tree);
 
     // Simple collapsed detection - matches dnd-kit example exactly
     const collapsedItems = flattenedTree.reduce<string[]>(
@@ -727,7 +727,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
       // Calculate projection based on horizontal offset
       if (activeId && over.id) {
-        const fullFlattenedTree = flattenTree(tree);
+        const fullFlattenedTree = flattenTreeForDnd(tree);
         const projection = getProjection(
           fullFlattenedTree,
           activeId,

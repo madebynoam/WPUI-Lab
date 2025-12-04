@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
-import { PlayModeProvider } from '../PlayModeContext';
+import { useComponentTree, ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
+import { PlayModeProvider } from '@/src/contexts/PlayModeContext';
 import { TopBar } from './TopBar';
 import { TreePanel } from './TreePanel';
 import { Canvas } from './Canvas';

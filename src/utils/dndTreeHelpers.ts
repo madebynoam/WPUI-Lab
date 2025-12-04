@@ -11,9 +11,9 @@ export interface TreeItems {
 }
 
 /**
- * Flatten a tree structure into an array with depth information
+ * Flatten a tree structure into an array with depth information for drag-and-drop operations
  */
-export function flattenTree(
+export function flattenTreeForDnd(
   items: ComponentNode[],
   parentId: string | null = null,
   depth = 0
@@ -29,7 +29,7 @@ export function flattenTree(
     return [
       ...acc,
       flattenedNode,
-      ...(item.children ? flattenTree(item.children, item.id, depth + 1) : []),
+      ...(item.children ? flattenTreeForDnd(item.children, item.id, depth + 1) : []),
     ];
   }, []);
 }

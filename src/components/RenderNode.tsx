@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '../ComponentTreeContext';
-import { usePlayModeState } from '../PlayModeContext';
+import { useComponentTree, ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
+import { usePlayModeState } from '@/src/contexts/PlayModeContext';
 import { ComponentNode } from '../types';
-import { componentRegistry } from '../componentRegistry';
+import { componentRegistry } from '@/src/componentRegistry';
 import * as wpIcons from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
 import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } from '../utils/treeHelpers';
-import { useSelection } from './SelectionContext';
-import { useSimpleDrag } from './SimpleDragContext';
+import { useSelection } from '@/src/contexts/SelectionContext';
+import { useSimpleDrag } from '@/src/contexts/SimpleDragContext';
 import { useRouter } from 'next/navigation';
 
 // Simple Figma-style drag-and-drop component

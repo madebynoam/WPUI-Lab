@@ -1,5 +1,5 @@
-import { ComponentNode } from '../types';
-import { componentRegistry } from '../componentRegistry';
+import { ComponentNode } from '@/src/types';
+import { componentRegistry } from '@/src/componentRegistry';
 
 /**
  * Normalizes a component node to ensure consistent data structure.

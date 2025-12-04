@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useComponentTree, ROOT_VSTACK_ID } from "../ComponentTreeContext";
-import { componentRegistry } from "../componentRegistry";
+import { useComponentTree, ROOT_VSTACK_ID } from "@/src/contexts/ComponentTreeContext";
+import { componentRegistry } from "@/src/componentRegistry";
 import { findParent } from "../utils/treeHelpers";
 import {
   TextControl,

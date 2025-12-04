@@ -1,7 +1,7 @@
 import { AgentTool, ToolContext, ToolResult } from '../types';
 import { ComponentNode, PatternNode } from '../../types';
-import { componentRegistry } from '../../componentRegistry';
-import { ROOT_VSTACK_ID } from '../../ComponentTreeContext';
+import { componentRegistry } from '@/src/componentRegistry';
+import { ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
 import { normalizeComponentNodes } from '../../utils/normalizeComponent';
 import { getAgentComponentList } from '../../config/availableComponents';
 import { parseMarkupWithRepair } from '../utils/repairMarkup';

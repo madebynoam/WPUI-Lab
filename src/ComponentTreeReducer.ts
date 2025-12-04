@@ -1,6 +1,6 @@
 import { ComponentTreeAction } from './ComponentTreeTypes';
 import { ComponentNode, Page, Project, HistoryState } from './types';
-import { componentRegistry } from './componentRegistry';
+import { componentRegistry } from '@/src/componentRegistry';
 import {
   ROOT_VSTACK_ID,
   getCurrentTree,
