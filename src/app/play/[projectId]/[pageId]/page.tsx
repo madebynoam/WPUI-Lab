@@ -4,7 +4,7 @@ import { use } from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import the PlayModeContent with SSR disabled to avoid WordPress component SSR issues
-const DynamicPlayModeContent = dynamic(() => import('./PlayModeContent'), {
+const DynamicPlayModeContent = dynamic(() => import('@/src/components/PlayModeContent'), {
   ssr: false,
   loading: () => null
 });

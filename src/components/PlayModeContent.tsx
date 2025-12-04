@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useComponentTree } from '../../../../src/ComponentTreeContext';
-import { PlayModeProvider } from '../../../../src/PlayModeContext';
-import { Canvas } from '../../../../src/components/Canvas';
+import { useComponentTree } from '@/src/ComponentTreeContext';
+import { PlayModeProvider } from '@/src/PlayModeContext';
+import { Canvas } from '@/src/components/Canvas';
 
 export default function PlayModeContent({ projectId, pageId }: { projectId: string; pageId: string }) {
   const { currentProjectId, currentPageId, setCurrentProject, setCurrentPage, setSelectedNodeIds, setPlayMode } = useComponentTree();

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { __experimentalStyleProvider as StyleProvider } from '@wordpress/components';
-import { ComponentTreeProvider } from '../src/ComponentTreeContext';
+import { ComponentTreeProvider } from '@/src/ComponentTreeContext';
 
 export default function ClientProviders({
   children,
