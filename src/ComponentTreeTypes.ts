@@ -49,6 +49,9 @@ export type ComponentTreeAction =
   // Play mode actions
   | { type: 'SET_PLAY_MODE'; payload: { isPlay: boolean } }
 
+  // Editing mode actions
+  | { type: 'SET_EDITING_MODE'; payload: { mode: 'selection' | 'text' } }
+
   // Interaction actions
   | { type: 'ADD_INTERACTION'; payload: { nodeId: string; interaction: Interaction } }
   | { type: 'REMOVE_INTERACTION'; payload: { nodeId: string; interactionId: string } }

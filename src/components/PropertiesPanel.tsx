@@ -337,9 +337,24 @@ export const PropertiesPanel: React.FC = () => {
     setActiveTab("styles");
   }
 
+  // Reset tab to styles if interactions are disabled for this component
+  if (definition.disableInteractions && activeTab === "interactions") {
+    setActiveTab("styles");
+  }
+
   const renderStylesTab = () => {
     // Layout containers that support width control
-    const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
+    const layoutContainers = [
+      "VStack",
+      "HStack",
+      "Grid",
+      "Card",
+      "Tabs",
+      "Spacer",
+      "Divider",
+      "Spinner",
+      "DataViews",
+    ];
     const isLayoutContainer = layoutContainers.includes(firstNode.type);
 
     return (
@@ -357,7 +372,7 @@ export const PropertiesPanel: React.FC = () => {
             }
           >
             <div style={{ marginBottom: "16px" }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: "flex", gap: "8px" }}>
                 <Button
                   icon={positionCenter}
                   onClick={() => {
@@ -366,26 +381,28 @@ export const PropertiesPanel: React.FC = () => {
                       selectedNodeIds.forEach((id) => {
                         const node = getNodeById(id);
                         if (node) {
-                          updateComponentProps(id, { width: 'content' });
+                          updateComponentProps(id, { width: "content" });
                         }
                       });
                     } else {
-                      updateComponentProps(selectedNodeIds[0], { width: 'content' });
+                      updateComponentProps(selectedNodeIds[0], {
+                        width: "content",
+                      });
                     }
                   }}
                   style={{
                     flex: 1,
-                    height: '36px',
-                    justifyContent: 'center',
+                    height: "36px",
+                    justifyContent: "center",
                     backgroundColor: (() => {
-                      const width = firstNode.width || 'content';
-                      return width === 'content' ? '#1e1e1e' : 'transparent';
+                      const width = firstNode.width || "content";
+                      return width === "content" ? "#1e1e1e" : "transparent";
                     })(),
                     color: (() => {
-                      const width = firstNode.width || 'content';
-                      return width === 'content' ? '#fff' : '#1e1e1e';
+                      const width = firstNode.width || "content";
+                      return width === "content" ? "#fff" : "#1e1e1e";
                     })(),
-                    border: '1px solid #ddd',
+                    border: "1px solid #ddd",
                   }}
                   label="Content Width (1344px)"
                 />
@@ -397,40 +414,43 @@ export const PropertiesPanel: React.FC = () => {
                       selectedNodeIds.forEach((id) => {
                         const node = getNodeById(id);
                         if (node) {
-                          updateComponentProps(id, { width: 'full' });
+                          updateComponentProps(id, { width: "full" });
                         }
                       });
                     } else {
-                      updateComponentProps(selectedNodeIds[0], { width: 'full' });
+                      updateComponentProps(selectedNodeIds[0], {
+                        width: "full",
+                      });
                     }
                   }}
                   style={{
                     flex: 1,
-                    height: '36px',
-                    justifyContent: 'center',
+                    height: "36px",
+                    justifyContent: "center",
                     backgroundColor: (() => {
                       const width = firstNode.width;
-                      return width === 'full' ? '#1e1e1e' : 'transparent';
+                      return width === "full" ? "#1e1e1e" : "transparent";
                     })(),
                     color: (() => {
                       const width = firstNode.width;
-                      return width === 'full' ? '#fff' : '#1e1e1e';
+                      return width === "full" ? "#fff" : "#1e1e1e";
                     })(),
-                    border: '1px solid #ddd',
+                    border: "1px solid #ddd",
                   }}
                   label="Full Width (100%)"
                 />
               </div>
-              <p style={{
-                margin: '8px 0 0',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                color: '#757575'
-              }}>
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  fontSize: "12px",
+                  fontStyle: "normal",
+                  color: "#757575",
+                }}
+              >
                 {isMultiSelect
                   ? `Width: content (1344px) or full (100%). Applying to all ${selectedNodes.length} items.`
-                  : 'Width: content (1344px) or full (100%)'
-                }
+                  : "Width: content (1344px) or full (100%)"}
               </p>
             </div>
           </PanelBody>
@@ -575,59 +595,75 @@ export const PropertiesPanel: React.FC = () => {
                       />
                     )}
 
-                  {propDef.type === "select" &&
-                    propDef.name === "maxWidth" && (
-                      <div style={{ marginBottom: '16px' }}>
-                        <label style={{
-                          display: 'block',
-                          fontSize: '11px',
+                  {propDef.type === "select" && propDef.name === "maxWidth" && (
+                    <div style={{ marginBottom: "16px" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "11px",
                           fontWeight: 500,
-                          textTransform: 'uppercase',
-                          marginBottom: '8px',
-                          color: '#1e1e1e'
-                        }}>
-                          Width
-                        </label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <Button
-                            icon={positionCenter}
-                            onClick={() => handlePropChange(propDef.name, 'content')}
-                            style={{
-                              flex: 1,
-                              height: '36px',
-                              justifyContent: 'center',
-                              backgroundColor: (currentValue === 'content' || !['content', 'full'].includes(currentValue)) ? '#1e1e1e' : 'transparent',
-                              color: (currentValue === 'content' || !['content', 'full'].includes(currentValue)) ? '#fff' : '#1e1e1e',
-                              border: '1px solid #ddd',
-                            }}
-                            label="Content Width (1344px, centered)"
-                          />
-                          <Button
-                            icon={stretchFullWidth}
-                            onClick={() => handlePropChange(propDef.name, 'full')}
-                            style={{
-                              flex: 1,
-                              height: '36px',
-                              justifyContent: 'center',
-                              backgroundColor: currentValue === 'full' ? '#1e1e1e' : 'transparent',
-                              color: currentValue === 'full' ? '#fff' : '#1e1e1e',
-                              border: '1px solid #ddd',
-                            }}
-                            label="Full Width (100%)"
-                          />
-                        </div>
-                        {propDef.description && (
-                          <p style={{
-                            margin: '8px 0 0',
-                            fontSize: '12px',
-                            fontStyle: 'normal',
-                            color: '#757575'
-                          }}>
-                            {propDef.description}
-                          </p>
-                        )}
+                          textTransform: "uppercase",
+                          marginBottom: "8px",
+                          color: "#1e1e1e",
+                        }}
+                      >
+                        Width
+                      </label>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <Button
+                          icon={positionCenter}
+                          onClick={() =>
+                            handlePropChange(propDef.name, "content")
+                          }
+                          style={{
+                            flex: 1,
+                            height: "36px",
+                            justifyContent: "center",
+                            backgroundColor:
+                              currentValue === "content" ||
+                              !["content", "full"].includes(currentValue)
+                                ? "#1e1e1e"
+                                : "transparent",
+                            color:
+                              currentValue === "content" ||
+                              !["content", "full"].includes(currentValue)
+                                ? "#fff"
+                                : "#1e1e1e",
+                            border: "1px solid #ddd",
+                          }}
+                          label="Content Width (1344px, centered)"
+                        />
+                        <Button
+                          icon={stretchFullWidth}
+                          onClick={() => handlePropChange(propDef.name, "full")}
+                          style={{
+                            flex: 1,
+                            height: "36px",
+                            justifyContent: "center",
+                            backgroundColor:
+                              currentValue === "full"
+                                ? "#1e1e1e"
+                                : "transparent",
+                            color: currentValue === "full" ? "#fff" : "#1e1e1e",
+                            border: "1px solid #ddd",
+                          }}
+                          label="Full Width (100%)"
+                        />
                       </div>
-                    )}
+                      {propDef.description && (
+                        <p
+                          style={{
+                            margin: "8px 0 0",
+                            fontSize: "12px",
+                            fontStyle: "normal",
+                            color: "#757575",
+                          }}
+                        >
+                          {propDef.description}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {propDef.type === "select" &&
                     propDef.name !== "icon" &&
@@ -638,7 +674,7 @@ export const PropertiesPanel: React.FC = () => {
                         label={propDef.name}
                         value={currentValue}
                         options={propDef.options.map((opt) =>
-                          typeof opt === 'string'
+                          typeof opt === "string"
                             ? { label: opt, value: opt }
                             : opt
                         )}
@@ -749,7 +785,7 @@ export const PropertiesPanel: React.FC = () => {
                           const targetPageId =
                             pages.length > 0 ? pages[0].id : "unknown";
                           addInteraction(selectedNodeIds[0], {
-                            trigger: type.trigger as 'onClick',
+                            trigger: type.trigger as "onClick",
                             action: "navigate",
                             targetId: targetPageId,
                           });
@@ -783,9 +819,20 @@ export const PropertiesPanel: React.FC = () => {
                           justifyContent: "space-between",
                         }}
                       >
-                        <div style={{ fontSize: "12px", color: "#1e1e1e", flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#1e1e1e",
+                            flex: 1,
+                          }}
+                        >
                           {existingInteraction.action === "navigate" ? (
-                            <>Go to: {pages.find(p => p.id === existingInteraction.targetId)?.name || existingInteraction.targetId}</>
+                            <>
+                              Go to:{" "}
+                              {pages.find(
+                                (p) => p.id === existingInteraction.targetId
+                              )?.name || existingInteraction.targetId}
+                            </>
                           ) : existingInteraction.action === "showModal" ? (
                             <>Show modal</>
                           ) : (
@@ -888,7 +935,7 @@ export const PropertiesPanel: React.FC = () => {
         <div
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
-          <div style={{ padding: "16px", borderBottom: "1px solid #e0e0e0" }}>
+          <div style={{ padding: "16px", borderBottom: "0px solid #e0e0e0" }}>
             <div
               style={{
                 display: "flex",
@@ -950,11 +997,12 @@ export const PropertiesPanel: React.FC = () => {
                 title: "Styles",
                 panel: renderStylesTab(),
               },
-              {
+              // Only show interactions tab if not disabled
+              ...(definition.disableInteractions ? [] : [{
                 name: "interactions",
                 title: "Interactions",
                 panel: renderInteractionsTab(),
-              },
+              }]),
             ]}
             selectedTab={activeTab}
             onSelect={(tabName) =>

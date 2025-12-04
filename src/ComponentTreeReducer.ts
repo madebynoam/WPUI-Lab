@@ -32,6 +32,7 @@ export interface ComponentTreeState {
   clipboard: ComponentNode | null;
   cutNodeId: string | null; // ID of the node that was cut (to remove after paste)
   isPlayMode: boolean;
+  editingMode: 'selection' | 'text';
 
   // History state
   history: {
@@ -623,6 +624,11 @@ export function componentTreeReducer(
     case 'SET_PLAY_MODE': {
       const { isPlay } = action.payload;
       return { ...state, isPlayMode: isPlay };
+    }
+
+    case 'SET_EDITING_MODE': {
+      const { mode } = action.payload;
+      return { ...state, editingMode: mode };
     }
 
     // ===== Interaction Actions =====

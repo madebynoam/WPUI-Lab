@@ -18,7 +18,7 @@ export const RenderNode: React.FC<{
   node: ComponentNode;
   renderInteractive?: boolean;
 }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, currentProjectId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, currentProjectId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode } = useComponentTree();
   const playModeState = usePlayModeState();
   const router = useRouter();
   const definition = componentRegistry[node.type];
@@ -101,13 +101,10 @@ export const RenderNode: React.FC<{
   // Focus editable element when entering edit mode
   useEffect(() => {
     if (isEditingText && editableRef.current) {
-      editableRef.current.focus();
-      // Select all text for easy replacement
-      const range = document.createRange();
-      const selection = window.getSelection();
-      range.selectNodeContents(editableRef.current);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+      // Only focus if not already focused (to preserve cursor position from click)
+      if (document.activeElement !== editableRef.current) {
+        editableRef.current.focus();
+      }
     }
   }, [isEditingText]);
 
@@ -177,6 +174,20 @@ export const RenderNode: React.FC<{
     // Cmd or Ctrl alone = normal single selection (bypass Figma logic, just select this item)
     if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
       toggleNodeSelection(hitTargetId, false, false, tree);
+      return;
+    }
+
+    // Text mode: Single click on text components immediately enters edit mode
+    if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
+      // Select the component first if not selected
+      if (!selectedNodeIds.includes(node.id)) {
+        toggleNodeSelection(node.id, false, false, tree);
+      }
+      // Enter edit mode immediately
+      setIsEditingText(true);
+      // Reset click tracking to prevent double-click logic
+      lastClickTimeRef.current = 0;
+      lastClickedIdRef.current = null;
       return;
     }
 
@@ -369,7 +380,7 @@ export const RenderNode: React.FC<{
       lastClickTimeRef.current = now;
       lastClickedIdRef.current = hitTargetId;
     }
-  }, [draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions]);
+  }, [draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
@@ -892,13 +903,25 @@ export const RenderNode: React.FC<{
     const showHoverBorder = shouldShowHoverBorder();
     const hoverOutline = showHoverBorder && !isSelected ? '1px solid #3858e9' : undefined;
 
+    // Determine cursor style based on mode and component type
+    const getCursorStyle = () => {
+      // In play mode, don't set cursor - let native components use their natural cursor styles
+      if (isPlayMode) return undefined;
+
+      // In text mode, show text cursor for text components
+      if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
+        return 'text';
+      }
+
+      // Default cursor for selection mode
+      return 'default';
+    };
+
     const baseStyle: React.CSSProperties = {
       outline: isSelected && !isRootVStack && !isPlayMode
         ? '2px solid #3858e9'
         : (hoverOutline || 'none'),
-      // In play mode, don't set cursor - let native components use their natural cursor styles
-      // In design mode, use default cursor for selection interactions
-      cursor: isPlayMode ? undefined : 'default',
+      cursor: getCursorStyle(),
       position: 'relative',
       ...(gridColumn && { gridColumn }),
       ...(gridRow && { gridRow }),
@@ -976,8 +999,7 @@ export const RenderNode: React.FC<{
         buttonStyle = {
           ...buttonStyle,
           opacity: '0.5',
-          cursor: 'not-allowed',
-          pointerEvents: 'none'
+          cursor: 'not-allowed'
         };
       }
 
@@ -993,8 +1015,9 @@ export const RenderNode: React.FC<{
     }
 
     // Render contenteditable wrapper preserving component styling (WYSIWYG)
-    // NOTE: Edit mode still needs a wrapper div for the contenteditable functionality
-    if (isEditingText) {
+    // NOTE: In text mode, always render as contentEditable so clicks naturally position cursor
+    // In selection mode, only make contentEditable when actively editing (isEditingText)
+    if ((editingMode === 'text' && !isPlayMode) || isEditingText) {
       return (
         <div
           ref={wrapperRef}
@@ -1003,7 +1026,8 @@ export const RenderNode: React.FC<{
           onMouseLeave={handleMouseLeave}
           style={{
             ...getWrapperStyle(),
-            outline: '2px solid #3858e9',
+            // Only show outline when component is selected
+            outline: isSelected ? '2px solid #3858e9' : 'none',
           }}
         >
           <div
@@ -1014,9 +1038,23 @@ export const RenderNode: React.FC<{
               cursor: 'text',
               outline: 'none', // Remove browser default outline
             }}
+            onFocus={(e) => {
+              // When contentEditable receives focus, select component and mark as editing
+              if (!selectedNodeIds.includes(node.id)) {
+                toggleNodeSelection(node.id, false, false, tree);
+              }
+              setIsEditingText(true);
+            }}
+            onBlur={(e) => {
+              // Clear editing state when focus is lost
+              setIsEditingText(false);
+            }}
             onClick={(e) => {
-              // Prevent clicks from bubbling up and changing selection
-              e.stopPropagation();
+              // In text mode, allow click to naturally focus and position cursor
+              // In selection mode (double-click to edit), prevent bubbling
+              if (editingMode === 'selection') {
+                e.stopPropagation();
+              }
             }}
             onMouseDown={(e) => {
               // Prevent mousedown from bubbling up to drag handlers

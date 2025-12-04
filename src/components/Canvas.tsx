@@ -41,6 +41,8 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     currentPageId,
     projects,
     currentProjectId,
+    editingMode,
+    setEditingMode,
   } = useComponentTree();
 
   // Get page-level properties from root VStack
@@ -274,6 +276,22 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
         }
       }
 
+      // V key to switch to selection mode (skip if in edit mode)
+      if (e.key === "v" && !isInEditMode()) {
+        e.preventDefault();
+        e.stopPropagation();
+        setEditingMode('selection');
+        return;
+      }
+
+      // T key to switch to text mode (skip if in edit mode)
+      if (e.key === "t" && !isInEditMode()) {
+        e.preventDefault();
+        e.stopPropagation();
+        setEditingMode('text');
+        return;
+      }
+
       // Arrow keys to reorder items (Figma-style)
       // Only single selection, not in edit mode, and not root
       if (
@@ -363,6 +381,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     reorderComponent,
     isInEditMode,
     isPlayMode,
+    setEditingMode,
   ]);
 
   // Find editing context - either interactive component or selected container

@@ -88,6 +88,10 @@ interface ComponentTreeContextType {
   isPlayMode: boolean;
   setPlayMode: (isPlay: boolean) => void;
 
+  // Editing mode
+  editingMode: 'selection' | 'text';
+  setEditingMode: (mode: 'selection' | 'text') => void;
+
   // Interactions
   addInteraction: (nodeId: string, interaction: Omit<Interaction, 'id'>) => void;
   removeInteraction: (nodeId: string, interactionId: string) => void;
@@ -180,6 +184,7 @@ function initializeState(): ComponentTreeState {
     clipboard: null,
     cutNodeId: null,
     isPlayMode: false,
+    editingMode: 'selection',
     history: {
       past: [],
       present: {
@@ -500,6 +505,12 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'SET_PLAY_MODE', payload: { isPlay } });
   };
 
+  // ===== Editing Mode =====
+
+  const setEditingMode = (mode: 'selection' | 'text') => {
+    dispatch({ type: 'SET_EDITING_MODE', payload: { mode } });
+  };
+
   // ===== Interactions =====
 
   const addInteraction = (nodeId: string, interaction: Omit<Interaction, 'id'>) => {
@@ -576,6 +587,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     clearHistory,
     isPlayMode: state.isPlayMode,
     setPlayMode,
+    editingMode: state.editingMode,
+    setEditingMode,
     addInteraction,
     removeInteraction,
     updateInteraction,

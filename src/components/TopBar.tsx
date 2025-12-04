@@ -6,6 +6,8 @@ import {
   drawerRight,
   code,
   listView,
+  pencil,
+  cornerAll,
 } from "@wordpress/icons";
 import { useComponentTree } from "@/src/contexts/ComponentTreeContext";
 import { usePlayModeState } from "@/src/contexts/PlayModeContext";
@@ -35,7 +37,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   pageId,
 }) => {
   const router = useRouter();
-  const { pages, currentPageId, isPlayMode, setPlayMode } = useComponentTree();
+  const { pages, currentPageId, isPlayMode, setPlayMode, editingMode, setEditingMode } = useComponentTree();
   const playModeState = usePlayModeState();
   const currentPage = pages.find((p) => p.id === currentPageId);
 
@@ -152,6 +154,38 @@ export const TopBar: React.FC<TopBarProps> = ({
             style={{
               backgroundColor: showTreePanel ? "#1e1e1e" : "transparent",
               color: showTreePanel ? "#fff" : "#666",
+              border: "none",
+              outline: "none",
+              boxShadow: "none",
+              borderRadius: "2px",
+              cursor: "pointer",
+            }}
+          />
+
+          {/* Selection mode button */}
+          <Button
+            icon={cornerAll}
+            onClick={() => setEditingMode('selection')}
+            title="Selection Mode (V)"
+            style={{
+              backgroundColor: editingMode === 'selection' ? "#1e1e1e" : "transparent",
+              color: editingMode === 'selection' ? "#fff" : "#666",
+              border: "none",
+              outline: "none",
+              boxShadow: "none",
+              borderRadius: "2px",
+              cursor: "pointer",
+            }}
+          />
+
+          {/* Text mode button */}
+          <Button
+            icon={pencil}
+            onClick={() => setEditingMode('text')}
+            title="Text Mode (T)"
+            style={{
+              backgroundColor: editingMode === 'text' ? "#1e1e1e" : "transparent",
+              color: editingMode === 'text' ? "#fff" : "#666",
               border: "none",
               outline: "none",
               boxShadow: "none",

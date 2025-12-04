@@ -212,6 +212,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     acceptsChildren: true,
     description: 'Main content area within a card component.',
     defaultProps: {},
+    disableInteractions: true,
     propDefinitions: [
       {
         name: 'size',
@@ -240,6 +241,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     acceptsChildren: true,
     description: 'Header section at the top of a card.',
     defaultProps: {},
+    disableInteractions: true,
     propDefinitions: [
       {
         name: 'size',
@@ -268,6 +270,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     acceptsChildren: true,
     description: 'Footer section at the bottom of a card.',
     defaultProps: {},
+    disableInteractions: true,
     propDefinitions: [
       {
         name: 'size',
