@@ -60,6 +60,10 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
   const [planOutput, setPlanOutput] = useState<any>(null);
 
+  // Editable prompts for debug mode
+  const [plannerPrompt, setPlannerPrompt] = useState<string>(PLANNER_PROMPT);
+  const [builderPrompt, setBuilderPrompt] = useState<string>('');
+
   // Default welcome message
   const defaultWelcomeMessage: AgentMessage = {
     id: "welcome",
@@ -238,7 +242,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           const contextTools = [getTool('context_getProject'), getTool('context_searchComponents')].filter(Boolean);
           const plannerResult = await executePhase(
             'planner',
-            PLANNER_PROMPT,
+            plannerPrompt,
             userMessageText,
             toolContext,
             undefined, // API key handled server-side
@@ -372,10 +376,13 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
 
       if (currentPhase === 'planner' && planOutput) {
         // Run builder phase
+        const generatedBuilderPrompt = getBUILDER_PROMPT(planOutput);
+        setBuilderPrompt(generatedBuilderPrompt);
+
         const allTools = getToolsForLLM();
         const builderResult = await executePhase(
           'builder',
-          getBUILDER_PROMPT(planOutput),
+          generatedBuilderPrompt,
           `Execute this plan: ${JSON.stringify(planOutput)}`,
           toolContext,
           undefined,
@@ -443,7 +450,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         const contextTools = [getTool('context_getProject'), getTool('context_searchComponents')].filter(Boolean);
         const plannerResult = await executePhase(
           'planner',
-          PLANNER_PROMPT,
+          plannerPrompt,
           currentUserMessage,
           toolContext,
           undefined,
@@ -552,8 +559,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
               borderRadius: "4px",
               fontSize: "12px",
               fontFamily: "monospace",
-              maxHeight: "300px",
-              overflowY: "auto",
             }}
           >
             <div style={{ fontWeight: "bold", marginBottom: "8px", fontSize: "14px" }}>
@@ -590,6 +595,35 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
                     Error: {phase.error}
                   </div>
                 )}
+
+                {/* Editable Prompt */}
+                <div style={{ marginTop: "8px", marginBottom: "8px" }}>
+                  <div style={{ fontSize: "11px", fontWeight: "500", marginBottom: "4px", color: "#666" }}>
+                    Prompt (editable):
+                  </div>
+                  <textarea
+                    value={phase.phase === 'planner' ? plannerPrompt : builderPrompt}
+                    onChange={(e) => {
+                      if (phase.phase === 'planner') {
+                        setPlannerPrompt(e.target.value);
+                      } else if (phase.phase === 'builder') {
+                        setBuilderPrompt(e.target.value);
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      minHeight: "100px",
+                      padding: "6px",
+                      fontFamily: "monospace",
+                      fontSize: "10px",
+                      backgroundColor: "#fafafa",
+                      border: "1px solid #ddd",
+                      borderRadius: "3px",
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+
                 <details style={{ marginTop: "6px" }}>
                   <summary style={{ cursor: "pointer", fontSize: "11px" }}>
                     Show output
