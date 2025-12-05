@@ -1110,7 +1110,29 @@ export const RenderNode: React.FC<{
               e.preventDefault();
             }}
           >
-            <Component {...buttonProps}>{content}</Component>
+            {node.type === 'Button' ? (
+              // For buttons, render text directly without button wrapper for better cursor control
+              <span style={{
+                padding: '6px 12px',
+                display: 'inline-block',
+                backgroundColor: buttonProps.variant === 'primary' ? '#2271b1' :
+                                 buttonProps.variant === 'secondary' ? 'transparent' :
+                                 'transparent',
+                color: buttonProps.variant === 'primary' ? '#fff' : '#2271b1',
+                border: buttonProps.variant === 'secondary' ? '1px solid #2271b1' : 'none',
+                borderRadius: '2px',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif',
+                fontSize: '13px',
+                fontWeight: '400',
+                lineHeight: '1.4',
+                cursor: 'text',
+                whiteSpace: 'nowrap',
+              }}>
+                {content}
+              </span>
+            ) : (
+              <Component {...buttonProps}>{content}</Component>
+            )}
           </div>
         </div>
       );
