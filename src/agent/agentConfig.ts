@@ -14,8 +14,8 @@ export const Models = {
     CLAUDE_HAIKU_4_5: "claude-haiku-4-5",
   },
   OpenAI: {
-    GPT_5_MINI: "gpt-5-mini",
-    GPT_5_NANO: "gpt-5-nano",
+    GPT_4O_MINI: "gpt-4o-mini",
+    GPT_4O: "gpt-4o",
   },
 } as const;
 
@@ -53,19 +53,19 @@ export interface ModelCapabilities {
  * Agent Model Configuration
  *
  * Configure which model the v2.0 single-agent system should use.
- * Currently using OpenAI GPT-5-Mini for cost optimization.
+ * Currently using OpenAI GPT-4o-mini for cost optimization.
  *
  * To switch models:
  * - Anthropic Claude Sonnet 4.5: Most capable, expensive ($3/$15 per MTok)
  * - Anthropic Claude Haiku 4.5: Fast and affordable ($1/$5 per MTok)
- * - OpenAI GPT-5-Mini: Good balance ($0.25/$2.00 per MTok) ← Current
- * - OpenAI GPT-5-Nano: Cheapest, simple tasks ($0.05/$0.40 per MTok)
+ * - OpenAI GPT-4o-mini: Good balance ($0.15/$0.60 per MTok) ← Current
+ * - OpenAI GPT-4o: Most capable OpenAI ($2.50/$10.00 per MTok)
  */
 export const AGENT_MODELS = {
   // Main agent for v2.0 single-agent system
   agent: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_MINI,
+    model: Models.OpenAI.GPT_4O_MINI,
   } as AgentModelConfig,
 } as const;
 
@@ -100,28 +100,28 @@ export const AVAILABLE_MODELS = {
   },
 
   // OpenAI Models
-  [Models.OpenAI.GPT_5_NANO]: {
+  [Models.OpenAI.GPT_4O_MINI]: {
     provider: Providers.OPENAI,
     description:
-      "Ultra-fast and cheapest ($0.05/MTok input, $0.40/MTok output)",
-    bestFor: "Simple tasks, high-volume operations, cost optimization",
-    pricing: { input: 0.00005, output: 0.0004 },
+      "Fast and very affordable ($0.15/MTok input, $0.60/MTok output)",
+    bestFor: "Standard tasks, agents, good balance of speed and cost",
+    pricing: { input: 0.00015, output: 0.0006 },
     capabilities: {
-      supportsCustomTemperature: false,
-      defaultTemperature: 1,
-      supportsMaxTokens: false,
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: "max_completion_tokens" as const,
     },
   },
-  [Models.OpenAI.GPT_5_MINI]: {
+  [Models.OpenAI.GPT_4O]: {
     provider: Providers.OPENAI,
     description:
-      "Fast and very affordable ($0.25/MTok input, $2.00/MTok output)",
-    bestFor: "Standard tasks, agents, good balance of speed and cost",
-    pricing: { input: 0.00025, output: 0.002 },
+      "Most capable OpenAI model ($2.50/MTok input, $10.00/MTok output)",
+    bestFor: "Complex reasoning, multimodal tasks, high accuracy",
+    pricing: { input: 0.0025, output: 0.010 },
     capabilities: {
-      supportsCustomTemperature: false,
-      defaultTemperature: 1,
-      supportsMaxTokens: false,
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: "max_completion_tokens" as const,
     },
   },
 } as const;
