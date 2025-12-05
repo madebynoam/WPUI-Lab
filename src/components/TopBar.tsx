@@ -1,13 +1,13 @@
 import React from "react";
-import { Button } from "@wordpress/components";
+import { Button, Icon } from "@wordpress/components";
 import {
   plus as plusIcon,
   chevronLeft,
   drawerRight,
   code,
   listView,
-  pencil,
-  cornerAll,
+  separator,
+  send,
 } from "@wordpress/icons";
 import { useComponentTree } from "@/src/contexts/ComponentTreeContext";
 import { usePlayModeState } from "@/src/contexts/PlayModeContext";
@@ -162,37 +162,74 @@ export const TopBar: React.FC<TopBarProps> = ({
             }}
           />
 
-          {/* Selection mode button */}
-          <Button
-            icon={cornerAll}
-            onClick={() => setEditingMode('selection')}
-            title="Selection Mode (V)"
+          {/* Mode switcher container */}
+          <div
             style={{
-              backgroundColor: editingMode === 'selection' ? "#1e1e1e" : "transparent",
-              color: editingMode === 'selection' ? "#fff" : "#666",
-              border: "none",
-              outline: "none",
-              boxShadow: "none",
-              borderRadius: "2px",
-              cursor: "pointer",
+              display: "flex",
+              backgroundColor: "#f0f0f0",
+              borderRadius: "4px",
+              padding: "2px",
+              gap: "2px",
             }}
-          />
+          >
+            {/* Selection mode button */}
+            <button
+              onClick={() => setEditingMode('selection')}
+              title="Selection Mode (V)"
+              style={{
+                backgroundColor: "transparent",
+                border: "none",
+                outline: "none",
+                boxShadow: "none",
+                borderRadius: "2px",
+                cursor: "pointer",
+                minWidth: "32px",
+                height: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "4px",
+              }}
+            >
+              <Icon
+                icon={send}
+                size={20}
+                style={{
+                  transform: 'rotate(-130deg)',
+                  color: editingMode === 'selection' ? "#3858e9" : "#757575"
+                }}
+              />
+            </button>
 
-          {/* Text mode button */}
-          <Button
-            icon={pencil}
-            onClick={() => setEditingMode('text')}
-            title="Text Mode (T)"
-            style={{
-              backgroundColor: editingMode === 'text' ? "#1e1e1e" : "transparent",
-              color: editingMode === 'text' ? "#fff" : "#666",
-              border: "none",
-              outline: "none",
-              boxShadow: "none",
-              borderRadius: "2px",
-              cursor: "pointer",
-            }}
-          />
+            {/* Text mode button */}
+            <button
+              onClick={() => setEditingMode('text')}
+              title="Text Mode (T)"
+              style={{
+                backgroundColor: "transparent",
+                border: "none",
+                outline: "none",
+                boxShadow: "none",
+                borderRadius: "2px",
+                cursor: "pointer",
+                minWidth: "32px",
+                height: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "4px",
+              }}
+            >
+              <Icon
+                icon={separator}
+                size={20}
+                style={{
+                  transform: 'rotate(90deg)',
+                  color: editingMode === 'text' ? "#3858e9" : "#757575"
+                }}
+              />
+            </button>
+          </div>
         </div>
       )}
 
