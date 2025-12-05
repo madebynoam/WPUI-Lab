@@ -5,7 +5,7 @@
  * It has access to all action tools (create, update, delete).
  */
 
-import { getAgentComponentSummary } from '../config/availableComponents';
+import { getAgentComponentSummary } from '../../config/availableComponents';
 
 export function getBUILDER_PROMPT(plan: any): string {
   return `You are a UI builder for WP-Designer.
