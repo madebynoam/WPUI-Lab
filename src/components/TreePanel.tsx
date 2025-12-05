@@ -12,6 +12,7 @@ import {
   normalizeComponentNode,
   normalizeComponentNodes,
 } from "../utils/normalizeComponent";
+import { flattenTree } from "../utils/treeHelpers";
 import "./TreePanel.css";
 import {
   Button,
