@@ -110,16 +110,16 @@ export const AgentDebugUI: React.FC = () => {
   return (
     <div
       style={{
-        position: 'fixed',
+        position: 'absolute',
         bottom: '20px',
         right: '20px',
         width: '500px',
-        maxHeight: '80vh',
+        maxHeight: '70vh',
         backgroundColor: '#ffffff',
         border: '1px solid #e0e0e0',
         borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-        zIndex: 10000,
+        zIndex: 1000,
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -239,12 +239,18 @@ export const AgentDebugUI: React.FC = () => {
                   padding: '8px',
                   borderRadius: '4px',
                   overflowX: 'auto',
+                  overflowY: 'auto',
+                  maxHeight: '200px',
                   border: '1px solid #ddd',
                   margin: 0,
                   marginTop: '8px',
+                  whiteSpace: 'pre-wrap',
+                  wordWrap: 'break-word',
                 }}
               >
-                {JSON.stringify(phase.output, null, 2)}
+                {typeof phase.output === 'string'
+                  ? phase.output
+                  : JSON.stringify(phase.output, null, 2)}
               </pre>
             </details>
           </div>
