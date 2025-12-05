@@ -400,7 +400,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         );
 
         setPhaseResults(prev => prev ? [...prev, builderResult] : [builderResult]);
-        setCurrentPhase('done');
+        setCurrentPhase('builder'); // Keep as builder so user can rerun
 
         // Add final agent response
         const agentResponse: AgentMessage = {
