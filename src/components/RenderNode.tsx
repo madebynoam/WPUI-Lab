@@ -1003,6 +1003,20 @@ export const RenderNode: React.FC<{
         };
       }
 
+      // Remove focus outline and box-shadow in design mode to prevent confusion with selection outline
+      if (!isPlayMode) {
+        buttonStyle = {
+          ...buttonStyle,
+          outline: 'none',
+          boxShadow: 'none'
+        };
+
+        // Prevent focus state from showing in design mode by immediately blurring
+        buttonProps.onFocus = (e: React.FocusEvent<HTMLButtonElement>) => {
+          e.currentTarget.blur();
+        };
+      }
+
       // Apply style to button
       if (Object.keys(buttonStyle).length > 0) {
         buttonProps.style = buttonStyle;
@@ -1140,6 +1154,25 @@ export const RenderNode: React.FC<{
 
     // Normal rendering (non-edit mode) - pass editor props directly to component
     const editorProps = getEditorProps();
+
+    // For buttons, preserve the outline from editorProps (selection state)
+    // but remove outline and boxShadow from buttonStyle (which would override it)
+    if (node.type === 'Button') {
+      const { outline, boxShadow, ...restButtonStyle } = buttonStyle;
+      const mergedStyle = { ...editorProps.style, ...restButtonStyle };
+
+      return (
+        <Component
+          {...editorProps}
+          {...buttonProps}
+          style={mergedStyle}
+        >
+          {content}
+        </Component>
+      );
+    }
+
+    // For non-button text components
     const mergedStyle = { ...editorProps.style, ...buttonStyle };
 
     return (
