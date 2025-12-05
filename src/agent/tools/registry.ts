@@ -26,45 +26,48 @@ export function getToolDescriptions(): string {
     .join('\n');
 }
 
-// Convert agent tools to LLM tool format (OpenAI function calling)
-export function getToolsForLLM(): LLMTool[] {
-  return Array.from(tools.values()).map(tool => {
-    const properties: Record<string, any> = {};
-    const required: string[] = [];
+// Convert a single agent tool to LLM tool format (OpenAI function calling)
+export function convertToolToLLM(tool: AgentTool): LLMTool {
+  const properties: Record<string, any> = {};
+  const required: string[] = [];
 
-    // Convert parameters to OpenAI format
-    if (tool.parameters) {
-      for (const [paramName, paramDef] of Object.entries(tool.parameters)) {
-        properties[paramName] = {
-          type: paramDef.type,
-          description: paramDef.description,
-        };
+  // Convert parameters to OpenAI format
+  if (tool.parameters) {
+    for (const [paramName, paramDef] of Object.entries(tool.parameters)) {
+      properties[paramName] = {
+        type: paramDef.type,
+        description: paramDef.description,
+      };
 
-        if (paramDef.required) {
-          required.push(paramName);
-        }
+      if (paramDef.required) {
+        required.push(paramName);
+      }
 
-        if (paramDef.default !== undefined) {
-          properties[paramName].default = paramDef.default;
-        }
+      if (paramDef.default !== undefined) {
+        properties[paramName].default = paramDef.default;
+      }
 
-        if (paramDef.items) {
-          properties[paramName].items = paramDef.items;
-        }
+      if (paramDef.items) {
+        properties[paramName].items = paramDef.items;
       }
     }
+  }
 
-    return {
-      type: 'function',
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: {
-          type: 'object',
-          properties,
-          ...(required.length > 0 ? { required } : {}),
-        },
+  return {
+    type: 'function',
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: {
+        type: 'object',
+        properties,
+        ...(required.length > 0 ? { required } : {}),
       },
-    };
-  });
+    },
+  };
+}
+
+// Convert all agent tools to LLM tool format (OpenAI function calling)
+export function getToolsForLLM(): LLMTool[] {
+  return Array.from(tools.values()).map(convertToolToLLM);
 }

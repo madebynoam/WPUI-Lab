@@ -1,5 +1,5 @@
 import { AgentMessage, ToolContext, ToolResult } from './types';
-import { getTool, getToolsForLLM } from './tools/registry';
+import { getTool, getToolsForLLM, convertToolToLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
 import { getAgentModel, AVAILABLE_MODELS } from './agentConfig';
@@ -772,14 +772,7 @@ export async function handleUserMessagePhased(
     userMessage,
     context,
     claudeApiKey,
-    contextTools.map(t => ({
-      type: 'function',
-      function: {
-        name: t!.name,
-        description: t!.description,
-        parameters: t!.parameters || {},
-      },
-    })),
+    contextTools.map(t => convertToolToLLM(t!)),
     onProgress
   );
 
