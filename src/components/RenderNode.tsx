@@ -1045,10 +1045,6 @@ export const RenderNode: React.FC<{
               }
               setIsEditingText(true);
             }}
-            onBlur={(e) => {
-              // Clear editing state when focus is lost
-              setIsEditingText(false);
-            }}
             onClick={(e) => {
               // In text mode, allow click to naturally focus and position cursor
               // In selection mode (double-click to edit), prevent bubbling

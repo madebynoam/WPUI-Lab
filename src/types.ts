@@ -64,6 +64,7 @@ export interface ComponentDefinition {
   defaultProps?: Record<string, any>;
   defaultChildren?: PatternNode[];
   propDefinitions: PropDefinition[];
+  disableInteractions?: boolean;
 }
 
 export interface PropDefinition {
