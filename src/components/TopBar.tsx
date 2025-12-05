@@ -191,14 +191,19 @@ export const TopBar: React.FC<TopBarProps> = ({
                 padding: "4px",
               }}
             >
-              <Icon
-                icon={send}
-                size={20}
-                style={{
-                  transform: 'rotate(-130deg)',
-                  color: editingMode === 'selection' ? "#3858e9" : "#757575"
-                }}
-              />
+              <div style={{
+                transform: 'rotate(-130deg) translateY(2px)',
+                color: editingMode === 'selection' ? "#3858e9" : "#757575",
+                fill: editingMode === 'selection' ? "#3858e9" : "#757575",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Icon
+                  icon={send}
+                  size={20}
+                />
+              </div>
             </button>
 
             {/* Text mode button */}
@@ -220,14 +225,19 @@ export const TopBar: React.FC<TopBarProps> = ({
                 padding: "4px",
               }}
             >
-              <Icon
-                icon={separator}
-                size={20}
-                style={{
-                  transform: 'rotate(90deg)',
-                  color: editingMode === 'text' ? "#3858e9" : "#757575"
-                }}
-              />
+              <div style={{
+                transform: 'rotate(90deg)',
+                color: editingMode === 'text' ? "#3858e9" : "#757575",
+                fill: editingMode === 'text' ? "#3858e9" : "#757575",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Icon
+                  icon={separator}
+                  size={20}
+                />
+              </div>
             </button>
           </div>
         </div>
