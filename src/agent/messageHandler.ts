@@ -671,23 +671,26 @@ async function executePhase(
       // Execute tool calls
       const toolResults: any[] = [];
       for (const toolCall of response.tool_calls) {
+        const toolName = toolCall.function.name;
+        const toolArgs = JSON.parse(toolCall.function.arguments);
+
         if (onProgress) {
           onProgress({
             phase: phaseName,
-            message: humanizeToolName(toolCall.name, toolCall.arguments),
+            message: humanizeToolName(toolName, toolArgs),
           });
         }
 
-        const tool = getTool(toolCall.name);
+        const tool = getTool(toolName);
         if (!tool) {
           toolResults.push({
             tool_call_id: toolCall.id,
-            content: `Tool "${toolCall.name}" not found`,
+            content: `Tool "${toolName}" not found`,
           });
           continue;
         }
 
-        const result = await tool.execute(toolCall.arguments, context);
+        const result = await tool.execute(toolArgs, context);
         toolResults.push({
           tool_call_id: toolCall.id,
           content: JSON.stringify(result),
