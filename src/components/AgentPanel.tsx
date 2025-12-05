@@ -10,11 +10,13 @@ import {
   AgentMessage,
   ToolContext,
   handleUserMessage,
-  handleUserMessagePhased,
   PhaseResult,
-  PhasedAgentResult,
   generateSuggestions,
+  executePhase,
+  PLANNER_PROMPT,
+  getBUILDER_PROMPT,
 } from "../agent";
+import { getTool, getToolsForLLM, convertToolToLLM } from "../agent/tools/registry";
 
 interface AgentPanelProps {
   onClose: () => void;
@@ -54,6 +56,9 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
 
   // Phase results for debug mode
   const [phaseResults, setPhaseResults] = useState<PhaseResult[] | null>(null);
+  const [currentPhase, setCurrentPhase] = useState<'planner' | 'builder' | 'done' | null>(null);
+  const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
+  const [planOutput, setPlanOutput] = useState<any>(null);
 
   // Default welcome message
   const defaultWelcomeMessage: AgentMessage = {
@@ -226,16 +231,22 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         let agentResponse: AgentMessage;
 
         if (isDebugMode) {
-          // Use phased handler for debug mode
-          const phasedResult = await handleUserMessagePhased(
+          // Debug mode: Run ONLY planner phase, then stop
+          setCurrentUserMessage(userMessageText);
+          setCurrentPhase('planner');
+
+          const contextTools = [getTool('context_getProject'), getTool('context_searchComponents')].filter(Boolean);
+          const plannerResult = await executePhase(
+            'planner',
+            PLANNER_PROMPT,
             userMessageText,
             toolContext,
             undefined, // API key handled server-side
+            contextTools.map(t => convertToolToLLM(t!)),
             (update) => {
-              console.log("[AgentPanel] Phase update:", update);
               setProgressState({
                 isProcessing: true,
-                phase: update.phase,
+                phase: 'planner',
                 agent: null,
                 current: 0,
                 total: 0,
@@ -244,9 +255,21 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
             }
           );
 
-          // Store phase results
-          setPhaseResults(phasedResult.phases);
-          agentResponse = phasedResult.finalMessage;
+          // Store results
+          setPhaseResults([plannerResult]);
+
+          // Try to parse plan from output
+          try {
+            const jsonMatch = plannerResult.output?.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              setPlanOutput(JSON.parse(jsonMatch[0]));
+            }
+          } catch (e) {
+            console.error('Failed to parse plan:', e);
+          }
+
+          // Don't add agent response yet - waiting for user to click Continue
+          return; // STOP HERE - wait for user input
         } else {
           // Use regular handler
           agentResponse = await handleUserMessage(
@@ -328,8 +351,139 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         });
       }
     },
-    [createToolContext, messages]
+    [createToolContext, messages, isDebugMode]
   );
+
+  // Debug mode: Continue to next phase
+  const handleContinuePhase = useCallback(async () => {
+    if (!currentPhase || !currentUserMessage) return;
+
+    setProgressState({
+      isProcessing: true,
+      phase: currentPhase === 'planner' ? 'builder' : null,
+      agent: null,
+      current: 0,
+      total: 0,
+      message: currentPhase === 'planner' ? 'Building...' : 'Processing...',
+    });
+
+    try {
+      const toolContext = createToolContext();
+
+      if (currentPhase === 'planner' && planOutput) {
+        // Run builder phase
+        const allTools = getToolsForLLM();
+        const builderResult = await executePhase(
+          'builder',
+          getBUILDER_PROMPT(planOutput),
+          `Execute this plan: ${JSON.stringify(planOutput)}`,
+          toolContext,
+          undefined,
+          allTools,
+          (update) => {
+            setProgressState({
+              isProcessing: true,
+              phase: 'builder',
+              agent: null,
+              current: 0,
+              total: 0,
+              message: update.message,
+            });
+          }
+        );
+
+        setPhaseResults(prev => prev ? [...prev, builderResult] : [builderResult]);
+        setCurrentPhase('done');
+
+        // Add final agent response
+        const agentResponse: AgentMessage = {
+          id: `agent-${Date.now()}`,
+          role: 'agent',
+          content: [{
+            type: 'text',
+            text: builderResult.output || 'Completed',
+          }],
+          timestamp: Date.now(),
+          archived: false,
+          showIcon: true,
+        };
+        setMessages((prev) => [...prev, agentResponse]);
+      }
+    } catch (err) {
+      console.error('Error continuing phase:', err);
+    } finally {
+      setProgressState({
+        isProcessing: false,
+        phase: null,
+        agent: null,
+        current: 0,
+        total: 0,
+        message: '',
+      });
+    }
+  }, [currentPhase, currentUserMessage, planOutput, createToolContext]);
+
+  // Debug mode: Rerun current phase
+  const handleRerunPhase = useCallback(async () => {
+    if (!currentPhase || !currentUserMessage) return;
+
+    setProgressState({
+      isProcessing: true,
+      phase: currentPhase,
+      agent: null,
+      current: 0,
+      total: 0,
+      message: `Rerunning ${currentPhase}...`,
+    });
+
+    try {
+      const toolContext = createToolContext();
+
+      if (currentPhase === 'planner') {
+        const contextTools = [getTool('context_getProject'), getTool('context_searchComponents')].filter(Boolean);
+        const plannerResult = await executePhase(
+          'planner',
+          PLANNER_PROMPT,
+          currentUserMessage,
+          toolContext,
+          undefined,
+          contextTools.map(t => convertToolToLLM(t!)),
+          (update) => {
+            setProgressState({
+              isProcessing: true,
+              phase: 'planner',
+              agent: null,
+              current: 0,
+              total: 0,
+              message: update.message,
+            });
+          }
+        );
+
+        setPhaseResults([plannerResult]);
+
+        try {
+          const jsonMatch = plannerResult.output?.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            setPlanOutput(JSON.parse(jsonMatch[0]));
+          }
+        } catch (e) {
+          console.error('Failed to parse plan:', e);
+        }
+      }
+    } catch (err) {
+      console.error('Error rerunning phase:', err);
+    } finally {
+      setProgressState({
+        isProcessing: false,
+        phase: null,
+        agent: null,
+        current: 0,
+        total: 0,
+        message: '',
+      });
+    }
+  }, [currentPhase, currentUserMessage, createToolContext]);
 
   // Generate contextual suggestions
   const suggestions = generateSuggestions(createToolContext());
@@ -464,6 +618,45 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
             }}>
               Total Cost: ${phaseResults.reduce((sum, p) => sum + p.cost, 0).toFixed(5)}
             </div>
+
+            {/* Control Buttons */}
+            {currentPhase && currentPhase !== 'done' && (
+              <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
+                <button
+                  onClick={handleRerunPhase}
+                  disabled={progressState.isProcessing}
+                  style={{
+                    flex: 1,
+                    padding: "8px",
+                    backgroundColor: "#fff",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    cursor: progressState.isProcessing ? "not-allowed" : "pointer",
+                    fontSize: "12px",
+                    fontWeight: "500",
+                  }}
+                >
+                  ↻ Rerun {currentPhase === 'planner' ? 'Planner' : 'Builder'}
+                </button>
+                <button
+                  onClick={handleContinuePhase}
+                  disabled={progressState.isProcessing || !planOutput}
+                  style={{
+                    flex: 1,
+                    padding: "8px",
+                    backgroundColor: "#3858e9",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: progressState.isProcessing || !planOutput ? "not-allowed" : "pointer",
+                    fontSize: "12px",
+                    fontWeight: "500",
+                  }}
+                >
+                  → Continue to Builder
+                </button>
+              </div>
+            )}
           </div>
         )}
 

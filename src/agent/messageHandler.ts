@@ -588,6 +588,9 @@ import { PLANNER_PROMPT } from './prompts/planner';
 import { getBUILDER_PROMPT } from './prompts/builder';
 import { getVERIFIER_PROMPT } from './prompts/verifier';
 
+// Re-export prompts for use in AgentPanel
+export { PLANNER_PROMPT, getBUILDER_PROMPT };
+
 export interface PhaseResult {
   phase: 'planner' | 'builder' | 'verifier';
   prompt: string;
@@ -610,7 +613,7 @@ export interface PhasedAgentResult {
 /**
  * Execute a single agent phase
  */
-async function executePhase(
+export async function executePhase(
   phaseName: 'planner' | 'builder' | 'verifier',
   prompt: string,
   userMessage: string,
