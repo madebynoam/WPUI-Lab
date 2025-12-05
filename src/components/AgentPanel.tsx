@@ -10,6 +10,9 @@ import {
   AgentMessage,
   ToolContext,
   handleUserMessage,
+  handleUserMessagePhased,
+  PhaseResult,
+  PhasedAgentResult,
   generateSuggestions,
 } from "../agent";
 
@@ -41,6 +44,16 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   // Abort controller for stop button
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
+
+  // Debug mode detection (from URL parameter)
+  const [isDebugMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('debug_agent') === 'true';
+  });
+
+  // Phase results for debug mode
+  const [phaseResults, setPhaseResults] = useState<PhaseResult[] | null>(null);
 
   // Default welcome message
   const defaultWelcomeMessage: AgentMessage = {
@@ -209,42 +222,70 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
       try {
         // Process message and get agent response
         const toolContext = createToolContext();
-        const agentResponse = await handleUserMessage(
-          userMessageText,
-          toolContext,
-          undefined, // API keys now handled server-side
-          undefined, // API keys now handled server-side
-          (update) => {
-            console.log("[AgentPanel] Progress update:", update);
 
-            // Append new progress message to chat
-            const progressMessage: AgentMessage = {
-              id: `progress-${Date.now()}-${Math.random()}`,
-              role: "agent",
-              content: [
-                {
-                  type: "text",
-                  text: update.message,
-                },
-              ],
-              timestamp: Date.now(),
-              archived: false,
-              showIcon: true,
-            };
-            setMessages((prev) => [...prev, progressMessage]);
+        let agentResponse: AgentMessage;
 
-            setProgressState({
-              isProcessing: true,
-              phase: update.phase,
-              agent: update.agent || null,
-              current: update.current || 0,
-              total: update.total || 0,
-              message: update.message,
-            });
-          },
-          controller.signal,
-          messages  // Pass conversation history for context
-        );
+        if (isDebugMode) {
+          // Use phased handler for debug mode
+          const phasedResult = await handleUserMessagePhased(
+            userMessageText,
+            toolContext,
+            undefined, // API key handled server-side
+            (update) => {
+              console.log("[AgentPanel] Phase update:", update);
+              setProgressState({
+                isProcessing: true,
+                phase: update.phase,
+                agent: null,
+                current: 0,
+                total: 0,
+                message: update.message,
+              });
+            }
+          );
+
+          // Store phase results
+          setPhaseResults(phasedResult.phases);
+          agentResponse = phasedResult.finalMessage;
+        } else {
+          // Use regular handler
+          agentResponse = await handleUserMessage(
+            userMessageText,
+            toolContext,
+            undefined, // API keys now handled server-side
+            undefined, // API keys now handled server-side
+            (update) => {
+              console.log("[AgentPanel] Progress update:", update);
+
+              // Append new progress message to chat
+              const progressMessage: AgentMessage = {
+                id: `progress-${Date.now()}-${Math.random()}`,
+                role: "agent",
+                content: [
+                  {
+                    type: "text",
+                    text: update.message,
+                  },
+                ],
+                timestamp: Date.now(),
+                archived: false,
+                showIcon: true,
+              };
+              setMessages((prev) => [...prev, progressMessage]);
+
+              setProgressState({
+                isProcessing: true,
+                phase: update.phase,
+                agent: update.agent || null,
+                current: update.current || 0,
+                total: update.total || 0,
+                message: update.message,
+              });
+            },
+            controller.signal,
+            messages  // Pass conversation history for context
+          );
+        }
 
         // Add agent response to chat
         setMessages((prev) => [...prev, agentResponse]);
@@ -347,6 +388,85 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           padding: "8px",
         }}
       >
+        {/* Debug Mode: Phase Results */}
+        {isDebugMode && phaseResults && (
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "12px",
+              backgroundColor: "#f5f5f5",
+              borderRadius: "4px",
+              fontSize: "12px",
+              fontFamily: "monospace",
+              maxHeight: "300px",
+              overflowY: "auto",
+            }}
+          >
+            <div style={{ fontWeight: "bold", marginBottom: "8px", fontSize: "14px" }}>
+              🔍 Debug Mode - Phase Results
+            </div>
+            {phaseResults.map((phase, index) => (
+              <div
+                key={index}
+                style={{
+                  marginBottom: "12px",
+                  padding: "8px",
+                  backgroundColor: "#fff",
+                  borderRadius: "3px",
+                  borderLeft: `3px solid ${phase.success ? "#4caf50" : "#f44336"}`,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                  <strong>
+                    {phase.phase === "planner" && "📋 Phase 1: Planning"}
+                    {phase.phase === "builder" && "🔨 Phase 2: Building"}
+                    {phase.phase === "verifier" && "✓ Phase 3: Verification"}
+                  </strong>
+                  <span style={{ color: phase.success ? "#4caf50" : "#f44336" }}>
+                    {phase.success ? "✓" : "✗"}
+                  </span>
+                </div>
+                <div style={{ fontSize: "11px", color: "#666", marginBottom: "6px" }}>
+                  Duration: {(phase.duration / 1000).toFixed(2)}s |
+                  Tokens: {phase.inputTokens} in, {phase.outputTokens} out |
+                  Cost: ${phase.cost.toFixed(5)}
+                </div>
+                {phase.error && (
+                  <div style={{ color: "#f44336", fontSize: "11px", marginBottom: "6px" }}>
+                    Error: {phase.error}
+                  </div>
+                )}
+                <details style={{ marginTop: "6px" }}>
+                  <summary style={{ cursor: "pointer", fontSize: "11px" }}>
+                    Show output
+                  </summary>
+                  <pre style={{
+                    marginTop: "6px",
+                    padding: "6px",
+                    backgroundColor: "#f9f9f9",
+                    borderRadius: "3px",
+                    fontSize: "10px",
+                    overflow: "auto",
+                    maxHeight: "150px",
+                  }}>
+                    {typeof phase.output === 'string'
+                      ? phase.output
+                      : JSON.stringify(phase.output, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            ))}
+            <div style={{
+              marginTop: "8px",
+              paddingTop: "8px",
+              borderTop: "1px solid #ddd",
+              fontWeight: "bold"
+            }}>
+              Total Cost: ${phaseResults.reduce((sum, p) => sum + p.cost, 0).toFixed(5)}
+            </div>
+          </div>
+        )}
+
         <AgentUI
           messages={messages}
           isProcessing={progressState.isProcessing}

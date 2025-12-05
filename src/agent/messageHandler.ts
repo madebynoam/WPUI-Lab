@@ -581,3 +581,262 @@ export function generateSuggestions(context: ToolContext) {
 
   return suggestions;
 }
+
+// ========== PHASE-BASED AGENT SYSTEM ==========
+
+import { PLANNER_PROMPT } from './prompts/planner';
+import { getBUILDER_PROMPT } from './prompts/builder';
+import { getVERIFIER_PROMPT } from './prompts/verifier';
+
+export interface PhaseResult {
+  phase: 'planner' | 'builder' | 'verifier';
+  prompt: string;
+  output: any;
+  duration: number;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number;
+  success: boolean;
+  error?: string;
+}
+
+export interface PhasedAgentResult {
+  phases: PhaseResult[];
+  totalCost: number;
+  totalDuration: number;
+  finalMessage: AgentMessage;
+}
+
+/**
+ * Execute a single agent phase
+ */
+async function executePhase(
+  phaseName: 'planner' | 'builder' | 'verifier',
+  prompt: string,
+  userMessage: string,
+  context: ToolContext,
+  claudeApiKey: string,
+  tools: any[],
+  onProgress?: (update: any) => void
+): Promise<PhaseResult> {
+  const startTime = Date.now();
+
+  try {
+    // Create LLM provider
+    const config = getAgentModel('agent');
+    const llm = createLLMProvider({
+      provider: config.provider,
+      apiKey: claudeApiKey,
+      model: config.model,
+    });
+
+    const pricing = getModelPricing(config.model);
+
+    // Build messages
+    const messages: LLMMessage[] = [
+      { role: 'system', content: prompt },
+      { role: 'user', content: userMessage },
+    ];
+
+    let totalInputTokens = estimateTokens(prompt) + estimateTokens(userMessage);
+    let totalOutputTokens = 0;
+
+    // Tool execution loop (same as main agent)
+    let iterationCount = 0;
+    const MAX_ITERATIONS = 10;
+
+    while (iterationCount < MAX_ITERATIONS) {
+      const response = await llm.chat({ messages, tools });
+
+      const outputTokens = estimateTokens(response.content || '') + estimateTokens(JSON.stringify(response.tool_calls || []));
+      totalOutputTokens += outputTokens;
+
+      // If no tool calls, we're done
+      if (!response.tool_calls || response.tool_calls.length === 0) {
+        const duration = Date.now() - startTime;
+        const cost = ((totalInputTokens / 1000) * pricing.input) + ((totalOutputTokens / 1000) * pricing.output);
+
+        return {
+          phase: phaseName,
+          prompt,
+          output: response.content,
+          duration,
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+          cost,
+          success: true,
+        };
+      }
+
+      // Execute tool calls
+      const toolResults: any[] = [];
+      for (const toolCall of response.tool_calls) {
+        if (onProgress) {
+          onProgress({
+            phase: phaseName,
+            message: humanizeToolName(toolCall.name, toolCall.arguments),
+          });
+        }
+
+        const tool = getTool(toolCall.name);
+        if (!tool) {
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            content: `Tool "${toolCall.name}" not found`,
+          });
+          continue;
+        }
+
+        const result = await tool.execute(toolCall.arguments, context);
+        toolResults.push({
+          tool_call_id: toolCall.id,
+          content: JSON.stringify(result),
+        });
+      }
+
+      // Add assistant message and tool results
+      messages.push({
+        role: 'assistant',
+        content: response.content || '',
+        tool_calls: response.tool_calls,
+      });
+
+      for (const result of toolResults) {
+        messages.push({
+          role: 'tool',
+          content: result.content,
+          tool_call_id: result.tool_call_id,
+        });
+      }
+
+      const iterationInputTokens = estimateTokens(JSON.stringify(messages));
+      totalInputTokens += iterationInputTokens;
+
+      iterationCount++;
+    }
+
+    // Max iterations reached
+    const duration = Date.now() - startTime;
+    const cost = ((totalInputTokens / 1000) * pricing.input) + ((totalOutputTokens / 1000) * pricing.output);
+
+    return {
+      phase: phaseName,
+      prompt,
+      output: 'Max iterations reached',
+      duration,
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      cost,
+      success: false,
+      error: 'Max iterations reached',
+    };
+
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    return {
+      phase: phaseName,
+      prompt,
+      output: null,
+      duration,
+      inputTokens: 0,
+      outputTokens: 0,
+      cost: 0,
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Handle user message using phase-based approach
+ * This is the new phased agent system for debug mode
+ */
+export async function handleUserMessagePhased(
+  userMessage: string,
+  context: ToolContext,
+  claudeApiKey: string,
+  onProgress?: (update: any) => void
+): Promise<PhasedAgentResult> {
+  const phases: PhaseResult[] = [];
+  let plan: any = null;
+
+  // Phase 1: Planning
+  if (onProgress) {
+    onProgress({ phase: 'planner', message: 'Planning...' });
+  }
+
+  const contextTools = [getTool('context_getProject'), getTool('context_searchComponents')].filter(Boolean);
+  const plannerResult = await executePhase(
+    'planner',
+    PLANNER_PROMPT,
+    userMessage,
+    context,
+    claudeApiKey,
+    contextTools.map(t => ({
+      type: 'function',
+      function: {
+        name: t!.name,
+        description: t!.description,
+        parameters: t!.parameters || {},
+      },
+    })),
+    onProgress
+  );
+
+  phases.push(plannerResult);
+
+  // Try to parse plan from output
+  try {
+    const jsonMatch = plannerResult.output?.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      plan = JSON.parse(jsonMatch[0]);
+    }
+  } catch (e) {
+    console.error('[Phased Agent] Failed to parse plan:', e);
+  }
+
+  // Phase 2: Building
+  if (plan && plannerResult.success) {
+    if (onProgress) {
+      onProgress({ phase: 'builder', message: 'Building...' });
+    }
+
+    const allTools = getToolsForLLM();
+    const builderResult = await executePhase(
+      'builder',
+      getBUILDER_PROMPT(plan),
+      `Execute this plan: ${JSON.stringify(plan)}`,
+      context,
+      claudeApiKey,
+      allTools,
+      onProgress
+    );
+
+    phases.push(builderResult);
+  }
+
+  // Calculate totals
+  const totalCost = phases.reduce((sum, p) => sum + p.cost, 0);
+  const totalDuration = phases.reduce((sum, p) => sum + p.duration, 0);
+
+  // Create final message
+  const lastPhase = phases[phases.length - 1];
+  const finalMessage: AgentMessage = {
+    id: `agent-${Date.now()}`,
+    role: 'agent',
+    content: [{
+      type: 'text',
+      text: lastPhase.output || 'Completed',
+    }],
+    timestamp: Date.now(),
+    archived: false,
+    showIcon: true,
+  };
+
+  return {
+    phases,
+    totalCost,
+    totalDuration,
+    finalMessage,
+  };
+}
