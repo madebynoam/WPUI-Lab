@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback, useMemo } from "react";
 import { useComponentTree, ROOT_VSTACK_ID } from "@/src/contexts/ComponentTreeContext";
+import { useAgentDebug } from "@/src/contexts/AgentDebugContext";
 import { ComponentNode } from "@/src/types";
 import { Breadcrumb } from "./Breadcrumb";
 import { findParent } from "@/src/utils/treeHelpers";
@@ -10,6 +11,7 @@ import { INTERACTIVE_COMPONENT_TYPES } from "./TreePanel";
 import { componentRegistry } from "@/src/componentRegistry";
 import { privateApis as themePrivateApis } from "@wordpress/theme";
 import { unlock } from "@/src/utils/wordpressPrivateApis";
+import { AgentDebugUI } from "./AgentDebugUI";
 
 const { ThemeProvider } = unlock(themePrivateApis);
 
@@ -44,6 +46,17 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     editingMode,
     setEditingMode,
   } = useComponentTree();
+
+  const { setIsDebugMode } = useAgentDebug();
+
+  // Check URL parameter for debug mode
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const debugMode = params.get('debug_agent') === 'true';
+      setIsDebugMode(debugMode);
+    }
+  }, [setIsDebugMode]);
 
   // Get page-level properties from root VStack
   const rootVStack = getNodeById(ROOT_VSTACK_ID);
@@ -413,6 +426,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
             flexDirection: "column",
             overflow: "hidden",
             userSelect: "none",
+            position: "relative",
           }}
         >
           <div
@@ -489,6 +503,9 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
             </ThemeProvider>
           </div>
           {showBreadcrumb && !isPlayMode && <Breadcrumb />}
+
+          {/* Debug UI - rendered in canvas area */}
+          <AgentDebugUI />
         </div>
       </SimpleDragProvider>
     </SelectionProvider>

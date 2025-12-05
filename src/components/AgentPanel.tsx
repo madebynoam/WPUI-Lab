@@ -6,6 +6,7 @@ import "@automattic/agenttic-ui/index.css";
 import { Button } from "@wordpress/components";
 import { close } from "@wordpress/icons";
 import { useComponentTree } from "@/src/contexts/ComponentTreeContext";
+import { useAgentDebug } from "@/src/contexts/AgentDebugContext";
 import {
   AgentMessage,
   ToolContext,
@@ -47,22 +48,29 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
 
-  // Debug mode detection (from URL parameter)
-  const [isDebugMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const params = new URLSearchParams(window.location.search);
-    return params.get('debug_agent') === 'true';
-  });
+  // Use debug context
+  const {
+    isDebugMode,
+    phaseResults,
+    setPhaseResults,
+    currentPhase,
+    setCurrentPhase,
+    currentUserMessage,
+    setCurrentUserMessage,
+    planOutput,
+    setPlanOutput,
+    plannerPrompt,
+    setPlannerPrompt,
+    builderPrompt,
+    setBuilderPrompt,
+  } = useAgentDebug();
 
-  // Phase results for debug mode
-  const [phaseResults, setPhaseResults] = useState<PhaseResult[] | null>(null);
-  const [currentPhase, setCurrentPhase] = useState<'planner' | 'builder' | 'done' | null>(null);
-  const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
-  const [planOutput, setPlanOutput] = useState<any>(null);
-
-  // Editable prompts for debug mode
-  const [plannerPrompt, setPlannerPrompt] = useState<string>(PLANNER_PROMPT);
-  const [builderPrompt, setBuilderPrompt] = useState<string>('');
+  // Initialize planner prompt
+  useEffect(() => {
+    if (!plannerPrompt) {
+      setPlannerPrompt(PLANNER_PROMPT);
+    }
+  }, [plannerPrompt, setPlannerPrompt]);
 
   // Default welcome message
   const defaultWelcomeMessage: AgentMessage = {
@@ -355,142 +363,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         });
       }
     },
-    [createToolContext, messages, isDebugMode]
+    [createToolContext, messages, isDebugMode, setPhaseResults, setCurrentPhase, setCurrentUserMessage, setPlanOutput, plannerPrompt, setPlannerPrompt]
   );
-
-  // Debug mode: Continue to next phase
-  const handleContinuePhase = useCallback(async () => {
-    if (!currentPhase || !currentUserMessage) return;
-
-    setProgressState({
-      isProcessing: true,
-      phase: currentPhase === 'planner' ? 'builder' : null,
-      agent: null,
-      current: 0,
-      total: 0,
-      message: currentPhase === 'planner' ? 'Building...' : 'Processing...',
-    });
-
-    try {
-      const toolContext = createToolContext();
-
-      if (currentPhase === 'planner' && planOutput) {
-        // Run builder phase
-        const generatedBuilderPrompt = getBUILDER_PROMPT(planOutput);
-        setBuilderPrompt(generatedBuilderPrompt);
-
-        const allTools = getToolsForLLM();
-        const builderResult = await executePhase(
-          'builder',
-          generatedBuilderPrompt,
-          `Execute this plan: ${JSON.stringify(planOutput)}`,
-          toolContext,
-          undefined,
-          allTools,
-          (update) => {
-            setProgressState({
-              isProcessing: true,
-              phase: 'builder',
-              agent: null,
-              current: 0,
-              total: 0,
-              message: update.message,
-            });
-          }
-        );
-
-        setPhaseResults(prev => prev ? [...prev, builderResult] : [builderResult]);
-        setCurrentPhase('builder'); // Keep as builder so user can rerun
-
-        // Add final agent response
-        const agentResponse: AgentMessage = {
-          id: `agent-${Date.now()}`,
-          role: 'agent',
-          content: [{
-            type: 'text',
-            text: builderResult.output || 'Completed',
-          }],
-          timestamp: Date.now(),
-          archived: false,
-          showIcon: true,
-        };
-        setMessages((prev) => [...prev, agentResponse]);
-      }
-    } catch (err) {
-      console.error('Error continuing phase:', err);
-    } finally {
-      setProgressState({
-        isProcessing: false,
-        phase: null,
-        agent: null,
-        current: 0,
-        total: 0,
-        message: '',
-      });
-    }
-  }, [currentPhase, currentUserMessage, planOutput, createToolContext]);
-
-  // Debug mode: Rerun current phase
-  const handleRerunPhase = useCallback(async () => {
-    if (!currentPhase || !currentUserMessage) return;
-
-    setProgressState({
-      isProcessing: true,
-      phase: currentPhase,
-      agent: null,
-      current: 0,
-      total: 0,
-      message: `Rerunning ${currentPhase}...`,
-    });
-
-    try {
-      const toolContext = createToolContext();
-
-      if (currentPhase === 'planner') {
-        const contextTools = [getTool('context_getProject'), getTool('context_searchComponents')].filter(Boolean);
-        const plannerResult = await executePhase(
-          'planner',
-          plannerPrompt,
-          currentUserMessage,
-          toolContext,
-          undefined,
-          contextTools.map(t => convertToolToLLM(t!)),
-          (update) => {
-            setProgressState({
-              isProcessing: true,
-              phase: 'planner',
-              agent: null,
-              current: 0,
-              total: 0,
-              message: update.message,
-            });
-          }
-        );
-
-        setPhaseResults([plannerResult]);
-
-        try {
-          const jsonMatch = plannerResult.output?.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            setPlanOutput(JSON.parse(jsonMatch[0]));
-          }
-        } catch (e) {
-          console.error('Failed to parse plan:', e);
-        }
-      }
-    } catch (err) {
-      console.error('Error rerunning phase:', err);
-    } finally {
-      setProgressState({
-        isProcessing: false,
-        phase: null,
-        agent: null,
-        current: 0,
-        total: 0,
-        message: '',
-      });
-    }
-  }, [currentPhase, currentUserMessage, createToolContext]);
 
   // Generate contextual suggestions
   const suggestions = generateSuggestions(createToolContext());
@@ -549,151 +423,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           padding: "8px",
         }}
       >
-        {/* Debug Mode: Phase Results */}
-        {isDebugMode && phaseResults && (
-          <div
-            style={{
-              marginBottom: "16px",
-              padding: "12px",
-              backgroundColor: "#f5f5f5",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontFamily: "monospace",
-            }}
-          >
-            <div style={{ fontWeight: "bold", marginBottom: "8px", fontSize: "14px" }}>
-              🔍 Debug Mode - Phase Results
-            </div>
-            {phaseResults.map((phase, index) => (
-              <div
-                key={index}
-                style={{
-                  marginBottom: "12px",
-                  padding: "8px",
-                  backgroundColor: "#fff",
-                  borderRadius: "3px",
-                  borderLeft: `3px solid ${phase.success ? "#4caf50" : "#f44336"}`,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <strong>
-                    {phase.phase === "planner" && "📋 Phase 1: Planning"}
-                    {phase.phase === "builder" && "🔨 Phase 2: Building"}
-                    {phase.phase === "verifier" && "✓ Phase 3: Verification"}
-                  </strong>
-                  <span style={{ color: phase.success ? "#4caf50" : "#f44336" }}>
-                    {phase.success ? "✓" : "✗"}
-                  </span>
-                </div>
-                <div style={{ fontSize: "11px", color: "#666", marginBottom: "6px" }}>
-                  Duration: {(phase.duration / 1000).toFixed(2)}s |
-                  Tokens: {phase.inputTokens} in, {phase.outputTokens} out |
-                  Cost: ${phase.cost.toFixed(5)}
-                </div>
-                {phase.error && (
-                  <div style={{ color: "#f44336", fontSize: "11px", marginBottom: "6px" }}>
-                    Error: {phase.error}
-                  </div>
-                )}
-
-                {/* Editable Prompt */}
-                <div style={{ marginTop: "8px", marginBottom: "8px" }}>
-                  <div style={{ fontSize: "11px", fontWeight: "500", marginBottom: "4px", color: "#666" }}>
-                    Prompt (editable):
-                  </div>
-                  <textarea
-                    value={phase.phase === 'planner' ? plannerPrompt : builderPrompt}
-                    onChange={(e) => {
-                      if (phase.phase === 'planner') {
-                        setPlannerPrompt(e.target.value);
-                      } else if (phase.phase === 'builder') {
-                        setBuilderPrompt(e.target.value);
-                      }
-                    }}
-                    style={{
-                      width: "100%",
-                      minHeight: "100px",
-                      padding: "6px",
-                      fontFamily: "monospace",
-                      fontSize: "10px",
-                      backgroundColor: "#fafafa",
-                      border: "1px solid #ddd",
-                      borderRadius: "3px",
-                      resize: "vertical",
-                    }}
-                  />
-                </div>
-
-                <details style={{ marginTop: "6px" }}>
-                  <summary style={{ cursor: "pointer", fontSize: "11px" }}>
-                    Show output
-                  </summary>
-                  <pre style={{
-                    marginTop: "6px",
-                    padding: "6px",
-                    backgroundColor: "#f9f9f9",
-                    borderRadius: "3px",
-                    fontSize: "10px",
-                    overflow: "auto",
-                    maxHeight: "150px",
-                  }}>
-                    {typeof phase.output === 'string'
-                      ? phase.output
-                      : JSON.stringify(phase.output, null, 2)}
-                  </pre>
-                </details>
-              </div>
-            ))}
-            <div style={{
-              marginTop: "8px",
-              paddingTop: "8px",
-              borderTop: "1px solid #ddd",
-              fontWeight: "bold"
-            }}>
-              Total Cost: ${phaseResults.reduce((sum, p) => sum + p.cost, 0).toFixed(5)}
-            </div>
-
-            {/* Control Buttons */}
-            {currentPhase && currentPhase !== 'done' && (
-              <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
-                <button
-                  onClick={handleRerunPhase}
-                  disabled={progressState.isProcessing}
-                  style={{
-                    flex: 1,
-                    padding: "8px",
-                    backgroundColor: "#fff",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
-                    cursor: progressState.isProcessing ? "not-allowed" : "pointer",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                  }}
-                >
-                  ↻ Rerun {currentPhase === 'planner' ? 'Planner' : 'Builder'}
-                </button>
-                <button
-                  onClick={handleContinuePhase}
-                  disabled={progressState.isProcessing || !planOutput}
-                  style={{
-                    flex: 1,
-                    padding: "8px",
-                    backgroundColor: "#3858e9",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: progressState.isProcessing || !planOutput ? "not-allowed" : "pointer",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                  }}
-                >
-                  → Continue to Builder
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
         <AgentUI
           messages={messages}
           isProcessing={progressState.isProcessing}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
 import { PlayModeProvider } from '@/src/contexts/PlayModeContext';
+import { AgentDebugProvider } from '@/src/contexts/AgentDebugContext';
 import { TopBar } from './TopBar';
 import { TreePanel } from './TreePanel';
 import { Canvas } from './Canvas';
@@ -253,7 +254,9 @@ function EditorContent({ projectId, pageId }: EditorProps) {
 export default function Editor({ projectId, pageId }: EditorProps) {
   return (
     <PlayModeProvider>
-      <EditorContent projectId={projectId} pageId={pageId} />
+      <AgentDebugProvider>
+        <EditorContent projectId={projectId} pageId={pageId} />
+      </AgentDebugProvider>
     </PlayModeProvider>
   );
 }
