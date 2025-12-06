@@ -1,444 +1,38 @@
-import { AgentTool, ToolContext, ToolResult } from '../types';
-import { ComponentNode, PatternNode } from '../../types';
-import { componentRegistry } from '@/src/componentRegistry';
-import { ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
-import { normalizeComponentNodes } from '../../utils/normalizeComponent';
-import { getAgentComponentList } from '../../config/availableComponents';
-import { parseMarkupWithRepair } from '../utils/repairMarkup';
-import { generateId } from '../../utils/idGenerator';
+import { AgentTool, ToolContext, ToolResult } from "../types";
+import { componentRegistry } from "@/src/componentRegistry";
+import { normalizeComponentNodes } from "../../utils/normalizeComponent";
+import { getAgentComponentList } from "../../config/availableComponents";
+import { parseMarkupWithRepair } from "../utils/repairMarkup";
+import { generateId } from "../../utils/idGenerator";
 
-// Helper: Convert PatternNode to ComponentNode with IDs
-function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNode[] {
-  const nodes = patternNodes.map(patternNode => ({
-    id: generateId(),
-    type: patternNode.type,
-    name: patternNode.name || '',
-    props: { ...patternNode.props },
-    children: patternNode.children ? patternNodesToComponentNodes(patternNode.children) : [],
-    interactions: [],
-  }));
-
-  // Normalize all nodes to ensure consistent data structure
-  return normalizeComponentNodes(nodes);
-}
-
-// Create a new component
-export const createComponentTool: AgentTool = {
-  name: 'createComponent',
-  description: 'Create a SINGLE component. For 3+ components, use buildFromYAML instead (much more efficient). IMPORTANT: Always use the "content" parameter for Card and Panel components to set custom text instead of generic placeholders!',
-  category: 'action',
-  parameters: {
-    type: {
-      type: 'string',
-      description: 'Component type (e.g., "Button", "Text", "VStack", etc.)',
-      required: true,
-    },
-    props: {
-      type: 'object',
-      description: 'Component properties',
-      required: false,
-      default: {},
-    },
-    content: {
-      type: 'object',
-      description: 'REQUIRED for Card and Panel components! Sets custom text content instead of generic defaults like "Card Title". For Card: { title: string, body: string }. For Panel: { body: string }. DO NOT create Cards or Panels without this parameter!',
-      required: false,
-    },
-    parentId: {
-      type: 'string',
-      description: 'ID of parent component to add this component to. If not provided, adds to root.',
-      required: false,
-    },
-    index: {
-      type: 'number',
-      description: 'Position index within parent. If not provided, adds at end.',
-      required: false,
-    },
-  },
-  execute: async (
-    params: { type: string; props?: any; content?: any; parentId?: string; index?: number },
-    context: ToolContext
-  ): Promise<ToolResult> => {
-    // Validate component type
-    const definition = componentRegistry[params.type];
-    if (!definition) {
-      return {
-        success: false,
-        message: `Unknown component type: "${params.type}". Use getAvailableComponentTypes to see available types.`,
-        error: 'Invalid component type',
-      };
-    }
-
-    // ENFORCE content parameter for Card and Panel
-    if ((params.type === 'Card' || params.type === 'Panel') && !params.content) {
-      return {
-        success: false,
-        message: `ERROR: The "content" parameter is REQUIRED for ${params.type} components to set custom text. Without it, you'll create generic placeholders like "Card Title". Please provide: ${params.type === 'Card' ? '{ title: "Your Title", body: "Your content" }' : '{ body: "Your content" }'}`,
-        error: 'Missing required content parameter',
-      };
-    }
-
-    // Convert defaultChildren from PatternNode[] to ComponentNode[]
-    let children = definition.defaultChildren
-      ? patternNodesToComponentNodes(definition.defaultChildren)
-      : [];
-
-    console.log('[createComponent] Initial children:', JSON.stringify(children, null, 2));
-    console.log('[createComponent] Content param:', params.content);
-
-    // Apply content customization for smart components using immutable updates
-    if (params.content) {
-      if (params.type === 'Card') {
-        // Customize Card content using immutable pattern
-        children = children.map(child => {
-          if (child.type === 'CardHeader' && params.content.title) {
-            return {
-              ...child,
-              children: child.children?.map(grandchild =>
-                grandchild.type === 'Heading'
-                  ? { ...grandchild, props: { ...grandchild.props, children: params.content.title } }
-                  : grandchild
-              ),
-            };
-          }
-          if (child.type === 'CardBody' && params.content.body) {
-            return {
-              ...child,
-              children: child.children?.map(grandchild =>
-                grandchild.type === 'Text'
-                  ? { ...grandchild, props: { ...grandchild.props, children: params.content.body } }
-                  : grandchild
-              ),
-            };
-          }
-          return child;
-        });
-      } else if (params.type === 'Panel') {
-        // Customize Panel content using immutable pattern
-        children = children.map(child => {
-          if (child.type === 'PanelBody' && params.content.body) {
-            return {
-              ...child,
-              children: child.children?.map(grandchild =>
-                grandchild.type === 'Text'
-                  ? { ...grandchild, props: { ...grandchild.props, children: params.content.body } }
-                  : grandchild
-              ),
-            };
-          }
-          return child;
-        });
-      }
-    }
-
-    console.log('[createComponent] Customized children:', JSON.stringify(children, null, 2));
-
-    // Create new component node
-    const newComponent: ComponentNode = {
-      id: generateId(),
-      type: params.type,
-      name: '',
-      props: { ...definition.defaultProps, ...(params.props || {}) },
-      children,
-      interactions: [],
-    };
-
-    console.log('[createComponent] Final component node:', JSON.stringify(newComponent, null, 2));
-
-    try {
-      // Add the fully constructed component with customized children
-      context.addComponent(newComponent, params.parentId, params.index);
-
-      console.log('[createComponent] Successfully added component to context');
-
-      return {
-        success: true,
-        message: `Created ${definition.name}${params.parentId ? ' and added to parent' : ' at root'}`,
-        data: {
-          id: newComponent.id,
-          type: newComponent.type,
-          displayName: definition.name,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to create component: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        error: String(error),
-      };
-    }
-  },
-};
-
-// Batch create multiple components in a single operation
-export const batchCreateComponentsTool: AgentTool = {
-  name: 'batchCreateComponents',
-  description: 'DEPRECATED: Use buildFromYAML instead! buildFromYAML is more reliable and token-efficient for bulk operations. This tool has known bugs with content handling.',
-  category: 'action',
-  parameters: {
-    components: {
-      type: 'array',
-      description: 'Array of component definitions to create. Each item should be an object with: type (string), props (object), content (object for Cards/Panels), children (array for nested components), parentId (string, optional), index (number, optional)',
-      required: true,
-      items: {
-        type: 'object',
-      },
-    },
-  },
-  execute: async (params: any, context: ToolContext): Promise<ToolResult> => {
-    console.log('[batchCreateComponents] Received params:', JSON.stringify(params, null, 2));
-
-    if (!params.components || !Array.isArray(params.components)) {
-      return {
-        success: false,
-        message: 'components parameter must be an array',
-      };
-    }
-
-    const results: any[] = [];
-    const errors: string[] = [];
-
-    // Process each component
-    for (let i = 0; i < params.components.length; i++) {
-      const compDef = params.components[i];
-
-      try {
-        const definition = componentRegistry[compDef.type as keyof typeof componentRegistry];
-        if (!definition) {
-          errors.push(`Component ${i}: Unknown type "${compDef.type}"`);
-          continue;
-        }
-
-        // Generate ID for this component
-        const newComponent: ComponentNode = {
-          id: generateId(),
-          type: compDef.type,
-          name: compDef.name || '',
-          props: { ...compDef.props },
-          children: [],
-          interactions: [],
-        };
-
-        // Handle content parameter for Card/Panel
-        if (compDef.content && (compDef.type === 'Card' || compDef.type === 'Panel')) {
-          if (compDef.type === 'Card' && definition.defaultChildren) {
-            const cardHeader = definition.defaultChildren.find((c: PatternNode) => c.type === 'CardHeader');
-            const cardBody = definition.defaultChildren.find((c: PatternNode) => c.type === 'CardBody');
-
-            if (cardHeader && compDef.content.title) {
-              const headerChild = cardHeader.children?.[0];
-              if (headerChild) {
-                (headerChild.props as any).children = compDef.content.title;
-              }
-            }
-
-            if (cardBody && compDef.content.body) {
-              const bodyChild = cardBody.children?.[0];
-              if (bodyChild) {
-                (bodyChild.props as any).children = compDef.content.body;
-              }
-            }
-          }
-
-          if (compDef.type === 'Panel' && definition.defaultChildren && compDef.content.body) {
-            const panelBody = definition.defaultChildren.find((c: PatternNode) => c.type === 'PanelBody');
-            if (panelBody) {
-              const bodyChild = panelBody.children?.[0];
-              if (bodyChild) {
-                (bodyChild.props as any).children = compDef.content.body;
-              }
-            }
-          }
-        }
-
-        // Add default children
-        if (definition.defaultChildren) {
-          const defaultChildrenNodes = patternNodesToComponentNodes(definition.defaultChildren);
-          newComponent.children = defaultChildrenNodes;
-        }
-
-        // Add custom children if provided
-        if (compDef.children && Array.isArray(compDef.children)) {
-          const customChildren = patternNodesToComponentNodes(compDef.children);
-          if (!newComponent.children) {
-            newComponent.children = [];
-          }
-          newComponent.children.push(...customChildren);
-        }
-
-        // Add to tree
-        context.addComponent(newComponent, compDef.parentId, compDef.index);
-
-        results.push({
-          id: newComponent.id,
-          type: newComponent.type,
-          displayName: definition.name,
-        });
-
-      } catch (error) {
-        errors.push(`Component ${i} (${compDef.type}): ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    }
-
-    if (errors.length > 0 && results.length === 0) {
-      return {
-        success: false,
-        message: 'Failed to create all components',
-        error: errors.join('; '),
-      };
-    }
-
-    return {
-      success: true,
-      message: `Created ${results.length} component${results.length !== 1 ? 's' : ''}${errors.length > 0 ? ` (${errors.length} failed)` : ''}`,
-      data: {
-        created: results,
-        errors: errors.length > 0 ? errors : undefined,
-      },
-    };
-  },
-};
-
-// Update an existing component
-export const updateComponentTool: AgentTool = {
-  name: 'updateComponent',
-  description: 'Update properties of an existing component',
-  category: 'action',
-  parameters: {
-    componentId: {
-      type: 'string',
-      description: 'ID of the component to update',
-      required: true,
-    },
-    props: {
-      type: 'object',
-      description: 'Properties to update',
-      required: false,
-    },
-    name: {
-      type: 'string',
-      description: 'New name for the component',
-      required: false,
-    },
-  },
-  execute: async (
-    params: { componentId: string; props?: any; name?: string },
-    context: ToolContext
-  ): Promise<ToolResult> => {
-    // Check component exists
-    const component = context.getNodeById(params.componentId);
-    if (!component) {
-      return {
-        success: false,
-        message: `Component with ID "${params.componentId}" not found`,
-        error: 'Component not found',
-      };
-    }
-
-    try {
-      // Update props if provided
-      if (params.props) {
-        context.updateComponentProps(params.componentId, params.props);
-      }
-
-      // Update name if provided
-      if (params.name !== undefined) {
-        context.updateComponentName(params.componentId, params.name);
-      }
-
-      const definition = componentRegistry[component.type];
-      return {
-        success: true,
-        message: `Updated ${component.name || definition?.name || component.type}`,
-        data: {
-          id: params.componentId,
-          updatedProps: params.props,
-          updatedName: params.name,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to update component: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        error: String(error),
-      };
-    }
-  },
-};
-
-// Delete a component
-export const deleteComponentTool: AgentTool = {
-  name: 'deleteComponent',
-  description: 'Delete a component from the tree',
-  category: 'action',
-  parameters: {
-    componentId: {
-      type: 'string',
-      description: 'ID of the component to delete',
-      required: true,
-    },
-  },
-  execute: async (params: { componentId: string }, context: ToolContext): Promise<ToolResult> => {
-    // Don't allow deleting root
-    if (params.componentId === ROOT_VSTACK_ID) {
-      return {
-        success: false,
-        message: 'Cannot delete root component',
-        error: 'Invalid operation',
-      };
-    }
-
-    const component = context.getNodeById(params.componentId);
-    if (!component) {
-      return {
-        success: false,
-        message: `Component with ID "${params.componentId}" not found`,
-        error: 'Component not found',
-      };
-    }
-
-    try {
-      const definition = componentRegistry[component.type];
-      const componentName = component.name || definition?.name || component.type;
-
-      context.removeComponent(params.componentId);
-
-      return {
-        success: true,
-        message: `Deleted ${componentName}`,
-        data: {
-          id: params.componentId,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to delete component: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        error: String(error),
-      };
-    }
-  },
-};
+// DEPRECATED TOOLS REMOVED:
+// - createComponentTool: Replaced by smart tools (component_update, buildFromMarkup)
+// - batchCreateComponentsTool: Replaced by buildFromMarkup
+// - updateComponentTool: Replaced by component_update
+// - deleteComponentTool: Replaced by component_delete
 
 // Duplicate a component
 export const duplicateComponentTool: AgentTool = {
-  name: 'duplicateComponent',
-  description: 'Duplicate an existing component in its current location',
-  category: 'action',
+  name: "duplicateComponent",
+  description: "Duplicate an existing component in its current location",
+  category: "action",
   parameters: {
     componentId: {
-      type: 'string',
-      description: 'ID of the component to duplicate',
+      type: "string",
+      description: "ID of the component to duplicate",
       required: true,
     },
   },
-  execute: async (params: { componentId: string }, context: ToolContext): Promise<ToolResult> => {
+  execute: async (
+    params: { componentId: string },
+    context: ToolContext
+  ): Promise<ToolResult> => {
     const component = context.getNodeById(params.componentId);
     if (!component) {
       return {
         success: false,
         message: `Component with ID "${params.componentId}" not found`,
-        error: 'Component not found',
+        error: "Component not found",
       };
     }
 
@@ -448,7 +42,9 @@ export const duplicateComponentTool: AgentTool = {
       const definition = componentRegistry[component.type];
       return {
         success: true,
-        message: `Duplicated ${component.name || definition?.name || component.type}`,
+        message: `Duplicated ${
+          component.name || definition?.name || component.type
+        }`,
         data: {
           originalId: params.componentId,
         },
@@ -456,7 +52,9 @@ export const duplicateComponentTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to duplicate component: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to duplicate component: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
@@ -465,23 +63,24 @@ export const duplicateComponentTool: AgentTool = {
 
 // Add interaction to component
 export const addInteractionTool: AgentTool = {
-  name: 'addInteraction',
-  description: 'Add an interaction (like onClick) to a component',
-  category: 'action',
+  name: "addInteraction",
+  description: "Add an interaction (like onClick) to a component",
+  category: "action",
   parameters: {
     componentId: {
-      type: 'string',
-      description: 'ID of the component to add interaction to',
+      type: "string",
+      description: "ID of the component to add interaction to",
       required: true,
     },
     action: {
-      type: 'string',
-      description: 'Type of interaction action (e.g., "navigate", "setPlayMode")',
+      type: "string",
+      description:
+        'Type of interaction action (e.g., "navigate", "setPlayMode")',
       required: true,
     },
     target: {
-      type: 'string',
-      description: 'Target for the interaction (e.g., page ID for navigation)',
+      type: "string",
+      description: "Target for the interaction (e.g., page ID for navigation)",
       required: false,
     },
   },
@@ -494,14 +93,14 @@ export const addInteractionTool: AgentTool = {
       return {
         success: false,
         message: `Component with ID "${params.componentId}" not found`,
-        error: 'Component not found',
+        error: "Component not found",
       };
     }
 
     try {
       const interaction = {
         id: generateId(),
-        event: 'onClick',
+        event: "onClick",
         action: params.action,
         target: params.target,
       };
@@ -511,7 +110,9 @@ export const addInteractionTool: AgentTool = {
       const definition = componentRegistry[component.type];
       return {
         success: true,
-        message: `Added ${params.action} interaction to ${component.name || definition?.name || component.type}`,
+        message: `Added ${params.action} interaction to ${
+          component.name || definition?.name || component.type
+        }`,
         data: {
           componentId: params.componentId,
           interactionId: interaction.id,
@@ -520,7 +121,9 @@ export const addInteractionTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to add interaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to add interaction: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
@@ -529,19 +132,23 @@ export const addInteractionTool: AgentTool = {
 
 // Create new page
 export const createPageTool: AgentTool = {
-  name: 'createPage',
-  description: 'Create a new page in the application and automatically switch to it',
-  category: 'action',
+  name: "createPage",
+  description:
+    "Create a new page in the application and automatically switch to it",
+  category: "action",
   parameters: {
     name: {
-      type: 'string',
-      description: 'Name of the new page',
+      type: "string",
+      description: "Name of the new page",
       required: true,
     },
   },
-  execute: async (params: { name: string }, context: ToolContext): Promise<ToolResult> => {
+  execute: async (
+    params: { name: string },
+    context: ToolContext
+  ): Promise<ToolResult> => {
     try {
-      context.createPage(params.name, '');
+      context.createPage(params.name, "");
 
       return {
         success: true,
@@ -553,7 +160,9 @@ export const createPageTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to create page: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to create page: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
@@ -562,23 +171,26 @@ export const createPageTool: AgentTool = {
 
 // Switch to a different page
 export const switchPageTool: AgentTool = {
-  name: 'switchPage',
-  description: 'Switch to a different page',
-  category: 'action',
+  name: "switchPage",
+  description: "Switch to a different page",
+  category: "action",
   parameters: {
     pageId: {
-      type: 'string',
-      description: 'ID of the page to switch to',
+      type: "string",
+      description: "ID of the page to switch to",
       required: true,
     },
   },
-  execute: async (params: { pageId: string }, context: ToolContext): Promise<ToolResult> => {
-    const page = context.pages.find(p => p.id === params.pageId);
+  execute: async (
+    params: { pageId: string },
+    context: ToolContext
+  ): Promise<ToolResult> => {
+    const page = context.pages.find((p) => p.id === params.pageId);
     if (!page) {
       return {
         success: false,
         message: `Page with ID "${params.pageId}" not found`,
-        error: 'Page not found',
+        error: "Page not found",
       };
     }
 
@@ -596,85 +208,39 @@ export const switchPageTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to switch page: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to switch page: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
   },
 };
 
-// Update multiple components at once
-export const updateMultipleComponentsTool: AgentTool = {
-  name: 'updateMultipleComponents',
-  description: 'Update properties of multiple components at once (bulk operation)',
-  category: 'action',
+// DEPRECATED: updateMultipleComponentsTool - Replaced by component_update with better smart matching
+
+// Copy a component to clipboard
+export const copyComponentTool: AgentTool = {
+  name: "copyComponent",
+  description: "Copy a component to clipboard for later pasting",
+  category: "action",
   parameters: {
-    componentIds: {
-      type: 'array',
-      description: 'Array of component IDs to update',
-      required: true,
-      items: {
-        type: 'string',
-      },
-    },
-    props: {
-      type: 'object',
-      description: 'Properties to apply to all components',
+    componentId: {
+      type: "string",
+      description: "ID of the component to copy",
       required: true,
     },
   },
   execute: async (
-    params: { componentIds: string[]; props: any },
+    params: { componentId: string },
     context: ToolContext
   ): Promise<ToolResult> => {
-    if (!Array.isArray(params.componentIds) || params.componentIds.length === 0) {
-      return {
-        success: false,
-        message: 'componentIds must be a non-empty array',
-        error: 'Invalid parameters',
-      };
-    }
-
-    try {
-      context.updateMultipleComponentProps(params.componentIds, params.props);
-
-      return {
-        success: true,
-        message: `Updated ${params.componentIds.length} component(s)`,
-        data: {
-          componentIds: params.componentIds,
-          updatedProps: params.props,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to update components: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        error: String(error),
-      };
-    }
-  },
-};
-
-// Copy a component to clipboard
-export const copyComponentTool: AgentTool = {
-  name: 'copyComponent',
-  description: 'Copy a component to clipboard for later pasting',
-  category: 'action',
-  parameters: {
-    componentId: {
-      type: 'string',
-      description: 'ID of the component to copy',
-      required: true,
-    },
-  },
-  execute: async (params: { componentId: string }, context: ToolContext): Promise<ToolResult> => {
     const component = context.getNodeById(params.componentId);
     if (!component) {
       return {
         success: false,
         message: `Component with ID "${params.componentId}" not found`,
-        error: 'Component not found',
+        error: "Component not found",
       };
     }
 
@@ -684,7 +250,9 @@ export const copyComponentTool: AgentTool = {
       const definition = componentRegistry[component.type];
       return {
         success: true,
-        message: `Copied ${component.name || definition?.name || component.type} to clipboard`,
+        message: `Copied ${
+          component.name || definition?.name || component.type
+        } to clipboard`,
         data: {
           componentId: params.componentId,
         },
@@ -692,7 +260,9 @@ export const copyComponentTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to copy component: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to copy component: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
@@ -701,23 +271,29 @@ export const copyComponentTool: AgentTool = {
 
 // Paste component from clipboard
 export const pasteComponentTool: AgentTool = {
-  name: 'pasteComponent',
-  description: 'Paste previously copied component from clipboard',
-  category: 'action',
+  name: "pasteComponent",
+  description: "Paste previously copied component from clipboard",
+  category: "action",
   parameters: {
     parentId: {
-      type: 'string',
-      description: 'ID of parent component to paste into. If not provided, pastes at root.',
+      type: "string",
+      description:
+        "ID of parent component to paste into. If not provided, pastes at root.",
       required: false,
     },
   },
-  execute: async (params: { parentId?: string }, context: ToolContext): Promise<ToolResult> => {
+  execute: async (
+    params: { parentId?: string },
+    context: ToolContext
+  ): Promise<ToolResult> => {
     try {
       context.pasteComponent();
 
       return {
         success: true,
-        message: `Pasted component${params.parentId ? ' into parent' : ' at root'}`,
+        message: `Pasted component${
+          params.parentId ? " into parent" : " at root"
+        }`,
         data: {
           parentId: params.parentId,
         },
@@ -725,7 +301,9 @@ export const pasteComponentTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to paste component: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to paste component: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
@@ -734,18 +312,18 @@ export const pasteComponentTool: AgentTool = {
 
 // Remove interaction from component
 export const removeInteractionTool: AgentTool = {
-  name: 'removeInteraction',
-  description: 'Remove an interaction from a component',
-  category: 'action',
+  name: "removeInteraction",
+  description: "Remove an interaction from a component",
+  category: "action",
   parameters: {
     componentId: {
-      type: 'string',
-      description: 'ID of the component',
+      type: "string",
+      description: "ID of the component",
       required: true,
     },
     interactionId: {
-      type: 'string',
-      description: 'ID of the interaction to remove',
+      type: "string",
+      description: "ID of the interaction to remove",
       required: true,
     },
   },
@@ -758,7 +336,7 @@ export const removeInteractionTool: AgentTool = {
       return {
         success: false,
         message: `Component with ID "${params.componentId}" not found`,
-        error: 'Component not found',
+        error: "Component not found",
       };
     }
 
@@ -768,7 +346,9 @@ export const removeInteractionTool: AgentTool = {
       const definition = componentRegistry[component.type];
       return {
         success: true,
-        message: `Removed interaction from ${component.name || definition?.name || component.type}`,
+        message: `Removed interaction from ${
+          component.name || definition?.name || component.type
+        }`,
         data: {
           componentId: params.componentId,
           interactionId: params.interactionId,
@@ -777,7 +357,9 @@ export const removeInteractionTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to remove interaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to remove interaction: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
@@ -786,33 +368,38 @@ export const removeInteractionTool: AgentTool = {
 
 // Update existing interaction
 export const updateInteractionTool: AgentTool = {
-  name: 'updateInteraction',
-  description: 'Update an existing interaction on a component',
-  category: 'action',
+  name: "updateInteraction",
+  description: "Update an existing interaction on a component",
+  category: "action",
   parameters: {
     componentId: {
-      type: 'string',
-      description: 'ID of the component',
+      type: "string",
+      description: "ID of the component",
       required: true,
     },
     interactionId: {
-      type: 'string',
-      description: 'ID of the interaction to update',
+      type: "string",
+      description: "ID of the interaction to update",
       required: true,
     },
     action: {
-      type: 'string',
+      type: "string",
       description: 'New action type (e.g., "navigate", "setPlayMode")',
       required: false,
     },
     target: {
-      type: 'string',
-      description: 'New target for the interaction',
+      type: "string",
+      description: "New target for the interaction",
       required: false,
     },
   },
   execute: async (
-    params: { componentId: string; interactionId: string; action?: string; target?: string },
+    params: {
+      componentId: string;
+      interactionId: string;
+      action?: string;
+      target?: string;
+    },
     context: ToolContext
   ): Promise<ToolResult> => {
     const component = context.getNodeById(params.componentId);
@@ -820,7 +407,7 @@ export const updateInteractionTool: AgentTool = {
       return {
         success: false,
         message: `Component with ID "${params.componentId}" not found`,
-        error: 'Component not found',
+        error: "Component not found",
       };
     }
 
@@ -829,12 +416,18 @@ export const updateInteractionTool: AgentTool = {
       if (params.action) updates.action = params.action;
       if (params.target !== undefined) updates.target = params.target;
 
-      context.updateInteraction(params.componentId, params.interactionId, updates);
+      context.updateInteraction(
+        params.componentId,
+        params.interactionId,
+        updates
+      );
 
       const definition = componentRegistry[component.type];
       return {
         success: true,
-        message: `Updated interaction on ${component.name || definition?.name || component.type}`,
+        message: `Updated interaction on ${
+          component.name || definition?.name || component.type
+        }`,
         data: {
           componentId: params.componentId,
           interactionId: params.interactionId,
@@ -844,7 +437,9 @@ export const updateInteractionTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to update interaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to update interaction: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
@@ -853,45 +448,51 @@ export const updateInteractionTool: AgentTool = {
 
 // Update page theme
 export const updatePageThemeTool: AgentTool = {
-  name: 'updatePageTheme',
-  description: 'Update the theme (colors) of a page',
-  category: 'action',
+  name: "updatePageTheme",
+  description: "Update the theme (colors) of a page",
+  category: "action",
   parameters: {
     pageId: {
-      type: 'string',
-      description: 'ID of the page to update. If not provided, updates current page.',
+      type: "string",
+      description:
+        "ID of the page to update. If not provided, updates current page.",
       required: false,
     },
     primaryColor: {
-      type: 'string',
+      type: "string",
       description: 'Primary color (hex code, e.g., "#3858e9")',
       required: false,
     },
     backgroundColor: {
-      type: 'string',
+      type: "string",
       description: 'Background color (hex code, e.g., "#ffffff")',
       required: false,
     },
   },
   execute: async (
-    params: { pageId?: string; primaryColor?: string; backgroundColor?: string },
+    params: {
+      pageId?: string;
+      primaryColor?: string;
+      backgroundColor?: string;
+    },
     context: ToolContext
   ): Promise<ToolResult> => {
     const pageId = params.pageId || context.currentPageId;
-    const page = context.pages.find(p => p.id === pageId);
+    const page = context.pages.find((p) => p.id === pageId);
 
     if (!page) {
       return {
         success: false,
         message: `Page with ID "${pageId}" not found`,
-        error: 'Page not found',
+        error: "Page not found",
       };
     }
 
     try {
       const theme: any = {};
       if (params.primaryColor) theme.primaryColor = params.primaryColor;
-      if (params.backgroundColor) theme.backgroundColor = params.backgroundColor;
+      if (params.backgroundColor)
+        theme.backgroundColor = params.backgroundColor;
 
       context.updatePageTheme(pageId, theme);
 
@@ -906,7 +507,9 @@ export const updatePageThemeTool: AgentTool = {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to update page theme: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to update page theme: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }
@@ -915,37 +518,39 @@ export const updatePageThemeTool: AgentTool = {
 
 // Build component tree from JSX markup (token-efficient bulk operations)
 export const buildFromMarkupTool: AgentTool = {
-  name: 'buildFromMarkup',
-  description: `🎯 PRIMARY TOOL for creating multiple components! Use this for ANY bulk operation (3+ items). Use JSX-like markup for natural HTML/JSX-style syntax. Supports automatic repair if markup has errors. Pass markup as the "markup" parameter.
+  name: "buildFromMarkup",
+  description: `🎯 PRIMARY TOOL for creating one or multiple components! Use this for ANY bulk operation (3+ items). Use JSX-like markup for natural HTML/JSX-style syntax. Supports automatic repair if markup has errors. Pass markup as the "markup" parameter.
 
 Example:
 {markup: "<Grid columns={3} gap={4}>\\n  <Card>\\n    <CardHeader>\\n      <Heading level={3}>Spring Special</Heading>\\n    </CardHeader>\\n    <CardBody>\\n      <Text>20% off!</Text>\\n      <Button variant=\\"primary\\">Shop Now</Button>\\n    </CardBody>\\n  </Card>\\n</Grid>"}
 
 VALID COMPONENT TYPES (${getAgentComponentList().length} total):
-${getAgentComponentList().join(', ')}
+${getAgentComponentList().join(", ")}
 
 IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the components listed above.`,
-  category: 'action',
+  category: "action",
   parameters: {
     markup: {
-      type: 'string',
-      description: 'JSX-like markup defining component tree. Use HTML/JSX syntax with self-closing tags for components without children.',
+      type: "string",
+      description:
+        "JSX-like markup defining component tree. Use HTML/JSX syntax with self-closing tags for components without children.",
       required: true,
     },
     parentId: {
-      type: 'string',
-      description: 'Parent component ID (optional, defaults to root)',
+      type: "string",
+      description: "Parent component ID (optional, defaults to root)",
       required: false,
     },
   },
   execute: async (params: any, context: ToolContext): Promise<ToolResult> => {
-    console.log('[buildFromMarkup] Received markup:', params.markup);
+    console.log("[buildFromMarkup] Received markup:", params.markup);
 
     // Validate markup parameter
-    if (!params.markup || typeof params.markup !== 'string') {
+    if (!params.markup || typeof params.markup !== "string") {
       return {
         success: false,
-        message: 'Missing required "markup" parameter. Pass JSX markup as: {markup: "<Grid columns={3}>...</Grid>"}',
+        message:
+          'Missing required "markup" parameter. Pass JSX markup as: {markup: "<Grid columns={3}>...</Grid>"}',
         error: `The markup parameter is required but received: ${typeof params.markup}`,
       };
     }
@@ -958,11 +563,14 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
         return {
           success: false,
           message: `Failed to parse markup: ${result.error}`,
-          error: result.error || 'Parse error',
+          error: result.error || "Parse error",
         };
       }
 
-      console.log('[buildFromMarkup] Created component nodes:', result.nodes.length);
+      console.log(
+        "[buildFromMarkup] Created component nodes:",
+        result.nodes.length
+      );
 
       // Normalize all nodes
       const normalizedNodes = normalizeComponentNodes(result.nodes);
@@ -974,9 +582,15 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
 
       return {
         success: true,
-        message: `Created ${normalizedNodes.length} component(s) from markup${result.attempts > 0 ? ` (repaired in ${result.attempts} attempts, cost: $${result.cost.toFixed(6)})` : ''}`,
+        message: `Created ${normalizedNodes.length} component(s) from markup${
+          result.attempts > 0
+            ? ` (repaired in ${
+                result.attempts
+              } attempts, cost: $${result.cost.toFixed(6)})`
+            : ""
+        }`,
         data: {
-          components: normalizedNodes.map(n => ({
+          components: normalizedNodes.map((n) => ({
             id: n.id,
             type: n.type,
           })),
@@ -984,12 +598,13 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
           repairCost: result.cost,
         },
       };
-
     } catch (error) {
-      console.error('[buildFromMarkup] Error:', error);
+      console.error("[buildFromMarkup] Error:", error);
       return {
         success: false,
-        message: `Failed to parse markup: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to parse markup: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         error: String(error),
       };
     }

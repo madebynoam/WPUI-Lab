@@ -40,7 +40,7 @@ You must return a JSON plan with this structure:
 }
 
 STRATEGY SELECTION:
-- "bulk_create": User wants 3+ new components (use buildFromMarkup)
+- "bulk_create": User want to add one or more new items (use buildFromMarkup)
 - "template": User wants a common pattern like pricing, hero, nav (use section_create)
 - "single_update": User wants to modify an existing component (use component_update)
 - "page_creation": User wants a new page (use createPage)
