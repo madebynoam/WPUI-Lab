@@ -522,7 +522,19 @@ export const buildFromMarkupTool: AgentTool = {
   description: `🎯 PRIMARY TOOL for creating one or multiple components! Use this for ANY bulk operation (3+ items). Use JSX-like markup for natural HTML/JSX-style syntax. Supports automatic repair if markup has errors. Pass markup as the "markup" parameter.
 
 Example:
-{markup: "<Grid columns={3} gap={4}>\\n  <Card>\\n    <CardHeader>\\n      <Heading level={3}>Spring Special</Heading>\\n    </CardHeader>\\n    <CardBody>\\n      <Text>20% off!</Text>\\n      <Button variant=\\"primary\\">Shop Now</Button>\\n    </CardBody>\\n  </Card>\\n</Grid>"}
+{
+  markup: \`<Grid columns={3} gap={4}>
+  <Card>
+    <CardHeader>
+      <Heading level={3}>Spring Special</Heading>
+    </CardHeader>
+    <CardBody>
+      <Text>20% off!</Text>
+      <Button variant="primary">Shop Now</Button>
+    </CardBody>
+  </Card>
+</Grid>\`
+}
 
 VALID COMPONENT TYPES (${getAgentComponentList().length} total):
 ${getAgentComponentList().join(", ")}
