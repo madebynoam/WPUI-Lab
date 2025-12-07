@@ -16,6 +16,8 @@ export const Models = {
   OpenAI: {
     GPT_4O_MINI: "gpt-4o-mini",
     GPT_4O: "gpt-4o",
+    GPT_5: "gpt-5.1",
+    GPT_5_MINI: "gpt-5-mini",
   },
 } as const;
 
@@ -65,7 +67,7 @@ export const AGENT_MODELS = {
   // Main agent for v2.0 single-agent system
   agent: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_4O_MINI,
+    model: Models.OpenAI.GPT_5,
   } as AgentModelConfig,
 } as const;
 
@@ -117,7 +119,31 @@ export const AVAILABLE_MODELS = {
     description:
       "Most capable OpenAI model ($2.50/MTok input, $10.00/MTok output)",
     bestFor: "Complex reasoning, multimodal tasks, high accuracy",
-    pricing: { input: 0.0025, output: 0.010 },
+    pricing: { input: 0.0025, output: 0.01 },
+    capabilities: {
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: "max_completion_tokens" as const,
+    },
+  },
+  [Models.OpenAI.GPT_5]: {
+    provider: Providers.OPENAI,
+    description:
+      "Next-gen reasoning model ($1.25/MTok input, $10.00/MTok output)",
+    bestFor: "Complex reasoning, advanced tasks, highest accuracy",
+    pricing: { input: 0.00125, output: 0.01 },
+    capabilities: {
+      supportsCustomTemperature: true,
+      supportsMaxTokens: true,
+      maxTokensParam: "max_completion_tokens" as const,
+    },
+  },
+  [Models.OpenAI.GPT_5_MINI]: {
+    provider: Providers.OPENAI,
+    description:
+      "Next-gen affordable model ($0.25/MTok input, $2.00/MTok output)",
+    bestFor: "Standard tasks, agents, excellent speed-to-cost ratio",
+    pricing: { input: 0.00025, output: 0.002 },
     capabilities: {
       supportsCustomTemperature: true,
       supportsMaxTokens: true,
