@@ -181,10 +181,20 @@ UI state changes (selection, collapsed nodes) don't save to history.
 
 ## AI Agent System
 
-### Architecture (v2.0 Single Agent)
+### Architecture (v3.0 Two-Phase System)
 
 ```
 User Message → AgentPanel → messageHandler.ts
+     ↓
+Phase 1: PLANNER (context tools only)
+  - Calls context_getProject to understand current state
+  - Creates JSON execution plan with steps
+  - Uses: context_getProject, context_searchComponents
+     ↓
+Phase 2: BUILDER (action tools)
+  - Executes plan step-by-step
+  - Uses: buildFromMarkup, component_update, createPage, etc.
+  - Follows plan EXACTLY, no verification/duplication
      ↓
 NextJSProxyProvider → /app/api/chat/route.ts (server-side)
      ↓
@@ -194,11 +204,20 @@ Tool Calls → Execute Tools → Update Tree → Response
 ```
 
 **Key Files**:
-- `src/agent/messageHandler.ts` (583 lines) - Orchestration
+- `src/agent/messageHandler.ts` - Phase orchestration
+- `src/agent/prompts/planner.ts` - Planner system prompt
+- `src/agent/prompts/builder.ts` - Builder system prompt (generated dynamically with plan)
 - `src/agent/agentConfig.ts` - Model configuration
 - `src/agent/tools/registry.ts` - Tool registration
-- `src/agent/tools/actions.ts` (974 lines) - Core tools
+- `src/agent/tools/actions.ts` - Core action tools
+- `src/agent/tools/consolidatedContext.ts` - Context tools
 - `app/api/chat/route.ts` - LLM proxy (keeps API keys server-side)
+
+**Debug Mode**: Add `?debug_agent=true` to URL to enable AgentDebugUI showing:
+- Phase execution results with token/cost metrics
+- Editable system prompts (can modify and rerun)
+- Available tools per phase
+- Copy buttons for prompts and outputs
 
 ### Agent Tools
 
@@ -222,8 +241,8 @@ The AI generates JSX-like syntax that gets parsed into ComponentNodes:
 // AI calls:
 buildFromMarkup({
   markup: `
-    <Grid columns={3} gap={4}>
-      <Card>
+    <Grid columns={12}>
+      <Card gridColumnSpan={6}>
         <CardHeader>
           <Heading level={3}>Title</Heading>
         </CardHeader>
@@ -242,6 +261,8 @@ buildFromMarkup({
 - Card must contain CardHeader/CardBody/CardFooter (never direct children)
 - Use proper nesting (VStack contains children, Text doesn't)
 - Props syntax: `variant="primary"`, `columns={3}`, `enabled={true}`
+- Grid children use `gridColumnSpan` and `gridRowSpan` props (e.g., `gridColumnSpan={6}` for half-width in 12-column grid)
+- NEVER use placeholders - always generate realistic, production-ready content
 
 ### Environment Variables
 
@@ -298,6 +319,13 @@ OPENAI_API_KEY=sk-proj-...
 - Streaming responses
 - Tool call progress
 - Token/cost tracking
+
+**AgentDebugUI** (`src/components/AgentDebugUI.tsx`):
+- Debug overlay (enabled with `?debug_agent=true`)
+- Shows planner/builder phase results
+- Editable system prompts with rerun capability
+- Copy buttons for prompts and outputs
+- Token usage and cost per phase
 
 ## Common Workflows
 
@@ -429,6 +457,8 @@ Escape         Deselect / Exit play mode
 5. **Dynamic imports with ssr: false** for all Next.js pages using WordPress components
 6. **API keys stay server-side** - Use `/app/api/chat/route.ts` proxy
 7. **Max 50 history states** - Older states are dropped
+8. **Grid layout** - Children use `gridColumnSpan`/`gridRowSpan` props, not `columnSpan`
+9. **Agent phases** - Planner creates plan, Builder executes it (no duplication/verification)
 
 ## Debugging
 
