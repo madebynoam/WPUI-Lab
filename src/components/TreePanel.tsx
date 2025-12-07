@@ -807,46 +807,50 @@ export const TreePanel: React.FC<TreePanelProps> = ({
       }}
     >
       {/* Pages Section */}
-      <div style={{ padding: "12px 4px", borderBottom: "1px solid #e0e0e0" }}>
-        <div
+      {/* Pages Header */}
+      <div
+        style={{
+          padding: "12px 8px 12px 8px",
+          borderBottom: "1px solid #e0e0e0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "8px",
+            fontSize: "11px",
+            fontWeight: 600,
+            color: "#666",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
           }}
         >
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 600,
-              color: "#666",
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-            }}
-          >
-            Pages
-          </span>
-          <button
-            onClick={() => addPage()}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "4px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "2px",
-              color: "#666",
-            }}
-            aria-label="Add page"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18 11.2h-5.2V6h-1.6v5.2H6v1.6h5.2V18h1.6v-5.2H18z" />
-            </svg>
-          </button>
-        </div>
+          Pages
+        </span>
+        <button
+          onClick={() => addPage()}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "2px",
+            color: "#666",
+          }}
+          aria-label="Add page"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 11.2h-5.2V6h-1.6v5.2H6v1.6h5.2V18h1.6v-5.2H18z" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Pages List */}
+      <div style={{ padding: "12px 4px" }}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -934,7 +938,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
       {/* Layers Label */}
       <div
         style={{
-          padding: "12px 8px 8px 8px",
+          padding: "12px 8px 12px 8px",
+          borderTop: "1px solid #e0e0e0",
           borderBottom: "1px solid #e0e0e0",
         }}
       >

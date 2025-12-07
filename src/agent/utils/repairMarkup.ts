@@ -1,6 +1,6 @@
 import { parseMarkup, ParseError, ParseResult } from '../../utils/markupParser';
 import { createLLMProvider } from '../llm/factory';
-import { getAgentModel } from '../agentConfig';
+import { getAgentModel, getModelCapabilities } from '../agentConfig';
 import { getAgentComponentSummary } from '../../config/availableComponents';
 import { ComponentNode } from '../../types';
 
@@ -97,6 +97,7 @@ export async function parseMarkupWithRepair(
     // Call LLM for repair
     const config = getAgentModel('agent');
     const llm = createLLMProvider(config);
+    const capabilities = getModelCapabilities(config.model);
 
     const messages = [
       {
@@ -113,7 +114,8 @@ export async function parseMarkupWithRepair(
       const response = await llm.chat({
         messages,
         max_tokens: 500,
-        temperature: 0.3,
+        // Only set temperature if the model supports it (reasoning models don't)
+        ...(capabilities.supportsCustomTemperature ? { temperature: 0.2 } : {}),
       });
 
       // Extract text from response

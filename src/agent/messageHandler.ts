@@ -2,7 +2,7 @@ import { AgentMessage, ToolContext, ToolResult } from './types';
 import { getTool, getToolsForLLM, convertToolToLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
-import { getAgentModel, AVAILABLE_MODELS } from './agentConfig';
+import { getAgentModel, AVAILABLE_MODELS, getModelCapabilities } from './agentConfig';
 import { getAgentComponentSummary } from '../config/availableComponents';
 
 // Token estimation utility (rough estimate: 4 chars ≈ 1 token)
@@ -48,6 +48,17 @@ function getModelPricing(modelName: string) {
 
 const SYSTEM_PROMPT = `You are a UI builder assistant for WP-Designer.
 
+COMMUNICATION STYLE:
+- Be VERBOSE and explain each step you're taking
+- When calling a tool, briefly explain what you're doing and why
+- Examples:
+  * "Let me check what's on the page..." (before context_getProject)
+  * "I see you have X selected. I'll update it now..." (before component_update)
+  * "Creating a users table with sample data..." (before table_create)
+  * "Building your components..." (before buildFromMarkup)
+- After tools succeed, confirm what was done in a friendly way
+- Make the user feel informed about the process
+
 CRITICAL WORKFLOW:
 1. ALWAYS call context_getProject FIRST to see what's selected and get page context
 2. If user says "change the button" and a Button is SELECTED, use its componentId directly - DO NOT ask which one
@@ -58,17 +69,31 @@ SELECTION PRIORITY:
 - Use the selected component's ID directly in component_update
 - Only search/disambiguate when nothing is selected
 
+CRITICAL - ADDING COMPONENTS:
+- When user says "add X" and something is SELECTED → Create X INSIDE the selected component
+  * Pass the selected componentId as parentId to buildFromMarkup, table_create, section_create, etc.
+  * Example: CardBody is selected + "add a table" → table_create({template: "users", parentId: cardBodyId})
+- When nothing is selected → Create at root level (no parentId)
+
 TOOL USAGE:
 - For bulk creation (3+ components): Use buildFromMarkup or section_create
 - For tables/data display: Use table_create (NEVER manually create DataViews)
 - For single updates: Use component_update with selected componentId
 - For searches: Use context_searchComponents
+- For complex UIs (dashboards, landing pages, multi-section layouts): Use buildFromMarkup with nested components
 - CRITICAL: When a tool returns success=true, the operation is COMPLETE:
   * Do NOT verify with context_getProject or context_searchComponents
   * Do NOT try to duplicate/copy the created component
   * Do NOT create additional components to wrap it
   * STOP and respond to the user immediately
   * The success message is the source of truth
+
+HANDLING COMPLEX REQUESTS:
+- User asks for "dashboard", "landing page", "stats page" → Create it using buildFromMarkup or section_create
+- Break complex UIs into sections: use Grid for columns, VStack for vertical stacking
+- Stats/metrics: Grid with Cards showing numbers and labels
+- Tables: Use table_create with appropriate template
+- NEVER say "I don't know how to respond" - you can ALWAYS create UI!
 
 TABLES & DATA:
 - User says "add a table" or "create a users table" → Use table_create tool ONCE and STOP
@@ -154,12 +179,16 @@ export async function handleUserMessage(
     const actionKeywords = ['add', 'create', 'update', 'delete', 'remove', 'modify', 'change', 'make'];
     const isActionRequest = actionKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
 
+    // Get model capabilities to check if temperature is supported
+    const capabilities = getModelCapabilities(config.model);
+
     // Build chat options - provider will handle model-specific parameter constraints
     const chatOptions: any = {
       messages,
       tools,
       max_tokens: 1000,
-      temperature: 0.7,
+      // Only set temperature if the model supports it (reasoning models don't)
+      ...(capabilities.supportsCustomTemperature ? { temperature: 0.2 } : {}),
       // Force tool use for action requests
       ...(isActionRequest ? { tool_choice: 'required' as const } : {}),
     };
@@ -222,6 +251,9 @@ export async function handleUserMessage(
         tool_calls: response.tool_calls,
       });
 
+      // Track if we executed an action tool successfully
+      let executedActionTool = false;
+
       // Execute each tool call
       for (const toolCall of response.tool_calls) {
         const toolName = toolCall.function.name;
@@ -270,6 +302,13 @@ export async function handleUserMessage(
               phase: 'executing',
               message: result.message,
             });
+          }
+
+          // Check if this was a successful action tool (creation/modification tools)
+          const actionTools = ['buildFromMarkup', 'table_create', 'section_create', 'component_update', 'component_delete', 'createPage', 'duplicateComponent'];
+          if (result.success && actionTools.includes(toolName)) {
+            executedActionTool = true;
+            console.log('[Agent] ✅ Action tool completed successfully - will stop tool execution loop');
           }
 
           // Add tool result to conversation
@@ -323,17 +362,27 @@ export async function handleUserMessage(
       }
 
       // Call LLM again with tool results
-      // Keep tools available so it can make more calls if needed
-      // Estimate input tokens for iteration (messages + tools)
-      const iterationInputTokens = estimateTokens(JSON.stringify(messages)) + toolsTokens;
+      // If we executed an action tool successfully, DON'T offer tools again (forces LLM to respond and stop)
+      // Otherwise, keep tools available for context tools like context_getProject
+      const nextTools = executedActionTool ? undefined : tools;
+
+      // Estimate input tokens for iteration (messages + tools if provided)
+      const iterationInputTokens = estimateTokens(JSON.stringify(messages)) + (nextTools ? toolsTokens : 0);
       totalInputTokens += iterationInputTokens;
+
+      console.log('[Agent] Calling LLM after tool execution:', {
+        executedActionTool,
+        toolsOffered: !!nextTools,
+        messageCount: messages.length,
+      });
 
       // Call LLM - provider will handle model-specific parameter constraints
       response = await llm.chat({
         messages,
-        tools,
+        ...(nextTools ? { tools: nextTools } : {}),
         max_tokens: 1000,
-        temperature: 0.7,
+        // Only set temperature if the model supports it (reasoning models don't)
+        ...(capabilities.supportsCustomTemperature ? { temperature: 0.2 } : {}),
       });
 
       // Estimate output tokens for iteration
@@ -618,7 +667,7 @@ export async function executePhase(
   prompt: string,
   userMessage: string,
   context: ToolContext,
-  claudeApiKey: string,
+  claudeApiKey: string | undefined,
   tools: any[],
   onProgress?: (update: any) => void
 ): Promise<PhaseResult> {
@@ -629,7 +678,7 @@ export async function executePhase(
     const config = getAgentModel('agent');
     const llm = createLLMProvider({
       provider: config.provider,
-      apiKey: claudeApiKey,
+      apiKey: claudeApiKey || '',
       model: config.model,
     });
 

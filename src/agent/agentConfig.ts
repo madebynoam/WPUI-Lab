@@ -133,7 +133,7 @@ export const AVAILABLE_MODELS = {
     bestFor: "Complex reasoning, advanced tasks, highest accuracy",
     pricing: { input: 0.00125, output: 0.01 },
     capabilities: {
-      supportsCustomTemperature: true,
+      supportsCustomTemperature: false, // Reasoning models only support temperature=1
       supportsMaxTokens: true,
       maxTokensParam: "max_completion_tokens" as const,
     },
@@ -145,7 +145,7 @@ export const AVAILABLE_MODELS = {
     bestFor: "Standard tasks, agents, excellent speed-to-cost ratio",
     pricing: { input: 0.00025, output: 0.002 },
     capabilities: {
-      supportsCustomTemperature: true,
+      supportsCustomTemperature: false, // Reasoning models only support temperature=1
       supportsMaxTokens: true,
       maxTokensParam: "max_completion_tokens" as const,
     },
