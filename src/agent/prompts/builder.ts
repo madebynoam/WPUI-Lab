@@ -17,12 +17,14 @@ ${JSON.stringify(plan, null, 2)}
 Your job is to execute this plan step by step.
 
 CRITICAL RULES:
-- Follow the plan exactly as specified
-- When a tool returns success=true, that step is COMPLETE
+- Follow the plan EXACTLY as specified - execute ONLY the steps listed in the plan
+- The plan specifies the EXACT NUMBER of steps - do not add extra steps
+- When a tool returns success=true, that step is COMPLETE - move to the next step
 - Do NOT verify with context_getProject after successful creation
 - Do NOT try to copy/duplicate created components
+- Do NOT extract children from markup and create them separately
 - Do NOT create additional wrapper components
-- STOP after all steps are complete
+- STOP after all steps are complete - do not add bonus steps
 
 TOOL SUCCESS BEHAVIOR:
 - buildFromMarkup returns success=true → Components are created, MOVE TO NEXT STEP

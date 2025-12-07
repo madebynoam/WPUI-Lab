@@ -1,10 +1,19 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useAgentDebug } from '@/src/contexts/AgentDebugContext';
 import { useComponentTree } from '@/src/contexts/ComponentTreeContext';
 import { executePhase, PLANNER_PROMPT, getBUILDER_PROMPT } from '@/src/agent/messageHandler';
 import { getTool, convertToolToLLM, getToolsForLLM } from '@/src/agent/tools/registry';
 
 export const AgentDebugUI: React.FC = () => {
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+
+  const copyToClipboard = useCallback((text: string, itemId: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedItem(itemId);
+      setTimeout(() => setCopiedItem(null), 2000);
+    });
+  }, []);
+
   const {
     isDebugMode,
     phaseResults,
@@ -20,23 +29,65 @@ export const AgentDebugUI: React.FC = () => {
     setBuilderPrompt,
   } = useAgentDebug();
 
-  const { tree, selectedNodeIds, pages, currentPageId, projects, currentProjectId, getNodeById } = useComponentTree();
+  const componentTreeContext = useComponentTree();
 
-  if (!isDebugMode || !phaseResults) {
-    return null;
-  }
+  // Get tools for each phase - MUST be before early return (Rules of Hooks)
+  const plannerTools = useMemo(() => {
+    return [getTool('context_getProject'), getTool('context_searchComponents')]
+      .filter(Boolean)
+      .map(t => convertToolToLLM(t!));
+  }, []);
 
-  const createToolContext = () => {
+  const builderTools = useMemo(() => {
+    return getToolsForLLM();
+  }, []);
+
+  // Create tool context helper - defined before hooks that use it
+  const createToolContext = useCallback(() => {
+    // Return full context matching AgentPanel - need all methods for tool execution
     return {
-      tree,
-      selectedNodeIds,
-      pages,
-      currentPageId,
-      projects,
-      currentProjectId,
-      getNodeById,
+      // Getters for current state
+      get tree() {
+        return componentTreeContext.tree;
+      },
+      get pages() {
+        return componentTreeContext.pages;
+      },
+      get currentPageId() {
+        return componentTreeContext.currentPageId;
+      },
+      get selectedNodeIds() {
+        return componentTreeContext.selectedNodeIds;
+      },
+      get projects() {
+        return componentTreeContext.projects;
+      },
+      get currentProjectId() {
+        return componentTreeContext.currentProjectId;
+      },
+
+      // Methods from useComponentTree
+      getNodeById: componentTreeContext.getNodeById,
+      setTree: componentTreeContext.setTree,
+      updateComponentProps: componentTreeContext.updateComponentProps,
+      updateMultipleComponentProps: componentTreeContext.updateMultipleComponentProps,
+      updateComponentName: componentTreeContext.updateComponentName,
+      addComponent: componentTreeContext.insertComponent,
+      removeComponent: componentTreeContext.removeComponent,
+      copyComponent: componentTreeContext.copyComponent,
+      pasteComponent: componentTreeContext.pasteComponent,
+      duplicateComponent: componentTreeContext.duplicateComponent,
+      addInteraction: componentTreeContext.addInteraction,
+      removeInteraction: componentTreeContext.removeInteraction,
+      updateInteraction: componentTreeContext.updateInteraction,
+      createPage: (name: string, _route: string) => {
+        return componentTreeContext.createPageWithId(name);
+      },
+      setCurrentPage: componentTreeContext.setCurrentPage,
+      updatePageTheme: componentTreeContext.updatePageTheme,
+      toggleNodeSelection: componentTreeContext.toggleNodeSelection,
     };
-  };
+  }, [componentTreeContext]);
 
   const handleRerunPhase = useCallback(async () => {
     if (!currentPhase || currentPhase === 'done') return;
@@ -106,6 +157,11 @@ export const AgentDebugUI: React.FC = () => {
       setPhaseResults(prev => prev ? [...prev, builderResult] : [builderResult]);
     }
   }, [currentPhase, currentUserMessage, planOutput, createToolContext, setPhaseResults, setCurrentPhase, setBuilderPrompt]);
+
+  // Early return AFTER all hooks
+  if (!isDebugMode || !phaseResults) {
+    return null;
+  }
 
   return (
     <div
@@ -193,9 +249,29 @@ export const AgentDebugUI: React.FC = () => {
                   fontWeight: '600',
                   marginBottom: '4px',
                   color: '#666',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
               >
-                Prompt:
+                <span>Prompt:</span>
+                <button
+                  onClick={() => copyToClipboard(
+                    phase.phase === 'planner' ? plannerPrompt : builderPrompt,
+                    `${phase.phase}-prompt-${index}`
+                  )}
+                  style={{
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    backgroundColor: copiedItem === `${phase.phase}-prompt-${index}` ? '#4CAF50' : '#fff',
+                    color: copiedItem === `${phase.phase}-prompt-${index}` ? '#fff' : '#666',
+                    border: '1px solid #ddd',
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {copiedItem === `${phase.phase}-prompt-${index}` ? '✓ Copied' : 'Copy'}
+                </button>
               </div>
               <textarea
                 value={phase.phase === 'planner' ? plannerPrompt : builderPrompt}
@@ -220,7 +296,7 @@ export const AgentDebugUI: React.FC = () => {
               />
             </div>
 
-            <details>
+            <details style={{ marginBottom: '12px' }}>
               <summary
                 style={{
                   fontSize: '11px',
@@ -230,7 +306,82 @@ export const AgentDebugUI: React.FC = () => {
                   marginBottom: '8px',
                 }}
               >
-                Show output
+                Tools ({phase.phase === 'planner' ? plannerTools.length : builderTools.length})
+              </summary>
+              <div
+                style={{
+                  fontSize: '10px',
+                  backgroundColor: '#fff',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  marginTop: '8px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                }}
+              >
+                {(phase.phase === 'planner' ? plannerTools : builderTools).map((tool: any) => (
+                  <div
+                    key={tool.function.name}
+                    style={{
+                      marginBottom: '12px',
+                      paddingBottom: '12px',
+                      borderBottom: '1px solid #eee',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: '600',
+                        marginBottom: '4px',
+                        color: '#333',
+                      }}
+                    >
+                      {tool.function.name}
+                    </div>
+                    <div style={{ color: '#666', lineHeight: '1.4' }}>
+                      {tool.function.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+
+            <details>
+              <summary
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  color: '#666',
+                  marginBottom: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>Show output</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(
+                      typeof phase.output === 'string'
+                        ? phase.output
+                        : JSON.stringify(phase.output, null, 2),
+                      `${phase.phase}-output-${index}`
+                    );
+                  }}
+                  style={{
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    backgroundColor: copiedItem === `${phase.phase}-output-${index}` ? '#4CAF50' : '#fff',
+                    color: copiedItem === `${phase.phase}-output-${index}` ? '#fff' : '#666',
+                    border: '1px solid #ddd',
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {copiedItem === `${phase.phase}-output-${index}` ? '✓ Copied' : 'Copy'}
+                </button>
               </summary>
               <pre
                 style={{
@@ -246,6 +397,8 @@ export const AgentDebugUI: React.FC = () => {
                   marginTop: '8px',
                   whiteSpace: 'pre-wrap',
                   wordWrap: 'break-word',
+                  userSelect: 'text',
+                  WebkitUserSelect: 'text',
                 }}
               >
                 {typeof phase.output === 'string'

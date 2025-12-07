@@ -519,7 +519,7 @@ export const updatePageThemeTool: AgentTool = {
 // Build component tree from JSX markup (token-efficient bulk operations)
 export const buildFromMarkupTool: AgentTool = {
   name: "buildFromMarkup",
-  description: `🎯 PRIMARY TOOL for creating one or multiple components! Use this for ANY bulk operation (3+ items). Use JSX-like markup for natural HTML/JSX-style syntax. Supports automatic repair if markup has errors. Pass markup as the "markup" parameter.
+  description: `🎯 PRIMARY TOOL for creating one or multiple components! Use this for ANY bulk operation. Use JSX-like markup for natural HTML/JSX-style syntax. Supports automatic repair if markup has errors. Pass markup as the "markup" parameter.
 
 Example:
 {
@@ -530,8 +530,10 @@ Example:
     </CardHeader>
     <CardBody>
       <Text>20% off!</Text>
-      <Button variant="primary">Shop Now</Button>
     </CardBody>
+    <CardFooter>
+      <Button variant="primary">Shop Now</Button>
+    </CardFooter>
   </Card>
 </Grid>\`
 }
