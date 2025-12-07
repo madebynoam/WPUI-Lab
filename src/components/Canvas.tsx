@@ -194,11 +194,14 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
       }
 
       // Cmd/Ctrl+C for copy
+      // Check if user is selecting text first - let browser handle it
+      const hasTextSelection = window.getSelection()?.toString().length > 0;
       if (
         (e.ctrlKey || e.metaKey) &&
         e.key === "c" &&
         selectedNodeIds.length > 0 &&
-        !isInEditMode()
+        !isInEditMode() &&
+        !hasTextSelection
       ) {
         e.preventDefault();
         e.stopPropagation();
@@ -207,11 +210,13 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
       }
 
       // Cmd/Ctrl+X for cut
+      // Check if user is selecting text first - let browser handle it
       if (
         (e.ctrlKey || e.metaKey) &&
         e.key === "x" &&
         selectedNodeIds.length > 0 &&
-        !isInEditMode()
+        !isInEditMode() &&
+        !hasTextSelection
       ) {
         console.log('[Canvas] Cmd/Ctrl+X pressed, cutting component:', selectedNodeIds[0]);
         e.preventDefault();

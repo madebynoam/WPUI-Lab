@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { PhaseResult } from '@/src/agent/types';
+import { PhaseResult } from '@/src/agent/messageHandler';
 
 interface AgentDebugContextType {
   isDebugMode: boolean;
   setIsDebugMode: (value: boolean) => void;
   phaseResults: PhaseResult[] | null;
-  setPhaseResults: (results: PhaseResult[] | null) => void;
+  setPhaseResults: React.Dispatch<React.SetStateAction<PhaseResult[] | null>>;
   currentPhase: 'planner' | 'builder' | 'done' | null;
   setCurrentPhase: (phase: 'planner' | 'builder' | 'done' | null) => void;
   currentUserMessage: string;

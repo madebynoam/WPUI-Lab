@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { useComponentTree, ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
 import { usePlayModeState } from '@/src/contexts/PlayModeContext';
 import { ComponentNode } from '../types';
@@ -1316,58 +1316,62 @@ export const RenderNode: React.FC<{
 
       console.log('[DataViews] Rendering with:', { dataSource, viewType, nodeId: node.id, propsDataSource: props.dataSource });
 
-      // Auto-detect custom data or use mock data
-      let mockData, fields;
+      // Memoize mockData and fields to prevent infinite re-renders
+      const { mockData, fields } = useMemo(() => {
+        let data, fieldDefs;
 
-      // SMART MODE: If dataSource is 'custom' and data prop is provided, use custom data
-      // Otherwise, use mock data based on dataSource
-      if (dataSource === 'custom' && props.data && Array.isArray(props.data) && props.data.length > 0) {
-        mockData = props.data;
+        // SMART MODE: If dataSource is 'custom' and data prop is provided, use custom data
+        // Otherwise, use mock data based on dataSource
+        if (dataSource === 'custom' && props.data && Array.isArray(props.data) && props.data.length > 0) {
+          data = props.data;
 
-        // Accept both 'columns' and 'fields' props (LLM might use either)
-        const columnDefs = props.columns || props.fields;
+          // Accept both 'columns' and 'fields' props (LLM might use either)
+          const columnDefs = props.columns || props.fields;
 
-        if (columnDefs && Array.isArray(columnDefs) && columnDefs.length > 0) {
-          // Generate field definitions from column/field definitions
-          fields = columnDefs.map((col: any) => {
-            // Handle both string format and object format
-            const id = typeof col === 'string' ? col : (col.id || col.accessor || col);
-            const label = typeof col === 'string' ? col : (col.label || col.header || id);
+          if (columnDefs && Array.isArray(columnDefs) && columnDefs.length > 0) {
+            // Generate field definitions from column/field definitions
+            fieldDefs = columnDefs.map((col: any) => {
+              // Handle both string format and object format
+              const id = typeof col === 'string' ? col : (col.id || col.accessor || col);
+              const label = typeof col === 'string' ? col : (col.label || col.header || id);
 
-            return {
-              id,
-              label,
+              return {
+                id,
+                label,
+                type: 'text',
+                enableSorting: true,
+                enableHiding: true,
+                getValue: (item: any) => item[id],
+                render: ({ item }: any) => String(item[id] || ''),
+              };
+            });
+          } else {
+            // Auto-detect columns from first data item
+            const firstItem = data[0];
+            fieldDefs = Object.keys(firstItem).map(key => ({
+              id: key,
+              label: key.charAt(0).toUpperCase() + key.slice(1),
               type: 'text',
               enableSorting: true,
               enableHiding: true,
-              getValue: (item: any) => item[id],
-              render: ({ item }: any) => String(item[id] || ''),
-            };
-          });
+              getValue: (item: any) => item[key],
+              render: ({ item }: any) => String(item[key] || ''),
+            }));
+          }
         } else {
-          // Auto-detect columns from first data item
-          const firstItem = mockData[0];
-          fields = Object.keys(firstItem).map(key => ({
-            id: key,
-            label: key.charAt(0).toUpperCase() + key.slice(1),
-            type: 'text',
-            enableSorting: true,
-            enableHiding: true,
-            getValue: (item: any) => item[key],
-            render: ({ item }: any) => String(item[key] || ''),
-          }));
+          // Fall back to mock data based on dataSource
+          data = getMockData(dataSource);
+          fieldDefs = getFieldDefinitions(dataSource);
+          console.log('[DataViews] Using mock data:', {
+            dataSource,
+            mockDataLength: data?.length,
+            firstItem: data?.[0],
+            fieldsLength: fieldDefs?.length
+          });
         }
-      } else {
-        // Fall back to mock data based on dataSource
-        mockData = getMockData(dataSource);
-        fields = getFieldDefinitions(dataSource);
-        console.log('[DataViews] Using mock data:', {
-          dataSource,
-          mockDataLength: mockData?.length,
-          firstItem: mockData?.[0],
-          fieldsLength: fields?.length
-        });
-      }
+
+        return { mockData: data, fields: fieldDefs };
+      }, [dataSource, props.data, props.columns, props.fields]);
 
       // Validate data and fields exist
       if (!mockData || !Array.isArray(mockData) || mockData.length === 0) {
@@ -1423,26 +1427,26 @@ export const RenderNode: React.FC<{
         }
       }
 
-      // Ensure valid sort field and visible fields
-      const sortField = fields && fields.length > 0 ? fields[0].id : 'id';
-      // Exclude 'thumbnail' from visible fields since it's used as mediaField
-      const visibleFieldIds = fields ? fields.map(f => f.id).filter(id => id !== 'thumbnail') : [];
+      // Memoize defaultView to prevent infinite re-renders
+      const defaultView = useMemo(() => {
+        const sortField = fields && fields.length > 0 ? fields[0].id : 'id';
+        const visibleFieldIds = fields ? fields.map(f => f.id).filter(id => id !== 'thumbnail') : [];
 
-      // Default view state based on design-time props
-      const defaultView = {
-        type: viewType,
-        perPage: itemsPerPage,
-        page: 1,
-        filters: [],
-        search: '',
-        fields: visibleFieldIds,
-        sort: {
-          field: sortField,
-          direction: 'asc' as const,
-        },
-        // Specify thumbnail as the media field for grid/list views
-        mediaField: 'thumbnail',
-      };
+        return {
+          type: viewType,
+          perPage: itemsPerPage,
+          page: 1,
+          filters: [],
+          search: '',
+          fields: visibleFieldIds,
+          sort: {
+            field: sortField,
+            direction: 'asc' as const,
+          },
+          // Specify thumbnail as the media field for grid/list views
+          mediaField: 'thumbnail',
+        };
+      }, [fields, viewType, itemsPerPage]);
 
       // In play mode, use runtime view state; in design mode, use default
       const currentView = isPlayMode

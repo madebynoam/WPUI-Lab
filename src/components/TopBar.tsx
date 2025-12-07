@@ -6,8 +6,6 @@ import {
   drawerRight,
   code,
   listView,
-  separator,
-  send,
 } from "@wordpress/icons";
 import { useComponentTree } from "@/src/contexts/ComponentTreeContext";
 import { usePlayModeState } from "@/src/contexts/PlayModeContext";
@@ -191,19 +189,18 @@ export const TopBar: React.FC<TopBarProps> = ({
                 padding: "4px",
               }}
             >
-              <div style={{
-                transform: 'rotate(-130deg) translateY(2px)',
-                color: editingMode === 'selection' ? "#3858e9" : "#757575",
-                fill: editingMode === 'selection' ? "#3858e9" : "#757575",
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Icon
-                  icon={send}
-                  size={20}
-                />
-              </div>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  color: editingMode === 'selection' ? "#3858e9" : "#757575",
+                }}
+              >
+                <path fillRule="evenodd" clipRule="evenodd" d="M3.21457 3.21454C3.42171 3.0055 3.73526 2.94279 4.00702 3.05491L20.5477 9.86578C20.8385 9.9855 21.0209 10.2801 20.9981 10.5936C20.9753 10.9072 20.7529 11.1713 20.447 11.2493L13.2294 13.0527C13.142 13.0755 13.0755 13.142 13.0527 13.2294L11.2493 20.447C11.1713 20.7529 10.9072 20.9753 10.5936 20.9981C10.28 21.0209 9.9855 20.8385 9.86578 20.5477L3.05491 4.00702C2.94278 3.73527 3.00554 3.42168 3.21457 3.21454ZM10.3713 17.9421L11.637 12.8758C11.789 12.2657 12.266 11.7887 12.876 11.6367L17.9423 10.3711L5.07126 5.07074L10.3713 17.9421Z" fill="currentColor"/>
+              </svg>
             </button>
 
             {/* Text mode button */}
@@ -225,19 +222,18 @@ export const TopBar: React.FC<TopBarProps> = ({
                 padding: "4px",
               }}
             >
-              <div style={{
-                transform: 'rotate(90deg)',
-                color: editingMode === 'text' ? "#3858e9" : "#757575",
-                fill: editingMode === 'text' ? "#3858e9" : "#757575",
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Icon
-                  icon={separator}
-                  size={20}
-                />
-              </div>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  color: editingMode === 'text' ? "#3858e9" : "#757575",
+                }}
+              >
+                <path d="M19.5475 3C19.9467 3 20.296 3.27217 20.3935 3.66001L20.9742 5.98255C21.0898 6.44978 20.8063 6.92155 20.3391 7.03721C19.8718 7.15515 19.4001 6.87164 19.2844 6.40444L18.8693 4.74191H12.8702V19.2578H15.4831C15.9639 19.2578 16.354 19.6479 16.354 20.1287C16.354 20.6096 15.9639 20.9997 15.4831 20.9997H8.51545C8.03461 20.9997 7.6445 20.6096 7.6445 20.1287C7.6445 19.6479 8.03461 19.2578 8.51545 19.2578H11.1283V4.74191H5.13151L4.71644 6.40444C4.59851 6.87167 4.12675 7.1552 3.65952 7.03721C3.19228 6.92154 2.90875 6.44979 3.02674 5.98255L3.60737 3.66001C3.70263 3.27216 4.05192 3 4.45109 3H19.5475Z" fill="currentColor"/>
+              </svg>
             </button>
           </div>
         </div>

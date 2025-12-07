@@ -170,6 +170,11 @@ Examples:
       description: 'Array of data objects (only for custom template)',
       required: false,
     },
+    parentId: {
+      type: 'string',
+      description: 'Parent component ID (optional, defaults to root)',
+      required: false,
+    },
     viewType: {
       type: 'string',
       description: 'table (default), grid, or list',
@@ -188,12 +193,13 @@ Examples:
       template: string;
       columns?: Array<{ id: string; label: string }>;
       data?: Array<any>;
+      parentId?: string;
       viewType?: 'table' | 'grid' | 'list';
       itemsPerPage?: number;
     },
     context: ToolContext
   ): Promise<ToolResult> => {
-    const { template, columns, data, viewType = 'table', itemsPerPage = 10 } = params;
+    const { template, columns, data, parentId, viewType = 'table', itemsPerPage = 10 } = params;
 
     // Get template data
     let tableColumns: Array<{ id: string; label: string }>;
@@ -239,11 +245,11 @@ Examples:
     };
 
     // Add to tree
-    context.addComponent(dataViewsNode);
+    context.addComponent(dataViewsNode, parentId);
 
     return {
       success: true,
-      message: `Created ${template} table with ${tableData.length} rows and ${tableColumns.length} columns`,
+      message: `Created ${template} table with ${tableData.length} rows and ${tableColumns.length} columns${parentId ? ' inside selected component' : ''}`,
       data: {
         template,
         rows: tableData.length,

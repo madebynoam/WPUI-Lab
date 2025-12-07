@@ -117,6 +117,11 @@ PARAMETER EXAMPLES:
       description: 'Content for the section. Structure depends on template - see examples in description.',
       required: true,
     },
+    parentId: {
+      type: 'string',
+      description: 'Parent component ID (optional, defaults to root)',
+      required: false,
+    },
     placement: {
       type: 'string',
       description: 'Where to place the section: "top", "bottom", or "after:component-id". Default: "bottom"',
@@ -128,6 +133,7 @@ PARAMETER EXAMPLES:
     params: {
       template: SectionTemplate;
       content: any;
+      parentId?: string;
       placement?: string;
     },
     context: ToolContext
@@ -187,13 +193,14 @@ PARAMETER EXAMPLES:
         };
       }
 
-      // Add to tree based on placement
-      const parentId = params.placement?.startsWith('after:')
-        ? params.placement.replace('after:', '')
-        : undefined;
+      // Add to tree based on parentId or placement
+      const targetParentId = params.parentId ||
+        (params.placement?.startsWith('after:')
+          ? params.placement.replace('after:', '')
+          : undefined);
 
       for (const node of result.nodes) {
-        context.addComponent(node, parentId);
+        context.addComponent(node, targetParentId);
       }
 
       return {

@@ -16,6 +16,7 @@ export const AgentDebugUI: React.FC = () => {
 
   const {
     isDebugMode,
+    setIsDebugMode,
     phaseResults,
     setPhaseResults,
     currentPhase,
@@ -189,9 +190,30 @@ export const AgentDebugUI: React.FC = () => {
           backgroundColor: '#f5f5f5',
           borderTopLeftRadius: '8px',
           borderTopRightRadius: '8px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        Agent Debug Mode
+        <span>Agent Debug Mode</span>
+        <button
+          onClick={() => setIsDebugMode(false)}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#666',
+          }}
+          title="Close debug mode"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </div>
 
       <div

@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useComponentTree } from '@/src/contexts/ComponentTreeContext';
 import { PlayModeProvider } from '@/src/contexts/PlayModeContext';
+import { AgentDebugProvider } from '@/src/contexts/AgentDebugContext';
 import { Canvas } from '@/src/components/Canvas';
 
 export default function PlayModeContent({ projectId, pageId }: { projectId: string; pageId: string }) {
@@ -35,9 +36,11 @@ export default function PlayModeContent({ projectId, pageId }: { projectId: stri
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Full-screen Canvas in Play Mode */}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        <PlayModeProvider>
-          <Canvas showBreadcrumb={false} />
-        </PlayModeProvider>
+        <AgentDebugProvider>
+          <PlayModeProvider>
+            <Canvas showBreadcrumb={false} />
+          </PlayModeProvider>
+        </AgentDebugProvider>
       </div>
     </div>
   );

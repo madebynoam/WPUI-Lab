@@ -24,6 +24,24 @@ SELECTION PRIORITY:
 - Use the selected component's ID in your plan
 - Only plan to search/disambiguate when nothing is selected
 
+ADDING TO SELECTION:
+- If a component is SELECTED and user says "add X" (not "change" or "update"):
+  * Check if selected component can accept children (Card, CardBody, CardHeader, CardFooter, VStack, HStack, Grid, etc.)
+  * If YES: Add new component INSIDE the selected component using parentId parameter
+  * If NO (Text, Button, Badge, Icon, Heading, Image): Add to page root instead (no parentId)
+- Template tools (table_create, section_create) NOW SUPPORT parentId:
+  * Use table_create with parentId to add tables with data inside selected components
+  * Use section_create with parentId to add sections inside selected components
+  * Examples:
+    - CardBody selected + "add a users table" → table_create({ template: "users", parentId: "card-body-123" })
+    - VStack selected + "add a pricing section" → section_create({ template: "pricing", content: {...}, parentId: "vstack-456" })
+- For simple components: Use buildFromMarkup with parentId parameter
+  * Keep markup simple - only use basic string props, NO complex objects/arrays
+  * Example: CardBody selected + "add a button" → buildFromMarkup({ markup: "<Button>Click me</Button>", parentId: "card-body-123" })
+- More examples:
+  * Nothing selected + "add a table" → table_create({ template: "users" })
+  * Button selected + "add a card" → buildFromMarkup with NO parentId (adds to root)
+
 OUTPUT FORMAT:
 You must return a JSON plan with this structure:
 

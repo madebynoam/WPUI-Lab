@@ -3,8 +3,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { AgentUI } from "@automattic/agenttic-ui";
 import "@automattic/agenttic-ui/index.css";
-import { Button } from "@wordpress/components";
-import { close } from "@wordpress/icons";
+import { Button, Dropdown, MenuGroup, MenuItem } from "@wordpress/components";
+import { close, moreVertical } from "@wordpress/icons";
 import { useComponentTree } from "@/src/contexts/ComponentTreeContext";
 import { useAgentDebug } from "@/src/contexts/AgentDebugContext";
 import {
@@ -51,6 +51,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   // Use debug context
   const {
     isDebugMode,
+    setIsDebugMode,
     phaseResults,
     setPhaseResults,
     currentPhase,
@@ -388,6 +389,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           flexDirection: "column",
           overflow: "hidden",
           height: "100%",
+          userSelect: "text",
         }}
       >
         <div style={{
@@ -395,7 +397,42 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           display: "flex",
           justifyContent: "flex-end",
           alignItems: "center",
+          gap: "4px",
         }}>
+          <Dropdown
+            popoverProps={{ placement: "bottom-end" }}
+            renderToggle={({ isOpen, onToggle }) => (
+              <Button
+                icon={moreVertical}
+                onClick={onToggle}
+                aria-expanded={isOpen}
+                title="Agent options"
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#999",
+                  border: "none",
+                  outline: "none",
+                  boxShadow: "none",
+                  borderRadius: "2px",
+                  cursor: "pointer",
+                  minWidth: "auto",
+                  padding: "4px",
+                }}
+              />
+            )}
+            renderContent={() => (
+              <MenuGroup>
+                <MenuItem
+                  onClick={() => setIsDebugMode(!isDebugMode)}
+                  style={{
+                    fontSize: "13px",
+                  }}
+                >
+                  {isDebugMode ? "Disable" : "Enable"} Debug Mode
+                </MenuItem>
+              </MenuGroup>
+            )}
+          />
           <Button
             icon={close}
             onClick={onClose}
