@@ -7,6 +7,18 @@ import styles from './TreeItem.module.css';
 import { ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
 import { Page } from '../../types';
 
+// Helper to get designer-friendly labels for layout containers
+function getDisplayLabel(type: string): string {
+  switch (type) {
+    case 'VStack':
+      return 'Container (Vertical)';
+    case 'HStack':
+      return 'Container (Horizontal)';
+    default:
+      return type;
+  }
+}
+
 export interface TreeItemProps extends Omit<HTMLAttributes<HTMLLIElement>, 'id'> {
   childCount?: number;
   clone?: boolean;
@@ -182,7 +194,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
             />
           ) : clone ? (
             <div className={styles.Clone}>
-              {itemName ? `${itemName} (${itemType})` : itemType}
+              {itemName ? `${itemName} (${getDisplayLabel(itemType)})` : getDisplayLabel(itemType)}
             </div>
           ) : (
             <span className={styles.Text} onClick={handleNameClick}>
@@ -192,9 +204,9 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                   {currentPage?.name || 'Untitled'}
                 </>
               ) : itemName ? (
-                `${itemName} (${itemType})`
+                `${itemName} (${getDisplayLabel(itemType)})`
               ) : (
-                itemType
+                getDisplayLabel(itemType)
               )}
             </span>
           )}

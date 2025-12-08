@@ -40,6 +40,8 @@ interface ComponentTreeContextType {
   duplicateComponent: (id: string) => void;
   moveComponent: (id: string, direction: 'up' | 'down') => void;
   reorderComponent: (activeId: string, overId: string, position?: 'before' | 'after' | 'inside') => void;
+  groupComponents: (ids: string[]) => void;
+  swapLayoutType: (id: string, newType: 'VStack' | 'HStack') => void;
   resetTree: () => void;
   getNodeById: (id: string) => ComponentNode | null;
   getParentById: (id: string) => ComponentNode | null;
@@ -346,6 +348,14 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'REORDER_COMPONENT', payload: { activeId, overId, position } });
   };
 
+  const groupComponents = (ids: string[]) => {
+    dispatch({ type: 'GROUP_COMPONENTS', payload: { ids } });
+  };
+
+  const swapLayoutType = (id: string, newType: 'VStack' | 'HStack') => {
+    dispatch({ type: 'SWAP_LAYOUT_TYPE', payload: { id, newType } });
+  };
+
   const resetTree = () => {
     const defaultProject = createInitialProject('project-1', 'My First Project');
     // Only access localStorage on client
@@ -550,6 +560,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     duplicateComponent,
     moveComponent,
     reorderComponent,
+    groupComponents,
+    swapLayoutType,
     resetTree,
     getNodeById,
     getParentById,

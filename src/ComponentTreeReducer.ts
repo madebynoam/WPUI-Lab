@@ -53,6 +53,8 @@ const HISTORY_ACTIONS = new Set([
   'MOVE_COMPONENT',
   'REORDER_COMPONENT',
   'SET_TREE',
+  'GROUP_COMPONENTS',
+  'SWAP_LAYOUT_TYPE',
   'ADD_PAGE',
   'DELETE_PAGE',
   'RENAME_PAGE',
@@ -322,6 +324,158 @@ export function componentTreeReducer(
 
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, tree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    case 'GROUP_COMPONENTS': {
+      const { ids } = action.payload;
+      if (ids.length < 2) return state; // Need at least 2 items to group
+
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
+
+      // Helper to find a node by ID anywhere in the tree
+      const findNodeInTree = (nodes: ComponentNode[], targetId: string): ComponentNode | null => {
+        for (const node of nodes) {
+          if (node.id === targetId) return node;
+          if (node.children) {
+            const found = findNodeInTree(node.children, targetId);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      // Find parent ID for a node
+      const findParentId = (nodes: ComponentNode[], targetId: string, parentId?: string): string | null => {
+        for (const node of nodes) {
+          if (node.id === targetId) {
+            return parentId || null;
+          }
+          if (node.children) {
+            const found = findParentId(node.children, targetId, node.id);
+            if (found !== null) return found;
+          }
+        }
+        return null;
+      };
+
+      // Get parent IDs for all selected nodes
+      const parentIds = ids.map(id => findParentId(currentTree, id));
+
+      // Check all nodes have same parent
+      const firstParentId = parentIds[0];
+      if (!parentIds.every(parentId => parentId === firstParentId)) {
+        console.warn('[Reducer] GROUP_COMPONENTS: Cannot group nodes with different parents');
+        return state;
+      }
+
+      // Get the parent node
+      const parent = firstParentId ? findNodeInTree(currentTree, firstParentId) : currentTree.find(n => n.id === ROOT_VSTACK_ID);
+      if (!parent || !parent.children) return state;
+
+      // Find indices of selected children in parent
+      const selectedIndices = ids
+        .map(id => parent.children!.findIndex(child => child.id === id))
+        .filter(idx => idx !== -1)
+        .sort((a, b) => a - b);
+
+      if (selectedIndices.length === 0) return state;
+
+      // Determine spacing - try to match closest system value (2 or 4)
+      const parentSpacing = parent.props?.spacing;
+      const containerSpacing = parentSpacing && [2, 4].includes(parentSpacing) ? parentSpacing : 2;
+
+      // Create container (VStack by default) with cloned children
+      const containerNode: ComponentNode = {
+        id: generateId(),
+        type: 'VStack',
+        props: {
+          spacing: containerSpacing,
+          alignment: 'stretch',
+        },
+        children: selectedIndices.map(idx => JSON.parse(JSON.stringify(parent.children![idx]))),
+      };
+
+      // Remove selected nodes from parent and insert container at first selected position
+      let newTree = currentTree;
+      const firstIndex = selectedIndices[0];
+
+      // Remove nodes in reverse order to maintain indices
+      for (let i = selectedIndices.length - 1; i >= 0; i--) {
+        newTree = removeNodeFromTree(newTree, ids[i]);
+      }
+
+      // Insert container at the position of the first selected item
+      newTree = insertNodeInTree(newTree, containerNode, firstParentId || undefined, firstIndex);
+
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return {
+        ...updateHistory(state, newProjects, state.currentProjectId),
+        selectedNodeIds: [containerNode.id],
+      };
+    }
+
+    case 'SWAP_LAYOUT_TYPE': {
+      const { id, newType } = action.payload;
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
+
+      // Find the node
+      const findNode = (nodes: ComponentNode[], targetId: string): ComponentNode | null => {
+        for (const node of nodes) {
+          if (node.id === targetId) return node;
+          if (node.children) {
+            const found = findNode(node.children, targetId);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const node = findNode(currentTree, id);
+      if (!node) return state;
+
+      // Only allow swapping between VStack and HStack
+      if (!['VStack', 'HStack'].includes(node.type)) {
+        console.warn('[Reducer] SWAP_LAYOUT_TYPE: Can only swap VStack <-> HStack');
+        return state;
+      }
+
+      if (node.type === newType) return state; // Already the target type
+
+      // Map of compatible props between VStack and HStack
+      const transferProps: Record<string, any> = {};
+
+      // Common props that transfer between both
+      if (node.props.spacing !== undefined) transferProps.spacing = node.props.spacing;
+
+      // VStack -> HStack or HStack -> VStack
+      if (newType === 'HStack') {
+        // VStack alignment -> HStack alignment
+        if (node.props.alignment) transferProps.alignment = node.props.alignment;
+        if (node.props.justify) transferProps.justify = node.props.justify;
+      } else if (newType === 'VStack') {
+        // HStack alignment -> VStack alignment
+        if (node.props.alignment) transferProps.alignment = node.props.alignment;
+        if (node.props.justify) transferProps.justify = node.props.justify;
+      }
+
+      // Update node type and props
+      const newTree = updateNodeInTree(currentTree, id, (node) => ({
+        ...node,
+        type: newType,
+        props: {
+          ...componentRegistry[newType]?.defaultProps,
+          ...transferProps,
+        },
+      }));
+
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       return updateHistory(state, newProjects, state.currentProjectId);

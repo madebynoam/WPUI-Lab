@@ -12,6 +12,8 @@ export type ComponentTreeAction =
   | { type: 'MOVE_COMPONENT'; payload: { id: string; direction: 'up' | 'down' } }
   | { type: 'REORDER_COMPONENT'; payload: { activeId: string; overId: string; position?: 'before' | 'after' | 'inside' } }
   | { type: 'SET_TREE'; payload: { tree: ComponentNode[] } }
+  | { type: 'GROUP_COMPONENTS'; payload: { ids: string[] } }
+  | { type: 'SWAP_LAYOUT_TYPE'; payload: { id: string; newType: 'VStack' | 'HStack' } }
 
   // Selection actions
   | { type: 'SET_SELECTED_NODE_IDS'; payload: { ids: string[] } }

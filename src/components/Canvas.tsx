@@ -38,6 +38,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     canPaste,
     duplicateComponent,
     reorderComponent,
+    groupComponents,
     isPlayMode,
     pages,
     currentPageId,
@@ -280,11 +281,31 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
         }
       }
 
-      // Control+G to toggle grid lines for selected Grid component
+      // Cmd+G to group components (Mac: Cmd, Windows: Win key via metaKey)
       if (
-        (e.ctrlKey || e.metaKey) &&
+        e.metaKey &&
+        !e.ctrlKey &&
         e.key === "g" &&
-        selectedNodeIds.length > 0
+        selectedNodeIds.length >= 2 &&
+        !isInEditMode()
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Don't group if root is selected
+        const hasRoot = selectedNodeIds.includes(ROOT_VSTACK_ID);
+        if (!hasRoot) {
+          groupComponents(selectedNodeIds);
+        }
+      }
+
+      // Ctrl+G to toggle grid lines for selected Grid component
+      if (
+        e.ctrlKey &&
+        !e.metaKey &&
+        e.key === "g" &&
+        selectedNodeIds.length > 0 &&
+        !isInEditMode()
       ) {
         const selectedNode = getNodeById(selectedNodeIds[0]);
         if (selectedNode && selectedNode.type === "Grid") {
@@ -397,6 +418,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     canPaste,
     duplicateComponent,
     reorderComponent,
+    groupComponents,
     isInEditMode,
     isPlayMode,
     setEditingMode,

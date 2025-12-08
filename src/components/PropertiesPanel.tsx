@@ -35,6 +35,8 @@ import {
   justifyTop,
   stretchFullWidth,
   positionCenter,
+  arrowDown,
+  menu,
 } from "@wordpress/icons";
 import { IconPicker } from "./IconPicker";
 import { ColorVariantPicker } from "./ColorVariantPicker";
@@ -127,6 +129,7 @@ export const PropertiesPanel: React.FC = () => {
     tree,
     gridLinesVisible,
     toggleGridLines,
+    swapLayoutType,
     pages,
     currentPageId,
     updatePageTheme,
@@ -451,6 +454,83 @@ export const PropertiesPanel: React.FC = () => {
                 {isMultiSelect
                   ? `Width: content (1344px) or full (100%). Applying to all ${selectedNodes.length} items.`
                   : "Width: content (1344px) or full (100%)"}
+              </p>
+            </div>
+          </PanelBody>
+        )}
+
+        {/* Layout Type Switcher (for VStack/HStack only) */}
+        {!isMultiSelect && (firstNode.type === 'VStack' || firstNode.type === 'HStack') && (
+          <PanelBody
+            title="Layout"
+            initialOpen={openPanels["layout"] !== false}
+            onToggle={() =>
+              setOpenPanels({
+                ...openPanels,
+                layout: !openPanels["layout"],
+              })
+            }
+          >
+            <div style={{ marginBottom: "16px" }}>
+              <div
+                style={{
+                  marginBottom: "8px",
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: "#1e1e1e",
+                }}
+              >
+                Container Type
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <Button
+                  icon={arrowDown}
+                  onClick={() => {
+                    if (firstNode.type !== 'VStack') {
+                      swapLayoutType(firstNode.id, 'VStack');
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    height: "36px",
+                    justifyContent: "center",
+                    backgroundColor:
+                      firstNode.type === 'VStack' ? "#1e1e1e" : "transparent",
+                    color: firstNode.type === 'VStack' ? "#fff" : "#1e1e1e",
+                    border: "1px solid #ddd",
+                  }}
+                  label="Vertical Stack"
+                />
+                <Button
+                  icon={menu}
+                  onClick={() => {
+                    if (firstNode.type !== 'HStack') {
+                      swapLayoutType(firstNode.id, 'HStack');
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    height: "36px",
+                    justifyContent: "center",
+                    backgroundColor:
+                      firstNode.type === 'HStack' ? "#1e1e1e" : "transparent",
+                    color: firstNode.type === 'HStack' ? "#fff" : "#1e1e1e",
+                    border: "1px solid #ddd",
+                  }}
+                  label="Horizontal Stack"
+                />
+              </div>
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  fontSize: "12px",
+                  fontStyle: "normal",
+                  color: "#757575",
+                }}
+              >
+                {firstNode.type === 'VStack'
+                  ? 'Container (Vertical) - stacks children vertically'
+                  : 'Container (Horizontal) - stacks children horizontally'}
               </p>
             </div>
           </PanelBody>
