@@ -7,9 +7,15 @@ import { testimonialPatterns } from './testimonials';
 import { tablePatterns } from './tables';
 import { navigationPatterns } from './navigation';
 import { actionPatterns } from './actions';
+import { dashboardPatterns } from './dashboard';
+import { activityPatterns } from './activity';
+import { authPatterns } from './auth';
 
 // Combine all patterns
 export const patterns: Pattern[] = [
+  ...dashboardPatterns,
+  ...activityPatterns,
+  ...authPatterns,
   ...featurePatterns,
   ...pricingPatterns,
   ...formPatterns,
@@ -21,6 +27,9 @@ export const patterns: Pattern[] = [
 
 // Export pattern categories
 export const patternCategories = [
+  'Dashboard',
+  'Activity',
+  'Auth',
   'Features',
   'Pricing',
   'Forms',
