@@ -8,9 +8,9 @@ import { Pattern } from './types';
 
 export const pricingPatterns: Pattern[] = [
   {
-    id: 'pricing-3col',
-    name: 'Pricing Table - 4 Plans',
-    description: 'Four-column pricing table with features and badges',
+    id: 'pricing-cards',
+    name: 'Pricing Cards',
+    description: 'Four-column pricing cards with features and badges',
     category: 'Pricing',
     tree: {
       type: 'Grid',

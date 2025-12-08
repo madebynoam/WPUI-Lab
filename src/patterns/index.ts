@@ -1,41 +1,32 @@
 // Modular pattern system - import patterns from individual modules
 import { Pattern, assignIds } from './types';
-import { dashboardPatterns } from './dashboards';
-import { tablePatterns } from './tables';
-import { formPatterns } from './forms';
-import { crudPatterns } from './crud';
-import { navigationPatterns } from './navigation';
-import { modalPatterns } from './modals';
+import { featurePatterns } from './features';
 import { pricingPatterns } from './pricing';
+import { formPatterns } from './forms';
 import { testimonialPatterns } from './testimonials';
-import { statsPatterns } from './stats';
+import { tablePatterns } from './tables';
+import { navigationPatterns } from './navigation';
 import { actionPatterns } from './actions';
 
 // Combine all patterns
 export const patterns: Pattern[] = [
-  ...dashboardPatterns,
-  ...tablePatterns,
-  ...formPatterns,
-  ...crudPatterns,
-  ...navigationPatterns,
-  ...modalPatterns,
+  ...featurePatterns,
   ...pricingPatterns,
+  ...formPatterns,
   ...testimonialPatterns,
-  ...statsPatterns,
+  ...tablePatterns,
+  ...navigationPatterns,
   ...actionPatterns,
 ];
 
 // Export pattern categories
 export const patternCategories = [
-  'Dashboards',
-  'Tables',
-  'Forms',
-  'CRUD',
-  'Navigation',
-  'Modals',
+  'Features',
   'Pricing',
+  'Forms',
   'Testimonials',
-  'Stats',
+  'Tables',
+  'Navigation',
   'Actions',
 ];
 
