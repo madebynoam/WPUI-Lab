@@ -36,7 +36,7 @@ export const pricingPatterns: Pattern[] = [
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, children: 'Free' },
+                      props: { level: 3, children: 'Free' },
                       children: [],
                     },
                     {
@@ -129,7 +129,7 @@ export const pricingPatterns: Pattern[] = [
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, children: 'Premium' },
+                      props: { level: 3, children: 'Premium' },
                       children: [],
                     },
                     {
@@ -233,7 +233,7 @@ export const pricingPatterns: Pattern[] = [
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, children: 'Business' },
+                      props: { level: 3, children: 'Business' },
                       children: [],
                     },
                     {
@@ -326,7 +326,7 @@ export const pricingPatterns: Pattern[] = [
                     },
                     {
                       type: 'Heading',
-                      props: { level: 2, children: 'Commerce' },
+                      props: { level: 3, children: 'Commerce' },
                       children: [],
                     },
                     {

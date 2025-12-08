@@ -16,7 +16,7 @@ export const formPatterns: Pattern[] = [
           children: [
             {
               type: 'Heading',
-              props: { level: 2, children: 'Get in Touch' },
+              props: { level: 3, children: 'Get in Touch' },
               children: [],
             },
           ],
