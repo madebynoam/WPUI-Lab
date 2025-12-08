@@ -11,7 +11,20 @@ import {
   __experimentalNumberControl as NumberControl,
   Tooltip,
 } from '@wordpress/components';
-import { info } from '@wordpress/icons';
+import {
+  info,
+  justifyLeft,
+  justifyCenter,
+  justifyRight,
+  justifySpaceBetween,
+  justifyStretch,
+  justifyTop,
+  arrowDown,
+  arrowRight,
+  justifyCenterVertical,
+  justifyBottom,
+  justifyStretchVertical,
+} from '@wordpress/icons';
 import {
   ResizingBehavior,
   PrimaryAlign,
@@ -116,7 +129,7 @@ interface AlignmentControlProps {
   options: Array<{
     value: PrimaryAlign | CrossAlign;
     label: string;
-    icon: string; // Unicode or emoji
+    icon: any; // WordPress icon object
   }>;
   direction: 'horizontal' | 'vertical';
 }
@@ -150,6 +163,7 @@ export const AlignmentControl: React.FC<AlignmentControlProps> = ({
         {options.map((option) => (
           <Tooltip key={option.value} text={option.label} placement="top">
             <Button
+              icon={option.icon}
               onClick={() => onChange(option.value)}
               style={{
                 flex: 1,
@@ -158,15 +172,12 @@ export const AlignmentControl: React.FC<AlignmentControlProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '16px',
                 backgroundColor:
                   value === option.value ? '#1e1e1e' : 'transparent',
                 color: value === option.value ? '#fff' : '#1e1e1e',
                 border: '1px solid #ddd',
               }}
-            >
-              {option.icon}
-            </Button>
+            />
           </Tooltip>
         ))}
       </div>
@@ -207,7 +218,6 @@ export const SpacingControl: React.FC<SpacingControlProps> = ({
         style={{
           display: 'flex',
           gap: '4px',
-          marginBottom: '8px',
           flexWrap: 'wrap',
         }}
       >
@@ -218,44 +228,85 @@ export const SpacingControl: React.FC<SpacingControlProps> = ({
             onClick={() => onChange(preset)}
             style={{
               height: '24px',
-              minWidth: '32px',
+              flex: '1 1 auto',
+              minWidth: '0',
               fontSize: '11px',
               backgroundColor: value === preset ? '#1e1e1e' : 'transparent',
               color: value === preset ? '#fff' : '#1e1e1e',
               border: '1px solid #ddd',
+              justifyContent: 'center',
             }}
           >
             {preset}
           </Button>
         ))}
       </div>
+    </div>
+  );
+};
 
-      {/* Number input for custom value */}
-      <div style={{ marginBottom: '8px' }}>
-        <NumberControl
-          label="Gap (px)"
-          value={value}
-          onChange={(newValue: string | undefined) => {
-            const parsed = parseInt(newValue || '0', 10);
-            if (!isNaN(parsed)) {
-              onChange(parsed);
-            }
-          }}
-          min={0}
-          max={200}
-          style={{ width: '100%' }}
-        />
-      </div>
+// ============================================================================
+// Padding Control (Preset Buttons)
+// ============================================================================
 
-      <p
+interface PaddingControlProps {
+  value: string; // CSS padding value like "16px" or "1rem 2rem"
+  onChange: (value: string) => void;
+  presets?: Array<{ label: string; value: string }>;
+}
+
+export const PaddingControl: React.FC<PaddingControlProps> = ({
+  value,
+  onChange,
+  presets = [
+    { label: 'None', value: '' },
+    { label: 'S', value: '8px' },
+    { label: 'M', value: '16px' },
+    { label: 'L', value: '24px' },
+    { label: 'XL', value: '32px' },
+  ],
+}) => {
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <div
         style={{
-          margin: '0',
+          marginBottom: '6px',
           fontSize: '11px',
-          color: '#757575',
+          fontWeight: 500,
+          color: '#1e1e1e',
         }}
       >
-        Use "Space Between" alignment for auto spacing
-      </p>
+        Padding
+      </div>
+
+      {/* Preset buttons */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '4px',
+          flexWrap: 'wrap',
+        }}
+      >
+        {presets.map((preset) => (
+          <Button
+            key={preset.value}
+            size="small"
+            onClick={() => onChange(preset.value)}
+            style={{
+              height: '24px',
+              flex: '1 1 auto',
+              minWidth: '0',
+              fontSize: '11px',
+              backgroundColor: value === preset.value ? '#1e1e1e' : 'transparent',
+              color: value === preset.value ? '#fff' : '#1e1e1e',
+              border: '1px solid #ddd',
+              justifyContent: 'center',
+            }}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 };
@@ -268,38 +319,38 @@ export const SpacingControl: React.FC<SpacingControlProps> = ({
  * Primary axis alignment options for VStack (vertical)
  */
 export const VSTACK_PRIMARY_OPTIONS = [
-  { value: 'start' as PrimaryAlign, label: 'Top', icon: '↑' },
-  { value: 'center' as PrimaryAlign, label: 'Center', icon: '↕' },
-  { value: 'end' as PrimaryAlign, label: 'Bottom', icon: '↓' },
-  { value: 'space-between' as PrimaryAlign, label: 'Space Between', icon: '⇅' },
+  { value: 'start' as PrimaryAlign, label: 'Top', icon: justifyTop },
+  { value: 'center' as PrimaryAlign, label: 'Center', icon: justifyCenter },
+  { value: 'end' as PrimaryAlign, label: 'Bottom', icon: arrowDown },
+  { value: 'space-between' as PrimaryAlign, label: 'Space Between', icon: justifySpaceBetween },
 ];
 
 /**
  * Cross axis alignment options for VStack (horizontal)
  */
 export const VSTACK_CROSS_OPTIONS = [
-  { value: 'start' as CrossAlign, label: 'Left', icon: '←' },
-  { value: 'center' as CrossAlign, label: 'Center', icon: '↔' },
-  { value: 'end' as CrossAlign, label: 'Right', icon: '→' },
-  { value: 'stretch' as CrossAlign, label: 'Stretch', icon: '⟷' },
+  { value: 'start' as CrossAlign, label: 'Left', icon: justifyLeft },
+  { value: 'center' as CrossAlign, label: 'Center', icon: justifyCenter },
+  { value: 'end' as CrossAlign, label: 'Right', icon: justifyRight },
+  { value: 'stretch' as CrossAlign, label: 'Stretch', icon: justifyStretch },
 ];
 
 /**
  * Primary axis alignment options for HStack (horizontal)
  */
 export const HSTACK_PRIMARY_OPTIONS = [
-  { value: 'start' as PrimaryAlign, label: 'Left', icon: '←' },
-  { value: 'center' as PrimaryAlign, label: 'Center', icon: '↔' },
-  { value: 'end' as PrimaryAlign, label: 'Right', icon: '→' },
-  { value: 'space-between' as PrimaryAlign, label: 'Space Between', icon: '⟷' },
+  { value: 'start' as PrimaryAlign, label: 'Left', icon: justifyLeft },
+  { value: 'center' as PrimaryAlign, label: 'Center', icon: justifyCenter },
+  { value: 'end' as PrimaryAlign, label: 'Right', icon: justifyRight },
+  { value: 'space-between' as PrimaryAlign, label: 'Space Between', icon: justifySpaceBetween },
 ];
 
 /**
  * Cross axis alignment options for HStack (vertical)
  */
 export const HSTACK_CROSS_OPTIONS = [
-  { value: 'start' as CrossAlign, label: 'Top', icon: '↑' },
-  { value: 'center' as CrossAlign, label: 'Center', icon: '↕' },
-  { value: 'end' as CrossAlign, label: 'Bottom', icon: '↓' },
-  { value: 'stretch' as CrossAlign, label: 'Stretch', icon: '⇅' },
+  { value: 'start' as CrossAlign, label: 'Top', icon: justifyTop },
+  { value: 'center' as CrossAlign, label: 'Center', icon: justifyCenterVertical },
+  { value: 'end' as CrossAlign, label: 'Bottom', icon: justifyBottom },
+  { value: 'stretch' as CrossAlign, label: 'Stretch', icon: justifyStretchVertical },
 ];

@@ -1697,12 +1697,18 @@ export const RenderNode: React.FC<{
 
     // Pass editor props directly to form controls
     const editorProps = getEditorProps({ padding: '4px' });
+
+    // Check if parent VStack has stretch alignment - if so, make form control fill width
+    const parent = findParent(tree, node.id);
+    const shouldStretch = parent?.type === 'VStack' && parent.props?.alignment === 'stretch';
+
     const finalProps = {
       ...mergedProps,
       ...editorProps,
       style: {
         ...editorProps.style,
         ...mergedProps.style,
+        ...(shouldStretch && !mergedProps.style?.width ? { width: '100%' } : {}),
       },
     };
 
@@ -1710,6 +1716,10 @@ export const RenderNode: React.FC<{
   }
 
   // Regular components with children - merge with defaultProps
+  // For VStack/HStack, preserve explicit inline width/height styles (they override hug/fill)
+  const hasExplicitWidth = (node.type === 'VStack' || node.type === 'HStack') && props.style?.width;
+  const hasExplicitHeight = (node.type === 'VStack' || node.type === 'HStack') && props.style?.height;
+
   const mergedProps = {
     ...definition.defaultProps,
     ...props,
@@ -1726,7 +1736,7 @@ export const RenderNode: React.FC<{
   };
 
   // Layout containers that support width control
-  const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
+  const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'CardBody', 'CardHeader', 'CardFooter', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
 
   // IMPORTANT: Exclude root VStack from width constraints - it should always be 100% width
   if (layoutContainers.includes(node.type) && node.id !== ROOT_VSTACK_ID) {
@@ -1742,15 +1752,47 @@ export const RenderNode: React.FC<{
     if (node.type === 'VStack' || node.type === 'HStack') {
       const gapValue = `${spacing * 4}px`;
       mergedProps.style = { ...mergedProps.style, gap: gapValue };
+
+      // Handle expanded (Fill) behavior - add explicit height/width styles (unless explicitly set)
+      if (props.expanded) {
+        if (node.type === 'VStack' && !hasExplicitHeight) {
+          // VStack expanded fills height
+          mergedProps.style = { ...mergedProps.style, height: '100%' };
+        }
+        // HStack expanded fills width - width: '100%' is set below
+      }
     }
 
-    // Apply maxWidth - always set width to 100% to ensure stretching
+    // Apply maxWidth and width behavior (only if not explicitly set in inline styles)
     // content=1344px (centered by root VStack), full=100% (full viewport width)
-    mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[width] };
+    // VStack ALWAYS hugs width (expanded only controls height)
+    // HStack hugs width unless expanded=true (treats undefined as hug)
+    // EXCEPTION 1: Grid children with gridColumnSpan/gridRowSpan need width: 100% to fill their cells
+    // EXCEPTION 2: VStack with alignment="stretch" should fill width so children can stretch
+    // EXCEPTION 3: Explicit inline styles override computed behavior
+    // NOTE: gridColumnSpan/gridRowSpan were extracted at top of function and deleted from props
+    const isGridChild = gridColumnSpan || gridRowSpan;
+    const vstackNeedsStretch = node.type === 'VStack' && props.alignment === 'stretch';
 
-    // Apply alignSelf (for horizontal positioning) - only for content width
-    // Full width should stretch without margins
-    if (width === 'content') {
+    // Track if we're in HUG mode (fit-content) vs FILL mode (100% width)
+    const isHugMode = (node.type === 'VStack' || (node.type === 'HStack' && props.expanded !== true)) && !isGridChild && !vstackNeedsStretch;
+
+    if (!hasExplicitWidth) {
+      if (isHugMode) {
+        mergedProps.style = { ...mergedProps.style, width: 'fit-content', maxWidth: maxWidthPresets[width] };
+      } else {
+        mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[width] };
+      }
+    }
+
+    // Apply alignSelf (for horizontal positioning) - ONLY for FILL mode with maxWidth constraint
+    // This centers max-width containers (e.g., 1344px centered on wide screens)
+    // HUG mode: NO margin auto - let parent's alignment control position (predictable)
+    // FILL mode without maxWidth (width='full'): NO margin auto - already 100% width
+    // FILL mode with maxWidth (width='content'): YES margin auto - center the constrained container
+    const isFillModeWithMaxWidth = !isHugMode && width === 'content';
+
+    if (isFillModeWithMaxWidth) {
       if (alignSelf === 'center') {
         mergedProps.style = { ...mergedProps.style, marginLeft: 'auto', marginRight: 'auto' };
       } else if (alignSelf === 'start') {

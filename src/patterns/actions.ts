@@ -33,7 +33,7 @@ export const actionPatterns: Pattern[] = [
                     {
                       type: 'HStack',
                       name: 'Content',
-                      props: { spacing: 4, alignment: 'top', expanded: false },
+                      props: { spacing: 4, alignment: 'top', expanded: true },
                       children: [
                         {
                           type: 'Icon',
@@ -86,7 +86,7 @@ export const actionPatterns: Pattern[] = [
                     {
                       type: 'HStack',
                       name: 'Content',
-                      props: { spacing: 4, alignment: 'top', expanded: false },
+                      props: { spacing: 4, alignment: 'top', expanded: true },
                       children: [
                         {
                           type: 'Icon',
@@ -139,7 +139,7 @@ export const actionPatterns: Pattern[] = [
                     {
                       type: 'HStack',
                       name: 'Content',
-                      props: { spacing: 4, alignment: 'top', expanded: false },
+                      props: { spacing: 4, alignment: 'top', expanded: true },
                       children: [
                         {
                           type: 'Icon',
@@ -198,7 +198,7 @@ export const actionPatterns: Pattern[] = [
               children: [
                 {
                   type: 'HStack',
-                  props: { spacing: 4, alignment: 'top', expanded: false },
+                  props: { spacing: 4, alignment: 'top', expanded: true },
                   children: [
                     {
                       type: 'Icon',

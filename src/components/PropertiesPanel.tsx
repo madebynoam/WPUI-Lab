@@ -28,7 +28,7 @@ import {
   close,
   blockDefault,
   moreVertical,
-  chevronRight,
+  arrowRight,
   button,
   seen,
   dragHandle,
@@ -46,6 +46,7 @@ import {
   ResizingControl,
   AlignmentControl,
   SpacingControl,
+  PaddingControl,
   VSTACK_PRIMARY_OPTIONS,
   VSTACK_CROSS_OPTIONS,
   HSTACK_PRIMARY_OPTIONS,
@@ -478,6 +479,44 @@ export const PropertiesPanel: React.FC = () => {
           </PanelBody>
         )}
 
+        {/* Grid child properties - only for single select */}
+        {!isMultiSelect && isChildOfGrid && (
+          <PanelBody
+            title="Grid Layout"
+            initialOpen={openPanels["gridLayout"]}
+            onToggle={() =>
+              setOpenPanels({
+                ...openPanels,
+                gridLayout: !openPanels["gridLayout"],
+              })
+            }
+          >
+            <div style={{ marginBottom: "16px" }}>
+              <NumberControl
+                label="Column Span"
+                value={firstNode.props.gridColumnSpan || 1}
+                onChange={(value) =>
+                  handlePropChange("gridColumnSpan", Number(value))
+                }
+                help="Number of columns to span"
+                min={1}
+              />
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              <NumberControl
+                label="Row Span"
+                value={firstNode.props.gridRowSpan || 1}
+                onChange={(value) =>
+                  handlePropChange("gridRowSpan", Number(value))
+                }
+                help="Number of rows to span"
+                min={1}
+              />
+            </div>
+          </PanelBody>
+        )}
+
         {/* Auto Layout Controls (Figma-style for VStack/HStack) */}
         {!isMultiSelect && (firstNode.type === 'VStack' || firstNode.type === 'HStack') && (() => {
           // Parse current props into Figma-style config
@@ -505,12 +544,30 @@ export const PropertiesPanel: React.FC = () => {
               ? mapToVStackProps(newConfig)
               : mapToHStackProps(newConfig);
 
-            // Update component props
+            // Clean up conflicting inline styles
+            // ALWAYS remove conflicting width/height when using Auto Layout panel
+            // This ensures Hug/Fill controls work regardless of old inline styles
+            const cleanedStyle = { ...firstNode.props.style };
+
+            if (isVStack) {
+              // VStack: Always remove inline width (VStack doesn't control width via expanded)
+              delete cleanedStyle.width;
+              // VStack: Always remove inline height (controlled by expanded prop)
+              delete cleanedStyle.height;
+            } else {
+              // HStack: Always remove inline width (controlled by expanded prop)
+              delete cleanedStyle.width;
+              // HStack: Always remove inline height (HStack doesn't control height via expanded)
+              delete cleanedStyle.height;
+            }
+
+            // Update component props with cleaned styles
             updateComponentProps(firstNode.id, {
               alignment: result.props.alignment,
               spacing: result.props.spacing,
               expanded: result.props.expanded,
               justify: result.props.justify,
+              style: Object.keys(cleanedStyle).length > 0 ? cleanedStyle : undefined,
             });
           };
 
@@ -525,7 +582,7 @@ export const PropertiesPanel: React.FC = () => {
                 })
               }
             >
-              {/* Container Type Switcher */}
+              {/* Layout Direction Switcher */}
               <div style={{ marginBottom: "16px" }}>
                 <div
                   style={{
@@ -535,7 +592,7 @@ export const PropertiesPanel: React.FC = () => {
                     color: "#1e1e1e",
                   }}
                 >
-                  Container Type
+                  Layout Direction
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
                   <Button
@@ -557,7 +614,7 @@ export const PropertiesPanel: React.FC = () => {
                     label="Vertical Stack"
                   />
                   <Button
-                    icon={menu}
+                    icon={arrowRight}
                     onClick={() => {
                       if (firstNode.type !== 'HStack') {
                         swapLayoutType(firstNode.id, 'HStack');
@@ -603,20 +660,30 @@ export const PropertiesPanel: React.FC = () => {
                 />
               </div>
 
-              {/* Alignment Controls */}
+              {/* Alignment Controls - Always in same order: Horizontal, then Vertical */}
               <div style={{ marginBottom: "16px" }}>
+                {/* Horizontal Align - Cross for VStack, Primary for HStack */}
                 <AlignmentControl
-                  label={isVStack ? "Vertical Align" : "Horizontal Align"}
-                  value={currentConfig.primaryAlign}
-                  onChange={(value) => handleLayoutChange({ primaryAlign: value as PrimaryAlign })}
-                  options={isVStack ? VSTACK_PRIMARY_OPTIONS : HSTACK_PRIMARY_OPTIONS}
+                  label="Horizontal Align"
+                  value={isVStack ? currentConfig.crossAlign : currentConfig.primaryAlign}
+                  onChange={(value) =>
+                    isVStack
+                      ? handleLayoutChange({ crossAlign: value as CrossAlign })
+                      : handleLayoutChange({ primaryAlign: value as PrimaryAlign })
+                  }
+                  options={isVStack ? VSTACK_CROSS_OPTIONS : HSTACK_PRIMARY_OPTIONS}
                   direction="horizontal"
                 />
+                {/* Vertical Align - Primary for VStack, Cross for HStack */}
                 <AlignmentControl
-                  label={isVStack ? "Horizontal Align" : "Vertical Align"}
-                  value={currentConfig.crossAlign}
-                  onChange={(value) => handleLayoutChange({ crossAlign: value as CrossAlign })}
-                  options={isVStack ? VSTACK_CROSS_OPTIONS : HSTACK_CROSS_OPTIONS}
+                  label="Vertical Align"
+                  value={isVStack ? currentConfig.primaryAlign : currentConfig.crossAlign}
+                  onChange={(value) =>
+                    isVStack
+                      ? handleLayoutChange({ primaryAlign: value as PrimaryAlign })
+                      : handleLayoutChange({ crossAlign: value as CrossAlign })
+                  }
+                  options={isVStack ? VSTACK_PRIMARY_OPTIONS : HSTACK_CROSS_OPTIONS}
                   direction="horizontal"
                 />
               </div>
@@ -627,64 +694,19 @@ export const PropertiesPanel: React.FC = () => {
                 onChange={(value) => handleLayoutChange({ gap: value })}
               />
 
-              <p
-                style={{
-                  margin: "12px 0 0",
-                  fontSize: "11px",
-                  fontStyle: "italic",
-                  color: "#757575",
-                  borderTop: "1px solid #e0e0e0",
-                  paddingTop: "12px",
-                }}
-              >
-                {isVStack
-                  ? '💡 Vertical stacks arrange children top-to-bottom'
-                  : '💡 Horizontal stacks arrange children left-to-right'}
-              </p>
+              {/* Padding Control */}
+              <PaddingControl
+                value={firstNode.props.padding || ''}
+                onChange={(value) => updateComponentProps(firstNode.id, { padding: value })}
+              />
             </PanelBody>
           );
         })()}
 
-        {/* Grid child properties - only for single select */}
-        {!isMultiSelect && isChildOfGrid && (
-          <PanelBody
-            title="Grid Layout"
-            initialOpen={openPanels["gridLayout"]}
-            onToggle={() =>
-              setOpenPanels({
-                ...openPanels,
-                gridLayout: !openPanels["gridLayout"],
-              })
-            }
-          >
-            <div style={{ marginBottom: "16px" }}>
-              <NumberControl
-                label="Column Span"
-                value={firstNode.props.gridColumnSpan || 1}
-                onChange={(value) =>
-                  handlePropChange("gridColumnSpan", Number(value))
-                }
-                help="Number of columns to span"
-                min={1}
-              />
-            </div>
-
-            <div style={{ marginBottom: "16px" }}>
-              <NumberControl
-                label="Row Span"
-                value={firstNode.props.gridRowSpan || 1}
-                onChange={(value) =>
-                  handlePropChange("gridRowSpan", Number(value))
-                }
-                help="Number of rows to span"
-                min={1}
-              />
-            </div>
-          </PanelBody>
-        )}
-
-        {/* Properties */}
-        {definition.propDefinitions.length > 0 && (
+        {/* Properties - Hide Settings panel for VStack/HStack (they use Auto Layout panel) */}
+        {definition.propDefinitions.length > 0 &&
+         firstNode.type !== 'VStack' &&
+         firstNode.type !== 'HStack' && (
           <PanelBody
             title="Settings"
             initialOpen={openPanels["settings"]}
@@ -695,7 +717,10 @@ export const PropertiesPanel: React.FC = () => {
               })
             }
           >
-            {definition.propDefinitions.map((propDef) => {
+            {definition.propDefinitions
+              // Filter out grid layout props - they're handled in the dedicated "Grid Layout" panel above
+              .filter((propDef) => propDef.name !== 'gridColumnSpan' && propDef.name !== 'gridRowSpan')
+              .map((propDef) => {
               // Special case: For Text and Heading, read 'content' from 'children' prop
               const actualPropToRead =
                 (firstNode.type === "Text" || firstNode.type === "Heading") &&

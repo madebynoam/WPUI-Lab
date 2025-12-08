@@ -450,18 +450,6 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: '',
         description: 'Padding (e.g., "16px", "1rem 2rem")'
       },
-      {
-        name: 'gridColumnSpan',
-        type: 'number',
-        defaultValue: undefined,
-        description: 'Column span when inside Grid (e.g., 6 for half width in 12-column grid)'
-      },
-      {
-        name: 'gridRowSpan',
-        type: 'number',
-        defaultValue: undefined,
-        description: 'Row span when inside Grid'
-      },
     ],
   },
   VStack: {
@@ -515,18 +503,6 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'string',
         defaultValue: '',
         description: 'Padding (e.g., "16px", "1rem 2rem")'
-      },
-      {
-        name: 'gridColumnSpan',
-        type: 'number',
-        defaultValue: undefined,
-        description: 'Column span when inside Grid (e.g., 6 for half width in 12-column grid)'
-      },
-      {
-        name: 'gridRowSpan',
-        type: 'number',
-        defaultValue: undefined,
-        description: 'Row span when inside Grid'
       },
     ],
   },

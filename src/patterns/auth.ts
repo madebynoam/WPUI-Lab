@@ -27,7 +27,7 @@ export const authPatterns: Pattern[] = [
           children: [
             {
               type: 'VStack',
-              props: { spacing: 4 },
+              props: { spacing: 4, alignment: 'stretch' },
               children: [
                 {
                   type: 'TextControl',
