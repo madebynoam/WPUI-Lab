@@ -313,6 +313,12 @@ OPENAI_API_KEY=sk-proj-...
 - Single/multi-selection support
 - Interactions editor
 - Page/project settings
+- **Auto Layout Controls** (Figma-style) for VStack/HStack:
+  - Resizing behavior: "Hug" (shrink to content) vs "Fill" (expand to fill space)
+  - Primary/Cross axis alignment with visual icons
+  - Gap control with pixel values
+  - Uses `src/utils/layoutMappings.ts` to translate between Figma concepts and WordPress props
+  - See `src/components/LayoutControls.tsx` for UI components
 
 **AgentPanel** (`src/components/AgentPanel.tsx`):
 - AI chat interface (Agenttic-UI)
@@ -459,6 +465,12 @@ Escape         Deselect / Exit play mode
 7. **Max 50 history states** - Older states are dropped
 8. **Grid layout** - Children use `gridColumnSpan`/`gridRowSpan` props, not `columnSpan`
 9. **Agent phases** - Planner creates plan, Builder executes it (no duplication/verification)
+10. **Layout Controls** - Use Figma terminology:
+   - "Hug" (default) = container shrinks to fit content
+   - "Fill" = container expands to fill available space
+   - VStack `expanded={true}` fills HEIGHT, HStack `expanded={true}` fills WIDTH
+   - Primary axis = direction of stack, Cross axis = perpendicular
+   - When using `justify="space-between"`, use CSS values ('flex-start', 'flex-end') for `alignment`, not presets ('left', 'right')
 
 ## Debugging
 

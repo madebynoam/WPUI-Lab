@@ -42,6 +42,25 @@ import { IconPicker } from "./IconPicker";
 import { ColorVariantPicker } from "./ColorVariantPicker";
 import { TabContainer } from "./TabContainer";
 import { componentIconMap } from "./ComponentInserter";
+import {
+  ResizingControl,
+  AlignmentControl,
+  SpacingControl,
+  VSTACK_PRIMARY_OPTIONS,
+  VSTACK_CROSS_OPTIONS,
+  HSTACK_PRIMARY_OPTIONS,
+  HSTACK_CROSS_OPTIONS,
+} from "./LayoutControls";
+import {
+  mapToVStackProps,
+  mapToHStackProps,
+  mapFromVStackProps,
+  mapFromHStackProps,
+  FigmaLayoutConfig,
+  PrimaryAlign,
+  CrossAlign,
+  ResizingBehavior,
+} from "@/src/utils/layoutMappings";
 
 // Color swatch button with popover
 const ColorSwatchButton: React.FC<{
@@ -459,82 +478,172 @@ export const PropertiesPanel: React.FC = () => {
           </PanelBody>
         )}
 
-        {/* Layout Type Switcher (for VStack/HStack only) */}
-        {!isMultiSelect && (firstNode.type === 'VStack' || firstNode.type === 'HStack') && (
-          <PanelBody
-            title="Layout"
-            initialOpen={openPanels["layout"] !== false}
-            onToggle={() =>
-              setOpenPanels({
-                ...openPanels,
-                layout: !openPanels["layout"],
+        {/* Auto Layout Controls (Figma-style for VStack/HStack) */}
+        {!isMultiSelect && (firstNode.type === 'VStack' || firstNode.type === 'HStack') && (() => {
+          // Parse current props into Figma-style config
+          const isVStack = firstNode.type === 'VStack';
+          const currentConfig = isVStack
+            ? mapFromVStackProps({
+                alignment: firstNode.props.alignment,
+                spacing: firstNode.props.spacing,
+                expanded: firstNode.props.expanded,
+                justify: firstNode.props.justify,
               })
-            }
-          >
-            <div style={{ marginBottom: "16px" }}>
-              <div
-                style={{
-                  marginBottom: "8px",
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: "#1e1e1e",
-                }}
-              >
-                Container Type
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <Button
-                  icon={arrowDown}
-                  onClick={() => {
-                    if (firstNode.type !== 'VStack') {
-                      swapLayoutType(firstNode.id, 'VStack');
-                    }
-                  }}
+            : mapFromHStackProps({
+                alignment: firstNode.props.alignment,
+                spacing: firstNode.props.spacing,
+                expanded: firstNode.props.expanded,
+                justify: firstNode.props.justify,
+              });
+
+          // Handler to update layout config
+          const handleLayoutChange = (updates: Partial<FigmaLayoutConfig>) => {
+            const newConfig = { ...currentConfig, ...updates };
+
+            // Map back to WordPress props
+            const result = isVStack
+              ? mapToVStackProps(newConfig)
+              : mapToHStackProps(newConfig);
+
+            // Update component props
+            updateComponentProps(firstNode.id, {
+              alignment: result.props.alignment,
+              spacing: result.props.spacing,
+              expanded: result.props.expanded,
+              justify: result.props.justify,
+            });
+          };
+
+          return (
+            <PanelBody
+              title="Auto Layout"
+              initialOpen={openPanels["layout"] !== false}
+              onToggle={() =>
+                setOpenPanels({
+                  ...openPanels,
+                  layout: !openPanels["layout"],
+                })
+              }
+            >
+              {/* Container Type Switcher */}
+              <div style={{ marginBottom: "16px" }}>
+                <div
                   style={{
-                    flex: 1,
-                    height: "36px",
-                    justifyContent: "center",
-                    backgroundColor:
-                      firstNode.type === 'VStack' ? "#1e1e1e" : "transparent",
-                    color: firstNode.type === 'VStack' ? "#fff" : "#1e1e1e",
-                    border: "1px solid #ddd",
+                    marginBottom: "8px",
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: "#1e1e1e",
                   }}
-                  label="Vertical Stack"
+                >
+                  Container Type
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <Button
+                    icon={arrowDown}
+                    onClick={() => {
+                      if (firstNode.type !== 'VStack') {
+                        swapLayoutType(firstNode.id, 'VStack');
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      height: "36px",
+                      justifyContent: "center",
+                      backgroundColor:
+                        firstNode.type === 'VStack' ? "#1e1e1e" : "transparent",
+                      color: firstNode.type === 'VStack' ? "#fff" : "#1e1e1e",
+                      border: "1px solid #ddd",
+                    }}
+                    label="Vertical Stack"
+                  />
+                  <Button
+                    icon={menu}
+                    onClick={() => {
+                      if (firstNode.type !== 'HStack') {
+                        swapLayoutType(firstNode.id, 'HStack');
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      height: "36px",
+                      justifyContent: "center",
+                      backgroundColor:
+                        firstNode.type === 'HStack' ? "#1e1e1e" : "transparent",
+                      color: firstNode.type === 'HStack' ? "#fff" : "#1e1e1e",
+                      border: "1px solid #ddd",
+                    }}
+                    label="Horizontal Stack"
+                  />
+                </div>
+              </div>
+
+              {/* Resizing Controls */}
+              <div style={{ marginBottom: "16px" }}>
+                <ResizingControl
+                  label="Width"
+                  value={currentConfig.widthBehavior}
+                  onChange={(value) => handleLayoutChange({ widthBehavior: value })}
+                  showWarning={isVStack && currentConfig.widthBehavior === 'fill'}
+                  warningMessage={
+                    isVStack
+                      ? 'VStack cannot fill width directly. Use Grid parent with gridColumnSpan or custom styles.'
+                      : undefined
+                  }
                 />
-                <Button
-                  icon={menu}
-                  onClick={() => {
-                    if (firstNode.type !== 'HStack') {
-                      swapLayoutType(firstNode.id, 'HStack');
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    height: "36px",
-                    justifyContent: "center",
-                    backgroundColor:
-                      firstNode.type === 'HStack' ? "#1e1e1e" : "transparent",
-                    color: firstNode.type === 'HStack' ? "#fff" : "#1e1e1e",
-                    border: "1px solid #ddd",
-                  }}
-                  label="Horizontal Stack"
+                <ResizingControl
+                  label="Height"
+                  value={currentConfig.heightBehavior}
+                  onChange={(value) => handleLayoutChange({ heightBehavior: value })}
+                  showWarning={!isVStack && currentConfig.heightBehavior === 'fill'}
+                  warningMessage={
+                    !isVStack
+                      ? 'HStack cannot fill height directly. Use parent container with explicit height.'
+                      : undefined
+                  }
                 />
               </div>
+
+              {/* Alignment Controls */}
+              <div style={{ marginBottom: "16px" }}>
+                <AlignmentControl
+                  label={isVStack ? "Vertical Align" : "Horizontal Align"}
+                  value={currentConfig.primaryAlign}
+                  onChange={(value) => handleLayoutChange({ primaryAlign: value as PrimaryAlign })}
+                  options={isVStack ? VSTACK_PRIMARY_OPTIONS : HSTACK_PRIMARY_OPTIONS}
+                  direction="horizontal"
+                />
+                <AlignmentControl
+                  label={isVStack ? "Horizontal Align" : "Vertical Align"}
+                  value={currentConfig.crossAlign}
+                  onChange={(value) => handleLayoutChange({ crossAlign: value as CrossAlign })}
+                  options={isVStack ? VSTACK_CROSS_OPTIONS : HSTACK_CROSS_OPTIONS}
+                  direction="horizontal"
+                />
+              </div>
+
+              {/* Spacing Control */}
+              <SpacingControl
+                value={currentConfig.gap}
+                onChange={(value) => handleLayoutChange({ gap: value })}
+              />
+
               <p
                 style={{
-                  margin: "8px 0 0",
-                  fontSize: "12px",
-                  fontStyle: "normal",
+                  margin: "12px 0 0",
+                  fontSize: "11px",
+                  fontStyle: "italic",
                   color: "#757575",
+                  borderTop: "1px solid #e0e0e0",
+                  paddingTop: "12px",
                 }}
               >
-                {firstNode.type === 'VStack'
-                  ? 'Container (Vertical) - stacks children vertically'
-                  : 'Container (Horizontal) - stacks children horizontally'}
+                {isVStack
+                  ? '💡 Vertical stacks arrange children top-to-bottom'
+                  : '💡 Horizontal stacks arrange children left-to-right'}
               </p>
-            </div>
-          </PanelBody>
-        )}
+            </PanelBody>
+          );
+        })()}
 
         {/* Grid child properties - only for single select */}
         {!isMultiSelect && isChildOfGrid && (

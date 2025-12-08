@@ -447,21 +447,35 @@ export function componentTreeReducer(
 
       if (node.type === newType) return state; // Already the target type
 
-      // Map of compatible props between VStack and HStack
-      const transferProps: Record<string, any> = {};
+      // Import layout mappings for proper prop translation
+      const { mapFromVStackProps, mapFromHStackProps, mapToVStackProps, mapToHStackProps } = require('./utils/layoutMappings');
 
-      // Common props that transfer between both
-      if (node.props.spacing !== undefined) transferProps.spacing = node.props.spacing;
+      // Convert old props to Figma config, then to new type's props
+      let newProps: Record<string, any>;
 
-      // VStack -> HStack or HStack -> VStack
-      if (newType === 'HStack') {
-        // VStack alignment -> HStack alignment
-        if (node.props.alignment) transferProps.alignment = node.props.alignment;
-        if (node.props.justify) transferProps.justify = node.props.justify;
-      } else if (newType === 'VStack') {
-        // HStack alignment -> VStack alignment
-        if (node.props.alignment) transferProps.alignment = node.props.alignment;
-        if (node.props.justify) transferProps.justify = node.props.justify;
+      if (node.type === 'VStack' && newType === 'HStack') {
+        // VStack -> HStack: translate through Figma config
+        const figmaConfig = mapFromVStackProps({
+          alignment: node.props.alignment,
+          spacing: node.props.spacing,
+          expanded: node.props.expanded,
+          justify: node.props.justify,
+        });
+        const result = mapToHStackProps(figmaConfig);
+        newProps = result.props;
+      } else if (node.type === 'HStack' && newType === 'VStack') {
+        // HStack -> VStack: translate through Figma config
+        const figmaConfig = mapFromHStackProps({
+          alignment: node.props.alignment,
+          spacing: node.props.spacing,
+          expanded: node.props.expanded,
+          justify: node.props.justify,
+        });
+        const result = mapToVStackProps(figmaConfig);
+        newProps = result.props;
+      } else {
+        // Fallback (shouldn't happen)
+        newProps = { ...componentRegistry[newType]?.defaultProps };
       }
 
       // Update node type and props
@@ -470,7 +484,7 @@ export function componentTreeReducer(
         type: newType,
         props: {
           ...componentRegistry[newType]?.defaultProps,
-          ...transferProps,
+          ...newProps,
         },
       }));
 

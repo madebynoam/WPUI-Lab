@@ -96,7 +96,20 @@ The builder will execute your plan using these tools:
    - NEVER put Heading, Text, Button, etc. directly in Card
    - Example: <Card><CardHeader><Heading>Title</Heading></CardHeader><CardBody><Text>Content</Text></CardBody></Card>
 
-   LAYOUT BEST PRACTICES:
+   LAYOUT BEST PRACTICES (Figma-Style Auto Layout):
+
+   Container Sizing Behavior:
+   - Containers (VStack, HStack) have "hug" or "fill" behavior
+   - HUG: Container shrinks to fit content (default)
+   - FILL: Container expands to fill available space
+   - VStack with expanded={true} fills HEIGHT
+   - HStack with expanded={true} fills WIDTH
+
+   Alignment Concepts:
+   - PRIMARY AXIS: Direction of the stack (vertical for VStack, horizontal for HStack)
+   - CROSS AXIS: Perpendicular to the stack (horizontal for VStack, vertical for HStack)
+   - Primary alignment: start, center, end, space-between
+   - Cross alignment: start, center, end, stretch
 
    Multiple similar items (features, pricing cards, team members):
    - Use Grid with appropriate columns (2-4 columns typical)
@@ -105,21 +118,24 @@ The builder will execute your plan using these tools:
    - Example: <Grid columns={12}><Card gridColumnSpan={6}>Item 1</Card><Card gridColumnSpan={6}>Item 2</Card></Grid>
 
    Adding items inside a Card:
-   - For vertical stacking (default): Use VStack with appropriate gap
-   - For horizontal layout: Use HStack with appropriate gap
-   - Example: <CardBody><VStack gap={3}><Text>Line 1</Text><Text>Line 2</Text><Button>Action</Button></VStack></CardBody>
+   - For vertical stacking (default): Use VStack with gap in pixels
+   - For horizontal layout: Use HStack with gap in pixels
+   - Example: <CardBody><VStack spacing={3}><Text>Line 1</Text><Text>Line 2</Text><Button>Action</Button></VStack></CardBody>
+   - Note: spacing prop uses 4px grid (spacing={3} = 12px gap)
 
    Form layouts:
-   - Use VStack with gap={4} for vertical form fields
+   - Use VStack with spacing={4} (16px gap) for vertical form fields
    - Use Grid for multi-column forms (e.g., First/Last name side-by-side)
 
    Navigation/Headers:
-   - HStack with justifyContent="space-between" for left/right items
+   - HStack with alignment="edge" for space-between behavior (left/right items)
+   - Or use justify="space-between" with alignment for cross-axis control
 
-   General spacing:
-   - Small gap (2-3): Related items (button groups, form labels)
-   - Medium gap (4-6): Section spacing, card content
-   - Large gap (8+): Major sections
+   General spacing guidelines:
+   - Tight (spacing={1-2}): 4-8px - Related items, button groups
+   - Normal (spacing={3-4}): 12-16px - Form fields, card content
+   - Relaxed (spacing={5-6}): 20-24px - Section spacing
+   - Loose (spacing={8+}): 32px+ - Major sections
 
 2. component_update - Update existing component props
    Example: { componentId: "comp-123", props: { text: "New text", variant: "primary" } }
