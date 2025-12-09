@@ -12,7 +12,6 @@ import {
   normalizeComponentNode,
   normalizeComponentNodes,
 } from "../utils/normalizeComponent";
-import { flattenTree } from "../utils/treeHelpers";
 import "./TreePanel.css";
 import {
   Button,
@@ -757,7 +756,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
       return;
     }
 
-    const fullFlattenedTree = flattenTree(tree);
+    const fullFlattenedTree = flattenTreeForDnd(tree);
     const activeIndex = fullFlattenedTree.findIndex((n) => n.id === active.id);
     const overIndex = fullFlattenedTree.findIndex((n) => n.id === over.id);
 
