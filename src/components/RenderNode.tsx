@@ -112,11 +112,10 @@ export const RenderNode: React.FC<{
     return <div>Unknown component: {node.type}</div>;
   }
 
-  // Figma-style selection handler: Single click selects container, double click drills down
+  // Simplified click handler: Only handles modifier keys and play mode
+  // (Selection now happens on mousedown for instant Figma-style feel)
   const handleComponentClick = useCallback((e: React.MouseEvent, hitTargetId: string) => {
     // Check if the click originated from an editable input element
-    // Only input fields should prevent selection so users can type in them
-    // Buttons and tabs should be selectable in design mode
     const target = e.target as HTMLElement;
     const isEditableInput = target.tagName === 'INPUT' ||
                             target.tagName === 'TEXTAREA' ||
@@ -126,39 +125,27 @@ export const RenderNode: React.FC<{
                             target.closest('select') !== null;
 
     if (isEditableInput && !isPlayMode) {
-      // Let the input handle the click, but still stop propagation
-      // to prevent selecting parent components
       e.stopPropagation();
       return;
     }
 
     // Only stop propagation in design mode for selection control
-    // In play mode, let events bubble naturally so interactive components work
     if (!isPlayMode) {
       e.stopPropagation();
     }
 
-    // Skip click handling if currently dragging or just finished dragging to prevent selection changes
+    // Skip click handling if currently dragging or just finished dragging
     if (draggedNodeId || justFinishedDragging) {
       return;
     }
 
-    // Clicking root VStack clears selection (clicking empty canvas area)
-    if (hitTargetId === ROOT_VSTACK_ID) {
-      // Clear all selections when clicking on the root container (empty canvas)
-      if (selectedNodeIds.length > 0) {
-        toggleNodeSelection('', false, false, tree); // Empty string clears selection
-      }
-      return;
-    }
-
-    // Preserve existing behavior for play mode and modifier keys
+    // Play mode: Execute interactions
     if (isPlayMode) {
       executeInteractions(node.interactions);
       return;
     }
 
-    // Handle modifier keys for selection
+    // Handle modifier keys for multi-select
     // Cmd+Shift or Ctrl+Shift = multi-select (toggle item in/out of selection)
     if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
       toggleNodeSelection(hitTargetId, true, false, tree);
@@ -171,7 +158,7 @@ export const RenderNode: React.FC<{
       return;
     }
 
-    // Cmd or Ctrl alone = normal single selection (bypass Figma logic, just select this item)
+    // Cmd or Ctrl alone = single selection
     if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
       toggleNodeSelection(hitTargetId, false, false, tree);
       return;
@@ -185,202 +172,11 @@ export const RenderNode: React.FC<{
       }
       // Enter edit mode immediately
       setIsEditingText(true);
-      // Reset click tracking to prevent double-click logic
-      lastClickTimeRef.current = 0;
-      lastClickedIdRef.current = null;
       return;
     }
 
-    // Double-click detection (350ms window)
-    const now = Date.now();
-    const timeSinceLastClick = now - lastClickTimeRef.current;
-    const isDoubleClick =
-      timeSinceLastClick < 350 &&
-      lastClickedIdRef.current === hitTargetId;
-
-    console.log('[Figma Selection] Click event:', {
-      hitTargetId,
-      timeSinceLastClick,
-      isDoubleClick,
-      lastClickedId: lastClickedIdRef.current,
-      currentSelection: selectedNodeIds[0],
-    });
-
-    if (isDoubleClick) {
-      console.log('[Figma Selection] DOUBLE CLICK detected');
-
-      // For Text/Heading/Badge/Button components, enter edit mode ONLY if already selected (Figma behavior)
-      if ((node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') && selectedNodeIds.includes(node.id)) {
-        setIsEditingText(true);
-        // Focus will happen via useEffect
-        // Reset click tracking
-        lastClickTimeRef.current = 0;
-        lastClickedIdRef.current = null;
-        return;
-      }
-
-      // DOUBLE CLICK: Drill down from current selection
-      const currentSelection = selectedNodeIds[0];
-
-      if (currentSelection && currentSelection !== hitTargetId) {
-        // Find path from current selection to hit target
-        const path = findPathBetweenNodes(tree, currentSelection, hitTargetId);
-        console.log('[Figma Selection] Path from current to target:', path.map(n => ({ id: n.id, type: n.type })));
-
-        if (path.length > 1) {
-          // Drill to next level (direct child in path)
-          const nextLevel = path[1];
-          console.log('[Figma Selection] Drilling to next level:', { id: nextLevel.id, type: nextLevel.type });
-          toggleNodeSelection(nextLevel.id, false, false, tree);
-        } else {
-          // No path found (maybe clicking outside current selection), check if direct child of root
-          console.log('[Figma Selection] No path found, checking if direct child of root');
-          const clickedParent = findParent(tree, hitTargetId);
-
-          if (clickedParent && clickedParent.id === ROOT_VSTACK_ID) {
-            // Direct child of root - select it directly
-            console.log('[Figma Selection] Direct child of root, selecting:', hitTargetId);
-            toggleNodeSelection(hitTargetId, false, false, tree);
-          } else {
-            // Not a direct child - select top container
-            console.log('[Figma Selection] Not direct child, selecting top container');
-            const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
-            console.log('[Figma Selection] Top container found:', topContainer ? { id: topContainer.id, type: topContainer.type } : null);
-            if (topContainer) {
-              toggleNodeSelection(topContainer.id, false, false, tree);
-            }
-          }
-        }
-      } else {
-        console.log('[Figma Selection] Double-clicking already selected element');
-        // Double-clicking already selected element - can't drill further
-        // Do nothing (already selected)
-      }
-
-      // Reset click tracking
-      lastClickTimeRef.current = 0;
-      lastClickedIdRef.current = null;
-    } else {
-      console.log('[Figma Selection] SINGLE CLICK detected');
-
-      // Check if clicked element is inside current selection
-      // Treat root-vstack as "no selection" for single-click purposes
-      const currentSelection = selectedNodeIds[0];
-      if (currentSelection && currentSelection !== ROOT_VSTACK_ID) {
-        const path = findPathBetweenNodes(tree, currentSelection, hitTargetId);
-        console.log('[Figma Selection] Path from current selection to clicked element:', path.map(n => ({ id: n.id, type: n.type })));
-
-        if (path.length > 0) {
-          // Clicked element is inside current selection - keep current selection
-          console.log('[Figma Selection] Clicked inside current selection, keeping selection');
-          // Don't change selection, but update click tracking
-          lastClickTimeRef.current = now;
-          lastClickedIdRef.current = hitTargetId;
-          return;
-        }
-
-        // Clicked outside current selection - use Figma's "working level" algorithm
-        console.log('[Figma Selection] Clicked outside selection, finding appropriate sibling level');
-
-        // Build ancestor chains for both current selection and clicked element
-        const getCurrentAncestors = (nodeId: string): ComponentNode[] => {
-          const ancestors: ComponentNode[] = [];
-          let current = findNodeById(tree, nodeId);
-          while (current) {
-            ancestors.push(current);
-            const parent = findParent(tree, current.id);
-            if (!parent || parent.id === ROOT_VSTACK_ID) break;
-            current = parent;
-          }
-          return ancestors;
-        };
-
-        const currentAncestors = getCurrentAncestors(currentSelection);
-        const clickedAncestors = getCurrentAncestors(hitTargetId);
-
-        console.log('[Figma Selection] Current ancestors:', currentAncestors.map(n => ({ id: n.id, type: n.type })));
-        console.log('[Figma Selection] Clicked ancestors:', clickedAncestors.map(n => ({ id: n.id, type: n.type })));
-
-        // Find first common ancestor
-        let commonAncestor: ComponentNode | null = null;
-        for (const currentAnc of currentAncestors) {
-          for (const clickedAnc of clickedAncestors) {
-            if (currentAnc.id === clickedAnc.id) {
-              commonAncestor = currentAnc;
-              break;
-            }
-          }
-          if (commonAncestor) break;
-        }
-
-        if (commonAncestor) {
-          console.log('[Figma Selection] Common ancestor:', { id: commonAncestor.id, type: commonAncestor.type });
-
-          // Find the child of common ancestor that contains the clicked element
-          const clickedAncestorIndex = clickedAncestors.findIndex(n => n.id === commonAncestor!.id);
-          if (clickedAncestorIndex > 0) {
-            // Select the child of common ancestor in the clicked path
-            const targetNode = clickedAncestors[clickedAncestorIndex - 1];
-            console.log('[Figma Selection] Selecting at appropriate level:', { id: targetNode.id, type: targetNode.type });
-            toggleNodeSelection(targetNode.id, false, false, tree);
-            lastClickTimeRef.current = now;
-            lastClickedIdRef.current = hitTargetId;
-            return;
-          } else if (clickedAncestorIndex === 0) {
-            // Clicked on the common ancestor itself
-            console.log('[Figma Selection] Clicked on common ancestor');
-            toggleNodeSelection(commonAncestor.id, false, false, tree);
-            lastClickTimeRef.current = now;
-            lastClickedIdRef.current = hitTargetId;
-            return;
-          }
-        }
-
-        // No common ancestor found - check if direct child of root
-        console.log('[Figma Selection] No common ancestor, checking if direct child of root');
-        const clickedParent = findParent(tree, hitTargetId);
-
-        if (clickedParent && clickedParent.id === ROOT_VSTACK_ID) {
-          // Direct child of root - select it directly
-          console.log('[Figma Selection] Direct child of root, selecting:', hitTargetId);
-          toggleNodeSelection(hitTargetId, false, false, tree);
-        } else {
-          // Not a direct child - select topmost container
-          console.log('[Figma Selection] Not direct child, selecting topmost container');
-          const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
-          if (topContainer) {
-            console.log('[Figma Selection] Selecting topmost container:', { id: topContainer.id, type: topContainer.type });
-            toggleNodeSelection(topContainer.id, false, false, tree);
-          }
-        }
-        lastClickTimeRef.current = now;
-        lastClickedIdRef.current = hitTargetId;
-        return;
-      }
-
-      // SINGLE CLICK with no selection: Check if this is a direct child of root
-      console.log('[Figma Selection] No selection, checking if direct child of root');
-      const parent = findParent(tree, hitTargetId);
-
-      if (parent && parent.id === ROOT_VSTACK_ID) {
-        // Direct child of root - select it directly with one click
-        console.log('[Figma Selection] Direct child of root, selecting:', hitTargetId);
-        toggleNodeSelection(hitTargetId, false, false, tree);
-      } else {
-        // Not a direct child - find topmost container
-        console.log('[Figma Selection] Not direct child, finding topmost container');
-        const topContainer = findTopMostContainer(tree, hitTargetId, componentRegistry);
-        console.log('[Figma Selection] Top container found:', topContainer ? { id: topContainer.id, type: topContainer.type } : null);
-        if (topContainer) {
-          toggleNodeSelection(topContainer.id, false, false, tree);
-        }
-      }
-
-      // Track click for double-click detection
-      lastClickTimeRef.current = now;
-      lastClickedIdRef.current = hitTargetId;
-    }
-  }, [draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id]);
+    // All other selection logic now happens in mousedown for instant feel
+  }, [draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, setIsEditingText]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
@@ -411,10 +207,10 @@ export const RenderNode: React.FC<{
     });
   };
 
-  // Figma-style drag: Find nearest selected ancestor to drag
+  // Figma-style mousedown: Select on mousedown, detect double-mousedown, prepare for drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const now = Date.now();
-    const timeSinceLastClick = now - lastClickTimeRef.current;
+    const timeSinceLastMousedown = now - lastClickTimeRef.current;
 
     // Skip if in play mode or already dragging
     if (isPlayMode || draggedNodeId) return;
@@ -422,40 +218,211 @@ export const RenderNode: React.FC<{
     // Skip if not left click
     if (e.button !== 0) return;
 
-    // Start with clicked node
-    let currentId = node.id;
-    let dragTargetId: string | null = null;
+    // Check for editable inputs - let them handle mousedown
+    const target = e.target as HTMLElement;
+    const isEditableInput = target.tagName === 'INPUT' ||
+                            target.tagName === 'TEXTAREA' ||
+                            target.tagName === 'SELECT' ||
+                            target.closest('input') !== null ||
+                            target.closest('textarea') !== null ||
+                            target.closest('select') !== null;
 
-    // Walk up ancestors to find selected node
-    while (currentId) {
-      if (selectedNodeIds.includes(currentId)) {
-        dragTargetId = currentId;
-        break;
-      }
-      const parent = findParent(tree, currentId);
-      if (!parent || parent.id === ROOT_VSTACK_ID) break;
-      currentId = parent.id;
+    if (isEditableInput) {
+      e.stopPropagation();
+      return;
     }
 
-    // If we found a selected ancestor, prepare for potential drag
-    if (dragTargetId && dragTargetId !== ROOT_VSTACK_ID) {
-      // Don't set up drag if we're in a potential double-click window
-      if (timeSinceLastClick < 350) {
-        // Within double-click window - don't prepare for drag, let event proceed normally
+    // Stop propagation in design mode
+    if (!isPlayMode) {
+      e.stopPropagation();
+    }
+
+    // Handle modifier keys - let onClick handler deal with these
+    if (e.metaKey || e.ctrlKey || e.shiftKey) {
+      return;
+    }
+
+    // DEBUG: Track selection state
+    console.log('[DEBUG Selection] handleMouseDown triggered:', {
+      clickedNodeId: node.id,
+      clickedNodeType: node.type,
+      selectedNodeIds: JSON.stringify(selectedNodeIds),
+      lastClickedId: lastClickedIdRef.current,
+      timeSinceLastMousedown,
+    });
+
+    // Clicking root VStack clears selection
+    if (node.id === ROOT_VSTACK_ID) {
+      if (selectedNodeIds.length > 0) {
+        toggleNodeSelection('', false, false, tree);
+      }
+      lastClickTimeRef.current = now;
+      lastClickedIdRef.current = node.id;
+      return;
+    }
+
+    // Check if component is already selected
+    const isSelected = selectedNodeIds.includes(node.id);
+
+    // Check if we're clicking inside a selected ancestor (for drill-in)
+    const selectedAncestor = !isSelected && selectedNodeIds.length > 0 ? (() => {
+      let current = findParent(tree, node.id);
+      while (current) {
+        if (selectedNodeIds.includes(current.id)) {
+          return current;
+        }
+        current = findParent(tree, current.id);
+      }
+      return null;
+    })() : null;
+
+    const isInsideSelection = selectedAncestor !== null;
+    const effectiveSelectedNode = isSelected ? node : selectedAncestor;
+
+    // Find sibling by walking up from clicked node to find component at same nesting level as selected
+    const findSiblingNode = (): ComponentNode | null => {
+      if (isSelected || selectedNodeIds.length !== 1 || selectedAncestor) {
+        return null;
+      }
+
+      const selectedId = selectedNodeIds[0];
+      const selectedParent = findParent(tree, selectedId);
+
+      if (!selectedParent) return null;
+
+      // Walk up from clicked node to find a component that shares parent with selected node
+      let current: ComponentNode | null = node;
+
+      while (current) {
+        const currentParent = findParent(tree, current.id);
+
+        // Check if current node and selected node share the same parent
+        if (currentParent && currentParent.id === selectedParent.id && current.id !== selectedId) {
+          console.log('[DEBUG Sibling] Found sibling:', current.id, 'of selected:', selectedId, 'both children of:', currentParent.id);
+          return current;
+        }
+
+        // Move up one level
+        if (!currentParent || currentParent.id === ROOT_VSTACK_ID) {
+          break;
+        }
+        current = currentParent;
+      }
+
+      return null;
+    };
+
+    const siblingNode = findSiblingNode();
+    const isSibling = siblingNode !== null;
+
+    console.log('[DEBUG Selection] isSelected:', isSelected, 'isInsideSelection:', isInsideSelection, 'isSibling:', isSibling, 'siblingNode:', siblingNode?.id, 'effectiveNode:', effectiveSelectedNode?.id);
+
+    if (!isSelected && !isInsideSelection) {
+      // NOT SELECTED - Select it immediately (Figma-style)
+      console.log('[Mousedown Selection] SINGLE MOUSEDOWN - selecting component');
+
+      // If clicking on a sibling, select the sibling directly
+      if (isSibling && siblingNode) {
+        console.log('[DEBUG Selection] Selecting sibling:', siblingNode.id, 'for clicked node:', node.id);
+        toggleNodeSelection(siblingNode.id, false, false, tree);
+        lastClickTimeRef.current = now;
+        lastClickedIdRef.current = node.id;
         return;
       }
 
-      // DON'T preventDefault here - let click events work for double-click detection
-      // We'll preventDefault in mousemove when we actually start dragging
+      // Normal selection logic
+      // Check if clicked component is a direct child of root
+      const parent = findParent(tree, node.id);
+      if (parent && parent.id === ROOT_VSTACK_ID) {
+        // Direct child of root - select it directly
+        console.log('[DEBUG Selection] Selecting direct child of root:', node.id);
+        toggleNodeSelection(node.id, false, false, tree);
+      } else {
+        // Nested component - select the top-most container
+        const topContainer = findTopMostContainer(tree, node.id, componentRegistry);
+        if (topContainer) {
+          console.log('[DEBUG Selection] Selecting top container:', topContainer.id, 'for clicked node:', node.id);
+          toggleNodeSelection(topContainer.id, false, false, tree);
+        } else {
+          // Fallback: select the clicked node directly
+          console.log('[DEBUG Selection] No top container found, selecting clicked node:', node.id);
+          toggleNodeSelection(node.id, false, false, tree);
+        }
+      }
 
-      // Capture initial mouse position for drag threshold
-      dragStartPosRef.current = { x: e.clientX, y: e.clientY };
-      dragThresholdMet.current = false;
-
-      // Store the drag target ID temporarily (will start drag after threshold)
-      (window as any).__pendingDragTargetId = dragTargetId;
+      lastClickTimeRef.current = now;
+      lastClickedIdRef.current = node.id;
+      return;
     }
-  }, [isPlayMode, draggedNodeId, node.id, selectedNodeIds, tree]);
+
+    // ALREADY SELECTED or INSIDE SELECTION - Check for double-click (drill-in) or prepare for drag
+
+    // Use the effective selected node for double-click detection
+    const isDoubleClick = timeSinceLastMousedown < 300 && lastClickedIdRef.current === effectiveSelectedNode!.id;
+
+    if (isDoubleClick) {
+      console.log('[DEBUG Selection] DOUBLE-CLICK detected - drilling into children of:', effectiveSelectedNode!.id);
+
+      // Find child component at click location using DOM
+      const clickedElement = document.elementFromPoint(e.clientX, e.clientY);
+
+      if (clickedElement) {
+        // Walk up DOM to find first child component of current selection
+        let element: HTMLElement | null = clickedElement as HTMLElement;
+        let foundChildId: string | null = null;
+
+        while (element && element !== document.body) {
+          const componentId = element.getAttribute('data-component-id');
+
+          if (componentId && componentId !== effectiveSelectedNode!.id) {
+            // Check if this component is a direct child of the selected component
+            const potentialChild = findNodeById(tree, componentId);
+            if (potentialChild) {
+              const parent = findParent(tree, componentId);
+              if (parent && parent.id === effectiveSelectedNode!.id) {
+                foundChildId = componentId;
+                break;
+              }
+            }
+          }
+
+          element = element.parentElement;
+        }
+
+        if (foundChildId) {
+          console.log('[DEBUG Selection] Drilling into child:', foundChildId);
+          toggleNodeSelection(foundChildId, false, false, tree);
+          lastClickTimeRef.current = now;
+          lastClickedIdRef.current = effectiveSelectedNode!.id;
+          return;
+        } else {
+          console.log('[DEBUG Selection] No child found at click location, staying selected');
+          // No child found - just stay selected, don't prepare for drag on double-click
+          lastClickTimeRef.current = now;
+          lastClickedIdRef.current = effectiveSelectedNode!.id;
+          return;
+        }
+      }
+    }
+
+    // SINGLE CLICK on already selected - prepare for potential drag
+    // Use the SELECTED component for drag, not the clicked nested component
+    const dragTargetId = effectiveSelectedNode!.id;
+    console.log('[Mousedown Selection] SINGLE MOUSEDOWN - already selected, preparing for drag:', dragTargetId);
+    console.log('[DEBUG Selection] Setting up drag preparation for node:', dragTargetId);
+
+    // Capture initial mouse position for drag threshold
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    dragThresholdMet.current = false;
+
+    // Store the drag target ID temporarily (will start drag after threshold)
+    (window as any).__pendingDragTargetId = dragTargetId;
+    console.log('[DEBUG Selection] __pendingDragTargetId set to:', dragTargetId);
+
+    // Update tracking
+    lastClickTimeRef.current = now;
+    lastClickedIdRef.current = effectiveSelectedNode!.id;
+  }, [isPlayMode, draggedNodeId, node.id, node.type, selectedNodeIds, tree, toggleNodeSelection, setIsEditingText]);
 
   // Document-level mouse move for drag tracking
   React.useEffect(() => {
@@ -468,17 +435,11 @@ export const RenderNode: React.FC<{
         const dy = e.clientY - dragStartPosRef.current.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Don't start drag if we're in a potential double-click window (350ms)
-        const timeSinceLastClick = Date.now() - lastClickTimeRef.current;
-        if (timeSinceLastClick < 350) {
-          // Clear pending drag to prevent drag during double-click
-          (window as any).__pendingDragTargetId = null;
-          dragStartPosRef.current = null;
-          return;
-        }
+        console.log('[DEBUG Drag] Mouse moved, distance:', distance.toFixed(2), 'px, threshold: 5px');
 
         // Start drag if threshold exceeded (5px)
         if (distance > 5) {
+          console.log('[DEBUG Drag] Drag threshold exceeded! Starting drag for node:', pendingDragTargetId);
           dragThresholdMet.current = true;
 
           // Find the parent and store its ID for sibling validation
