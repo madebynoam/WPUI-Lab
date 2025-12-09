@@ -13,6 +13,7 @@ function ProjectsPageContent() {
     deleteProject,
     renameProject,
     duplicateProject,
+    resetExampleProject,
   } = useComponentTree();
 
   const handleCreateProject = (name: string) => {
@@ -43,6 +44,7 @@ function ProjectsPageContent() {
       onDeleteProject={deleteProject}
       onRenameProject={renameProject}
       onDuplicateProject={handleDuplicateProject}
+      onResetExampleProject={resetExampleProject}
     />
   );
 }

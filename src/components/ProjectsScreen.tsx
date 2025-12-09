@@ -15,7 +15,7 @@ import {
   MenuGroup,
   MenuItem,
 } from '@wordpress/components';
-import { moreVertical, trash, pencil, copy, pages, plus } from '@wordpress/icons';
+import { moreVertical, trash, pencil, copy, pages, plus, update } from '@wordpress/icons';
 import { Project } from '../types';
 import { NewProjectModal } from './NewProjectModal';
 
@@ -26,6 +26,7 @@ interface ProjectsScreenProps {
   onDeleteProject: (projectId: string) => void;
   onRenameProject: (projectId: string, name: string) => void;
   onDuplicateProject: (projectId: string) => void;
+  onResetExampleProject: () => void;
 }
 
 export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
@@ -35,6 +36,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
   onDeleteProject,
   onRenameProject,
   onDuplicateProject,
+  onResetExampleProject,
 }) => {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
@@ -173,6 +175,19 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                               >
                                 Duplicate
                               </MenuItem>
+                              {project.isExampleProject && (
+                                <MenuItem
+                                  icon={update}
+                                  onClick={() => {
+                                    if (confirm('Reset example project to default? Any changes will be lost.')) {
+                                      onResetExampleProject();
+                                      onClose();
+                                    }
+                                  }}
+                                >
+                                  Reset to default
+                                </MenuItem>
+                              )}
                               <MenuItem
                                 icon={trash}
                                 onClick={() => {

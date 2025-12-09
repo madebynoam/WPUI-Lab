@@ -72,6 +72,7 @@ const HISTORY_ACTIONS = new Set([
   'DELETE_PROJECT',
   'RENAME_PROJECT',
   'DUPLICATE_PROJECT',
+  'RESET_EXAMPLE_PROJECT',
 ]);
 
 // Actions that should be debounced (for history)
@@ -981,6 +982,33 @@ export function componentTreeReducer(
       return {
         ...updateHistory(state, newProjects, newProjectId),
         selectedNodeIds: [ROOT_VSTACK_ID],
+      };
+    }
+
+    case 'RESET_EXAMPLE_PROJECT': {
+      // Find the example project
+      const exampleProject = state.projects.find(p => p.isExampleProject);
+      if (!exampleProject) {
+        return state; // No example project to reset
+      }
+
+      // Import fresh from DEMO_PROJECT
+      const { DEMO_PROJECT } = require('@/src/demoProject');
+
+      // Replace the example project with fresh copy
+      const newProjects = state.projects.map(p =>
+        p.isExampleProject ? { ...DEMO_PROJECT, lastModified: Date.now() } : p
+      );
+
+      // Reset to first page of example project
+      const resetProjectId = DEMO_PROJECT.id;
+      const firstPageId = DEMO_PROJECT.pages[0]?.id || 'page-1';
+
+      return {
+        ...updateHistory(state, newProjects, resetProjectId),
+        currentPageId: firstPageId,
+        selectedNodeIds: [ROOT_VSTACK_ID],
+        gridLinesVisible: new Set(),
       };
     }
 

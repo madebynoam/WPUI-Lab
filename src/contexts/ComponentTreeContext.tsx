@@ -76,6 +76,7 @@ interface ComponentTreeContextType {
   deleteProject: (projectId: string) => void;
   renameProject: (projectId: string, name: string) => void;
   duplicateProject: (projectId: string) => void;
+  resetExampleProject: () => void;
   updateProjectTheme: (theme: { primaryColor?: string; backgroundColor?: string }) => void;
   updateProjectLayout: (layout: { maxWidth?: number; padding?: number; spacing?: number }) => void;
 
@@ -487,6 +488,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     return newProjectId;
   };
 
+  const resetExampleProject = () => {
+    dispatch({ type: 'RESET_EXAMPLE_PROJECT' });
+  };
+
   const updateProjectTheme = (theme: { primaryColor?: string; backgroundColor?: string }) => {
     dispatch({ type: 'UPDATE_PROJECT_THEME', payload: { theme } });
   };
@@ -590,6 +595,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     deleteProject,
     renameProject,
     duplicateProject,
+    resetExampleProject,
     updateProjectTheme,
     updateProjectLayout,
     canUndo: state.history.past.length > 0,
