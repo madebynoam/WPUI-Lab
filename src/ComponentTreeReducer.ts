@@ -13,6 +13,7 @@ import {
   reorderNodeInTree,
   updateTreeForPage,
   flattenTree,
+  findParent,
 } from './utils/treeHelpers';
 import { generateId } from './utils/idGenerator';
 import { validateTree, formatValidationErrors } from './utils/treeValidation';
@@ -511,18 +512,30 @@ export function componentTreeReducer(
       let newSelectedNodeIds: string[];
 
       if (rangeSelect && state.selectedNodeIds.length > 0) {
-        // Range selection: select all nodes between last selected and clicked node
-        const flatNodes = flattenTree(treeToUse);
+        // Range selection: select all sibling nodes between last selected and clicked node
         const lastSelectedId = state.selectedNodeIds[state.selectedNodeIds.length - 1];
-        const lastIndex = flatNodes.findIndex(n => n.id === lastSelectedId);
-        const currentIndex = flatNodes.findIndex(n => n.id === id);
 
-        if (lastIndex !== -1 && currentIndex !== -1) {
-          const start = Math.min(lastIndex, currentIndex);
-          const end = Math.max(lastIndex, currentIndex);
-          const rangeIds = flatNodes.slice(start, end + 1).map(n => n.id);
-          newSelectedNodeIds = [...new Set([...state.selectedNodeIds, ...rangeIds])];
+        // Find parent of both nodes to ensure we're selecting siblings
+        const lastSelectedParent = findParent(treeToUse, lastSelectedId);
+        const clickedParent = findParent(treeToUse, id);
+
+        // Only do range selection if both nodes share the same parent (are siblings)
+        if (lastSelectedParent && clickedParent && lastSelectedParent.id === clickedParent.id) {
+          // Get all children of the parent (siblings)
+          const siblings = lastSelectedParent.children || [];
+          const lastIndex = siblings.findIndex(n => n.id === lastSelectedId);
+          const currentIndex = siblings.findIndex(n => n.id === id);
+
+          if (lastIndex !== -1 && currentIndex !== -1) {
+            const start = Math.min(lastIndex, currentIndex);
+            const end = Math.max(lastIndex, currentIndex);
+            const rangeIds = siblings.slice(start, end + 1).map(n => n.id);
+            newSelectedNodeIds = [...new Set([...state.selectedNodeIds, ...rangeIds])];
+          } else {
+            newSelectedNodeIds = [...state.selectedNodeIds, id];
+          }
         } else {
+          // Not siblings - just add the clicked node to selection
           newSelectedNodeIds = [...state.selectedNodeIds, id];
         }
       } else if (multiSelect) {
