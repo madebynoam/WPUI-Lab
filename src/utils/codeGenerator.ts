@@ -1,4 +1,5 @@
 import { ComponentNode } from '../types';
+import { componentRegistry } from '../componentRegistry';
 
 interface CodeGeneratorOptions {
   includeInteractions?: boolean;
@@ -31,6 +32,25 @@ function generateNodeCode(
 ): string {
   const indentStr = '  '.repeat(indent);
   const componentName = node.type;
+
+  // Check if component has custom code generation
+  const definition = componentRegistry[componentName];
+  if (definition?.codeGeneration?.generateCode) {
+    // Use custom code generation
+    const generateChildrenFunc = () => {
+      if (!node.children || node.children.length === 0) return '';
+      return node.children
+        .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap))
+        .join('\n');
+    };
+
+    const customCode = definition.codeGeneration.generateCode(node, generateChildrenFunc);
+    // Apply indentation to each line
+    return customCode
+      .split('\n')
+      .map((line, index) => (index === 0 ? indentStr + line : indentStr + line))
+      .join('\n');
+  }
 
   // Check for text content BEFORE deleting from props
   // Treat empty strings and null as no content
@@ -353,9 +373,38 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
   // Generate imports
   const imports: string[] = [];
 
-  // Regular WordPress components
-  const wpComponents = Array.from(componentTypes).filter((type) =>
-    ['VStack', 'HStack', 'Grid', 'Button', 'Text', 'Heading', 'Icon', 'Spacer', 'Divider'].includes(type)
+  // Collect custom imports from component definitions
+  const customImports = new Map<string, Set<string>>();
+  componentTypes.forEach((type) => {
+    const definition = componentRegistry[type];
+    if (definition?.codeGeneration?.imports) {
+      const { package: pkg, components } = definition.codeGeneration.imports;
+      if (pkg && components) {
+        if (!customImports.has(pkg)) {
+          customImports.set(pkg, new Set());
+        }
+        components.forEach((comp) => customImports.get(pkg)!.add(comp));
+      }
+    }
+  });
+
+  // Add custom imports
+  customImports.forEach((components, pkg) => {
+    imports.push(`import { ${Array.from(components).join(', ')} } from '${pkg}';`);
+  });
+
+  // Regular WordPress components (excluding those with custom imports)
+  const componentsWithCustomImports = new Set<string>();
+  componentTypes.forEach((type) => {
+    if (componentRegistry[type]?.codeGeneration?.imports) {
+      componentsWithCustomImports.add(type);
+    }
+  });
+
+  const wpComponents = Array.from(componentTypes).filter(
+    (type) =>
+      !componentsWithCustomImports.has(type) &&
+      ['VStack', 'HStack', 'Grid', 'Button', 'Text', 'Heading', 'Icon', 'Spacer', 'Divider'].includes(type)
   );
 
   // Private API components that need to be unlocked

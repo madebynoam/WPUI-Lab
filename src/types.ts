@@ -65,6 +65,17 @@ export interface ComponentDefinition {
   defaultChildren?: PatternNode[];
   propDefinitions: PropDefinition[];
   disableInteractions?: boolean;
+  codeGeneration?: {
+    // Transform design-time props to real component API props
+    transformProps?: (node: ComponentNode) => Record<string, any>;
+    // Fully custom code generation (overrides default)
+    generateCode?: (node: ComponentNode, generateChildren: () => string) => string;
+    // Additional imports needed for this component
+    imports?: {
+      package?: string; // Package name (e.g., '@wordpress/dataviews')
+      components?: string[]; // Component names to import
+    };
+  };
 }
 
 export interface PropDefinition {

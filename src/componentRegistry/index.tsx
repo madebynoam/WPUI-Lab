@@ -1615,5 +1615,127 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         description: 'Items per page',
       },
     ],
+    codeGeneration: {
+      imports: {
+        package: '@wordpress/dataviews',
+        components: ['DataViews'],
+      },
+      generateCode: (node, generateChildren) => {
+        const dataSource = node.props.dataSource || 'sites';
+        const viewType = node.props.viewType || 'table';
+        const itemsPerPage = node.props.itemsPerPage || 10;
+
+        // Generate data and fields based on dataSource
+        let data, fields;
+
+        if (dataSource === 'custom' && node.props.data && Array.isArray(node.props.data) && node.props.data.length > 0) {
+          // Use custom data
+          data = node.props.data;
+
+          // Generate fields from columns
+          const columnDefs = node.props.columns || [];
+          if (columnDefs && columnDefs.length > 0) {
+            fields = columnDefs.map((col: any) => {
+              const id = typeof col === 'string' ? col : (col.id || col);
+              const label = typeof col === 'string' ? col : (col.label || id);
+
+              return {
+                id,
+                label,
+                type: 'text',
+                enableSorting: true,
+                enableHiding: true,
+              };
+            });
+          } else {
+            // Auto-detect from first item
+            const firstItem = data[0];
+            fields = Object.keys(firstItem).map(key => ({
+              id: key,
+              label: key.charAt(0).toUpperCase() + key.slice(1),
+              type: 'text',
+              enableSorting: true,
+              enableHiding: true,
+            }));
+          }
+        } else {
+          // Use mock data
+          data = getMockData(dataSource as any);
+          fields = getFieldDefinitions(dataSource as any);
+        }
+
+        // Generate field definitions code
+        const fieldsCode = fields.map((field: any) => {
+          // For media fields (like thumbnail), skip render function in generated code
+          if (field.type === 'media') {
+            return `  {
+    id: '${field.id}',
+    type: '${field.type}',
+    label: '${field.label}',
+    enableSorting: ${field.enableSorting},
+    enableHiding: ${field.enableHiding},
+    getValue: (item) => item.${field.id},
+    render: ({ item }) => {
+      if (item.${field.id}) {
+        return <img src={item.${field.id}} alt={item.name || ''} loading="lazy" style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: '4px', display: 'block' }} />;
+      }
+      return <div style={{ width: '100%', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0f0f0', fontSize: '48px', fontWeight: 'bold', color: '#666', borderRadius: '4px' }}>{item.favicon}</div>;
+    },
+  }`;
+          }
+
+          // Regular fields
+          return `  {
+    id: '${field.id}',
+    type: '${field.type || 'text'}',
+    label: '${field.label}',
+    enableSorting: ${field.enableSorting !== false},
+    enableHiding: ${field.enableHiding !== false},
+    getValue: (item) => item.${field.id},
+    render: ({ item }) => String(item.${field.id} || ''),
+  }`;
+        }).join(',\n');
+
+        // Create visible field IDs (exclude thumbnail for table view)
+        const visibleFields = fields.filter((f: any) => f.id !== 'thumbnail').map((f: any) => f.id);
+        const sortField = fields.length > 0 ? fields[0].id : 'id';
+
+        // Generate the complete DataViews JSX
+        return `{/* DataViews component - Designer abstraction: dataSource="${dataSource}", viewType="${viewType}", itemsPerPage=${itemsPerPage} */}
+<DataViews
+  data={${JSON.stringify(data, null, 2).split('\n').join('\n  ')}}
+  fields={[
+${fieldsCode}
+  ]}
+  view={{
+    type: '${viewType}',
+    perPage: ${itemsPerPage},
+    page: 1,
+    filters: [],
+    search: '',
+    fields: ${JSON.stringify(visibleFields)},
+    sort: {
+      field: '${sortField}',
+      direction: 'asc',
+    },
+    mediaField: 'thumbnail',
+  }}
+  onChangeView={(newView) => {
+    console.log('View changed:', newView);
+    // In a real app, you would update state here
+  }}
+  paginationInfo={{
+    totalItems: ${data.length},
+    totalPages: ${Math.ceil(data.length / itemsPerPage)},
+  }}
+  defaultLayouts={{
+    table: {},
+    grid: {},
+    list: {},
+  }}
+  getItemId={(item) => item.id}
+/>`;
+      },
+    },
   },
 };
