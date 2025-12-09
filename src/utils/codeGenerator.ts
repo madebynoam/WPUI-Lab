@@ -236,7 +236,7 @@ function generateNodeCode(
     : '';
 
   // Add comment for layout containers showing width mode
-  if ((componentName === 'VStack' || componentName === 'HStack' || componentName === 'Grid') && node.width) {
+  if ((componentName === 'VStack' || componentName === 'HStack' || componentName === 'Grid' || componentName === 'Card') && node.width) {
     const widthMode = node.width === 'content' ? 'Content Width (1344px max)' : 'Full Width (100%)';
     comment += `${indentStr}{/* ${widthMode} */}\n`;
   }
