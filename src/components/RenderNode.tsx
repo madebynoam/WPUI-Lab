@@ -154,7 +154,50 @@ export const RenderNode: React.FC<{
 
     // Shift alone = range select
     if (e.shiftKey && !e.metaKey && !e.ctrlKey) {
-      toggleNodeSelection(hitTargetId, false, true, tree);
+      // Find sibling-level node for range selection to ensure selection happens at the same depth
+      const findSiblingForRangeSelect = (): string => {
+        // If no selection, use clicked node directly
+        if (selectedNodeIds.length === 0) {
+          return hitTargetId;
+        }
+
+        // Get the last selected node to determine the sibling level
+        const lastSelectedId = selectedNodeIds[selectedNodeIds.length - 1];
+        const lastSelectedParent = findParent(tree, lastSelectedId);
+
+        // If last selected is root or has no parent, use clicked node directly
+        if (!lastSelectedParent || lastSelectedId === ROOT_VSTACK_ID) {
+          return hitTargetId;
+        }
+
+        // Walk up from clicked node to find component that shares parent with last selected
+        const clickedNode = findNodeById(tree, hitTargetId);
+        if (!clickedNode) return hitTargetId;
+
+        let current: ComponentNode | null = clickedNode;
+
+        while (current) {
+          const currentParent = findParent(tree, current.id);
+
+          // Check if current node and last selected node share the same parent (siblings)
+          if (currentParent && currentParent.id === lastSelectedParent.id) {
+            console.log('[Shift-Click] Found sibling:', current.id, 'of selected:', lastSelectedId, 'both children of:', currentParent.id);
+            return current.id;
+          }
+
+          // Move up one level
+          if (!currentParent || currentParent.id === ROOT_VSTACK_ID) {
+            break;
+          }
+          current = currentParent;
+        }
+
+        // Fallback: use clicked node directly
+        return hitTargetId;
+      };
+
+      const siblingId = findSiblingForRangeSelect();
+      toggleNodeSelection(siblingId, false, true, tree);
       return;
     }
 
