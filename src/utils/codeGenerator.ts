@@ -231,9 +231,15 @@ function generateNodeCode(
   const isContainerComponent = containerComponents.includes(componentName);
 
   // Add comment for Button with stretchFullWidth
-  const comment = hasStretchFullWidth
+  let comment = hasStretchFullWidth
     ? `${indentStr}{/* WordPress Button does not have a native full-width prop, so we use inline styles */}\n`
     : '';
+
+  // Add comment for layout containers showing width mode
+  if ((componentName === 'VStack' || componentName === 'HStack' || componentName === 'Grid') && node.width) {
+    const widthMode = node.width === 'content' ? 'Content Width (1344px max)' : 'Full Width (100%)';
+    comment += `${indentStr}{/* ${widthMode} */}\n`;
+  }
 
   // Handle components with children
   if (node.children && node.children.length > 0) {
