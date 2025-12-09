@@ -66,6 +66,11 @@ function generateNodeCode(
   delete props.alignSelf;
   delete props.padding;
 
+  // Add explicit width prop for layout containers to make intent clear in generated code
+  if ((componentName === 'VStack' || componentName === 'HStack' || componentName === 'Grid' || componentName === 'Card') && node.width) {
+    props.width = node.width; // 'content' or 'full'
+  }
+
   // Track if Button has stretchFullWidth for comment generation
   const hasStretchFullWidth = componentName === 'Button' && props.stretchFullWidth;
 

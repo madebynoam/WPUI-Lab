@@ -156,16 +156,17 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                         >
                           {({ onClose }) => (
                             <MenuGroup>
-                              <MenuItem
-                                icon={pencil}
-                                onClick={() => {
-                                  handleRenameStart(project);
-                                  onClose();
-                                }}
-                                disabled={project.isExampleProject}
-                              >
-                                {project.isExampleProject ? 'Cannot rename example project' : 'Rename'}
-                              </MenuItem>
+                              {!project.isExampleProject && (
+                                <MenuItem
+                                  icon={pencil}
+                                  onClick={() => {
+                                    handleRenameStart(project);
+                                    onClose();
+                                  }}
+                                >
+                                  Rename
+                                </MenuItem>
+                              )}
                               <MenuItem
                                 icon={copy}
                                 onClick={() => {
@@ -188,19 +189,20 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
                                   Reset to default
                                 </MenuItem>
                               )}
-                              <MenuItem
-                                icon={trash}
-                                onClick={() => {
-                                  if (confirm(`Delete "${project.name}"? This cannot be undone.`)) {
-                                    onDeleteProject(project.id);
-                                    onClose();
-                                  }
-                                }}
-                                isDestructive
-                                disabled={projects.length === 1 || project.isExampleProject}
-                              >
-                                {project.isExampleProject ? 'Cannot delete example project' : 'Delete'}
-                              </MenuItem>
+                              {!project.isExampleProject && projects.length > 1 && (
+                                <MenuItem
+                                  icon={trash}
+                                  onClick={() => {
+                                    if (confirm(`Delete "${project.name}"? This cannot be undone.`)) {
+                                      onDeleteProject(project.id);
+                                      onClose();
+                                    }
+                                  }}
+                                  isDestructive
+                                >
+                                  Delete
+                                </MenuItem>
+                              )}
                             </MenuGroup>
                           )}
                         </DropdownMenu>

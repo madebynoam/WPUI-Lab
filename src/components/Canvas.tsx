@@ -252,6 +252,38 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
         return;
       }
 
+      // Cmd+Option+Shift+J to copy page JSON to clipboard
+      // Use e.code instead of e.key for keyboard layout independence
+      if (
+        e.metaKey &&
+        e.altKey &&
+        e.shiftKey &&
+        e.code === "KeyJ" &&
+        !isInEditMode()
+      ) {
+        console.log('[Canvas] Copy page JSON shortcut triggered!');
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Find current page
+        const currentPage = pages.find((p) => p.id === currentPageId);
+        if (currentPage) {
+          // Copy page JSON to clipboard
+          const pageJson = JSON.stringify(currentPage, null, 2);
+          navigator.clipboard.writeText(pageJson).then(() => {
+            console.log('[Canvas] Page JSON copied to clipboard');
+            // Optional: Show a toast notification
+            alert('Page JSON copied to clipboard!');
+          }).catch((err) => {
+            console.error('[Canvas] Failed to copy page JSON:', err);
+            alert('Failed to copy page JSON to clipboard');
+          });
+        } else {
+          console.error('[Canvas] Current page not found:', currentPageId);
+        }
+        return;
+      }
+
       // Cmd/Ctrl+Enter to go to page settings (select root VStack)
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
@@ -422,6 +454,8 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     isInEditMode,
     isPlayMode,
     setEditingMode,
+    pages,
+    currentPageId,
   ]);
 
   // Find editing context - either interactive component or selected container
