@@ -67,7 +67,7 @@ export const AGENT_MODELS = {
   // Main agent for v2.0 single-agent system
   agent: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5,
+    model: Models.OpenAI.GPT_5_MINI,
   } as AgentModelConfig,
 } as const;
 
