@@ -1736,7 +1736,8 @@ export const RenderNode: React.FC<{
   };
 
   // Layout containers that support width control
-  const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'CardBody', 'CardHeader', 'CardFooter', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
+  // Note: CardBody, CardHeader, CardFooter are NOT included - they should always fill parent Card width
+  const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
 
   // IMPORTANT: Exclude root VStack from width constraints - it should always be 100% width
   if (layoutContainers.includes(node.type) && node.id !== ROOT_VSTACK_ID) {
