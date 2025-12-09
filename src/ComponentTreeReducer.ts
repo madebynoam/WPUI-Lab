@@ -996,17 +996,16 @@ export function componentTreeReducer(
       const { DEMO_PROJECT } = require('@/src/demoProject');
 
       // Replace the example project with fresh copy
+      const firstPageId = DEMO_PROJECT.pages[0]?.id || 'page-1';
       const newProjects = state.projects.map(p =>
-        p.isExampleProject ? { ...DEMO_PROJECT, lastModified: Date.now() } : p
+        p.isExampleProject ? { ...DEMO_PROJECT, currentPageId: firstPageId, lastModified: Date.now() } : p
       );
 
       // Reset to first page of example project
       const resetProjectId = DEMO_PROJECT.id;
-      const firstPageId = DEMO_PROJECT.pages[0]?.id || 'page-1';
 
       return {
         ...updateHistory(state, newProjects, resetProjectId),
-        currentPageId: firstPageId,
         selectedNodeIds: [ROOT_VSTACK_ID],
         gridLinesVisible: new Set(),
       };
