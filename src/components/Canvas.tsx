@@ -196,7 +196,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
 
       // Cmd/Ctrl+C for copy
       // Check if user is selecting text first - let browser handle it
-      const hasTextSelection = window.getSelection()?.toString().length > 0;
+      const hasTextSelection = (window.getSelection()?.toString().length ?? 0) > 0;
       if (
         (e.ctrlKey || e.metaKey) &&
         e.key === "c" &&
