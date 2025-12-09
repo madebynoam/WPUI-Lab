@@ -323,6 +323,7 @@ export const RenderNode: React.FC<{
     const effectiveSelectedNode = isSelected ? node : selectedAncestor;
 
     // Find sibling by walking up from clicked node to find component at same nesting level as selected
+    // Matches hover logic: checks for siblings AND parent's siblings (one level up)
     const findSiblingNode = (): ComponentNode | null => {
       if (isSelected || selectedNodeIds.length !== 1 || selectedAncestor) {
         return null;
@@ -333,16 +334,42 @@ export const RenderNode: React.FC<{
 
       if (!selectedParent) return null;
 
+      // First check: is the clicked node itself a sibling of selected?
+      const clickedParent = findParent(tree, node.id);
+      if (clickedParent && clickedParent.id === selectedParent.id && node.id !== selectedId) {
+        console.log('[DEBUG Sibling] Direct sibling:', node.id, 'of selected:', selectedId);
+        return node;
+      }
+
+      // Second check: is the clicked node a sibling of selected's parent? (one level up)
+      if (selectedParent.id !== ROOT_VSTACK_ID) {
+        const selectedGrandparent = findParent(tree, selectedParent.id);
+        if (selectedGrandparent && clickedParent && selectedGrandparent.id === clickedParent.id) {
+          console.log('[DEBUG Sibling] Parent sibling:', node.id, 'is sibling of selected parent:', selectedParent.id);
+          return node;
+        }
+      }
+
       // Walk up from clicked node to find a component that shares parent with selected node
+      // OR shares parent with selected node's parent (one level up)
       let current: ComponentNode | null = node;
 
       while (current) {
         const currentParent = findParent(tree, current.id);
 
-        // Check if current node and selected node share the same parent
+        // Check if current node and selected node share the same parent (direct siblings)
         if (currentParent && currentParent.id === selectedParent.id && current.id !== selectedId) {
           console.log('[DEBUG Sibling] Found sibling:', current.id, 'of selected:', selectedId, 'both children of:', currentParent.id);
           return current;
+        }
+
+        // Check if current node is a sibling of selected's parent (one level up)
+        if (selectedParent.id !== ROOT_VSTACK_ID) {
+          const selectedGrandparent = findParent(tree, selectedParent.id);
+          if (selectedGrandparent && currentParent && selectedGrandparent.id === currentParent.id) {
+            console.log('[DEBUG Sibling] Found parent sibling:', current.id, 'is sibling of selected parent:', selectedParent.id);
+            return current;
+          }
         }
 
         // Move up one level
