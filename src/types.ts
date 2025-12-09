@@ -39,7 +39,7 @@ export interface Page {
 export interface Project {
   id: string;
   name: string;
-  version: number; // Tree structure version (current: 2)
+  version: number; // Tree structure version (current: 3)
   pages: Page[];
   currentPageId: string;
   createdAt: number;

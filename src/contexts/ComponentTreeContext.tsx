@@ -125,7 +125,7 @@ const createInitialPage = (id: string, name: string): Page => ({
 const createInitialProject = (id: string, name: string): Project => ({
   id,
   name,
-  version: 2, // Tree structure version
+  version: 3, // Tree structure version
   pages: [createInitialPage('page-1', 'Page 1')],
   currentPageId: 'page-1',
   createdAt: Date.now(),
@@ -162,9 +162,17 @@ function initializeState(): ComponentTreeState {
         });
 
         if (Array.isArray(data.projects) && data.projects.length > 0) {
-          console.log('[ComponentTreeContext] Loading projects from localStorage:', data.projects.length);
-          projects = data.projects;
-          currentProjectId = data.currentProjectId || projects[0].id;
+          // Filter out projects with version < 3 (silently ignore old format)
+          const validProjects = data.projects.filter((p: Project) => p.version >= 3);
+
+          if (validProjects.length > 0) {
+            console.log('[ComponentTreeContext] Loading projects from localStorage:', validProjects.length);
+            projects = validProjects;
+            currentProjectId = data.currentProjectId || validProjects[0].id;
+          } else {
+            // All projects are old version - use demo project
+            console.log('[ComponentTreeContext] All projects are old version, using demo project');
+          }
         } else {
           // Empty projects array in localStorage - use demo project
           console.log('[ComponentTreeContext] Empty projects in localStorage, using demo project');
