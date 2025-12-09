@@ -262,33 +262,65 @@ export const PropertiesPanel: React.FC = () => {
               setOpenPanels({ ...openPanels, layout: !openPanels["layout"] })
             }
           >
-            <div style={{ marginBottom: "16px" }}>
-              <NumberControl
-                label="Padding"
-                value={padding}
-                onChange={(value) =>
-                  updateProjectLayout({
-                    padding: Number(value),
-                  })
-                }
-                help="Padding around the page content (multiplier of 4, applies to all pages)"
-                min={0}
-              />
-            </div>
+            {/* Padding Control with Presets */}
+            <PaddingControl
+              value={(() => {
+                // Convert multiplier to CSS string
+                const multiplierToCSS: Record<number, string> = {
+                  0: '',
+                  2: '8px',
+                  4: '16px',
+                  6: '24px',
+                  8: '32px',
+                };
+                return multiplierToCSS[padding] ?? '';
+              })()}
+              onChange={(value) => {
+                // Convert CSS string to multiplier
+                const cssToMultiplier: Record<string, number> = {
+                  '': 0,
+                  '8px': 2,
+                  '16px': 4,
+                  '24px': 6,
+                  '32px': 8,
+                };
+                updateProjectLayout({
+                  padding: cssToMultiplier[value] ?? 0,
+                });
+              }}
+            />
+            <p style={{ margin: '4px 0 16px', fontSize: '11px', color: '#757575' }}>
+              Padding around the page content (applies to all pages)
+            </p>
 
-            <div style={{ marginBottom: "16px" }}>
-              <NumberControl
-                label="Gap"
-                value={spacing}
-                onChange={(value) =>
-                  updateProjectLayout({
-                    spacing: Number(value),
-                  })
-                }
-                help="Gap between page elements (multiplier of 4, applies to all pages)"
-                min={0}
-              />
+            {/* Gap Control with Presets */}
+            <div style={{ marginBottom: '6px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
+              Gap
             </div>
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
+              {[0, 2, 4, 6, 8, 12, 16].map((preset) => (
+                <Button
+                  key={preset}
+                  size="small"
+                  onClick={() => updateProjectLayout({ spacing: preset })}
+                  style={{
+                    height: '24px',
+                    flex: '1 1 auto',
+                    minWidth: '0',
+                    fontSize: '11px',
+                    backgroundColor: spacing === preset ? '#1e1e1e' : 'transparent',
+                    color: spacing === preset ? '#fff' : '#1e1e1e',
+                    border: '1px solid #ddd',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {preset}
+                </Button>
+              ))}
+            </div>
+            <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
+              Gap between page elements (multiplier of 4, applies to all pages)
+            </p>
           </PanelBody>
         </div>
       </div>
@@ -757,7 +789,41 @@ export const PropertiesPanel: React.FC = () => {
                     />
                   )}
 
-                  {propDef.type === "number" && (
+                  {propDef.type === "number" && propDef.name === "padding" && firstNode.type === "Spacer" && (
+                    <>
+                      <PaddingControl
+                        value={(() => {
+                          // Convert multiplier to CSS string
+                          const multiplierToCSS: Record<number, string> = {
+                            0: '',
+                            2: '8px',
+                            4: '16px',
+                            6: '24px',
+                            8: '32px',
+                          };
+                          return multiplierToCSS[currentValue] ?? '';
+                        })()}
+                        onChange={(value) => {
+                          // Convert CSS string to multiplier
+                          const cssToMultiplier: Record<string, number> = {
+                            '': 0,
+                            '8px': 2,
+                            '16px': 4,
+                            '24px': 6,
+                            '32px': 8,
+                          };
+                          handlePropChange(propDef.name, cssToMultiplier[value] ?? 0);
+                        }}
+                      />
+                      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
+                        {isMultiSelect && !isShared
+                          ? `${propDef.description} (applying to all ${selectedNodes.length} items)`
+                          : propDef.description}
+                      </p>
+                    </>
+                  )}
+
+                  {propDef.type === "number" && (propDef.name !== "padding" || firstNode.type !== "Spacer") && (
                     <NumberControl
                       label={propDef.name}
                       value={currentValue}

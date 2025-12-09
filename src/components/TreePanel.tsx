@@ -80,7 +80,6 @@ export const INTERACTIVE_COMPONENT_TYPES = [
 const INSERTION_CONTAINERS = [
   "HStack",
   "VStack",
-  "Grid",
   "Flex",
   "FlexBlock",
   "FlexItem",
