@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import { useComponentTree, ROOT_VSTACK_ID } from "@/src/contexts/ComponentTreeContext";
 import { useAgentDebug } from "@/src/contexts/AgentDebugContext";
 import { ComponentNode } from "@/src/types";
