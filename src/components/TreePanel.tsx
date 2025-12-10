@@ -3,9 +3,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { useComponentTree, ROOT_VSTACK_ID } from "@/src/contexts/ComponentTreeContext";
+import { useComponentTree, ROOT_VSTACK_ID } from "@/contexts/ComponentTreeContext";
 import { ComponentNode, PatternNode } from "../types";
-import { componentRegistry } from "@/src/componentRegistry";
+import { componentRegistry } from "@/componentRegistry";
 import { patterns, assignIds } from "../patterns";
 import { generateId } from "../utils/idGenerator";
 import {

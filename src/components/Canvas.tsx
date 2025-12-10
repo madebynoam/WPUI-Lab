@@ -1,16 +1,16 @@
 import React, { useEffect, useCallback, useMemo } from "react";
-import { useComponentTree, ROOT_VSTACK_ID } from "@/src/contexts/ComponentTreeContext";
-import { useAgentDebug } from "@/src/contexts/AgentDebugContext";
-import { ComponentNode } from "@/src/types";
+import { useComponentTree, ROOT_VSTACK_ID } from "@/contexts/ComponentTreeContext";
+import { useAgentDebug } from "@/contexts/AgentDebugContext";
+import { ComponentNode } from "@/types";
 import { Breadcrumb } from "./Breadcrumb";
-import { findParent } from "@/src/utils/treeHelpers";
+import { findParent } from "@/utils/treeHelpers";
 import { RenderNode } from "./RenderNode";
-import { SelectionProvider } from "@/src/contexts/SelectionContext";
-import { SimpleDragProvider } from "@/src/contexts/SimpleDragContext";
+import { SelectionProvider } from "@/contexts/SelectionContext";
+import { SimpleDragProvider } from "@/contexts/SimpleDragContext";
 import { INTERACTIVE_COMPONENT_TYPES } from "./TreePanel";
-import { componentRegistry } from "@/src/componentRegistry";
+import { componentRegistry } from "@/componentRegistry";
 import { privateApis as themePrivateApis } from "@wordpress/theme";
-import { unlock } from "@/src/utils/wordpressPrivateApis";
+import { unlock } from "@/utils/wordpressPrivateApis";
 import { AgentDebugUI } from "./AgentDebugUI";
 import { KeyboardHandler } from "./KeyboardHandler";
 

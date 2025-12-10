@@ -12,7 +12,7 @@ import { MockLLMProvider, createToolCallResponse, createTextResponse } from '../
 import { MemoryStore } from '../memory/MemoryStore';
 import { ToolContext } from '../types';
 import { AgentProgressMessage } from './types';
-import { getTool } from '../tools/registry';
+import { getTool } from '../tools'; // Imports and registers all tools
 
 describe('PageAgent', () => {
   let agent: PageAgent;

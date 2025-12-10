@@ -7,8 +7,8 @@ import {
   code,
   listView,
 } from "@wordpress/icons";
-import { useComponentTree } from "@/src/contexts/ComponentTreeContext";
-import { usePlayModeState } from "@/src/contexts/PlayModeContext";
+import { useComponentTree } from "@/contexts/ComponentTreeContext";
+import { usePlayModeState } from "@/contexts/PlayModeContext";
 import { useRouter } from "next/navigation";
 
 interface TopBarProps {

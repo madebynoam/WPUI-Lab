@@ -1,6 +1,6 @@
 'use client';
 
-import { useComponentTree } from '@/src/contexts/ComponentTreeContext';
+import { useComponentTree } from '@/contexts/ComponentTreeContext';
 import { ProjectsScreen } from './ProjectsScreen';
 import { useRouter } from 'next/navigation';
 

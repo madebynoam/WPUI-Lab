@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { PhaseResult } from '@/src/agent/messageHandler';
+import { PhaseResult } from '@/agent/messageHandler';
 
 interface AgentDebugContextType {
   isDebugMode: boolean;

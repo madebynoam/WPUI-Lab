@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { useAgentDebug } from '@/src/contexts/AgentDebugContext';
-import { useComponentTree } from '@/src/contexts/ComponentTreeContext';
-import { executePhase, PLANNER_PROMPT, getBUILDER_PROMPT } from '@/src/agent/messageHandler';
-import { getTool, convertToolToLLM, getToolsForLLM } from '@/src/agent/tools/registry';
+import { useAgentDebug } from '@/contexts/AgentDebugContext';
+import { useComponentTree } from '@/contexts/ComponentTreeContext';
+import { executePhase, PLANNER_PROMPT, getBUILDER_PROMPT } from '@/agent/messageHandler';
+import { getTool, convertToolToLLM, getToolsForLLM } from '@/agent/tools/registry';
 
 export const AgentDebugUI: React.FC = () => {
   const [copiedItem, setCopiedItem] = useState<string | null>(null);

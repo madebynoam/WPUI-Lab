@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
-import { useSelection } from '@/src/contexts/SelectionContext';
-import { findParent } from '@/src/utils/treeHelpers';
+import { useComponentTree, ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { useSelection } from '@/contexts/SelectionContext';
+import { findParent } from '@/utils/treeHelpers';
 
 /**
  * Component that handles keyboard shortcuts and has access to SelectionContext.

@@ -1,5 +1,5 @@
-import { ComponentNode } from '@/src/types';
-import { componentRegistry } from '@/src/componentRegistry';
+import { ComponentNode } from '@/types';
+import { componentRegistry } from '@/componentRegistry';
 
 export interface ValidationError {
   path: string;

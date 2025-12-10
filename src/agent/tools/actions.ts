@@ -1,5 +1,5 @@
 import { AgentTool, ToolContext, ToolResult } from "../types";
-import { componentRegistry } from "@/src/componentRegistry";
+import { componentRegistry } from "@/componentRegistry";
 import { normalizeComponentNodes } from "../../utils/normalizeComponent";
 import { getAgentComponentList } from "../../config/availableComponents";
 import { parseMarkupWithRepair } from "../utils/repairMarkup";

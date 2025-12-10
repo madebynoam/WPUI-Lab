@@ -1,8 +1,9 @@
 /**
  * Agent Configuration
  *
- * Centralized configuration for the v2.0 single-agent system.
+ * Centralized configuration for the v3.0 multi-agent system.
  * Change model here to switch between Anthropic and OpenAI providers.
+ * One shared LLM provider is used by all specialist agents.
  */
 
 /**
@@ -54,20 +55,21 @@ export interface ModelCapabilities {
 /**
  * Agent Model Configuration
  *
- * Configure which model the v2.0 single-agent system should use.
- * Currently using OpenAI GPT-4o-mini for cost optimization.
+ * Configure which model the v3.0 multi-agent system should use.
+ * One shared LLM provider is used by all specialist agents (PageAgent, CreatorAgent, UpdateAgent).
+ * Currently using OpenAI GPT-5-mini for best cost-to-performance ratio.
  *
  * To switch models:
  * - Anthropic Claude Sonnet 4.5: Most capable, expensive ($3/$15 per MTok)
  * - Anthropic Claude Haiku 4.5: Fast and affordable ($1/$5 per MTok)
- * - OpenAI GPT-4o-mini: Good balance ($0.15/$0.60 per MTok) ← Current
- * - OpenAI GPT-4o: Most capable OpenAI ($2.50/$10.00 per MTok)
+ * - OpenAI GPT-5-mini: Excellent balance ($0.25/$2.00 per MTok) ← Current
+ * - OpenAI GPT-4o: Good balance ($2.50/$10.00 per MTok)
  */
 export const AGENT_MODELS = {
-  // Main agent for v2.0 single-agent system
+  // Shared LLM provider for all specialist agents in v3.0 multi-agent system
   agent: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5_MINI,
+    model: Models.OpenAI.GPT_5,
   } as AgentModelConfig,
 } as const;
 

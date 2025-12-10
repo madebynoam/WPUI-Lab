@@ -18,7 +18,7 @@ import { ValidatorAgent, ValidationResult } from './agents/ValidatorAgent';
 import { createLLMProvider } from './llm/factory';
 import { AgentResult, AgentProgressMessage } from './agents/types';
 import { getAgentModel } from './agentConfig';
-import { getTool } from './tools/registry';
+import { getTool } from './tools'; // Imports and registers all tools
 
 export interface OrchestrationOptions {
   onProgress?: (message: AgentProgressMessage) => void;

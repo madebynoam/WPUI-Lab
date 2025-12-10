@@ -8,7 +8,7 @@ import { UpdateAgent } from './UpdateAgent';
 import { MockLLMProvider, createToolCallResponse, createTextResponse } from '../__mocks__/MockLLMProvider';
 import { MemoryStore } from '../memory/MemoryStore';
 import { ToolContext } from '../types';
-import { getTool } from '../tools/registry';
+import { getTool } from '../tools'; // Imports and registers all tools
 
 describe('UpdateAgent', () => {
   let agent: UpdateAgent;

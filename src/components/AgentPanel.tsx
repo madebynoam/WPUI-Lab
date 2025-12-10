@@ -5,8 +5,8 @@ import { AgentUI } from "@automattic/agenttic-ui";
 import "@automattic/agenttic-ui/index.css";
 import { Button, Dropdown, MenuGroup, MenuItem } from "@wordpress/components";
 import { close, moreVertical } from "@wordpress/icons";
-import { useComponentTree } from "@/src/contexts/ComponentTreeContext";
-import { useAgentDebug } from "@/src/contexts/AgentDebugContext";
+import { useComponentTree } from "@/contexts/ComponentTreeContext";
+import { useAgentDebug } from "@/contexts/AgentDebugContext";
 import {
   AgentMessage,
   ToolContext,
