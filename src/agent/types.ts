@@ -69,6 +69,7 @@ export interface AgentMessage {
   timestamp: number;
   archived: boolean;
   showIcon: boolean;
+  metadata?: any; // Add metadata for tokens, cost, etc
 }
 
 // Agent conversation state
@@ -84,3 +85,8 @@ export interface AgentSuggestion {
   label: string;
   prompt: string;
 }
+
+
+// DEPRECATED: Alias for backward compatibility with v2.0 messageHandler
+// This will be removed when v2.0 is deleted
+export type AgentProgressMessage = AgentMessage;

@@ -181,43 +181,106 @@ UI state changes (selection, collapsed nodes) don't save to history.
 
 ## AI Agent System
 
-### Architecture (v3.0 Two-Phase System)
+### Architecture (Memory-Based Multi-Agent System)
+
+The AI system uses specialized agents that communicate through shared memory, providing better decomposition, testability, and cost efficiency.
 
 ```
 User Message → AgentPanel → messageHandler.ts
      ↓
-Phase 1: PLANNER (context tools only)
-  - Calls context_getProject to understand current state
-  - Creates JSON execution plan with steps
-  - Uses: context_getProject, context_searchComponents
+CLASSIFIER (cheap, fast)
+  - Analyzes request type and complexity
+  - Determines required agents
+  - Model: GPT-4o-mini (~$0.0002)
      ↓
-Phase 2: BUILDER (action tools)
-  - Executes plan step-by-step
-  - Uses: buildFromMarkup, component_update, createPage, etc.
-  - Follows plan EXACTLY, no verification/duplication
+SPECIALIST AGENTS (parallel execution where possible)
+  - PageAgent: Page creation, switching, deletion
+  - CreatorAgent: Component creation (buildFromMarkup, sections, tables)
+  - UpdateAgent: Component updates, moves, deletes
+  - Each agent:
+    * Has 3-5 specialized tools (not all 19)
+    * Reads/writes shared memory
+    * Streams progress messages to UI
+    * Focused prompt (~500 tokens)
+     ↓
+VALIDATOR (cheap, final check)
+  - Reads memory log
+  - Validates against user intent
+  - Returns success summary: "Completed 3/3 tasks"
+  - Model: GPT-4o-mini (~$0.0006)
      ↓
 NextJSProxyProvider → /app/api/chat/route.ts (server-side)
      ↓
-OpenAI/Anthropic API (GPT-5-Mini or Claude Sonnet 4.5)
-     ↓
-Tool Calls → Execute Tools → Update Tree → Response
+OpenAI API (GPT-4o-mini for classifier/validator, GPT-5-Mini for agents)
 ```
 
 **Key Files**:
-- `src/agent/messageHandler.ts` - Phase orchestration
-- `src/agent/prompts/planner.ts` - Planner system prompt
-- `src/agent/prompts/builder.ts` - Builder system prompt (generated dynamically with plan)
-- `src/agent/agentConfig.ts` - Model configuration
+- `src/agent/messageHandler.ts` - Multi-agent orchestration
+- `src/agent/memory/MemoryStore.ts` - Shared memory system
+- `src/agent/classifier/Classifier.ts` - Request classification
+- `src/agent/agents/PageAgent.ts` - Page operations specialist
+- `src/agent/agents/CreatorAgent.ts` - Component creation specialist
+- `src/agent/agents/UpdateAgent.ts` - Component update specialist
+- `src/agent/agents/ValidatorAgent.ts` - Result validation
+- `src/agent/prompts/` - Specialized prompts per agent
 - `src/agent/tools/registry.ts` - Tool registration
-- `src/agent/tools/actions.ts` - Core action tools
-- `src/agent/tools/consolidatedContext.ts` - Context tools
 - `app/api/chat/route.ts` - LLM proxy (keeps API keys server-side)
 
+**Memory System**:
+Each agent writes structured entries to shared memory:
+```typescript
+interface MemoryEntry {
+  id: string;
+  timestamp: number;
+  agent: string;  // 'PageAgent', 'CreatorAgent', etc.
+  action: 'page_created' | 'component_created' | 'component_updated' | 'validation_passed' | 'error';
+  entityId?: string;  // pageId, componentId, etc.
+  entityType?: string;  // 'Page', 'Card', 'Button'
+  details: any;
+  parentAction?: string;  // Link to previous action
+}
+
+// Memory operations (cheap - returns 20-200 tokens):
+memory.search({ action: 'page_created', latest: true })
+memory.search({ entityId: 'page-123' })
+memory.get({ id: 'mem-456' })
+```
+
+**Agent UI Feedback**:
+Agents stream progress messages to the UI in real-time:
+```
+🔍 Classifier: Analyzing request... requires PageAgent + CreatorAgent
+
+📄 PageAgent: Checking if Dashboard page exists...
+✓ PageAgent: Created Dashboard page
+
+🎨 CreatorAgent: Searching for active page...
+🎨 CreatorAgent: Found page-123
+🎨 CreatorAgent: Creating 3 pricing cards...
+✓ CreatorAgent: Created 3 components
+
+✅ Validator: Completed 3/3 tasks
+Total cost: $0.0032 | Time: 4.2s
+```
+
+**Cost Efficiency**:
+- Simple tasks (e.g., "change button color"): ~$0.0010 (UpdateAgent only)
+- Medium tasks (e.g., "create pricing section"): ~$0.0020 (CreatorAgent only)
+- Complex tasks (e.g., "create dashboard with table and cards"): ~$0.0030 (PageAgent + CreatorAgent + Validator)
+- Memory search cheaper than re-sending context (20-200 tokens vs 2,000-5,000 tokens)
+
+**Testing**:
+- Unit tests for each component (memory, tools, agents) - Run in 2s, $0
+- Integration tests for multi-agent workflows - Run in 10s, ~$0.004
+- Eval suite with 25 regression scenarios - Run in 60s, ~$0.07
+- Test commands: `npm test`, `npm run test:integration`, `npm run eval`
+
 **Debug Mode**: Add `?debug_agent=true` to URL to enable AgentDebugUI showing:
-- Phase execution results with token/cost metrics
-- Editable system prompts (can modify and rerun)
-- Available tools per phase
-- Copy buttons for prompts and outputs
+- Memory log timeline
+- Classifier decision
+- Per-agent execution (tokens/cost/time)
+- Progress messages
+- Tool calls per agent
 
 ### Agent Tools
 

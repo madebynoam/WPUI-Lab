@@ -1,4 +1,4 @@
-import { AgentMessage, ToolContext, ToolResult } from './types';
+import { AgentProgressMessage, ToolContext, ToolResult } from './types';
 import { getTool, getToolsForLLM, convertToolToLLM } from './tools/registry';
 import { createLLMProvider } from './llm/factory';
 import { LLMMessage } from './llm/types';
@@ -127,8 +127,8 @@ export async function handleUserMessage(
   openaiApiKey?: string,
   onProgress?: (update: any) => void,
   signal?: AbortSignal,
-  conversationHistory?: AgentMessage[]
-): Promise<AgentMessage> {
+  conversationHistory?: AgentProgressMessage[]
+): Promise<AgentProgressMessage> {
   // API keys are now handled server-side via Next.js API routes
   // No client-side validation needed
 
@@ -656,7 +656,7 @@ export interface PhasedAgentResult {
   phases: PhaseResult[];
   totalCost: number;
   totalDuration: number;
-  finalMessage: AgentMessage;
+  finalMessage: AgentProgressMessage;
 }
 
 /**
@@ -869,7 +869,7 @@ export async function handleUserMessagePhased(
 
   // Create final message
   const lastPhase = phases[phases.length - 1];
-  const finalMessage: AgentMessage = {
+  const finalMessage: AgentProgressMessage = {
     id: `agent-${Date.now()}`,
     role: 'agent',
     content: [{

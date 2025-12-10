@@ -190,13 +190,8 @@ export class AgentOrchestrator {
       });
       memoryEntriesCreated++;
 
-      // Send validation message
-      onProgress?.({
-        agent: 'ValidatorAgent',
-        type: validation.success ? 'success' : 'error',
-        message: validation.message,
-        timestamp: Date.now(),
-      });
+      // NOTE: Don't emit validation message via onProgress here, as it will be
+      // displayed via the final result.message to avoid duplicate messages
 
       return {
         success: validation.success,
