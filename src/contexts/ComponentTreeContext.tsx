@@ -190,7 +190,7 @@ function initializeState(): ComponentTreeState {
   return {
     projects,
     currentProjectId,
-    selectedNodeIds: [ROOT_VSTACK_ID],
+    selectedNodeIds: [],
     gridLinesVisible: new Set(),
     clipboard: null,
     cutNodeId: null,
@@ -267,6 +267,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   const setSelectedNodeIds = (ids: string[] | ((prev: string[]) => string[])) => {
     const newIds = typeof ids === 'function' ? ids(state.selectedNodeIds) : ids;
+    console.log('[ComponentTreeContext] setSelectedNodeIds called:', {
+      from: state.selectedNodeIds,
+      to: newIds,
+    });
     dispatch({ type: 'SET_SELECTED_NODE_IDS', payload: { ids: newIds } });
   };
 

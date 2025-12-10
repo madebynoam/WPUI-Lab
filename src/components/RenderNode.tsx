@@ -307,11 +307,21 @@ export const RenderNode: React.FC<{
     // Check if component is already selected
     const isSelected = selectedNodeIds.includes(node.id);
 
+    // Special case: ROOT_VSTACK_ID selection is treated as "nothing selected"
+    // because it can't be dragged and shouldn't affect click behavior
+    const hasOnlyRootSelected = selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_VSTACK_ID;
+
     // Check if we're clicking inside a selected ancestor (for drill-in)
-    const selectedAncestor = !isSelected && selectedNodeIds.length > 0 ? (() => {
+    // Skip this check if only ROOT_VSTACK_ID is selected (treat as nothing selected)
+    const selectedAncestor = !isSelected && selectedNodeIds.length > 0 && !hasOnlyRootSelected ? (() => {
       let current = findParent(tree, node.id);
       while (current) {
         if (selectedNodeIds.includes(current.id)) {
+          // Skip ROOT_VSTACK_ID as an ancestor - it's not a real selectable container
+          if (current.id === ROOT_VSTACK_ID) {
+            current = findParent(tree, current.id);
+            continue;
+          }
           return current;
         }
         current = findParent(tree, current.id);
@@ -321,6 +331,14 @@ export const RenderNode: React.FC<{
 
     const isInsideSelection = selectedAncestor !== null;
     const effectiveSelectedNode = isSelected ? node : selectedAncestor;
+
+    console.log('[DEBUG Selection] Selection state checks:', {
+      isSelected,
+      selectedAncestor: selectedAncestor?.id,
+      isInsideSelection,
+      selectedNodeIds,
+      effectiveSelectedNode: effectiveSelectedNode?.id,
+    });
 
     // Find sibling by walking up from clicked node to find component at same nesting level as selected
     // Matches hover logic: checks for siblings AND parent's siblings (one level up)
@@ -426,9 +444,18 @@ export const RenderNode: React.FC<{
     }
 
     // ALREADY SELECTED or INSIDE SELECTION - Check for double-click (drill-in) or prepare for drag
+    console.log('[DEBUG Selection] ALREADY SELECTED or INSIDE SELECTION branch - checking for double-click');
 
     // Use the effective selected node for double-click detection
     const isDoubleClick = timeSinceLastMousedown < 300 && lastClickedIdRef.current === effectiveSelectedNode!.id;
+
+    console.log('[DEBUG Selection] Double-click check:', {
+      isDoubleClick,
+      timeSinceLastMousedown,
+      lastClickedId: lastClickedIdRef.current,
+      effectiveSelectedNodeId: effectiveSelectedNode!.id,
+      threshold: 300,
+    });
 
     if (isDoubleClick) {
       console.log('[DEBUG Selection] DOUBLE-CLICK detected - drilling into children of:', effectiveSelectedNode!.id);

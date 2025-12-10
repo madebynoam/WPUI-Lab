@@ -575,7 +575,7 @@ export function componentTreeReducer(
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
       return {
         ...updateHistory(state, newProjects, state.currentProjectId),
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [],
         gridLinesVisible: new Set(),
       };
     }
@@ -595,7 +595,7 @@ export function componentTreeReducer(
 
       return {
         ...updateHistory(state, newProjects, state.currentProjectId),
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [],
       };
     }
 

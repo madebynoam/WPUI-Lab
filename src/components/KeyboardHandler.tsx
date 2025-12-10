@@ -213,18 +213,28 @@ export const KeyboardHandler: React.FC<{
         e.preventDefault();
         e.stopPropagation();
 
+        console.log('[KeyboardHandler] Escape pressed. Before reset:', {
+          selectedNodeIds: selectedNodeIds,
+          lastClickTime: lastClickTimeRef.current,
+          lastClickedId: lastClickedIdRef.current,
+        });
+
         // Check if we're inside an interactive component
         const ancestor = findInteractiveAncestor(selectedNodeIds[0]);
         if (ancestor) {
           // Return to root VStack to show full page view
           toggleNodeSelection(ROOT_VSTACK_ID, false);
         } else {
-          // Normal case: deselect everything (same as clicking empty canvas)
+          // Normal case: deselect everything
           setSelectedNodeIds([]);
-          // Reset selection refs to match clicking the root VStack
-          // This ensures the next click on a top-level item works with a single click
-          lastClickTimeRef.current = Date.now();
+          // Reset to default state: no selection means root VStack context
+          lastClickTimeRef.current = 0;
           lastClickedIdRef.current = ROOT_VSTACK_ID;
+
+          console.log('[KeyboardHandler] Escape - After reset:', {
+            lastClickTime: lastClickTimeRef.current,
+            lastClickedId: lastClickedIdRef.current,
+          });
         }
       }
 
