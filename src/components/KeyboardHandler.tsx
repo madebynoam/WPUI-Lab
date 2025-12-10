@@ -221,9 +221,10 @@ export const KeyboardHandler: React.FC<{
         } else {
           // Normal case: deselect everything (same as clicking empty canvas)
           setSelectedNodeIds([]);
-          // Reset selection refs to ensure next click is treated as a fresh first click
-          lastClickTimeRef.current = 0;
-          lastClickedIdRef.current = null;
+          // Reset selection refs to match clicking the root VStack
+          // This ensures the next click on a top-level item works with a single click
+          lastClickTimeRef.current = Date.now();
+          lastClickedIdRef.current = ROOT_VSTACK_ID;
         }
       }
 
