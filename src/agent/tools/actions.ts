@@ -148,13 +148,14 @@ export const createPageTool: AgentTool = {
     context: ToolContext
   ): Promise<ToolResult> => {
     try {
-      context.createPage(params.name, "");
+      const pageId = context.createPage(params.name, "");
 
       return {
         success: true,
         message: `Created new page "${params.name}" and switched to it`,
         data: {
           name: params.name,
+          pageId,
         },
       };
     } catch (error) {
