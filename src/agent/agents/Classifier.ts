@@ -42,6 +42,52 @@ export class Classifier {
   }
 
   /**
+   * Detect multi-step requests and return agents in execution order
+   *
+   * Examples of multi-step requests:
+   * - "Create a page with pricing cards" → [PageAgent, CreatorAgent]
+   * - "Add a dashboard page and show user stats" → [PageAgent, CreatorAgent]
+   *
+   * @param userMessage - The user's request
+   * @param memory - Memory store for context
+   * @returns Array of agent names in execution order, or null for single-step
+   */
+  async classifyMultiStep(userMessage: string, memory: MemoryStore): Promise<string[] | null> {
+    const lowerMessage = userMessage.toLowerCase();
+
+    // Multi-step patterns
+    const multiStepPatterns = [
+      // Page creation + component addition
+      { pattern: /(create|add|new)\s+(a|an)?\s*\w*\s*page.*(with|and|add|including)/i, agents: ['PageAgent', 'CreatorAgent'] },
+      // Sequential actions with "and"
+      { pattern: /\band\b/i, requiresMultipleAgents: true },
+    ];
+
+    for (const { pattern, agents, requiresMultipleAgents } of multiStepPatterns) {
+      if (pattern.test(lowerMessage)) {
+        if (agents) {
+          return agents;
+        }
+
+        if (requiresMultipleAgents) {
+          // Check which agents can handle parts of the message
+          const capableAgents: string[] = [];
+          for (const agent of this.agents) {
+            if (await agent.canHandle(userMessage, memory)) {
+              capableAgents.push(agent.name);
+            }
+          }
+          if (capableAgents.length > 1) {
+            return capableAgents;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Get agent by name
    */
   getAgent(name: string): Agent | null {

@@ -115,55 +115,102 @@ export class AgentOrchestrator {
         timestamp: Date.now(),
       });
 
-      const agentName = await this.classifier.classify(userMessage, this.memory);
+      // Try multi-step classification first
+      const agentNames = await this.classifier.classifyMultiStep(userMessage, this.memory);
 
-      if (!agentName) {
-        return {
-          success: false,
-          message: "I'm not sure how to handle that request. Could you please rephrase it?",
-          tokensUsed: 0,
-          cost: 0,
-          duration: Date.now() - startTime,
-          memoryEntriesCreated: 0,
-        };
-      }
+      if (agentNames && agentNames.length > 1) {
+        // Multi-step workflow
+        onProgress?.({
+          agent: 'Classifier',
+          type: 'success',
+          message: `Multi-step workflow: ${agentNames.join(' → ')}`,
+          timestamp: Date.now(),
+        });
 
-      onProgress?.({
-        agent: 'Classifier',
-        type: 'success',
-        message: `Routing to ${agentName}`,
-        timestamp: Date.now(),
-      });
+        // Execute agents sequentially
+        for (const agentName of agentNames) {
+          const agent = this.classifier.getAgent(agentName);
+          if (!agent) {
+            throw new Error(`Agent ${agentName} not found`);
+          }
 
-      // Phase 2: Execute specialist agent
-      const agent = this.classifier.getAgent(agentName);
-      if (!agent) {
-        throw new Error(`Agent ${agentName} not found`);
-      }
+          const agentResult: AgentResult = await agent.execute(
+            userMessage,
+            context,
+            this.memory,
+            (message: AgentProgressMessage) => {
+              // Forward agent messages to UI
+              onProgress?.(message);
+            }
+          );
 
-      const agentResult: AgentResult = await agent.execute(
-        userMessage,
-        context,
-        this.memory,
-        (message: AgentProgressMessage) => {
-          // Forward agent messages to UI
-          onProgress?.(message);
+          totalTokens += agentResult.tokensUsed;
+          totalCost += agentResult.cost;
+          memoryEntriesCreated += agentResult.memoryEntriesCreated;
+
+          if (!agentResult.success) {
+            return {
+              success: false,
+              message: agentResult.message,
+              tokensUsed: totalTokens,
+              cost: totalCost,
+              duration: Date.now() - startTime,
+              memoryEntriesCreated,
+            };
+          }
         }
-      );
+      } else {
+        // Single-step workflow
+        const agentName = await this.classifier.classify(userMessage, this.memory);
 
-      totalTokens += agentResult.tokensUsed;
-      totalCost += agentResult.cost;
-      memoryEntriesCreated += agentResult.memoryEntriesCreated;
+        if (!agentName) {
+          return {
+            success: false,
+            message: "I'm not sure how to handle that request. Could you please rephrase it?",
+            tokensUsed: 0,
+            cost: 0,
+            duration: Date.now() - startTime,
+            memoryEntriesCreated: 0,
+          };
+        }
 
-      if (!agentResult.success) {
-        return {
-          success: false,
-          message: agentResult.message,
-          tokensUsed: totalTokens,
-          cost: totalCost,
-          duration: Date.now() - startTime,
-          memoryEntriesCreated,
-        };
+        onProgress?.({
+          agent: 'Classifier',
+          type: 'success',
+          message: `Routing to ${agentName}`,
+          timestamp: Date.now(),
+        });
+
+        // Phase 2: Execute specialist agent
+        const agent = this.classifier.getAgent(agentName);
+        if (!agent) {
+          throw new Error(`Agent ${agentName} not found`);
+        }
+
+        const agentResult: AgentResult = await agent.execute(
+          userMessage,
+          context,
+          this.memory,
+          (message: AgentProgressMessage) => {
+            // Forward agent messages to UI
+            onProgress?.(message);
+          }
+        );
+
+        totalTokens += agentResult.tokensUsed;
+        totalCost += agentResult.cost;
+        memoryEntriesCreated += agentResult.memoryEntriesCreated;
+
+        if (!agentResult.success) {
+          return {
+            success: false,
+            message: agentResult.message,
+            tokensUsed: totalTokens,
+            cost: totalCost,
+            duration: Date.now() - startTime,
+            memoryEntriesCreated,
+          };
+        }
       }
 
       // Phase 3: Validation
