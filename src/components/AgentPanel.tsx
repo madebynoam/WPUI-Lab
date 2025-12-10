@@ -16,11 +16,21 @@ import {
   executePhase,
   PLANNER_PROMPT,
   getBUILDER_PROMPT,
+  AgentOrchestrator,
 } from "../agent";
 import { getTool, getToolsForLLM, convertToolToLLM } from "../agent/tools/registry";
 
 interface AgentPanelProps {
   onClose: () => void;
+}
+
+// Singleton orchestrator instance (created once, reused across renders)
+let orchestratorInstance: AgentOrchestrator | null = null;
+function getOrchestrator() {
+  if (!orchestratorInstance) {
+    orchestratorInstance = new AgentOrchestrator();
+  }
+  return orchestratorInstance;
 }
 
 export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
@@ -284,43 +294,63 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           // Don't add agent response yet - waiting for user to click Continue
           return; // STOP HERE - wait for user input
         } else {
-          // Use regular handler
-          agentResponse = await handleUserMessage(
+          // Use new multi-agent orchestrator (v3.0)
+          const orchestrator = getOrchestrator();
+
+          const result = await orchestrator.handleMessage(
             userMessageText,
             toolContext,
-            undefined, // API keys now handled server-side
-            undefined, // API keys now handled server-side
-            (update) => {
-              console.log("[AgentPanel] Progress update:", update);
+            {
+              onProgress: (agentMsg) => {
+                console.log("[AgentPanel] Progress update:", agentMsg);
 
-              // Append new progress message to chat
-              const progressMessage: AgentMessage = {
-                id: `progress-${Date.now()}-${Math.random()}`,
-                role: "agent",
-                content: [
-                  {
-                    type: "text",
-                    text: update.message,
-                  },
-                ],
-                timestamp: Date.now(),
-                archived: false,
-                showIcon: true,
-              };
-              setMessages((prev) => [...prev, progressMessage]);
+                // Append new progress message to chat
+                const progressMessage: AgentMessage = {
+                  id: `progress-${Date.now()}-${Math.random()}`,
+                  role: "agent",
+                  content: [
+                    {
+                      type: "text",
+                      text: agentMsg.message,
+                    },
+                  ],
+                  timestamp: agentMsg.timestamp,
+                  archived: false,
+                  showIcon: true,
+                };
+                setMessages((prev) => [...prev, progressMessage]);
 
-              setProgressState({
-                isProcessing: true,
-                phase: update.phase,
-                agent: update.agent || null,
-                current: update.current || 0,
-                total: update.total || 0,
-                message: update.message,
-              });
-            },
-            controller.signal,
-            messages  // Pass conversation history for context
+                setProgressState({
+                  isProcessing: true,
+                  phase: null,
+                  agent: agentMsg.agent,
+                  current: 0,
+                  total: 0,
+                  message: agentMsg.message,
+                });
+              },
+            }
           );
+
+          // Create agent response from orchestrator result
+          agentResponse = {
+            id: `agent-${Date.now()}`,
+            role: "agent",
+            content: [
+              {
+                type: "text",
+                text: result.message,
+              },
+            ],
+            timestamp: Date.now(),
+            archived: false,
+            showIcon: true,
+            metadata: {
+              tokensUsed: result.tokensUsed,
+              cost: result.cost,
+              duration: result.duration,
+            },
+          };
         }
 
         // Add agent response to chat
