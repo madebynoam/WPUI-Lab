@@ -26,8 +26,8 @@ export const design_getHeuristics: AgentTool = {
     },
     required: ['context']
   },
-  handler: async (args: any) => {
-    const { context } = args;
+  execute: async (params: { context: string }) => {
+    const { context } = params;
 
     if (!context || typeof context !== 'string') {
       return {
