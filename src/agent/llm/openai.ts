@@ -46,6 +46,8 @@ export class OpenAIProvider implements LLMProvider {
       requestBody.tool_choice = tool_choice || "auto";
     }
 
+    console.log('[OpenAI] Request body:', JSON.stringify(requestBody, null, 2));
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -60,12 +62,14 @@ export class OpenAIProvider implements LLMProvider {
       const error = await response
         .json()
         .catch(() => ({ error: { message: response.statusText } }));
+      console.error('[OpenAI] API Error:', JSON.stringify(error, null, 2));
       throw new Error(
         error.error?.message || `OpenAI API error: ${response.status}`
       );
     }
 
     const data = await response.json();
+    console.log('[OpenAI] Full response:', JSON.stringify(data, null, 2));
     const choice = data.choices[0];
 
     return {

@@ -1,7 +1,18 @@
 import { AgentTool, ToolContext, ToolResult } from '../types';
 import { ComponentNode } from '../../types';
-import { componentRegistry } from '@/componentRegistry';
-import { ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { ROOT_VSTACK_ID } from '@/utils/treeHelpers';
+
+// Conditionally import componentRegistry
+let componentRegistry: Record<string, any> = {};
+try {
+  if (typeof window !== 'undefined') {
+    componentRegistry = require('@/componentRegistry').componentRegistry;
+  } else {
+    componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
+  }
+} catch (e) {
+  console.log('[treeManipulation] Failed to load componentRegistry:', e);
+}
 
 // Generate comprehensive schema documentation for the agent
 function generateSchemaDocumentation(): string {

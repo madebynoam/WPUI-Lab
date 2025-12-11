@@ -1,9 +1,21 @@
 import { AgentTool, ToolContext, ToolResult } from "../types";
-import { componentRegistry } from "@/componentRegistry";
 import { normalizeComponentNodes } from "../../utils/normalizeComponent";
 import { getAgentComponentList } from "../../config/availableComponents";
 import { parseMarkupWithRepair } from "../utils/repairMarkup";
 import { generateId } from "../../utils/idGenerator";
+
+// Conditionally import componentRegistry
+let componentRegistry: Record<string, any> = {};
+try {
+  if (typeof window !== 'undefined') {
+    componentRegistry = require('@/componentRegistry').componentRegistry;
+  } else {
+    // Node.js environment - use mock registry
+    componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
+  }
+} catch (e) {
+  console.log('[actions] Failed to load componentRegistry:', e);
+}
 
 // DEPRECATED TOOLS REMOVED:
 // - createComponentTool: Replaced by smart tools (component_update, buildFromMarkup)

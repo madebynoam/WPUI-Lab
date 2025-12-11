@@ -2,11 +2,12 @@
  * Tool Registry Initialization
  *
  * Import and register all available agent tools
+ * Works in both browser and Node.js (componentRegistry conditionally loaded)
  */
 
 import { registerTool } from './registry';
 
-// Import all tools
+// Import all tools (they have conditional componentRegistry imports)
 import {
   duplicateComponentTool,
   addInteractionTool,

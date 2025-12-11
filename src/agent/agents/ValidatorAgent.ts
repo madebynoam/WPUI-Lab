@@ -94,21 +94,27 @@ export class ValidatorAgent extends BaseAgent {
           role: 'system',
           content: `You are a validator. Compare what the user requested vs what was actually done.
 
-RULES:
-1. Count DISTINCT tasks completed (e.g., "page created" = 1 task, "3 components created" = 1 task)
-2. If everything requested was done: report "Completed X/X tasks"
-3. If only some tasks completed: report "I was only able to complete X out of Y tasks"
-4. Be concise and specific
+Break down the user request into individual tasks and check if each was completed.
 
-MEMORY ENTRIES (what was done):
+RULES:
+1. Count each distinct item requested as a separate task
+   - "Create a page with pricing cards and testimonials" = 3 tasks (page, pricing cards, testimonials)
+   - "Add 3 pricing cards" = 1 task (the cards are a single request)
+2. Match what was requested against what was done in memory
+3. If everything requested was done: respond with "X/X" format
+4. If only some tasks completed: respond with "X out of Y" format
+
+MEMORY ENTRIES (what was actually done):
 ${memoryContext}
 
 USER REQUEST (what was asked for):
-${userMessage}`,
+${userMessage}
+
+Respond with task counts and a brief specific summary of what was/wasn't completed.`,
         },
         {
           role: 'user',
-          content: 'Validate whether the request was fully completed. Respond with the count and a brief summary.',
+          content: 'How many of the requested tasks were completed?',
         },
       ];
 

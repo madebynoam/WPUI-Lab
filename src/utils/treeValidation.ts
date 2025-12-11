@@ -1,5 +1,16 @@
 import { ComponentNode } from '@/types';
-import { componentRegistry } from '@/componentRegistry';
+
+// Conditionally import componentRegistry
+let componentRegistry: Record<string, any> = {};
+try {
+  if (typeof window !== 'undefined') {
+    componentRegistry = require('@/componentRegistry').componentRegistry;
+  } else {
+    componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
+  }
+} catch (e) {
+  console.log('[treeValidation] Failed to load componentRegistry:', e);
+}
 
 export interface ValidationError {
   path: string;

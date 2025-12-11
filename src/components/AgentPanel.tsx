@@ -26,9 +26,14 @@ interface AgentPanelProps {
 
 // Singleton orchestrator instance (created once, reused across renders)
 let orchestratorInstance: AgentOrchestrator | null = null;
-function getOrchestrator() {
+let orchestratorPromise: Promise<AgentOrchestrator> | null = null;
+
+async function getOrchestrator() {
   if (!orchestratorInstance) {
-    orchestratorInstance = new AgentOrchestrator();
+    if (!orchestratorPromise) {
+      orchestratorPromise = AgentOrchestrator.create();
+    }
+    orchestratorInstance = await orchestratorPromise;
   }
   return orchestratorInstance;
 }
@@ -295,7 +300,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           return; // STOP HERE - wait for user input
         } else {
           // Use new multi-agent orchestrator (v3.0)
-          const orchestrator = getOrchestrator();
+          const orchestrator = await getOrchestrator();
 
           const result = await orchestrator.handleMessage(
             userMessageText,

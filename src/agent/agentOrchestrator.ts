@@ -45,31 +45,66 @@ export class AgentOrchestrator {
   private updateAgent: UpdateAgent;
   private validatorAgent: ValidatorAgent;
 
-  constructor() {
+  private constructor(
+    memory: MemoryStore,
+    pageAgent: PageAgent,
+    creatorAgent: CreatorAgent,
+    updateAgent: UpdateAgent,
+    validatorAgent: ValidatorAgent,
+    classifier: Classifier
+  ) {
+    this.memory = memory;
+    this.pageAgent = pageAgent;
+    this.creatorAgent = creatorAgent;
+    this.updateAgent = updateAgent;
+    this.validatorAgent = validatorAgent;
+    this.classifier = classifier;
+  }
+
+  /**
+   * Create a new AgentOrchestrator instance (async factory)
+   */
+  static async create(): Promise<AgentOrchestrator> {
     // Initialize shared memory
-    this.memory = new MemoryStore();
+    const memory = new MemoryStore();
 
     // Create LLM provider using centralized agentConfig
     const config = getAgentModel('agent');
-    const llm = createLLMProvider(config);
+    const llm = await createLLMProvider(config);
 
     // Initialize specialist agents
-    this.pageAgent = new PageAgent(llm, this.memory);
-    this.creatorAgent = new CreatorAgent(llm, this.memory);
-    this.updateAgent = new UpdateAgent(llm, this.memory);
-    this.validatorAgent = new ValidatorAgent(llm, this.memory);
-
-    // Inject real tools from registry into each agent
-    this.injectTools(this.pageAgent);
-    this.injectTools(this.creatorAgent);
-    this.injectTools(this.updateAgent);
+    const pageAgent = new PageAgent(llm, memory);
+    const creatorAgent = new CreatorAgent(llm, memory);
+    const updateAgent = new UpdateAgent(llm, memory);
+    const validatorAgent = new ValidatorAgent(llm, memory);
 
     // Initialize classifier with agent priority order
-    this.classifier = new Classifier([
-      this.pageAgent,      // Priority 1: Page operations
-      this.creatorAgent,   // Priority 2: Component creation
-      this.updateAgent,    // Priority 3: Modifications
-    ]);
+    const classifier = new Classifier(
+      [
+        pageAgent,      // Priority 1: Page operations
+        creatorAgent,   // Priority 2: Component creation
+        updateAgent,    // Priority 3: Modifications
+      ],
+      llm,    // LLM provider for routing decisions
+      memory  // Memory for context-aware routing
+    );
+
+    // Create orchestrator instance
+    const orchestrator = new AgentOrchestrator(
+      memory,
+      pageAgent,
+      creatorAgent,
+      updateAgent,
+      validatorAgent,
+      classifier
+    );
+
+    // Inject real tools from registry into each agent
+    orchestrator.injectTools(pageAgent);
+    orchestrator.injectTools(creatorAgent);
+    orchestrator.injectTools(updateAgent);
+
+    return orchestrator;
   }
 
   /**
@@ -116,26 +151,33 @@ export class AgentOrchestrator {
       });
 
       // Try multi-step classification first
-      const agentNames = await this.classifier.classifyMultiStep(userMessage, this.memory);
+      const agentSteps = await this.classifier.classifyMultiStep(userMessage, this.memory);
 
-      if (agentNames && agentNames.length > 1) {
-        // Multi-step workflow
+      if (agentSteps && agentSteps.length > 1) {
+        // Multi-step workflow with agent-specific instructions
         onProgress?.({
           agent: 'Classifier',
           type: 'success',
-          message: `Multi-step workflow: ${agentNames.join(' → ')}`,
+          message: `Multi-step workflow: ${agentSteps.map(s => s.agent).join(' → ')}`,
           timestamp: Date.now(),
         });
 
-        // Execute agents sequentially
-        for (const agentName of agentNames) {
+        // Execute agents sequentially with their specific instructions
+        console.log(`[Orchestrator] Starting multi-step workflow with ${agentSteps.length} steps`);
+        for (let i = 0; i < agentSteps.length; i++) {
+          const { agent: agentName, instruction } = agentSteps[i];
+          console.log(`[Orchestrator] ========== STEP ${i + 1}/${agentSteps.length} ==========`);
+          console.log(`[Orchestrator] Agent: ${agentName}`);
+          console.log(`[Orchestrator] Instruction: ${instruction}`);
+
           const agent = this.classifier.getAgent(agentName);
           if (!agent) {
             throw new Error(`Agent ${agentName} not found`);
           }
 
+          console.log(`[Orchestrator] Executing ${agentName}...`);
           const agentResult: AgentResult = await agent.execute(
-            userMessage,
+            instruction,  // ← AGENT-SPECIFIC INSTRUCTION, NOT FULL MESSAGE!
             context,
             this.memory,
             (message: AgentProgressMessage) => {
@@ -144,11 +186,19 @@ export class AgentOrchestrator {
             }
           );
 
+          console.log(`[Orchestrator] ${agentName} completed:`, {
+            success: agentResult.success,
+            message: agentResult.message,
+            tokensUsed: agentResult.tokensUsed,
+            memoryEntriesCreated: agentResult.memoryEntriesCreated,
+          });
+
           totalTokens += agentResult.tokensUsed;
           totalCost += agentResult.cost;
           memoryEntriesCreated += agentResult.memoryEntriesCreated;
 
           if (!agentResult.success) {
+            console.error(`[Orchestrator] Step ${i + 1} FAILED - stopping workflow`);
             return {
               success: false,
               message: agentResult.message,
@@ -158,7 +208,9 @@ export class AgentOrchestrator {
               memoryEntriesCreated,
             };
           }
+          console.log(`[Orchestrator] Step ${i + 1} SUCCESS - continuing`);
         }
+        console.log(`[Orchestrator] All ${agentSteps.length} steps completed successfully`);
       } else {
         // Single-step workflow
         const agentName = await this.classifier.classify(userMessage, this.memory);

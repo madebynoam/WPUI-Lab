@@ -12,13 +12,14 @@ import { AgentResult, LLMProvider, AgentProgressMessage } from './types';
 import { ToolContext, AgentTool } from '../types';
 import { MemoryStore } from '../memory/MemoryStore';
 import { CREATOR_AGENT_PROMPT } from '../prompts/creatorAgent';
+import { DECOMPOSER_PROMPT } from '../prompts/decomposer';
 
 export class CreatorAgent extends BaseAgent {
   name = 'CreatorAgent';
   capabilities = ['component_creation', 'section_templates', 'table_creation'];
 
   // Tool names this agent needs (real tools will be injected)
-  requiredTools = ['buildFromMarkup', 'section_create', 'table_create'];
+  requiredTools = ['buildFromMarkup', 'table_create'];
 
   tools: AgentTool[] = []; // Will be populated with real tools from registry
 
@@ -61,6 +62,66 @@ export class CreatorAgent extends BaseAgent {
     return hasCreation && hasComponent && !isPageOperation;
   }
 
+  /**
+   * Decompose complex requests into sub-requests
+   *
+   * Uses LLM to split requests like "pricing and testimonials" into ["pricing", "testimonials"]
+   *
+   * @param userMessage - The user's request
+   * @returns Array of sub-requests (single-item array if request is simple)
+   */
+  private async decompose(userMessage: string): Promise<string[]> {
+    console.log('\n[CreatorAgent] ========== DECOMPOSITION ==========');
+    console.log('[CreatorAgent] Analyzing:', userMessage);
+
+    try {
+      const response = await this.callLLM({
+        messages: [
+          {
+            role: 'system',
+            content: DECOMPOSER_PROMPT,
+          },
+          {
+            role: 'user',
+            content: userMessage,
+          },
+        ],
+        temperature: 0.3,  // Low variance for consistent decomposition
+        max_tokens: 300,   // Short response (just JSON array)
+      });
+
+      const content = response.content?.trim();
+      console.log('[CreatorAgent] Decomposition response:', content);
+      console.log('[CreatorAgent] Decomposition finish_reason:', response.finish_reason);
+      console.log('[CreatorAgent] Decomposition full response:', JSON.stringify(response, null, 2));
+
+      if (!content) {
+        console.log('[CreatorAgent] No decomposition - using original request');
+        return [userMessage];
+      }
+
+      // Parse JSON array response
+      try {
+        const subRequests = JSON.parse(content);
+
+        if (Array.isArray(subRequests) && subRequests.length > 0) {
+          console.log('[CreatorAgent] Decomposed into', subRequests.length, 'sub-requests:', subRequests);
+          return subRequests;
+        }
+      } catch {
+        console.log('[CreatorAgent] Failed to parse decomposition JSON - using original request');
+      }
+
+      // Fallback: return original request
+      return [userMessage];
+
+    } catch (error) {
+      console.error('[CreatorAgent] Decomposition error:', error instanceof Error ? error.message : String(error));
+      console.log('[CreatorAgent] Falling back to original request');
+      return [userMessage];
+    }
+  }
+
   async execute(
     userMessage: string,
     context: ToolContext,
@@ -88,98 +149,142 @@ export class CreatorAgent extends BaseAgent {
         this.emit('progress', `Found page ${recentPage[0].entityId}`);
       }
 
-      this.emit('progress', 'Preparing to create components...');
+      // Decompose request into sub-requests
+      this.emit('progress', 'Decomposing request...');
+      const subRequests = await this.decompose(userMessage);
 
-      const messages = [
-        {
-          role: 'system',
-          content: CREATOR_AGENT_PROMPT,
-        },
-        {
-          role: 'user',
-          content: `${pageContext}\n\nUser request: ${userMessage}`,
-        },
-      ];
+      if (subRequests.length > 1) {
+        this.emit('progress', `Split into ${subRequests.length} sub-requests`);
+      }
 
-      const toolSchemas = this.tools.map(tool => ({
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: {
-            type: 'object',
-            properties: Object.fromEntries(
-              Object.entries(tool.parameters || {}).map(([key, param]) => {
-                const { required, ...rest } = param as any;
-                return [key, rest];
-              })
-            ),
-            required: Object.keys(tool.parameters || {}).filter(
-              key => tool.parameters?.[key].required
-            ),
-          },
-        },
-      }));
+      // Execute each sub-request separately
+      for (let i = 0; i < subRequests.length; i++) {
+        const subRequest = subRequests[i];
+        const isMultiple = subRequests.length > 1;
 
-      const response = await this.callLLM({
-        messages: messages as any,
-        tools: toolSchemas,
-        max_tokens: 1000,
-      });
-
-      if (response.tool_calls && response.tool_calls.length > 0) {
-        for (const toolCall of response.tool_calls) {
-          const tool = this.tools.find(t => t.name === toolCall.function.name);
-          if (!tool) continue;
-
-          const args = JSON.parse(toolCall.function.arguments);
-
-          this.emit('progress', `Executing ${tool.name}...`);
-
-          const result = await tool.execute(args, context);
-
-          if (result.success) {
-            this.emit('success', result.message);
-
-            // Write to memory
-            const entityType = this.getEntityType(toolCall.function.name, args);
-            const componentCount = this.estimateComponentCount(args);
-
-            this.writeMemory({
-              action: 'component_created',
-              entityId: result.data?.componentIds || result.data?.componentId || 'unknown',
-              entityType,
-              details: {
-                ...result.data,  // Spread first
-                method: toolCall.function.name,
-                template: args.template,
-                count: componentCount,  // Override with accurate count
-              },
-            });
-            memoryEntriesCreated++;
-          } else {
-            this.emit('error', result.error || 'Tool execution failed');
-            return {
-              ...this.createErrorResult(result.error || 'Tool execution failed'),
-              duration: Date.now() - startTime,
-            };
-          }
+        if (isMultiple) {
+          this.emit('progress', `[${i + 1}/${subRequests.length}] Creating: ${subRequest}`);
+        } else {
+          this.emit('progress', 'Preparing to create components...');
         }
-      } else if (response.content) {
-        this.emit('progress', response.content);
+
+        const messages = [
+          {
+            role: 'system',
+            content: CREATOR_AGENT_PROMPT,
+          },
+          {
+            role: 'user',
+            content: `${pageContext}\n\nUser request: ${subRequest}`,
+          },
+        ];
+
+        const toolSchemas = this.tools.map(tool => ({
+          type: 'function',
+          function: {
+            name: tool.name,
+            description: tool.description,
+            parameters: {
+              type: 'object',
+              properties: Object.fromEntries(
+                Object.entries(tool.parameters || {}).map(([key, param]) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  const { required, ...rest } = param as Record<string, unknown>;
+                  return [key, rest];
+                })
+              ),
+              required: Object.keys(tool.parameters || {}).filter(
+                key => tool.parameters?.[key].required
+              ),
+            },
+          },
+        }));
+
+        // DEBUG: Log LLM request
+        console.log(`\n[CreatorAgent] ========== LLM REQUEST ${i + 1}/${subRequests.length} ==========`);
+        console.log('[CreatorAgent] Sub-request:', subRequest);
+        console.log('[CreatorAgent] System Prompt (first 300 chars):', messages[0].content.substring(0, 300) + '...');
+        console.log('[CreatorAgent] Available Tools:', toolSchemas.map(t => t.function.name).join(', '));
+
+        const response = await this.callLLM({
+          messages: messages as never[],
+          tools: toolSchemas,
+          max_tokens: 1500,  // Smaller per sub-request (not generating everything at once)
+        });
+
+        // DEBUG: Log LLM response
+        console.log(`\n[CreatorAgent] ========== LLM RESPONSE ${i + 1}/${subRequests.length} ==========`);
+        console.log('[CreatorAgent] Content:', response.content);
+        console.log('[CreatorAgent] Finish Reason:', response.finish_reason);
+        if (response.tool_calls && response.tool_calls.length > 0) {
+          console.log('[CreatorAgent] Tool Calls:');
+          response.tool_calls.forEach((tc, idx) => {
+            console.log(`  [${idx + 1}] Tool: ${tc.function.name}`);
+            console.log(`      Arguments (length):`, tc.function.arguments.length, 'chars');
+          });
+        } else {
+          console.log('[CreatorAgent] No tool calls');
+        }
+        console.log('[CreatorAgent] =======================================\n');
+
+        if (response.tool_calls && response.tool_calls.length > 0) {
+          for (const toolCall of response.tool_calls) {
+            const tool = this.tools.find(t => t.name === toolCall.function.name);
+            if (!tool) continue;
+
+            const args = JSON.parse(toolCall.function.arguments);
+
+            this.emit('progress', `Executing ${tool.name}...`);
+
+            const result = await tool.execute(args, context);
+
+            if (result.success) {
+              this.emit('success', result.message);
+
+              // Write to memory
+              const entityType = this.getEntityType(toolCall.function.name, args);
+              const componentCount = this.estimateComponentCount(args);
+
+              this.writeMemory({
+                action: 'component_created',
+                entityId: result.data?.componentIds || result.data?.componentId || 'unknown',
+                entityType,
+                details: {
+                  ...result.data,  // Spread first
+                  method: toolCall.function.name,
+                  template: args.template,
+                  count: componentCount,  // Override with accurate count
+                  subRequest,  // Track which sub-request this came from
+                },
+              });
+              memoryEntriesCreated++;
+            } else {
+              this.emit('error', result.error || 'Tool execution failed');
+              return {
+                ...this.createErrorResult(result.error || 'Tool execution failed'),
+                duration: Date.now() - startTime,
+              };
+            }
+          }
+        } else if (response.content) {
+          this.emit('progress', response.content);
+        }
       }
 
       const result = this.createSuccessResult(
-        'Component creation completed',
+        subRequests.length > 1
+          ? `Created ${subRequests.length} component groups`
+          : 'Component creation completed',
         {},
         memoryEntriesCreated
       );
 
       result.duration = Date.now() - startTime;
       return result;
-    } catch (error: any) {
-      this.emit('error', error.message);
-      const result = this.createErrorResult(error.message);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.emit('error', errorMessage);
+      const result = this.createErrorResult(errorMessage);
       result.duration = Date.now() - startTime;
       return result;
     }

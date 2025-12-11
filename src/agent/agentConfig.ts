@@ -62,14 +62,14 @@ export interface ModelCapabilities {
  * To switch models:
  * - Anthropic Claude Sonnet 4.5: Most capable, expensive ($3/$15 per MTok)
  * - Anthropic Claude Haiku 4.5: Fast and affordable ($1/$5 per MTok)
- * - OpenAI GPT-5-mini: Excellent balance ($0.25/$2.00 per MTok) ← Current
+ * - OpenAI GPT-4o-mini: Fast and affordable ($0.15/$0.60 per MTok) ← Current
  * - OpenAI GPT-4o: Good balance ($2.50/$10.00 per MTok)
  */
 export const AGENT_MODELS = {
   // Shared LLM provider for all specialist agents in v3.0 multi-agent system
   agent: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_5,
+    model: Models.OpenAI.GPT_4O_MINI,  // $0.15/$0.60 per MTok
   } as AgentModelConfig,
 } as const;
 

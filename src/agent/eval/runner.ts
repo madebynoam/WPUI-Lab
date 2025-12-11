@@ -11,6 +11,10 @@
  */
 
 import { AgentOrchestrator } from '../agentOrchestrator';
+// Load environment variables from .env.local
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+
 import { ToolContext } from '../types';
 import { evalDataset, EvalScenario, calculateTotalBudget } from './dataset';
 import { ComponentNode, Page } from '../../types';
@@ -231,16 +235,18 @@ async function runScenario(scenario: EvalScenario): Promise<EvalResult> {
     console.log(`   Message: "${scenario.userMessage}"`);
 
     // Create orchestrator and mock context
-    const orchestrator = new AgentOrchestrator();
+    const orchestrator = await AgentOrchestrator.create();
     const context = createMockToolContext(scenario.setupState);
 
     // Execute
     const result = await orchestrator.handleMessage(scenario.userMessage, context, {
       onProgress: (msg) => {
         // Optionally log progress
-        // console.log(`   [${msg.agent}] ${msg.message}`);
+        console.log(`   [${msg.agent}] ${msg.message}`);
       },
     });
+
+    console.log('   Result:', JSON.stringify(result, null, 2));
 
     const actualTime = Date.now() - startTime;
     const actualCost = result.cost;

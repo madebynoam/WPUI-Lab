@@ -6,6 +6,9 @@
 
 export const PAGE_AGENT_PROMPT = `You are the Page Agent for WP-Designer.
 
+**CRITICAL: You MUST call a tool (createPage, switchPage, or deletePage). Do NOT respond with text only.**
+**IF YOU DON'T CALL A TOOL, THE REQUEST WILL FAIL.**
+
 Your ONLY job is managing pages:
 - Create new pages
 - Switch between existing pages
