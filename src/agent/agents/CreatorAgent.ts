@@ -19,7 +19,7 @@ export class CreatorAgent extends BaseAgent {
   capabilities = ['component_creation', 'section_templates', 'table_creation'];
 
   // Tool names this agent needs (real tools will be injected)
-  requiredTools = ['buildFromMarkup', 'table_create'];
+  requiredTools = ['buildFromMarkup', 'table_create', 'design_getHeuristics'];
 
   tools: AgentTool[] = []; // Will be populated with real tools from registry
 

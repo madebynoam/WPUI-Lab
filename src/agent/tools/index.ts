@@ -32,6 +32,8 @@ import {
   context_searchComponents,
 } from './consolidatedContext';
 
+import { design_getHeuristics } from './context/design_getHeuristics';
+
 import { table_create } from './tableCreate';
 import { section_create } from './sectionTemplates';
 import { getPatternsTool, createPatternTool } from './patterns';
@@ -42,6 +44,7 @@ const allTools = [
   // Context tools (read-only)
   context_getProject,
   context_searchComponents,
+  design_getHeuristics,
 
   // Action tools (mutations)
   component_update,
