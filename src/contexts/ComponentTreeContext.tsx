@@ -91,6 +91,10 @@ interface ComponentTreeContextType {
   isPlayMode: boolean;
   setPlayMode: (isPlay: boolean) => void;
 
+  // Agent execution state
+  isAgentExecuting: boolean;
+  setAgentExecuting: (isExecuting: boolean) => void;
+
   // Editing mode
   editingMode: 'selection' | 'text';
   setEditingMode: (mode: 'selection' | 'text') => void;
@@ -195,6 +199,7 @@ function initializeState(): ComponentTreeState {
     clipboard: null,
     cutNodeId: null,
     isPlayMode: false,
+    isAgentExecuting: false,
     editingMode: 'selection',
     history: {
       past: [],
@@ -532,6 +537,12 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'SET_PLAY_MODE', payload: { isPlay } });
   };
 
+  // ===== Agent Execution State =====
+
+  const setAgentExecuting = (isExecuting: boolean) => {
+    dispatch({ type: 'SET_AGENT_EXECUTING', payload: { isExecuting } });
+  };
+
   // ===== Editing Mode =====
 
   const setEditingMode = (mode: 'selection' | 'text') => {
@@ -617,6 +628,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     clearHistory,
     isPlayMode: state.isPlayMode,
     setPlayMode,
+    isAgentExecuting: state.isAgentExecuting,
+    setAgentExecuting,
     editingMode: state.editingMode,
     setEditingMode,
     addInteraction,

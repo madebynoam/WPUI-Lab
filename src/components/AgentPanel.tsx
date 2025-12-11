@@ -140,8 +140,10 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         total: 0,
         message: "",
       });
+      // Re-enable UI interactions
+      componentTreeContext.setAgentExecuting(false);
     }
-  }, [abortController]);
+  }, [abortController, componentTreeContext]);
 
   // Create tool context from component tree context - simple pass-through to use same code paths as UI
   // With useReducer, the reducer always receives current state, so no refs needed!
@@ -251,6 +253,9 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         total: 0,
         message: "Starting...",
       });
+
+      // Disable UI interactions while agent is working
+      componentTreeContext.setAgentExecuting(true);
 
       try {
         // Process message and get agent response
@@ -397,9 +402,11 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           total: 0,
           message: "",
         });
+        // Re-enable UI interactions
+        componentTreeContext.setAgentExecuting(false);
       }
     },
-    [createToolContext, messages, isDebugMode, setPhaseResults, setCurrentPhase, setCurrentUserMessage, setPlanOutput, plannerPrompt, setPlannerPrompt]
+    [createToolContext, messages, isDebugMode, setPhaseResults, setCurrentPhase, setCurrentUserMessage, setPlanOutput, plannerPrompt, setPlannerPrompt, componentTreeContext]
   );
 
   // Generate contextual suggestions
