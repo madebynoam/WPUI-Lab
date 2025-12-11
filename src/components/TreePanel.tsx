@@ -328,6 +328,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     copyComponent,
     pasteComponent,
     canPaste,
+    isAgentExecuting,
   } = useComponentTree();
 
   const [inserterTab, setInserterTab] = useState<"blocks" | "patterns">(
@@ -351,12 +352,14 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     null
   );
 
-  // Configure dnd-kit sensors
+  // Configure dnd-kit sensors (disable when agent is executing)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
+      // Disable sensor when agent is executing
+      disabled: isAgentExecuting,
     })
   );
 

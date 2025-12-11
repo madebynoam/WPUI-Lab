@@ -160,6 +160,7 @@ export const PropertiesPanel: React.FC = () => {
     currentProjectId,
     updateProjectTheme,
     updateProjectLayout,
+    isAgentExecuting,
   } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
@@ -1208,6 +1209,9 @@ export const PropertiesPanel: React.FC = () => {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        pointerEvents: isAgentExecuting ? 'none' : 'auto',
+        opacity: isAgentExecuting ? 0.6 : 1,
+        transition: 'opacity 0.2s ease-in-out',
       }}
     >
       {/* Header with component icon, name, description and tabs */}

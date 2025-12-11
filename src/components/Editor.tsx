@@ -24,6 +24,7 @@ function EditorContent({ projectId, pageId }: EditorProps) {
     setSelectedNodeIds,
     setCurrentProject,
     setCurrentPage,
+    isAgentExecuting,
   } = useComponentTree();
 
   // Set the current project and page when the component mounts
@@ -133,7 +134,7 @@ function EditorContent({ projectId, pageId }: EditorProps) {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', cursor: isAgentExecuting ? 'progress' : 'default' }}>
       {/* Outer wrapper - adds padding when agent is active */}
       <div
         style={{

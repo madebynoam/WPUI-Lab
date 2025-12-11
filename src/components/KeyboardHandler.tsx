@@ -34,6 +34,7 @@ export const KeyboardHandler: React.FC<{
     setEditingMode,
     pages,
     currentPageId,
+    isAgentExecuting,
   } = useComponentTree();
 
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
@@ -54,6 +55,11 @@ export const KeyboardHandler: React.FC<{
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Disable all keyboard shortcuts when agent is executing
+      if (isAgentExecuting) {
+        return;
+      }
+
       // In play mode, most shortcuts are disabled except Escape
       // (Escape is handled below to allow exiting play mode if needed)
       if (isPlayMode) {
@@ -358,6 +364,7 @@ export const KeyboardHandler: React.FC<{
     document.addEventListener("keydown", handleKeyDown, true);
     return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [
+    isAgentExecuting,
     selectedNodeIds,
     tree,
     toggleNodeSelection,
