@@ -161,6 +161,19 @@ AVAILABLE AGENTS:
 - CreatorAgent (creates components/sections/tables)
 - UpdateAgent (modifies/moves/deletes components)
 
+CRITICAL RULES:
+
+**DO NOT SPLIT** when the second part describes attributes/children of the first:
+- "Add cards with CTAs" = SINGLE STEP (CTA is part of the card)
+- "Create button with icon" = SINGLE STEP (icon is part of button)
+- "Add form with submit button" = SINGLE STEP (button is part of form)
+- "Add 4 cards and each should have X" = SINGLE STEP (X is part of each card)
+
+**SPLIT** when operations are truly independent:
+- "Create page and add cards" = TWO STEPS (page creation + component creation)
+- "Update heading and delete footer" = TWO STEPS (separate operations)
+- "Switch to about page and change title" = TWO STEPS (navigation + modification)
+
 MULTI-STEP EXAMPLES:
 
 "Create a dashboard page with pricing cards"
@@ -169,22 +182,10 @@ MULTI-STEP EXAMPLES:
     {"agent": "CreatorAgent", "instruction": "Add pricing cards"}
   ]}
 
-"Add a dashboard page. 2. add hosting dashboard cards. 3. add a table with deployments"
-→ {"steps": [
-    {"agent": "PageAgent", "instruction": "Create a dashboard page"},
-    {"agent": "CreatorAgent", "instruction": "Add hosting dashboard cards and deployment table"}
-  ]}
-
 "Switch to about page and update the heading"
 → {"steps": [
     {"agent": "PageAgent", "instruction": "Switch to about page"},
     {"agent": "UpdateAgent", "instruction": "Update the heading"}
-  ]}
-
-"Add a contact page and include a form"
-→ {"steps": [
-    {"agent": "PageAgent", "instruction": "Create a contact page"},
-    {"agent": "CreatorAgent", "instruction": "Add a form"}
   ]}
 
 SINGLE-STEP EXAMPLES:
@@ -193,6 +194,15 @@ SINGLE-STEP EXAMPLES:
 → SINGLE_STEP
 
 "Add three testimonial cards"
+→ SINGLE_STEP
+
+"Add 4 feature cards with CTAs"
+→ SINGLE_STEP
+
+"Add 4 feature cards for a design app. Each card should have a CTA with relevant text"
+→ SINGLE_STEP
+
+"Create form with submit button and cancel button"
 → SINGLE_STEP
 
 "Make the button primary"
@@ -208,7 +218,8 @@ SINGLE_STEP
 
 IMPORTANT:
 - Each agent should receive ONLY its relevant instruction, not the full request
-- Split complex requests so each agent gets focused, atomic tasks
+- Only split when operations are TRULY independent, not when describing component attributes
+- When in doubt, prefer SINGLE_STEP
 - Do NOT include explanations, ONLY the JSON object or "SINGLE_STEP"`,
       },
       {

@@ -9,7 +9,7 @@
  * only when needed, minimizing token usage.
  */
 
-import { AgentTool } from '../types';
+import { AgentTool, ToolContext, ToolResult } from '../types';
 import { getRelevantHeuristics } from './designHeuristics';
 
 export const design_getHeuristics: AgentTool = {
@@ -26,10 +26,10 @@ export const design_getHeuristics: AgentTool = {
     },
     required: ['context']
   },
-  execute: async (params: { context: string }) => {
-    const { context } = params;
+  execute: async (params: { context: string }, context: ToolContext): Promise<ToolResult> => {
+    const { context: designContext } = params;
 
-    if (!context || typeof context !== 'string') {
+    if (!designContext || typeof designContext !== 'string') {
       return {
         success: false,
         message: 'Please provide a context description of what you\'re designing',
@@ -38,7 +38,7 @@ export const design_getHeuristics: AgentTool = {
 
     try {
       // Get relevant heuristics based on context
-      const heuristics = getRelevantHeuristics(context);
+      const heuristics = getRelevantHeuristics(designContext);
 
       return {
         success: true,
