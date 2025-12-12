@@ -135,6 +135,20 @@ const TABLE_TEMPLATES = {
       { id: 3, name: 'Maria Garcia', company: 'Startup Inc', email: 'm.garcia@startup.com', score: 45, status: 'Cold' },
     ],
   },
+  deployments: {
+    columns: [
+      { id: 'environment', label: 'Environment' },
+      { id: 'version', label: 'Version' },
+      { id: 'status', label: 'Status' },
+      { id: 'deployedBy', label: 'Deployed By' },
+      { id: 'timestamp', label: 'Timestamp' },
+    ],
+    sampleData: [
+      { id: 1, environment: 'Production', version: 'v2.4.1', status: 'Success', deployedBy: 'Sarah J.', timestamp: '2025-01-21 14:32' },
+      { id: 2, environment: 'Staging', version: 'v2.5.0-rc1', status: 'Success', deployedBy: 'Michael C.', timestamp: '2025-01-21 15:45' },
+      { id: 3, environment: 'Development', version: 'v2.5.0-dev', status: 'Failed', deployedBy: 'Emily D.', timestamp: '2025-01-21 16:20' },
+    ],
+  },
 };
 
 /**
@@ -147,7 +161,7 @@ export const table_create: AgentTool = {
 
 IMPORTANT: Use this instead of manually creating DataViews components. This tool handles all the complexity.
 
-Available templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads
+Available templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads, deployments
 
 Examples:
 - table_create({ template: "users" })

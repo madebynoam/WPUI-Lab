@@ -228,6 +228,11 @@ export class CreatorAgent extends BaseAgent {
         console.log('[CreatorAgent] =======================================\n');
 
         if (response.tool_calls && response.tool_calls.length > 0) {
+          // Two-phase pattern for design_getHeuristics
+          let designHeuristics: string | null = null;
+          let actionToolExecuted = false;
+
+          // Execute all tool calls
           for (const toolCall of response.tool_calls) {
             const tool = this.tools.find(t => t.name === toolCall.function.name);
             if (!tool) continue;
@@ -238,10 +243,25 @@ export class CreatorAgent extends BaseAgent {
 
             const result = await tool.execute(args, context);
 
-            if (result.success) {
+            if (!result.success) {
+              this.emit('error', result.error || 'Tool execution failed');
+              return {
+                ...this.createErrorResult(result.error || 'Tool execution failed'),
+                duration: Date.now() - startTime,
+              };
+            }
+
+            // Check if this is design_getHeuristics or an action tool
+            if (toolCall.function.name === 'design_getHeuristics') {
+              designHeuristics = result.message;
+              this.emit('progress', 'Design heuristics retrieved');
+              console.log('[CreatorAgent] Design heuristics stored for potential second LLM call');
+            } else {
+              // This is an action tool (buildFromMarkup, table_create, etc.)
+              actionToolExecuted = true;
               this.emit('success', result.message);
 
-              // Write to memory
+              // Write to memory only for action tools
               const entityType = this.getEntityType(toolCall.function.name, args);
               const componentCount = this.estimateComponentCount(args);
 
@@ -258,12 +278,105 @@ export class CreatorAgent extends BaseAgent {
                 },
               });
               memoryEntriesCreated++;
-            } else {
-              this.emit('error', result.error || 'Tool execution failed');
-              return {
-                ...this.createErrorResult(result.error || 'Tool execution failed'),
-                duration: Date.now() - startTime,
-              };
+            }
+          }
+
+          // If agent ONLY called design_getHeuristics, make a second LLM call
+          if (designHeuristics && !actionToolExecuted) {
+            console.log('[CreatorAgent] Agent only called design_getHeuristics, making follow-up LLM call with heuristics');
+            this.emit('progress', 'Generating markup with design heuristics...');
+
+            // Format tools for OpenAI (same as initial call)
+            const toolSchemas = this.tools.map(tool => ({
+              type: 'function',
+              function: {
+                name: tool.name,
+                description: tool.description,
+                parameters: {
+                  type: 'object',
+                  properties: Object.fromEntries(
+                    Object.entries(tool.parameters || {}).map(([key, param]) => {
+                      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                      const { required, ...rest } = param as Record<string, unknown>;
+                      return [key, rest];
+                    })
+                  ),
+                  required: Object.keys(tool.parameters || {}).filter(
+                    key => tool.parameters?.[key].required
+                  ),
+                },
+              },
+            }));
+
+            // Make second LLM call with heuristics injected
+            const followUpResponse = await this.callLLM({
+              messages: [
+                {
+                  role: 'system',
+                  content: CREATOR_AGENT_PROMPT,
+                },
+                {
+                  role: 'user',
+                  content: subRequest,
+                },
+                {
+                  role: 'assistant',
+                  content: null,
+                  tool_calls: response.tool_calls,  // Original heuristics call
+                },
+                {
+                  role: 'tool',
+                  tool_call_id: response.tool_calls![0].id,
+                  content: designHeuristics,  // Heuristics result
+                },
+              ],
+              tools: toolSchemas,
+              temperature: 0.7,
+              max_tokens: 2000,
+            });
+
+            console.log('[CreatorAgent] Follow-up response:', JSON.stringify(followUpResponse, null, 2));
+
+            // Execute tools from follow-up response
+            if (followUpResponse.tool_calls && followUpResponse.tool_calls.length > 0) {
+              for (const toolCall of followUpResponse.tool_calls) {
+                const tool = this.tools.find(t => t.name === toolCall.function.name);
+                if (!tool) continue;
+
+                const args = JSON.parse(toolCall.function.arguments);
+
+                this.emit('progress', `Executing ${tool.name}...`);
+
+                const result = await tool.execute(args, context);
+
+                if (!result.success) {
+                  this.emit('error', result.error || 'Tool execution failed');
+                  return {
+                    ...this.createErrorResult(result.error || 'Tool execution failed'),
+                    duration: Date.now() - startTime,
+                  };
+                }
+
+                this.emit('success', result.message);
+
+                // Write to memory
+                const entityType = this.getEntityType(toolCall.function.name, args);
+                const componentCount = this.estimateComponentCount(args);
+
+                this.writeMemory({
+                  action: 'component_created',
+                  entityId: result.data?.componentIds || result.data?.componentId || 'unknown',
+                  entityType,
+                  details: {
+                    ...result.data,
+                    method: toolCall.function.name,
+                    template: args.template,
+                    count: componentCount,
+                    subRequest,
+                  },
+                });
+                memoryEntriesCreated++;
+              }
             }
           }
         } else if (response.content) {
