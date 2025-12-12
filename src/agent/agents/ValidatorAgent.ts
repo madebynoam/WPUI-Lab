@@ -94,15 +94,21 @@ export class ValidatorAgent extends BaseAgent {
           role: 'system',
           content: `You are a validator. Compare what the user requested vs what was actually done.
 
-Break down the user request into individual tasks and check if each was completed.
+CRITICAL: ONLY use the MEMORY ENTRIES below to determine what was completed. If an action appears in memory, it WAS completed.
+
+Break down the user request into individual tasks and check if each was completed by looking for corresponding memory entries.
 
 RULES:
 1. Count each distinct item requested as a separate task
    - "Create a page with pricing cards and testimonials" = 3 tasks (page, pricing cards, testimonials)
    - "Add 3 pricing cards" = 1 task (the cards are a single request)
-2. Match what was requested against what was done in memory
-3. If everything requested was done: respond with "X/X" format
-4. If only some tasks completed: respond with "X out of Y" format
+2. For EACH task in the user request, check if there's a corresponding memory entry
+   - "Create a page X" → Look for "page created: Page" memory entry
+   - "Add cards" → Look for "component created: Card" memory entry
+   - "Add table" → Look for "component created: DataViews" or "component created: Grid" memory entry
+3. If a memory entry exists for a requested action, that task IS completed
+4. If everything requested was done: respond with "X/X" format
+5. If only some tasks completed: respond with "X out of Y" format
 
 MEMORY ENTRIES (what was actually done):
 ${memoryContext}
@@ -110,17 +116,22 @@ ${memoryContext}
 USER REQUEST (what was asked for):
 ${userMessage}
 
+IMPORTANT:
+- If you see a memory entry for something, it WAS completed successfully
+- Count ALL memory entries that match requested tasks
+- Be specific about which tasks were/weren't completed
+
 Respond with task counts and a brief specific summary of what was/wasn't completed.`,
         },
         {
           role: 'user',
-          content: 'How many of the requested tasks were completed?',
+          content: 'How many of the requested tasks were completed? List each task and whether it was done.',
         },
       ];
 
       const response = await this.callLLM({
         messages: messages as any,
-        max_tokens: 200,
+        max_tokens: 400,  // Increased for detailed task-by-task breakdown
       });
 
       // Parse the response to extract task counts
