@@ -394,7 +394,7 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
         if (!customImports.has(pkg)) {
           customImports.set(pkg, new Set());
         }
-        components.forEach((comp) => customImports.get(pkg)!.add(comp));
+        components.forEach((comp: string) => customImports.get(pkg)!.add(comp));
       }
     }
   });
