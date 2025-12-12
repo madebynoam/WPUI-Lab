@@ -42,20 +42,24 @@ Parameters: { markup: string }
 **table_create** - For creating data tables/grids (REQUIRED for tables!)
 Parameters: { template: string } // "deployments", "users", "products", etc.
 
-**CRITICAL - Tool Selection Rules:**
+**Table Component:**
 
-USE table_create FOR:
-- ANY mention of "table" → table_create
-- "deployment table", "user table", "data table" → table_create
-- "list of users", "list of deployments" → table_create
-- "data grid", "data view" → table_create
+Tables can now be used directly in buildFromMarkup markup using the <Table /> component:
+- Use <Table template="users" /> for a users table
+- Use <Table template="deployments" /> for deployments table
+- Available templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads, deployments
+- Tables are automatically wrapped in Grid containers
 
-USE buildFromMarkup FOR:
-- Cards, buttons, headings, text, grids, forms → buildFromMarkup
-- UI components, layouts, sections → buildFromMarkup
+Example:
+<Grid columns={12}>
+  <Card gridColumnSpan={12}>
+    <CardBody>
+      <Table template="users" />
+    </CardBody>
+  </Card>
+</Grid>
 
-**NEVER EVER put DataViews in buildFromMarkup - it will fail!**
-The markup parser CANNOT handle complex data structures. If the request mentions tables/data, you MUST use table_create.
+This creates a card containing a users table.
 
 JSX SYNTAX AND COMPONENTS (buildFromMarkup only):
 

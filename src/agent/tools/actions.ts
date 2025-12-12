@@ -3,6 +3,7 @@ import { normalizeComponentNodes } from "../../utils/normalizeComponent";
 import { getAgentComponentList } from "../../config/availableComponents";
 import { parseMarkupWithRepair } from "../utils/repairMarkup";
 import { generateId } from "../../utils/idGenerator";
+import { ComponentNode } from "../../types";
 
 // Conditionally import componentRegistry
 let componentRegistry: Record<string, any> = {};
@@ -15,6 +16,95 @@ try {
   }
 } catch (e) {
   console.log('[actions] Failed to load componentRegistry:', e);
+}
+
+// Import table templates for Table node processing
+import { TABLE_TEMPLATES } from './tableCreate';
+
+/**
+ * Process Table nodes in the parsed tree, replacing them with Grid+DataViews structure
+ * This allows <Table template="..." /> syntax in buildFromMarkup
+ */
+function processTableNodes(nodes: ComponentNode[]): ComponentNode[] {
+  return nodes.map(node => processTableNode(node));
+}
+
+function processTableNode(node: ComponentNode): ComponentNode {
+  // If this is a Table node, replace it with Grid+DataViews
+  if (node.type === 'Table') {
+    console.log('[buildFromMarkup] Processing Table node with props:', node.props);
+
+    const template = node.props.template || 'users'; // Default to users if no template specified
+    const viewType = node.props.viewType || 'table';
+    const itemsPerPage = node.props.itemsPerPage || 10;
+
+    // Get template data
+    let tableColumns: Array<{ id: string; label: string }>;
+    let tableData: Array<any>;
+
+    if (template === 'custom') {
+      if (!node.props.columns || !node.props.data) {
+        console.error('[buildFromMarkup] Custom table template requires columns and data props');
+        tableColumns = [];
+        tableData = [];
+      } else {
+        tableColumns = node.props.columns;
+        tableData = node.props.data;
+      }
+    } else {
+      const templateData = TABLE_TEMPLATES[template as keyof typeof TABLE_TEMPLATES];
+      if (!templateData) {
+        console.error(`[buildFromMarkup] Unknown table template: ${template}`);
+        tableColumns = [];
+        tableData = [];
+      } else {
+        tableColumns = templateData.columns;
+        tableData = templateData.sampleData;
+      }
+    }
+
+    // Create DataViews node
+    const dataViewsNode: ComponentNode = {
+      id: generateId(),
+      type: 'DataViews',
+      name: '',
+      props: {
+        dataSource: 'custom',
+        data: tableData,
+        columns: tableColumns,
+        viewType,
+        itemsPerPage,
+        gridColumnSpan: 12,  // Full width in 12-column grid
+      },
+      children: [],
+      interactions: [],
+    };
+
+    // Wrap in Grid container (12-column system)
+    const gridNode: ComponentNode = {
+      id: generateId(),
+      type: 'Grid',
+      name: '',
+      props: {
+        columns: 12,
+      },
+      children: [dataViewsNode],
+      interactions: [],
+    };
+
+    console.log('[buildFromMarkup] Replaced Table with Grid+DataViews');
+    return gridNode;
+  }
+
+  // Recursively process children
+  if (node.children && node.children.length > 0) {
+    return {
+      ...node,
+      children: node.children.map(child => processTableNode(child)),
+    };
+  }
+
+  return node;
 }
 
 // DEPRECATED TOOLS REMOVED:
@@ -611,8 +701,11 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
         result.nodes.length
       );
 
+      // Process Table nodes - replace with Grid+DataViews structure
+      const processedNodes = processTableNodes(result.nodes);
+
       // Normalize all nodes
-      const normalizedNodes = normalizeComponentNodes(result.nodes);
+      const normalizedNodes = normalizeComponentNodes(processedNodes);
 
       // Insert all nodes
       for (const node of normalizedNodes) {

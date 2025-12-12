@@ -8,8 +8,8 @@
 import { AgentTool, ToolContext, ToolResult } from '../types';
 import { ComponentNode } from '../../types';
 
-// Pre-defined table templates
-const TABLE_TEMPLATES = {
+// Pre-defined table templates (exported for use in buildFromMarkup)
+export const TABLE_TEMPLATES = {
   users: {
     columns: [
       { id: 'name', label: 'Name' },

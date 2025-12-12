@@ -200,9 +200,9 @@ function parseElement(state: ParseState): ComponentNode | null {
   // Parse component name
   const componentName = parseComponentName(state);
 
-  // Validate component exists in registry
-  if (!componentRegistry[componentName]) {
-    throw createError(state, `Unknown component type: ${componentName}. Available components: ${Object.keys(componentRegistry).join(', ')}`);
+  // Validate component exists in registry (allow "Table" as special component for buildFromMarkup)
+  if (!componentRegistry[componentName] && componentName !== 'Table') {
+    throw createError(state, `Unknown component type: ${componentName}. Available components: ${Object.keys(componentRegistry).join(', ')}, Table`);
   }
 
   skipWhitespace(state);
