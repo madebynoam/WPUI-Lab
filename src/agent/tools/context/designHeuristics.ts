@@ -35,7 +35,7 @@ const HEURISTICS = {
     "Grid-Only Top Level: ALL top-level markup MUST start with Grid columns={12}. NEVER use VStack or HStack at the top level. Grid provides the 12-column layout system for all content",
     "Grid Spans Must Fill Columns: In a Grid with columns={12}, child gridColumnSpan values MUST add up to 12. Examples: 1 item = gridColumnSpan={12}, 2 items = gridColumnSpan={6} each, 3 items = gridColumnSpan={4} each, 4 items = gridColumnSpan={3} each",
     "VStack/HStack Placement: VStack and HStack are ONLY allowed inside Card parts (CardHeader/CardBody/CardFooter) OR as Grid children with gridColumnSpan={12}. They are container-level components, NOT top-level containers",
-    "Form Field Pattern: Use label prop for field labels. TextControl/SelectControl children contain placeholder text. Example: <TextControl label='Name'>Your name</TextControl>",
+    "Form Field Pattern: Use label prop for field labels. TextControl/TextareaControl children contain placeholder text. SelectControl uses options prop with array of {label, value} objects. Examples: <TextControl label='Name'>Your name</TextControl>, <SelectControl label='Size' options={[{label: 'Small', value: 's'}, {label: 'Large', value: 'l'}]} />",
     "VStack for Vertical Flow: Inside containers, use VStack for form fields, card bodies, testimonial content. Use alignment='stretch' for forms so fields have consistent width",
     "HStack for Horizontal Grouping: Inside containers, use HStack for 'icon + label' pairs, breadcrumbs, or toolbar buttons with spacing={2}",
     "Space-Between for Edge Alignment: Use justify='space-between' to push items to opposite edges (e.g., checkbox left, link right)"

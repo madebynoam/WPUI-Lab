@@ -95,8 +95,15 @@ Example structure: Card > CardHeader > Heading, Card > CardBody > Text
 
 **Common Components:**
 - Heading: level prop (1, 2, or 3)
-- Text: weight
+- Text: weight prop
 - Button: variant prop (primary, secondary, tertiary, link)
+
+**Form Components:**
+- TextControl: label prop for label, children for placeholder. Example: <TextControl label="Name">Enter your name</TextControl>
+- TextareaControl: label prop for label, children for placeholder. Example: <TextareaControl label="Message">Your message...</TextareaControl>
+- NumberControl: label prop for label, children for placeholder. Example: <NumberControl label="Age">Enter age</NumberControl>
+- SelectControl: label prop for label, options prop as array of {label, value} objects. **NEVER use <option> children!**
+  Example: <SelectControl label="Size" options={[{label: 'Small', value: 's'}, {label: 'Medium', value: 'm'}, {label: 'Large', value: 'l'}]} />
 
 EXAMPLES (ALL use Grid at top level):
 
