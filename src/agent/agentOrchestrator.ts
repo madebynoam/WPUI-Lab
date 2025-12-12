@@ -141,6 +141,16 @@ export class AgentOrchestrator {
     // Clear memory for new request
     this.memory.clear();
 
+    // Store original user message in memory for agent context lookups
+    this.memory.write({
+      agent: 'Orchestrator',
+      action: 'user_request',
+      details: {
+        fullMessage: userMessage,
+        timestamp: Date.now()
+      }
+    });
+
     let totalTokens = 0;
     let totalCost = 0;
     let memoryEntriesCreated = 0;

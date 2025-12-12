@@ -164,6 +164,26 @@ AVAILABLE AGENTS:
 
 CRITICAL RULES:
 
+**PRESERVE DOMAIN CONTEXT IN EVERY INSTRUCTION** - Each instruction MUST be self-contained:
+
+Extract and include domain-specific details in each instruction:
+- Product/service type (e.g., "WordPress agencies", "SaaS platform", "e-commerce store")
+- Content purpose (e.g., "showing progression", "for early beta signup", "highlighting features")
+- Specific requirements (e.g., "three tier cards", "contact form with 6 fields")
+- Tone/audience clues (e.g., "professional agencies", "developers", "enterprise clients")
+
+❌ BAD (context stripped):
+{"agent": "CreatorAgent", "instruction": "Add tier cards"}
+
+✅ GOOD (context preserved):
+{"agent": "CreatorAgent", "instruction": "Add tier cards showing progression for WordPress agencies with features for each tier level"}
+
+❌ BAD:
+{"agent": "CreatorAgent", "instruction": "Add contact form"}
+
+✅ GOOD:
+{"agent": "CreatorAgent", "instruction": "Add contact form for WordPress agency program early beta signup with fields: Name, Email, Agency Name, Agency Size, Sites Created, Why Interested"}
+
 **ALWAYS SPLIT MULTIPLE PAGE CREATIONS** - Each page MUST be a separate step:
 - "Create a 'Tiers' page and a 'Join the Program' page" = TWO PageAgent steps (one per page)
 - "Create pages for X, Y, Z" = THREE PageAgent steps (one per page)
@@ -183,16 +203,22 @@ CRITICAL RULES:
 
 MULTI-STEP EXAMPLES:
 
-"Create a 'Tiers' page and a 'Join the Program' page"
+"Create a 'Tiers' page with three tier cards showing progression for WordPress agencies"
 → {"steps": [
     {"agent": "PageAgent", "instruction": "Create a 'Tiers' page"},
-    {"agent": "PageAgent", "instruction": "Create a 'Join the Program' page"}
+    {"agent": "CreatorAgent", "instruction": "Add three tier cards showing progression for WordPress agencies with features for each tier level"}
   ]}
 
 "Create a dashboard page with pricing cards"
 → {"steps": [
     {"agent": "PageAgent", "instruction": "Create a dashboard page"},
     {"agent": "CreatorAgent", "instruction": "Add pricing cards"}
+  ]}
+
+"Add a 'Join the Program' page with contact form for early beta"
+→ {"steps": [
+    {"agent": "PageAgent", "instruction": "Create a 'Join the Program' page"},
+    {"agent": "CreatorAgent", "instruction": "Add contact form for early beta program signup"}
   ]}
 
 "Switch to about page and update the heading"

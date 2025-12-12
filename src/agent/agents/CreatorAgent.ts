@@ -123,6 +123,19 @@ export class CreatorAgent extends BaseAgent {
     }
   }
 
+  /**
+   * Get original user request from memory as fallback context
+   *
+   * This provides domain context when the agent instruction is too minimal.
+   */
+  private getOriginalContext(memory: MemoryStore): string {
+    const originalRequest = memory.search({ action: 'user_request' });
+    if (originalRequest.length > 0 && originalRequest[0].details?.fullMessage) {
+      return originalRequest[0].details.fullMessage;
+    }
+    return '';
+  }
+
   async execute(
     userMessage: string,
     context: ToolContext,
@@ -146,6 +159,12 @@ export class CreatorAgent extends BaseAgent {
       const pageContext = recentPage.length > 0
         ? `Recently created page: ${recentPage[0].details.name} (${recentPage[0].entityId})`
         : `Current page: ${context.currentPageId}`;
+
+      // Get original user request for additional domain context
+      const originalContext = this.getOriginalContext(memory);
+      const contextNote = originalContext
+        ? `\n\nOriginal user request context: ${originalContext}`
+        : '';
 
       if (recentPage.length > 0) {
         this.emit('progress', `Found page ${recentPage[0].entityId}`);
@@ -177,7 +196,7 @@ export class CreatorAgent extends BaseAgent {
           },
           {
             role: 'user',
-            content: `${pageContext}\n\nUser request: ${subRequest}`,
+            content: `${pageContext}${contextNote}\n\nUser request: ${subRequest}`,
           },
         ];
 

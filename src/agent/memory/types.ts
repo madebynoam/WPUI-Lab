@@ -3,6 +3,7 @@
  */
 
 export type ActionType =
+  | 'user_request'
   | 'page_created'
   | 'page_switched'
   | 'page_deleted'
