@@ -165,8 +165,14 @@ Respond with task counts and a brief specific summary of what was/wasn't complet
       .map(entry => {
         const action = entry.action.replace(/_/g, ' ');
         const entityInfo = entry.entityType ? `${entry.entityType}` : '';
-        const details = entry.details.count ? ` (count: ${entry.details.count})` : '';
-        return `- ${action}: ${entityInfo}${details}`;
+        const count = entry.details.count ? ` (count: ${entry.details.count})` : '';
+
+        // Add more context to help validator understand what was done
+        const method = entry.details.method ? ` via ${entry.details.method}` : '';
+        const template = entry.details.template ? ` (template: ${entry.details.template})` : '';
+        const subRequest = entry.details.subRequest ? ` for "${entry.details.subRequest}"` : '';
+
+        return `- ${action}: ${entityInfo}${count}${method}${template}${subRequest}`;
       })
       .join('\n');
   }

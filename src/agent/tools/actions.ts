@@ -571,6 +571,7 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
   },
   execute: async (params: any, context: ToolContext): Promise<ToolResult> => {
     console.log("[buildFromMarkup] Received markup:", params.markup);
+    console.log("[buildFromMarkup] Received parentId:", params.parentId);
 
     // Validate markup parameter
     if (!params.markup || typeof params.markup !== "string") {
@@ -580,6 +581,17 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
           'Missing required "markup" parameter. Pass JSX markup as: {markup: "<Grid columns={3}>...</Grid>"}',
         error: `The markup parameter is required but received: ${typeof params.markup}`,
       };
+    }
+
+    // CRITICAL VALIDATION: Reject page IDs as parentId (common LLM mistake)
+    // This prevents regression where LLM passes page ID instead of component ID
+    if (params.parentId && params.parentId.startsWith('page-')) {
+      console.error("[buildFromMarkup] INVALID parentId - Page IDs are not valid parent IDs!");
+      console.error("[buildFromMarkup] Received:", params.parentId);
+      console.error("[buildFromMarkup] Auto-correcting to undefined (will use root-vstack)");
+
+      // Auto-correct instead of failing - this is more helpful
+      params.parentId = undefined;
     }
 
     try {

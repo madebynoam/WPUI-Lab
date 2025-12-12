@@ -30,23 +30,31 @@ AVAILABLE AGENTS:
 
 ROUTING RULES:
 
-1. **Priority Order**: Page operations take precedence over component operations
-   - "Create a dashboard page" → PageAgent (even though "create" could match CreatorAgent)
-   - "Delete the pricing page" → PageAgent (not UpdateAgent)
+1. **Component Keywords Take Precedence**: If the request mentions specific UI components, route to CreatorAgent
+   - Component keywords: card, button, grid, table, heading, text, form, input, pricing, hero, testimonial, section
+   - "Create a card with a table" → CreatorAgent (mentions card AND table)
+   - "Add pricing cards" → CreatorAgent (mentions cards)
+   - "Build a hero section" → CreatorAgent (mentions section)
 
-2. **Context Matters**: Use recent memory to resolve ambiguity
+2. **Page Keywords Only When No Components**: PageAgent only when request specifically mentions pages
+   - Page keywords: page, dashboard page, about page, contact page, "new page"
+   - "Create a dashboard page" → PageAgent (explicitly says "page")
+   - "Switch to about page" → PageAgent (explicitly says "page")
+   - "Create a card" → CreatorAgent (NO page keyword, has component keyword)
+
+3. **Context Matters**: Use recent memory to resolve ambiguity
    - If user just created a component, "make it primary" likely refers to UpdateAgent
    - If user hasn't created anything recently, ambiguous requests should return NO_MATCH
 
-3. **Multi-step Detection**: Single agent only
+4. **Multi-step Detection**: Single agent only
    - Only return ONE agent name for single-step requests
-   - For "Create a page with pricing cards", return PageAgent (page creation is first step)
+   - For "Create a page with pricing cards", return PageAgent ONLY IF explicitly mentions "page"
 
-4. **Exact Match Required**:
+5. **Exact Match Required**:
    - Return ONLY one of: PageAgent, CreatorAgent, UpdateAgent, NO_MATCH
    - NO explanations, NO reasoning, ONLY the agent name
 
-5. **Ambiguous or Conversational**: Return NO_MATCH
+6. **Ambiguous or Conversational**: Return NO_MATCH
    - Questions like "What can you do?" → NO_MATCH
    - Greetings like "Hello" → NO_MATCH
    - Unclear requests like "Fix this" without context → NO_MATCH

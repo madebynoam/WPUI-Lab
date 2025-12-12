@@ -55,22 +55,25 @@ export interface ModelCapabilities {
 /**
  * Agent Model Configuration
  *
- * Configure which model the v3.0 multi-agent system should use.
- * One shared LLM provider is used by all specialist agents (PageAgent, CreatorAgent, UpdateAgent).
- * Currently using OpenAI GPT-5-mini for best cost-to-performance ratio.
+ * EASY PER-AGENT MODEL CONFIGURATION
+ * Change one line per agent to use different models.
  *
- * To switch models:
- * - Anthropic Claude Sonnet 4.5: Most capable, expensive ($3/$15 per MTok)
- * - Anthropic Claude Haiku 4.5: Fast and affordable ($1/$5 per MTok)
- * - OpenAI GPT-4o-mini: Fast and affordable ($0.15/$0.60 per MTok) ← Current
- * - OpenAI GPT-4o: Good balance ($2.50/$10.00 per MTok)
+ * Example: Give Classifier a smarter model than others
  */
 export const AGENT_MODELS = {
-  // Shared LLM provider for all specialist agents in v3.0 multi-agent system
-  agent: {
+  // Routing agent - can use smarter/faster model for better routing
+  Classifier: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_5 },
+
+  // Specialist agents
+  PageAgent: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_4O_MINI },
+  CreatorAgent: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_5 },
+  UpdateAgent: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_4O_MINI },
+
+  // Validation agent
+  ValidatorAgent: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_4O_MINI,  // $0.15/$0.60 per MTok
-  } as AgentModelConfig,
+    model: Models.OpenAI.GPT_4O_MINI,
+  },
 } as const;
 
 /**

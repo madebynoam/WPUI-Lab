@@ -378,7 +378,7 @@ function parsePropValue(state: ParseState): any {
 /**
  * Parse string value in quotes
  */
-function parseStringValue(state: ParseState, quote: string): string {
+function parseStringValue(state: ParseState, quote: string): any {
   // Skip opening quote
   state.pos++;
   state.column++;
@@ -400,6 +400,19 @@ function parseStringValue(state: ParseState, quote: string): string {
       const value = state.source.slice(start, state.pos);
       state.pos++;
       state.column++;
+
+      // Try to parse JSON-like strings (arrays/objects)
+      const trimmed = value.trim();
+      if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+          (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+        try {
+          return JSON.parse(value);
+        } catch {
+          // If JSON parsing fails, return as string
+          return value;
+        }
+      }
+
       return value;
     }
 

@@ -32,11 +32,12 @@ const HEURISTICS = {
   ],
 
   composition: [
-    "Stretch Alignment for Forms: Forms and vertical input lists use VStack with alignment='stretch' so all fields have consistent width",
-    "Grid Column Math: For N items in a 12-column grid, each gets gridColumnSpan={12/N}. 2 items = 6 each, 3 items = 4 each, 4 items = 3 each",
-    "VStack for Vertical Flow: Default container for vertical content is VStack. Use it for form fields, card bodies, testimonial content, or any top-to-bottom flow",
-    "HStack for Horizontal Grouping: Use HStack for horizontal arrangements like 'left content + right chevron', breadcrumbs, 'icon + label' pairs, or toolbar buttons",
-    "Space-Between for Edge Alignment: Use justify='space-between' to push items to opposite edges (e.g., checkbox on left, 'Forgot password' link on right in login forms)"
+    "Grid Spans Must Fill Columns: In a Grid with columns={N}, child gridColumnSpan values MUST add up to N. Examples: 3 items in 12-column grid = gridColumnSpan={4} each (4+4+4=12). 2 items = gridColumnSpan={6} each. 4 items = gridColumnSpan={3} each",
+    "Top-Level Grids Stand Alone: Grid at top level does NOT need VStack parent. Use Spacer with height={32} between sections instead of wrapping in VStack",
+    "Form Field Pattern: Use label prop for field labels. TextControl/SelectControl children contain placeholder text. Example: <TextControl label='Name'>Your name</TextControl>",
+    "VStack for Vertical Flow: Use VStack for form fields, card bodies, testimonial content. Use alignment='stretch' for forms so fields have consistent width",
+    "HStack for Horizontal Grouping: Use HStack for 'icon + label' pairs, breadcrumbs, or toolbar buttons with spacing={2}",
+    "Space-Between for Edge Alignment: Use justify='space-between' to push items to opposite edges (e.g., checkbox left, link right)"
   ],
 
   interaction: [

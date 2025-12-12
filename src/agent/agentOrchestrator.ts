@@ -68,25 +68,28 @@ export class AgentOrchestrator {
     // Initialize shared memory
     const memory = new MemoryStore();
 
-    // Create LLM provider using centralized agentConfig
-    const config = getAgentModel('agent');
-    const llm = await createLLMProvider(config);
+    // Create separate LLM providers for each agent (allows per-agent model config)
+    const classifierLLM = await createLLMProvider(getAgentModel('Classifier'));
+    const pageAgentLLM = await createLLMProvider(getAgentModel('PageAgent'));
+    const creatorAgentLLM = await createLLMProvider(getAgentModel('CreatorAgent'));
+    const updateAgentLLM = await createLLMProvider(getAgentModel('UpdateAgent'));
+    const validatorAgentLLM = await createLLMProvider(getAgentModel('ValidatorAgent'));
 
-    // Initialize specialist agents
-    const pageAgent = new PageAgent(llm, memory);
-    const creatorAgent = new CreatorAgent(llm, memory);
-    const updateAgent = new UpdateAgent(llm, memory);
-    const validatorAgent = new ValidatorAgent(llm, memory);
+    // Initialize specialist agents with their specific LLM providers
+    const pageAgent = new PageAgent(pageAgentLLM, memory);
+    const creatorAgent = new CreatorAgent(creatorAgentLLM, memory);
+    const updateAgent = new UpdateAgent(updateAgentLLM, memory);
+    const validatorAgent = new ValidatorAgent(validatorAgentLLM, memory);
 
-    // Initialize classifier with agent priority order
+    // Initialize classifier with its own LLM provider
     const classifier = new Classifier(
       [
         pageAgent,      // Priority 1: Page operations
         creatorAgent,   // Priority 2: Component creation
         updateAgent,    // Priority 3: Modifications
       ],
-      llm,    // LLM provider for routing decisions
-      memory  // Memory for context-aware routing
+      classifierLLM,    // Classifier's own LLM (can be different/smarter)
+      memory            // Memory for context-aware routing
     );
 
     // Create orchestrator instance
