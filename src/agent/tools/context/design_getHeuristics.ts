@@ -9,7 +9,7 @@
  * only when needed, minimizing token usage.
  */
 
-import { AgentTool, ToolContext, ToolResult } from '../types';
+import { AgentTool, ToolContext, ToolResult } from '../../types';
 import { getRelevantHeuristics } from './designHeuristics';
 
 export const design_getHeuristics: AgentTool = {

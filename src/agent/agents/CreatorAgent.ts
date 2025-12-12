@@ -321,7 +321,7 @@ export class CreatorAgent extends BaseAgent {
                 },
                 {
                   role: 'assistant',
-                  content: null,
+                  content: "",
                   tool_calls: response.tool_calls,  // Original heuristics call
                 },
                 {

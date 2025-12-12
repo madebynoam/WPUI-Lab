@@ -59,7 +59,7 @@ function generateNodeCode(
     // Apply indentation to each line
     return customCode
       .split('\n')
-      .map((line, index) => (index === 0 ? indentStr + line : indentStr + line))
+      .map((line: string, index: number) => (index === 0 ? indentStr + line : indentStr + line))
       .join('\n');
   }
 

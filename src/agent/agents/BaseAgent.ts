@@ -115,7 +115,7 @@ export abstract class BaseAgent implements Agent {
    * Call LLM with token tracking
    */
   protected async callLLM(params: {
-    messages: Array<{ role: string; content: string; tool_calls?: any }>;
+    messages: Array<{ role: string; content: string; tool_calls?: any; tool_call_id?: string }>;
     tools?: any[];
     model?: string;
     temperature?: number;

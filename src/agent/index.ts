@@ -75,6 +75,5 @@ registerTool(createPatternTool);
 
 // Export types and utilities
 export * from './types';
-export * from './messageHandler'; // Old v2.0 system (to be removed)
-export { AgentOrchestrator } from './agentOrchestrator'; // New v3.0 multi-agent system
+export { AgentOrchestrator } from './agentOrchestrator'; // v3.0 multi-agent system
 export { getAllTools, getTool, getToolsByCategory } from './tools/registry';

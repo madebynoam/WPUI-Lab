@@ -138,7 +138,7 @@ export async function handleUserMessage(
     console.log('[Agent] Using v2.0 single-agent JSX markup');
 
     // Create LLM provider using centralized config
-    const config = getAgentModel('agent');
+    const config = getAgentModel('CreatorAgent');
     const llm = createLLMProvider({
       provider: config.provider,
       apiKey: claudeApiKey!,

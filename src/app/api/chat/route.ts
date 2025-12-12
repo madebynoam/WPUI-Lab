@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnthropicProvider } from '@/agent/llm/anthropic';
 import { OpenAIProvider } from '@/agent/llm/openai';
-import { getAgentModel } from '@/agent/agentConfig';
 import type { LLMChatOptions } from '@/agent/llm/types';
 
 export async function POST(req: NextRequest) {
@@ -9,10 +8,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { messages, tools, temperature, max_tokens, tool_choice, provider: requestedProvider, model: requestedModel } = body as LLMChatOptions & { provider?: string; model?: string };
 
-    // Determine which provider and model to use
-    const agentConfig = getAgentModel('agent');
-    const provider = requestedProvider || agentConfig.provider;
-    const model = requestedModel || agentConfig.model;
+    // v3.0 agents always provide provider/model via NextJSProxyProvider
+    const provider = requestedProvider || 'openai';
+    const model = requestedModel || 'gpt-4o-mini';
 
     if (provider === 'anthropic') {
       const apiKey = process.env.ANTHROPIC_API_KEY;

@@ -10,6 +10,12 @@ import { useAgentDebug } from "@/contexts/AgentDebugContext";
 import {
   AgentMessage,
   ToolContext,
+  handleUserMessage,
+  PhaseResult,
+  generateSuggestions,
+  executePhase,
+  PLANNER_PROMPT,
+  getBUILDER_PROMPT,
   AgentOrchestrator,
 } from "../agent";
 import { getTool, getToolsForLLM, convertToolToLLM } from "../agent/tools/registry";
@@ -31,12 +37,6 @@ async function getOrchestrator() {
   }
   return orchestratorInstance;
 }
-
-
-// v2.0 stubs (disabled)
-const PLANNER_PROMPT = '';
-const executePhase = async (...args: any[]) => ({ output: '', tokens: 0, cost: 0 });
-const generateSuggestions = (...args: any[]) => [];
 
 export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   const PANEL_WIDTH = 280;
@@ -276,7 +276,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
             toolContext,
             undefined, // API key handled server-side
             contextTools.map(t => convertToolToLLM(t!)),
-            (update: any) => {
+            (update) => {
               setProgressState({
                 isProcessing: true,
                 phase: 'planner',

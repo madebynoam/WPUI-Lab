@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { PhaseResult } from '@/agent/messageHandler';
+
+// Note: Debug mode is disabled (v2.0 removed)
+type PhaseResult = any;
 
 interface AgentDebugContextType {
   isDebugMode: boolean;
