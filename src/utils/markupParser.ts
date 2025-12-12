@@ -474,7 +474,7 @@ function parseExpressionValue(state: ParseState): any {
   state.pos++;
   state.column++;
 
-  // Try to parse as JSON
+  // Try to parse as JSON (first attempt: as-is)
   try {
     return JSON.parse(expr);
   } catch {
@@ -485,7 +485,16 @@ function parseExpressionValue(state: ParseState): any {
     if (expr === 'undefined') return undefined;
     if (/^-?\d+(\.\d+)?$/.test(expr)) return Number(expr);
 
-    throw createError(state, `Invalid expression: ${expr}`);
+    // Try to convert JavaScript object syntax to JSON
+    // Replace single quotes with double quotes and quote unquoted keys
+    try {
+      const jsonExpr = expr
+        .replace(/'/g, '"')  // Convert single quotes to double quotes
+        .replace(/(\w+):/g, '"$1":');  // Quote unquoted keys
+      return JSON.parse(jsonExpr);
+    } catch {
+      throw createError(state, `Invalid expression: ${expr}`);
+    }
   }
 }
 
