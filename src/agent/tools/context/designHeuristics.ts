@@ -32,11 +32,12 @@ const HEURISTICS = {
   ],
 
   composition: [
-    "Grid Spans Must Fill Columns: In a Grid with columns={N}, child gridColumnSpan values MUST add up to N. Examples: 3 items in 12-column grid = gridColumnSpan={4} each (4+4+4=12). 2 items = gridColumnSpan={6} each. 4 items = gridColumnSpan={3} each",
-    "Top-Level Grids Stand Alone: Grid at top level does NOT need VStack parent. Use Spacer with height={32} between sections instead of wrapping in VStack",
+    "Grid-Only Top Level: ALL top-level markup MUST start with Grid columns={12}. NEVER use VStack or HStack at the top level. Grid provides the 12-column layout system for all content",
+    "Grid Spans Must Fill Columns: In a Grid with columns={12}, child gridColumnSpan values MUST add up to 12. Examples: 1 item = gridColumnSpan={12}, 2 items = gridColumnSpan={6} each, 3 items = gridColumnSpan={4} each, 4 items = gridColumnSpan={3} each",
+    "VStack/HStack Placement: VStack and HStack are ONLY allowed inside Card parts (CardHeader/CardBody/CardFooter) OR as Grid children with gridColumnSpan={12}. They are container-level components, NOT top-level containers",
     "Form Field Pattern: Use label prop for field labels. TextControl/SelectControl children contain placeholder text. Example: <TextControl label='Name'>Your name</TextControl>",
-    "VStack for Vertical Flow: Use VStack for form fields, card bodies, testimonial content. Use alignment='stretch' for forms so fields have consistent width",
-    "HStack for Horizontal Grouping: Use HStack for 'icon + label' pairs, breadcrumbs, or toolbar buttons with spacing={2}",
+    "VStack for Vertical Flow: Inside containers, use VStack for form fields, card bodies, testimonial content. Use alignment='stretch' for forms so fields have consistent width",
+    "HStack for Horizontal Grouping: Inside containers, use HStack for 'icon + label' pairs, breadcrumbs, or toolbar buttons with spacing={2}",
     "Space-Between for Edge Alignment: Use justify='space-between' to push items to opposite edges (e.g., checkbox left, link right)"
   ],
 

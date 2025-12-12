@@ -59,13 +59,26 @@ The markup parser CANNOT handle complex data structures. If the request mentions
 
 JSX SYNTAX AND COMPONENTS (buildFromMarkup only):
 
+**CRITICAL LAYOUT RULE: ALL Top-Level Containers MUST Be Grid**
+
+EVERY markup you generate MUST start with Grid as the top-level container:
+- Grid ALWAYS uses columns={12} (12-column grid system)
+- Children use gridColumnSpan to control width (spans must add up to 12)
+- VStack/HStack are ONLY allowed INSIDE Card parts or as Grid children with gridColumnSpan={12}
+
+Examples:
+- Single item (full width): <Grid columns={12}><Card gridColumnSpan={12}>...</Card></Grid>
+- Two items (half width each): <Grid columns={12}><Card gridColumnSpan={6}>...</Card><Card gridColumnSpan={6}>...</Card></Grid>
+- Three items (third width each): <Grid columns={12}><Card gridColumnSpan={4}>...</Card><Card gridColumnSpan={4}>...</Card><Card gridColumnSpan={4}>...</Card></Grid>
+
 **Layout Containers:**
-- VStack: Vertical stack with spacing prop
-- HStack: Horizontal stack with spacing prop
-- Grid: Grid layout with columns and gap props
+- **Grid**: REQUIRED for ALL top-level layouts. Always use columns={12}
+- **VStack**: Vertical stack with spacing prop - ONLY inside Card parts (CardHeader, CardBody, CardFooter) OR as Grid child with gridColumnSpan={12}
+- **HStack**: Horizontal stack with spacing prop - ONLY inside Card parts OR as Grid child with gridColumnSpan={12}
 
 **Grid Children:**
-Use gridColumnSpan and gridRowSpan props to control size
+Use gridColumnSpan prop to control width. Column spans MUST add up to 12.
+Examples: 1 item = span 12, 2 items = span 6 each, 3 items = span 4 each, 4 items = span 3 each
 
 **Card Structure:**
 Cards MUST contain CardHeader and/or CardBody
@@ -73,27 +86,58 @@ Example structure: Card > CardHeader > Heading, Card > CardBody > Text
 
 **Common Components:**
 - Heading: level prop (1, 2, or 3)
-- Text: weight and size props
+- Text: weight
 - Button: variant prop (primary, secondary, tertiary, link)
 
-EXAMPLES:
+EXAMPLES (ALL use Grid at top level):
 
 **Testimonials (3 cards):**
-- Grid with columns=3
-- Each Card contains CardBody with VStack spacing=4
-- Quote text at top
-- Nested VStack with author name (weight="bold") and role/company (size="sm")
+<Grid columns={12}>
+  <Card gridColumnSpan={4}>
+    <CardBody>
+      <VStack spacing={4}>
+        <Text>"Great product!"</Text>
+        <VStack spacing={1}>
+          <Text weight="bold">John Smith</Text>
+          <Text size="sm">CEO, Acme Corp</Text>
+        </VStack>
+      </VStack>
+    </CardBody>
+  </Card>
+  <Card gridColumnSpan={4}>...</Card>
+  <Card gridColumnSpan={4}>...</Card>
+</Grid>
 
 **Pricing (3 tiers):**
-- Grid with columns=3
-- Each Card with CardHeader (tier name) and CardBody
-- Price as Heading level=2
-- Features list with checkmark symbols
-- CTA Button
+<Grid columns={12}>
+  <Card gridColumnSpan={4}>
+    <CardHeader><Heading level={3}>Free</Heading></CardHeader>
+    <CardBody>
+      <VStack spacing={4}>
+        <Heading level={2}>$0</Heading>
+        <Text>✓ Feature 1</Text>
+        <Text>✓ Feature 2</Text>
+        <Button variant="primary">Select</Button>
+      </VStack>
+    </CardBody>
+  </Card>
+  <Card gridColumnSpan={4}>...</Card>
+  <Card gridColumnSpan={4}>...</Card>
+</Grid>
 
-**Navigation:**
-- HStack with spacing=4, padding=4
-- Multiple Button components with variant="link"
+**Navigation (full width HStack):**
+<Grid columns={12}>
+  <HStack gridColumnSpan={12} spacing={4}>
+    <Button variant="link">Home</Button>
+    <Button variant="link">About</Button>
+    <Button variant="link">Contact</Button>
+  </HStack>
+</Grid>
+
+**Single Heading (full width):**
+<Grid columns={12}>
+  <Heading gridColumnSpan={12} level={1}>Welcome to Our Site</Heading>
+</Grid>
 
 IMPORTANT - parentId RULES:
 - parentId must be a COMPONENT ID (e.g., 'root-vstack', 'node-123'), NOT a page ID (e.g., 'page-456')

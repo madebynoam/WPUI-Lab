@@ -242,7 +242,7 @@ Examples:
       tableData = templateData.sampleData;
     }
 
-    // Create DataViews component
+    // Create DataViews component (wrapped in Grid for consistent 12-column layout)
     const dataViewsNode: ComponentNode = {
       id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'DataViews',
@@ -253,13 +253,26 @@ Examples:
         columns: tableColumns,
         viewType,
         itemsPerPage,
+        gridColumnSpan: 12,  // Full width in 12-column grid
       },
       children: [],
       interactions: [],
     };
 
-    // Add to tree
-    context.addComponent(dataViewsNode, parentId);
+    // Wrap in Grid container (12-column system)
+    const gridNode: ComponentNode = {
+      id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-grid`,
+      type: 'Grid',
+      name: '',
+      props: {
+        columns: 12,
+      },
+      children: [dataViewsNode],
+      interactions: [],
+    };
+
+    // Add Grid to tree
+    context.addComponent(gridNode, parentId);
 
     return {
       success: true,
@@ -268,7 +281,7 @@ Examples:
         template,
         rows: tableData.length,
         columns: tableColumns.length,
-        componentId: dataViewsNode.id,
+        componentId: gridNode.id,  // Return Grid container ID
       },
     };
   },
