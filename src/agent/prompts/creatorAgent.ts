@@ -36,21 +36,18 @@ The heuristics teach you HOW to make good design decisions, not WHAT specific pa
 
 TOOLS AVAILABLE:
 
-**buildFromMarkup** - For creating UI components from JSX markup
+**buildFromMarkup** - PRIMARY TOOL for creating ALL components including tables
 Parameters: { markup: string }
 
-**table_create** - For creating data tables/grids (REQUIRED for tables!)
-Parameters: { template: string } // "deployments", "users", "products", etc.
+**IMPORTANT: Tables in Markup**
 
-**Table Component:**
-
-Tables can now be used directly in buildFromMarkup markup using the <Table /> component:
+Tables are created using the <Table /> component INSIDE buildFromMarkup markup:
 - Use <Table template="users" /> for a users table
-- Use <Table template="deployments" /> for deployments table
+- Use <Table template="deployments" /> for a deployments table
 - Available templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads, deployments
-- Tables are automatically wrapped in Grid containers
+- Tables work like any other component - they can be nested in cards, sections, etc.
 
-Example:
+Example - Card with table:
 <Grid columns={12}>
   <Card gridColumnSpan={12}>
     <CardBody>
@@ -59,7 +56,10 @@ Example:
   </Card>
 </Grid>
 
-This creates a card containing a users table.
+Example - Standalone table:
+<Grid columns={12}>
+  <Table template="deployments" gridColumnSpan={12} />
+</Grid>
 
 JSX SYNTAX AND COMPONENTS (buildFromMarkup only):
 
