@@ -22,6 +22,21 @@ DECOMPOSITION RULES:
 - **CRITICAL:** Request uses "X with Y" pattern indicating PARENT-CHILD relationship (e.g., "card with table", "card with button", "section with heading")
 - **CRITICAL:** Request mentions nested components (e.g., "table inside a card", "button in a header")
 
+**PRESERVE DOMAIN CONTEXT IN EVERY SUB-REQUEST:**
+When splitting requests, ALWAYS extract and include domain/business context in each fragment:
+- Product/service type (e.g., "WordPress agencies", "SaaS platform", "fitness coaching")
+- Content purpose (e.g., "for early beta signup", "showing tier progression", "onboarding flow")
+- Audience/tone (e.g., "professional developers", "enterprise clients", "creative agencies")
+- Specific details mentioned (e.g., field names, tier levels, feature lists)
+
+❌ BAD (context stripped):
+Input: "hero section explaining WordPress agency program benefits, followed by contact form"
+Output: ["hero section explaining program benefits", "contact form"]
+
+✅ GOOD (context preserved):
+Input: "hero section explaining WordPress agency program benefits, followed by contact form"
+Output: ["hero section explaining WordPress agency program benefits", "contact form for WordPress agency program"]
+
 EXAMPLES:
 
 Input: "Add pricing cards and testimonials"
@@ -51,6 +66,14 @@ Output: ["pricing section", "testimonials", "footer"]
 Input: "Add stats cards and testimonials"
 Output: ["stats cards", "testimonials"]
 (Reason: Sibling components - cards AND testimonials at same level)
+
+Input: "hero section explaining WordPress agency program benefits, followed by contact form for early beta with fields: Name, Email, Agency Name"
+Output: ["hero section explaining WordPress agency program benefits", "contact form for WordPress agency early beta signup with fields: Name, Email, Agency Name"]
+(Reason: Two sections, but PRESERVE domain context "WordPress agency" in both fragments)
+
+Input: "three tier cards showing progression for WordPress agencies and benefit cards organized by tier"
+Output: ["three tier cards showing progression for WordPress agencies", "benefit cards organized by tier for WordPress agencies"]
+(Reason: Two component types, but PRESERVE "WordPress agencies" context in both)
 
 RESPONSE FORMAT:
 

@@ -70,11 +70,19 @@ export class CreatorAgent extends BaseAgent {
    * @param userMessage - The user's request
    * @returns Array of sub-requests (single-item array if request is simple)
    */
-  private async decompose(userMessage: string, signal?: AbortSignal): Promise<string[]> {
+  private async decompose(userMessage: string, signal?: AbortSignal, originalContext?: string): Promise<string[]> {
     console.log('\n[CreatorAgent] ========== DECOMPOSITION ==========');
     console.log('[CreatorAgent] Analyzing:', userMessage);
+    if (originalContext) {
+      console.log('[CreatorAgent] Original context:', originalContext);
+    }
 
     try {
+      // Build user message with optional context for domain-aware decomposition
+      const contextNote = originalContext
+        ? `\n\nOriginal full request for context: ${originalContext}\n\nCurrent instruction to decompose:`
+        : '';
+
       const response = await this.callLLM({
         messages: [
           {
@@ -83,7 +91,7 @@ export class CreatorAgent extends BaseAgent {
           },
           {
             role: 'user',
-            content: userMessage,
+            content: `${contextNote}\n${userMessage}`,
           },
         ],
         temperature: 0.3,  // Low variance for consistent decomposition
@@ -172,7 +180,7 @@ export class CreatorAgent extends BaseAgent {
 
       // Decompose request into sub-requests
       this.emit('progress', 'Decomposing request...');
-      const subRequests = await this.decompose(userMessage, signal);
+      const subRequests = await this.decompose(userMessage, signal, originalContext);
 
       if (subRequests.length > 1) {
         this.emit('progress', `Split into ${subRequests.length} sub-requests`);
