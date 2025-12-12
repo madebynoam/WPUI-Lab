@@ -83,7 +83,8 @@ export class PageAgent extends BaseAgent {
     userMessage: string,
     context: ToolContext,
     memory: MemoryStore,
-    onMessage?: (message: AgentProgressMessage) => void
+    onMessage?: (message: AgentProgressMessage) => void,
+    signal?: AbortSignal
   ): Promise<AgentResult> {
     const startTime = Date.now();
     this.onMessage = onMessage;
@@ -142,6 +143,7 @@ export class PageAgent extends BaseAgent {
         messages: messages as any,
         tools: toolSchemas,
         max_tokens: 1000,
+        signal,
       });
 
       // Handle tool calls

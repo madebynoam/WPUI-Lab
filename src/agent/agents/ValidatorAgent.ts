@@ -49,7 +49,7 @@ export class ValidatorAgent extends BaseAgent {
    * @param memory - Memory store with action history
    * @returns ValidationResult
    */
-  async validate(userMessage: string, memory: MemoryStore): Promise<ValidationResult> {
+  async validate(userMessage: string, memory: MemoryStore, signal?: AbortSignal): Promise<ValidationResult> {
     this.resetTokens();
 
     try {
@@ -132,6 +132,7 @@ Respond with task counts and a brief specific summary of what was/wasn't complet
       const response = await this.callLLM({
         messages: messages as any,
         max_tokens: 400,  // Increased for detailed task-by-task breakdown
+        signal,
       });
 
       // Parse the response to extract task counts

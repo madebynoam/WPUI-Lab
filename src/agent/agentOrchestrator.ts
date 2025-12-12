@@ -22,6 +22,7 @@ import { getTool } from './tools'; // Imports and registers all tools
 
 export interface OrchestrationOptions {
   onProgress?: (message: AgentProgressMessage) => void;
+  signal?: AbortSignal;
 }
 
 export interface OrchestrationResult {
@@ -135,7 +136,7 @@ export class AgentOrchestrator {
     options: OrchestrationOptions = {}
   ): Promise<OrchestrationResult> {
     const startTime = Date.now();
-    const { onProgress } = options;
+    const { onProgress, signal } = options;
 
     // Clear memory for new request
     this.memory.clear();
@@ -154,7 +155,7 @@ export class AgentOrchestrator {
       });
 
       // Try multi-step classification first
-      const agentSteps = await this.classifier.classifyMultiStep(userMessage, this.memory);
+      const agentSteps = await this.classifier.classifyMultiStep(userMessage, this.memory, signal);
 
       if (agentSteps && agentSteps.length > 1) {
         // Multi-step workflow with agent-specific instructions
@@ -186,7 +187,8 @@ export class AgentOrchestrator {
             (message: AgentProgressMessage) => {
               // Forward agent messages to UI
               onProgress?.(message);
-            }
+            },
+            signal  // Pass abort signal for stop button
           );
 
           console.log(`[Orchestrator] ${agentName} completed:`, {
@@ -216,7 +218,7 @@ export class AgentOrchestrator {
         console.log(`[Orchestrator] All ${agentSteps.length} steps completed successfully`);
       } else {
         // Single-step workflow
-        const agentName = await this.classifier.classify(userMessage, this.memory);
+        const agentName = await this.classifier.classify(userMessage, this.memory, signal);
 
         if (!agentName) {
           return {
@@ -249,7 +251,8 @@ export class AgentOrchestrator {
           (message: AgentProgressMessage) => {
             // Forward agent messages to UI
             onProgress?.(message);
-          }
+          },
+          signal  // Pass abort signal for stop button
         );
 
         totalTokens += agentResult.tokensUsed;
@@ -276,7 +279,7 @@ export class AgentOrchestrator {
         timestamp: Date.now(),
       });
 
-      const validation = await this.validatorAgent.validate(userMessage, this.memory);
+      const validation = await this.validatorAgent.validate(userMessage, this.memory, signal);
 
       totalTokens += validation.tokensUsed;
       totalCost += validation.cost;

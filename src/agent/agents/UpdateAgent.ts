@@ -60,7 +60,8 @@ export class UpdateAgent extends BaseAgent {
     userMessage: string,
     context: ToolContext,
     memory: MemoryStore,
-    onMessage?: (message: AgentProgressMessage) => void
+    onMessage?: (message: AgentProgressMessage) => void,
+    signal?: AbortSignal
   ): Promise<AgentResult> {
     const startTime = Date.now();
     this.onMessage = onMessage;
@@ -113,6 +114,7 @@ export class UpdateAgent extends BaseAgent {
         messages: messages as any,
         tools: toolSchemas,
         max_tokens: 1000,
+        signal,
       });
 
       if (response.tool_calls && response.tool_calls.length > 0) {

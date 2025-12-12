@@ -63,7 +63,8 @@ export interface Agent {
     userMessage: string,
     context: ToolContext,
     memory: MemoryStore,
-    onMessage?: (message: AgentProgressMessage) => void
+    onMessage?: (message: AgentProgressMessage) => void,
+    signal?: AbortSignal
   ): Promise<AgentResult>;
 
   /**
@@ -91,6 +92,7 @@ export interface LLMProvider {
     model?: string;
     temperature?: number;
     max_tokens?: number;
+    signal?: AbortSignal;
   }): Promise<{
     content: string | null; // Match actual LLM provider type
     tool_calls?: Array<{

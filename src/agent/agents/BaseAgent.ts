@@ -46,7 +46,8 @@ export abstract class BaseAgent implements Agent {
     userMessage: string,
     context: ToolContext,
     memory: MemoryStore,
-    onMessage?: (message: AgentProgressMessage) => void
+    onMessage?: (message: AgentProgressMessage) => void,
+    signal?: AbortSignal
   ): Promise<AgentResult>;
 
   /**
@@ -120,6 +121,7 @@ export abstract class BaseAgent implements Agent {
     model?: string;
     temperature?: number;
     max_tokens?: number;
+    signal?: AbortSignal;
   }): Promise<{
     content: string | null;
     tool_calls?: Array<{
@@ -136,7 +138,7 @@ export abstract class BaseAgent implements Agent {
     const inputText = params.messages.map(m => m.content).join('\n');
     this.trackInputTokens(this.estimateTokens(inputText));
 
-    // Call LLM
+    // Call LLM (signal will be passed through if provided)
     const response = await this.llm.chat(params);
 
     // Track output tokens

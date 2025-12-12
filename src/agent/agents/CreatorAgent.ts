@@ -70,7 +70,7 @@ export class CreatorAgent extends BaseAgent {
    * @param userMessage - The user's request
    * @returns Array of sub-requests (single-item array if request is simple)
    */
-  private async decompose(userMessage: string): Promise<string[]> {
+  private async decompose(userMessage: string, signal?: AbortSignal): Promise<string[]> {
     console.log('\n[CreatorAgent] ========== DECOMPOSITION ==========');
     console.log('[CreatorAgent] Analyzing:', userMessage);
 
@@ -88,6 +88,7 @@ export class CreatorAgent extends BaseAgent {
         ],
         temperature: 0.3,  // Low variance for consistent decomposition
         max_tokens: 300,   // Short response (just JSON array)
+        signal,
       });
 
       const content = response.content?.trim();
@@ -126,7 +127,8 @@ export class CreatorAgent extends BaseAgent {
     userMessage: string,
     context: ToolContext,
     memory: MemoryStore,
-    onMessage?: (message: AgentProgressMessage) => void
+    onMessage?: (message: AgentProgressMessage) => void,
+    signal?: AbortSignal
   ): Promise<AgentResult> {
     const startTime = Date.now();
     this.onMessage = onMessage;
@@ -151,7 +153,7 @@ export class CreatorAgent extends BaseAgent {
 
       // Decompose request into sub-requests
       this.emit('progress', 'Decomposing request...');
-      const subRequests = await this.decompose(userMessage);
+      const subRequests = await this.decompose(userMessage, signal);
 
       if (subRequests.length > 1) {
         this.emit('progress', `Split into ${subRequests.length} sub-requests`);
@@ -210,6 +212,7 @@ export class CreatorAgent extends BaseAgent {
           messages: messages as never[],
           tools: toolSchemas,
           max_tokens: 1500,  // Smaller per sub-request (not generating everything at once)
+          signal,
         });
 
         // DEBUG: Log LLM response
@@ -333,6 +336,7 @@ export class CreatorAgent extends BaseAgent {
               tools: toolSchemas,
               temperature: 0.7,
               max_tokens: 2000,
+              signal,
             });
 
             console.log('[CreatorAgent] Follow-up response:', JSON.stringify(followUpResponse, null, 2));

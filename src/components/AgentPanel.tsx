@@ -311,6 +311,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
             userMessageText,
             toolContext,
             {
+              signal: controller.signal,  // Pass abort signal for stop button
               onProgress: (agentMsg) => {
                 console.log("[AgentPanel] Progress update:", agentMsg);
 

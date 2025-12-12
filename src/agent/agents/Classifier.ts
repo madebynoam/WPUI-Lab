@@ -39,7 +39,7 @@ export class Classifier extends BaseAgent {
    * @param memory - Memory store for context
    * @returns Agent name or null if no agent can handle it
    */
-  async classify(userMessage: string, memory: MemoryStore): Promise<string | null> {
+  async classify(userMessage: string, memory: MemoryStore, signal?: AbortSignal): Promise<string | null> {
     // Handle empty messages
     if (!userMessage || userMessage.trim() === '') {
       return null;
@@ -89,6 +89,7 @@ export class Classifier extends BaseAgent {
         messages: messages as any,
         temperature: 0.3,  // Low variance for deterministic routing
         max_tokens: 100,   // Short response needed
+        signal,  // Pass abort signal for stop button
       });
 
       // DEBUG: Log LLM response
@@ -138,7 +139,7 @@ export class Classifier extends BaseAgent {
    * @param memory - Memory store for context
    * @returns Array of {agent, instruction} or null for single-step
    */
-  async classifyMultiStep(userMessage: string, memory: MemoryStore): Promise<Array<{agent: string, instruction: string}> | null> {
+  async classifyMultiStep(userMessage: string, memory: MemoryStore, signal?: AbortSignal): Promise<Array<{agent: string, instruction: string}> | null> {
     // Handle empty messages
     if (!userMessage || userMessage.trim() === '') {
       return null;
@@ -163,6 +164,12 @@ AVAILABLE AGENTS:
 
 CRITICAL RULES:
 
+**ALWAYS SPLIT MULTIPLE PAGE CREATIONS** - Each page MUST be a separate step:
+- "Create a 'Tiers' page and a 'Join the Program' page" = TWO PageAgent steps (one per page)
+- "Create pages for X, Y, Z" = THREE PageAgent steps (one per page)
+- "Add a Home page and About page" = TWO PageAgent steps (one per page)
+- Each page needs its own instruction to avoid duplicate IDs
+
 **DO NOT SPLIT** when the second part describes attributes/children of the first:
 - "Add cards with CTAs" = SINGLE STEP (CTA is part of the card)
 - "Create button with icon" = SINGLE STEP (icon is part of button)
@@ -175,6 +182,12 @@ CRITICAL RULES:
 - "Switch to about page and change title" = TWO STEPS (navigation + modification)
 
 MULTI-STEP EXAMPLES:
+
+"Create a 'Tiers' page and a 'Join the Program' page"
+→ {"steps": [
+    {"agent": "PageAgent", "instruction": "Create a 'Tiers' page"},
+    {"agent": "PageAgent", "instruction": "Create a 'Join the Program' page"}
+  ]}
 
 "Create a dashboard page with pricing cards"
 → {"steps": [
@@ -237,6 +250,7 @@ IMPORTANT:
         messages: messages as any,
         temperature: 0.3,
         max_tokens: 300,  // Increased for JSON response with instructions
+        signal,  // Pass abort signal for stop button
       });
 
       // DEBUG: Log LLM response
