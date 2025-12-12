@@ -52,15 +52,16 @@ function estimateTokens(text: string): number {
  * 3. Splicing fix back into original markup
  * 4. Re-parsing to validate
  *
- * Max 3 repair attempts. Cost: ~$0.0002-0.0005 per repair attempt
+ * Max 2 repair attempts. If both fail, error returns to CreatorAgent for full regeneration.
+ * Cost: ~$0.0002-0.0005 per repair attempt
  *
  * @param markup - JSX-like markup to parse
- * @param maxAttempts - Maximum repair attempts (default: 3)
+ * @param maxAttempts - Maximum repair attempts (default: 2)
  * @returns Repair result with nodes or error
  */
 export async function parseMarkupWithRepair(
   markup: string,
-  maxAttempts: number = 3
+  maxAttempts: number = 2
 ): Promise<RepairResult> {
   let currentMarkup = markup;
   let totalCost = 0;
@@ -95,8 +96,8 @@ export async function parseMarkupWithRepair(
     );
 
     // Call LLM for repair
-    const config = getAgentModel('agent');
-    const llm = createLLMProvider(config);
+    const config = getAgentModel('CreatorAgent');
+    const llm = await createLLMProvider(config);
     const capabilities = getModelCapabilities(config.model);
 
     const messages = [

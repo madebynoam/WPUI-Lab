@@ -1,6 +1,6 @@
 import { ComponentTreeAction } from './ComponentTreeTypes';
 import { ComponentNode, Page, Project, HistoryState } from './types';
-import { componentRegistry } from '@/src/componentRegistry';
+import { componentRegistry } from '@/componentRegistry';
 import {
   ROOT_VSTACK_ID,
   getCurrentTree,
@@ -33,6 +33,7 @@ export interface ComponentTreeState {
   clipboard: ComponentNode | null;
   cutNodeId: string | null; // ID of the node that was cut (to remove after paste)
   isPlayMode: boolean;
+  isAgentExecuting: boolean; // Disable UI interactions while AI agent is working
   editingMode: 'selection' | 'text';
 
   // History state
@@ -808,6 +809,11 @@ export function componentTreeReducer(
       return { ...state, isPlayMode: isPlay };
     }
 
+    case 'SET_AGENT_EXECUTING': {
+      const { isExecuting } = action.payload;
+      return { ...state, isAgentExecuting: isExecuting };
+    }
+
     case 'SET_EDITING_MODE': {
       const { mode } = action.payload;
       return { ...state, editingMode: mode };
@@ -1006,7 +1012,7 @@ export function componentTreeReducer(
       }
 
       // Import fresh from DEMO_PROJECT
-      const { DEMO_PROJECT } = require('@/src/demoProject');
+      const { DEMO_PROJECT } = require('@/demoProject');
 
       // Replace the example project with fresh copy
       const firstPageId = DEMO_PROJECT.pages[0]?.id || 'page-1';

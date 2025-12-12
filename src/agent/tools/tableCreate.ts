@@ -8,8 +8,8 @@
 import { AgentTool, ToolContext, ToolResult } from '../types';
 import { ComponentNode } from '../../types';
 
-// Pre-defined table templates
-const TABLE_TEMPLATES = {
+// Pre-defined table templates (exported for use in buildFromMarkup)
+export const TABLE_TEMPLATES = {
   users: {
     columns: [
       { id: 'name', label: 'Name' },
@@ -135,6 +135,20 @@ const TABLE_TEMPLATES = {
       { id: 3, name: 'Maria Garcia', company: 'Startup Inc', email: 'm.garcia@startup.com', score: 45, status: 'Cold' },
     ],
   },
+  deployments: {
+    columns: [
+      { id: 'environment', label: 'Environment' },
+      { id: 'version', label: 'Version' },
+      { id: 'status', label: 'Status' },
+      { id: 'deployedBy', label: 'Deployed By' },
+      { id: 'timestamp', label: 'Timestamp' },
+    ],
+    sampleData: [
+      { id: 1, environment: 'Production', version: 'v2.4.1', status: 'Success', deployedBy: 'Sarah J.', timestamp: '2025-01-21 14:32' },
+      { id: 2, environment: 'Staging', version: 'v2.5.0-rc1', status: 'Success', deployedBy: 'Michael C.', timestamp: '2025-01-21 15:45' },
+      { id: 3, environment: 'Development', version: 'v2.5.0-dev', status: 'Failed', deployedBy: 'Emily D.', timestamp: '2025-01-21 16:20' },
+    ],
+  },
 };
 
 /**
@@ -147,7 +161,7 @@ export const table_create: AgentTool = {
 
 IMPORTANT: Use this instead of manually creating DataViews components. This tool handles all the complexity.
 
-Available templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads
+Available templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads, deployments
 
 Examples:
 - table_create({ template: "users" })
@@ -228,7 +242,7 @@ Examples:
       tableData = templateData.sampleData;
     }
 
-    // Create DataViews component
+    // Create DataViews component (wrapped in Grid for consistent 12-column layout)
     const dataViewsNode: ComponentNode = {
       id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'DataViews',
@@ -239,13 +253,26 @@ Examples:
         columns: tableColumns,
         viewType,
         itemsPerPage,
+        gridColumnSpan: 12,  // Full width in 12-column grid
       },
       children: [],
       interactions: [],
     };
 
-    // Add to tree
-    context.addComponent(dataViewsNode, parentId);
+    // Wrap in Grid container (12-column system)
+    const gridNode: ComponentNode = {
+      id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-grid`,
+      type: 'Grid',
+      name: '',
+      props: {
+        columns: 12,
+      },
+      children: [dataViewsNode],
+      interactions: [],
+    };
+
+    // Add Grid to tree
+    context.addComponent(gridNode, parentId);
 
     return {
       success: true,
@@ -254,7 +281,7 @@ Examples:
         template,
         rows: tableData.length,
         columns: tableColumns.length,
-        componentId: dataViewsNode.id,
+        componentId: gridNode.id,  // Return Grid container ID
       },
     };
   },

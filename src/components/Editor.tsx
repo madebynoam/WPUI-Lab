@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
-import { PlayModeProvider } from '@/src/contexts/PlayModeContext';
-import { AgentDebugProvider } from '@/src/contexts/AgentDebugContext';
+import { useComponentTree, ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { PlayModeProvider } from '@/contexts/PlayModeContext';
+import { AgentDebugProvider } from '@/contexts/AgentDebugContext';
 import { TopBar } from './TopBar';
 import { TreePanel } from './TreePanel';
 import { Canvas } from './Canvas';
@@ -24,6 +24,7 @@ function EditorContent({ projectId, pageId }: EditorProps) {
     setSelectedNodeIds,
     setCurrentProject,
     setCurrentPage,
+    isAgentExecuting,
   } = useComponentTree();
 
   // Set the current project and page when the component mounts
@@ -133,7 +134,7 @@ function EditorContent({ projectId, pageId }: EditorProps) {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', cursor: isAgentExecuting ? 'progress' : 'default' }}>
       {/* Outer wrapper - adds padding when agent is active */}
       <div
         style={{

@@ -29,7 +29,7 @@ import {
   ResizingBehavior,
   PrimaryAlign,
   CrossAlign,
-} from '@/src/utils/layoutMappings';
+} from '@/utils/layoutMappings';
 
 // ============================================================================
 // Resizing Control (Hug vs Fill)

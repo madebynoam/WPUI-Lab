@@ -1,6 +1,17 @@
-import { ComponentNode } from '@/src/types';
-import { componentRegistry } from '@/src/componentRegistry';
+import { ComponentNode } from '@/types';
 import { generateId } from './idGenerator';
+
+// Conditionally import componentRegistry
+let componentRegistry: Record<string, any> = {};
+try {
+  if (typeof window !== 'undefined') {
+    componentRegistry = require('@/componentRegistry').componentRegistry;
+  } else {
+    componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
+  }
+} catch (e) {
+  console.log('[markupParser] Failed to load componentRegistry:', e);
+}
 
 /**
  * Parse error with location information
@@ -189,9 +200,9 @@ function parseElement(state: ParseState): ComponentNode | null {
   // Parse component name
   const componentName = parseComponentName(state);
 
-  // Validate component exists in registry
-  if (!componentRegistry[componentName]) {
-    throw createError(state, `Unknown component type: ${componentName}. Available components: ${Object.keys(componentRegistry).join(', ')}`);
+  // Validate component exists in registry (allow "Table" as special component for buildFromMarkup)
+  if (!componentRegistry[componentName] && componentName !== 'Table') {
+    throw createError(state, `Unknown component type: ${componentName}. Available components: ${Object.keys(componentRegistry).join(', ')}, Table`);
   }
 
   skipWhitespace(state);
@@ -367,7 +378,7 @@ function parsePropValue(state: ParseState): any {
 /**
  * Parse string value in quotes
  */
-function parseStringValue(state: ParseState, quote: string): string {
+function parseStringValue(state: ParseState, quote: string): any {
   // Skip opening quote
   state.pos++;
   state.column++;
@@ -389,6 +400,19 @@ function parseStringValue(state: ParseState, quote: string): string {
       const value = state.source.slice(start, state.pos);
       state.pos++;
       state.column++;
+
+      // Try to parse JSON-like strings (arrays/objects)
+      const trimmed = value.trim();
+      if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+          (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+        try {
+          return JSON.parse(value);
+        } catch {
+          // If JSON parsing fails, return as string
+          return value;
+        }
+      }
+
       return value;
     }
 
@@ -450,7 +474,7 @@ function parseExpressionValue(state: ParseState): any {
   state.pos++;
   state.column++;
 
-  // Try to parse as JSON
+  // Try to parse as JSON (first attempt: as-is)
   try {
     return JSON.parse(expr);
   } catch {
@@ -461,7 +485,16 @@ function parseExpressionValue(state: ParseState): any {
     if (expr === 'undefined') return undefined;
     if (/^-?\d+(\.\d+)?$/.test(expr)) return Number(expr);
 
-    throw createError(state, `Invalid expression: ${expr}`);
+    // Try to convert JavaScript object syntax to JSON
+    // Replace single quotes with double quotes and quote unquoted keys
+    try {
+      const jsonExpr = expr
+        .replace(/'/g, '"')  // Convert single quotes to double quotes
+        .replace(/(\w+):/g, '"$1":');  // Quote unquoted keys
+      return JSON.parse(jsonExpr);
+    } catch {
+      throw createError(state, `Invalid expression: ${expr}`);
+    }
   }
 }
 

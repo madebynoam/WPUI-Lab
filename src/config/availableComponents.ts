@@ -8,8 +8,17 @@
  * This ensures the inserter and agent always stay in sync.
  */
 
-// Icons for component categories
-import { layout, box, pencil, tag, plus, table } from '@wordpress/icons';
+// Icons for component categories (conditionally imported for browser)
+let layout: any, box: any, pencil: any, tag: any, plus: any, table: any;
+
+if (typeof window !== 'undefined') {
+  try {
+    const icons = require('@wordpress/icons');
+    ({ layout, box, pencil, tag, plus, table } = icons);
+  } catch (e) {
+    console.log('[availableComponents] Running in Node.js - icons unavailable');
+  }
+}
 
 export interface ComponentGroup {
   name: string;

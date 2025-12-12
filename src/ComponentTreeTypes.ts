@@ -52,6 +52,9 @@ export type ComponentTreeAction =
   // Play mode actions
   | { type: 'SET_PLAY_MODE'; payload: { isPlay: boolean } }
 
+  // Agent execution state actions
+  | { type: 'SET_AGENT_EXECUTING'; payload: { isExecuting: boolean } }
+
   // Editing mode actions
   | { type: 'SET_EDITING_MODE'; payload: { mode: 'selection' | 'text' } }
 

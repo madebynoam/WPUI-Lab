@@ -1,5 +1,16 @@
-import { ComponentNode } from '@/src/types';
-import { componentRegistry } from '@/src/componentRegistry';
+import { ComponentNode } from '@/types';
+
+// Conditionally import componentRegistry
+let componentRegistry: Record<string, any> = {};
+try {
+  if (typeof window !== 'undefined') {
+    componentRegistry = require('@/componentRegistry').componentRegistry;
+  } else {
+    componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
+  }
+} catch (e) {
+  console.log('[normalizeComponent] Failed to load componentRegistry:', e);
+}
 
 /**
  * Normalizes a component node to ensure consistent data structure.

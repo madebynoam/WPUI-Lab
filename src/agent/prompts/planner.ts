@@ -5,7 +5,7 @@
  * It has access to context tools only (read-only).
  */
 
-import { getAgentComponentList } from "@/src/config/availableComponents";
+import { getAgentComponentList } from "@/config/availableComponents";
 
 export const PLANNER_PROMPT = `You are a UI planning assistant for WP-Designer.
 

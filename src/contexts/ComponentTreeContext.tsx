@@ -1,11 +1,11 @@
 import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo, useCallback } from 'react';
-import { ComponentNode, Page, Project, Interaction, PatternNode } from '@/src/types';
-import { componentRegistry } from '@/src/componentRegistry';
-import { componentTreeReducer, ComponentTreeState } from '@/src/ComponentTreeReducer';
-import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent } from '@/src/utils/treeHelpers';
-import { generateId } from '@/src/utils/idGenerator';
-import { normalizeComponentNode, normalizeComponentNodes } from '@/src/utils/normalizeComponent';
-import { DEMO_PROJECT } from '@/src/demoProject';
+import { ComponentNode, Page, Project, Interaction, PatternNode } from '@/types';
+import { componentRegistry } from '@/componentRegistry';
+import { componentTreeReducer, ComponentTreeState } from '@/ComponentTreeReducer';
+import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent } from '@/utils/treeHelpers';
+import { generateId } from '@/utils/idGenerator';
+import { normalizeComponentNode, normalizeComponentNodes } from '@/utils/normalizeComponent';
+import { DEMO_PROJECT } from '@/demoProject';
 
 const STORAGE_KEY = 'wp-designer-projects';
 
@@ -90,6 +90,10 @@ interface ComponentTreeContextType {
   // Play mode
   isPlayMode: boolean;
   setPlayMode: (isPlay: boolean) => void;
+
+  // Agent execution state
+  isAgentExecuting: boolean;
+  setAgentExecuting: (isExecuting: boolean) => void;
 
   // Editing mode
   editingMode: 'selection' | 'text';
@@ -195,6 +199,7 @@ function initializeState(): ComponentTreeState {
     clipboard: null,
     cutNodeId: null,
     isPlayMode: false,
+    isAgentExecuting: false,
     editingMode: 'selection',
     history: {
       past: [],
@@ -532,6 +537,12 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'SET_PLAY_MODE', payload: { isPlay } });
   };
 
+  // ===== Agent Execution State =====
+
+  const setAgentExecuting = (isExecuting: boolean) => {
+    dispatch({ type: 'SET_AGENT_EXECUTING', payload: { isExecuting } });
+  };
+
   // ===== Editing Mode =====
 
   const setEditingMode = (mode: 'selection' | 'text') => {
@@ -617,6 +628,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     clearHistory,
     isPlayMode: state.isPlayMode,
     setPlayMode,
+    isAgentExecuting: state.isAgentExecuting,
+    setAgentExecuting,
     editingMode: state.editingMode,
     setEditingMode,
     addInteraction,

@@ -51,10 +51,10 @@ import {
   privateApis as componentsPrivateApis,
 } from '@wordpress/components';
 import { DataViews } from '@wordpress/dataviews';
-import { ComponentDefinition } from '@/src/types';
-import { getMockData, getFieldDefinitions } from '@/src/utils/mockDataGenerator';
-import { WORDPRESS_ICON_NAMES } from '@/src/utils/iconNames';
-import { unlockComponents } from '@/src/utils/wordpressPrivateApis';
+import { ComponentDefinition } from '@/types';
+import { getMockData, getFieldDefinitions } from '@/utils/mockDataGenerator';
+import { WORDPRESS_ICON_NAMES } from '@/utils/iconNames';
+import { unlockComponents } from '@/utils/wordpressPrivateApis';
 
 // Access Tabs and Badge from private APIs
 // @ts-ignore - Tabs and Badge are private APIs but stable

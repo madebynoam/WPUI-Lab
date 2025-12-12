@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '@/src/contexts/ComponentTreeContext';
-import { usePlayModeState } from '@/src/contexts/PlayModeContext';
+import { useComponentTree, ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { usePlayModeState } from '@/contexts/PlayModeContext';
 import { ComponentNode } from '../types';
-import { componentRegistry } from '@/src/componentRegistry';
+import { componentRegistry } from '@/componentRegistry';
 import * as wpIcons from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
 import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } from '../utils/treeHelpers';
-import { useSelection } from '@/src/contexts/SelectionContext';
-import { useSimpleDrag } from '@/src/contexts/SimpleDragContext';
+import { useSelection } from '@/contexts/SelectionContext';
+import { useSimpleDrag } from '@/contexts/SimpleDragContext';
 import { useRouter } from 'next/navigation';
 
 // Simple Figma-style drag-and-drop component
@@ -18,7 +18,7 @@ export const RenderNode: React.FC<{
   node: ComponentNode;
   renderInteractive?: boolean;
 }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, pages, currentPageId, currentProjectId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentPageId, currentProjectId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode } = useComponentTree();
   const playModeState = usePlayModeState();
   const router = useRouter();
   const definition = componentRegistry[node.type];
@@ -89,10 +89,10 @@ export const RenderNode: React.FC<{
 
   // Hover handlers for Figma-style hover
   const handleMouseEnter = useCallback(() => {
-    if (!isPlayMode && !isDragging && !draggedNodeId) {
+    if (!isPlayMode && !isDragging && !draggedNodeId && !isAgentExecuting) {
       setIsHovered(true);
     }
-  }, [isPlayMode, isDragging, draggedNodeId]);
+  }, [isPlayMode, isDragging, draggedNodeId, isAgentExecuting]);
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
@@ -115,6 +115,9 @@ export const RenderNode: React.FC<{
   // Simplified click handler: Only handles modifier keys and play mode
   // (Selection now happens on mousedown for instant Figma-style feel)
   const handleComponentClick = useCallback((e: React.MouseEvent, hitTargetId: string) => {
+    // Disable all interactions when agent is executing
+    if (isAgentExecuting) return;
+
     // Check if the click originated from an editable input element
     const target = e.target as HTMLElement;
     const isEditableInput = target.tagName === 'INPUT' ||
@@ -219,7 +222,7 @@ export const RenderNode: React.FC<{
     }
 
     // All other selection logic now happens in mousedown for instant feel
-  }, [draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, setIsEditingText]);
+  }, [isAgentExecuting, draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, setIsEditingText]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
@@ -254,6 +257,9 @@ export const RenderNode: React.FC<{
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const now = Date.now();
     const timeSinceLastMousedown = now - lastClickTimeRef.current;
+
+    // Disable all interactions when agent is executing
+    if (isAgentExecuting) return;
 
     // Skip if in play mode or already dragging
     if (isPlayMode || draggedNodeId) return;
@@ -519,7 +525,7 @@ export const RenderNode: React.FC<{
     // Update tracking
     lastClickTimeRef.current = now;
     lastClickedIdRef.current = effectiveSelectedNode!.id;
-  }, [isPlayMode, draggedNodeId, node.id, node.type, selectedNodeIds, tree, toggleNodeSelection, setIsEditingText]);
+  }, [isAgentExecuting, isPlayMode, draggedNodeId, node.id, node.type, selectedNodeIds, tree, toggleNodeSelection, setIsEditingText]);
 
   // Document-level mouse move for drag tracking
   React.useEffect(() => {

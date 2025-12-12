@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AnthropicProvider } from '@/src/agent/llm/anthropic';
-import { OpenAIProvider } from '@/src/agent/llm/openai';
-import { getAgentModel } from '@/src/agent/agentConfig';
-import type { LLMChatOptions } from '@/src/agent/llm/types';
+import { AnthropicProvider } from '@/agent/llm/anthropic';
+import { OpenAIProvider } from '@/agent/llm/openai';
+import { getAgentModel } from '@/agent/agentConfig';
+import type { LLMChatOptions } from '@/agent/llm/types';
 
 export async function POST(req: NextRequest) {
   try {
