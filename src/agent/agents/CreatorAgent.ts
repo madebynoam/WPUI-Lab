@@ -347,7 +347,7 @@ export class CreatorAgent extends BaseAgent {
                 },
                 {
                   role: 'user',
-                  content: subRequest,
+                  content: `${pageContext}${contextNote}\n\nUser request: ${subRequest}`,
                 },
                 {
                   role: 'assistant',
