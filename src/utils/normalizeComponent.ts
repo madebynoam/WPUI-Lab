@@ -44,6 +44,13 @@ export function normalizeComponentNode(node: ComponentNode): ComponentNode {
     interactions: node.interactions || [],
   };
 
+  // DEFENSIVE: Ensure SelectControl has options as an array
+  if (node.type === 'SelectControl') {
+    if (!Array.isArray(normalized.props.options)) {
+      normalized.props.options = [];
+    }
+  }
+
   // CRITICAL: Transform props.content → props.children for Text, Heading, and Badge
   if (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge') {
     const hasContent = 'content' in normalized.props && normalized.props.content;
