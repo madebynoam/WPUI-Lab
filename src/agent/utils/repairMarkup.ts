@@ -95,7 +95,7 @@ export async function parseMarkupWithRepair(
     );
 
     // Call LLM for repair
-    const config = getAgentModel('agent');
+    const config = getAgentModel('CreatorAgent');
     const llm = await createLLMProvider(config);
     const capabilities = getModelCapabilities(config.model);
 

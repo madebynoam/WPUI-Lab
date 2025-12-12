@@ -39,13 +39,18 @@ TOOLS AVAILABLE:
 **buildFromMarkup** - PRIMARY TOOL for creating ALL components including tables
 Parameters: { markup: string }
 
-**IMPORTANT: Tables in Markup**
+**CRITICAL: Tables in Markup**
+
+**NEVER use <DataViews /> directly - it will fail!**
+**ALWAYS use <Table template="..." /> for tables!**
 
 Tables are created using the <Table /> component INSIDE buildFromMarkup markup:
 - Use <Table template="users" /> for a users table
 - Use <Table template="deployments" /> for a deployments table
+- Use <Table template="orders" /> for an orders table
 - Available templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads, deployments
 - Tables work like any other component - they can be nested in cards, sections, etc.
+- The <Table /> component is automatically converted to DataViews internally
 
 Example - Card with table:
 <Grid columns={12}>
