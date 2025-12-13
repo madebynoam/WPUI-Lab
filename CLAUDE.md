@@ -246,6 +246,44 @@ memory.search({ entityId: 'page-123' })
 memory.get({ id: 'mem-456' })
 ```
 
+**Domain Context Preservation**:
+
+The system prevents "context amnesia" in multi-step workflows through layered context preservation:
+
+1. **Memory as Source of Truth**: When Orchestrator receives a request, it stores the original user message in memory with action type `user_request`. All agents can read this as fallback context.
+
+2. **Classifier as Initializer**: The Classifier doesn't just route—it creates a structured agenda for multi-step workflows. When splitting requests like "Create a 'Tiers' page with three tier cards for WordPress agencies", it:
+   - Preserves domain keywords ("WordPress agencies") in EVERY instruction
+   - Uses prompt engineering with few-shot BAD vs GOOD examples
+   - Outputs: `[{agent: "PageAgent", instruction: "Create a 'Tiers' page"}, {agent: "CreatorAgent", instruction: "Add three tier cards showing progression for WordPress agencies"}]`
+
+3. **Context Threading Through ALL LLM Calls**: Each agent includes full context in both initial AND follow-up LLM calls. Critical bug fixed: CreatorAgent's follow-up call after `design_getHeuristics` tool was losing context—now includes `pageContext + contextNote` in all calls.
+
+4. **Decomposition with Context**: When CreatorAgent splits complex requests internally (e.g., "hero and testimonials" → two buildFromMarkup calls), the Decomposer prompt explicitly instructs the LLM to carry forward domain details to each fragment.
+
+**Example Flow**:
+```
+User: "Create WordPress agency hero section"
+↓
+Orchestrator writes to memory: {action: 'user_request', details: {fullMessage: "Create WordPress agency hero section"}}
+↓
+Classifier routes to CreatorAgent with preserved context: "Add hero section explaining WordPress agency program benefits"
+↓
+CreatorAgent LLM Call #1: Includes contextNote from memory + instruction
+↓
+LLM calls design_getHeuristics tool
+↓
+CreatorAgent LLM Call #2 (Follow-up): ALSO includes contextNote (bug was here—was losing "WordPress agency" and generating generic coaching content)
+↓
+Result: Hero with "WordPress Agency Partner Program" heading, not generic "Career Coaching"
+```
+
+**Key Files**:
+- [agentOrchestrator.ts:143-151](src/agent/agentOrchestrator.ts#L143-L151) - Stores original user_request in memory
+- [Classifier.ts:166-184](src/agent/agents/Classifier.ts#L166-L184) - Prompt engineering for context preservation
+- [decomposer.ts:25-38](src/agent/prompts/decomposer.ts#L25-L38) - Decomposer context preservation rules
+- [CreatorAgent.ts:350](src/agent/agents/CreatorAgent.ts#L350) - Fixed follow-up LLM call to include full context
+
 **Agent UI Feedback**:
 Agents stream progress messages to the UI in real-time:
 ```
