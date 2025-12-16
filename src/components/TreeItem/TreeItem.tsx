@@ -90,6 +90,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
       onEditChange,
       onEditEnd,
       projectedDepth,
+      onMouseDown,
       ...props
     },
     ref
@@ -151,6 +152,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           {...handleProps}
+          onMouseDown={onMouseDown}
         >
           {/* Chevron for collapsible items */}
           {childCount && childCount > 0 ? (

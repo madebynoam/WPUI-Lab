@@ -167,11 +167,9 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
         cursor: "default",
       }}
       {...attributes}
-      onClick={(e) => {
-        if (!isEditing) {
-          onPageClick();
-        }
-      }}
+      onMouseDown={!isEditing ? (e) => {
+        onPageClick();
+      } : undefined}
     >
       {/* Drag handle */}
       {!isEditing && (
@@ -1012,7 +1010,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                     indicator={isOverItem}
                     projectedDepth={projectedDepth}
                     onCollapse={() => handleCollapse(item.id)}
-                    onClick={(e: any) => {
+                    onMouseDown={(e: any) => {
                       if (editingNodeId === item.id) {
                         e.stopPropagation();
                         return;
