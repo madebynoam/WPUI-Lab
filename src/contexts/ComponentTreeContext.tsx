@@ -2,7 +2,7 @@ import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo, u
 import { ComponentNode, Page, Project, Interaction, PatternNode } from '@/types';
 import { componentRegistry } from '@/componentRegistry';
 import { componentTreeReducer, ComponentTreeState } from '@/ComponentTreeReducer';
-import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent } from '@/utils/treeHelpers';
+import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent, calculateSmartGridSpan } from '@/utils/treeHelpers';
 import { generateId } from '@/utils/idGenerator';
 import { normalizeComponentNode, normalizeComponentNodes } from '@/utils/normalizeComponent';
 import { DEMO_PROJECT } from '@/demoProject';
@@ -308,6 +308,27 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       children,
       interactions: [],
     };
+
+    // Smart Grid insertion: if parent is a Grid, calculate smart gridColumnSpan
+    const effectiveParentId = parentId || ROOT_VSTACK_ID;
+    const parentNode = findNodeById(tree, effectiveParentId);
+
+    if (parentNode && parentNode.type === 'Grid') {
+      const { span, childrenToUpdate } = calculateSmartGridSpan(parentNode);
+
+      // Apply smart span to new node
+      newNode.props.gridColumnSpan = span;
+
+      // Update existing children if needed (e.g., rebalancing)
+      if (childrenToUpdate.length > 0) {
+        childrenToUpdate.forEach(({ id, gridColumnSpan }) => {
+          dispatch({
+            type: 'UPDATE_COMPONENT_PROPS',
+            payload: { id, props: { gridColumnSpan } }
+          });
+        });
+      }
+    }
 
     // Normalize before dispatching to ensure consistent data structure
     const normalizedNode = normalizeComponentNode(newNode);

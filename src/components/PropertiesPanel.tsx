@@ -533,6 +533,7 @@ export const PropertiesPanel: React.FC = () => {
                 }
                 help="Number of columns to span"
                 min={1}
+                max={parent?.props.columns || 12}
               />
             </div>
 

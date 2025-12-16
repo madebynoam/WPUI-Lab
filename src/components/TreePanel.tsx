@@ -82,6 +82,7 @@ const INSERTION_CONTAINERS = [
   "Flex",
   "FlexBlock",
   "FlexItem",
+  "Grid",
   "CardBody",
   "CardHeader",
   "CardFooter",

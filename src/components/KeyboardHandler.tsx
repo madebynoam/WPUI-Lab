@@ -249,7 +249,7 @@ export const KeyboardHandler: React.FC<{
         e.metaKey &&
         !e.ctrlKey &&
         e.key === "g" &&
-        selectedNodeIds.length >= 2 &&
+        selectedNodeIds.length >= 1 &&
         !isInEditMode()
       ) {
         e.preventDefault();

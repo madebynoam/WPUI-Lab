@@ -451,3 +451,75 @@ export const findPathBetweenNodes = (
   const found = findInChildren(startNode);
   return found ? path : [];
 };
+
+/**
+ * Calculate smart gridColumnSpan when adding a component to a Grid.
+ * Returns { span, childrenToUpdate } where:
+ * - span: the gridColumnSpan for the new component
+ * - childrenToUpdate: array of { id, gridColumnSpan } for existing children to rebalance
+ */
+export const calculateSmartGridSpan = (
+  gridNode: ComponentNode
+): { span: number; childrenToUpdate: Array<{ id: string; gridColumnSpan: number }> } => {
+  const totalColumns = gridNode.props.columns || 12;
+  const children = gridNode.children || [];
+
+  // Empty grid → full width
+  if (children.length === 0) {
+    return { span: totalColumns, childrenToUpdate: [] };
+  }
+
+  // One child with full width → split in half
+  if (children.length === 1) {
+    const firstChild = children[0];
+    const firstChildSpan = firstChild.props.gridColumnSpan || totalColumns;
+
+    if (firstChildSpan === totalColumns) {
+      const newSpan = Math.floor(totalColumns / 2);
+      return {
+        span: newSpan,
+        childrenToUpdate: [{ id: firstChild.id, gridColumnSpan: newSpan }]
+      };
+    }
+  }
+
+  // Calculate used columns
+  const usedColumns = children.reduce((sum, child) => {
+    return sum + (child.props.gridColumnSpan || 0);
+  }, 0);
+
+  const remaining = totalColumns - usedColumns;
+
+  // If there's remaining space >= 3 columns, use it
+  if (remaining >= 3) {
+    return { span: remaining, childrenToUpdate: [] };
+  }
+
+  // Grid is full (remaining = 0) → check if we should rebalance
+  if (remaining === 0 && children.length > 0) {
+    // Check if all children have equal spans
+    const childSpans = children.map(child => child.props.gridColumnSpan || 0);
+    const allEqual = childSpans.every(span => span === childSpans[0]);
+
+    if (allEqual) {
+      // Rebalance: divide totalColumns evenly among (children.length + 1)
+      const newChildCount = children.length + 1;
+      const evenSpan = Math.floor(totalColumns / newChildCount);
+
+      // Update all existing children to even span
+      const childrenToUpdate = children.map(child => ({
+        id: child.id,
+        gridColumnSpan: evenSpan
+      }));
+
+      return {
+        span: evenSpan,
+        childrenToUpdate
+      };
+    }
+  }
+
+  // Otherwise, default to 3 columns (or totalColumns if < 3)
+  const defaultSpan = Math.min(3, totalColumns);
+  return { span: defaultSpan, childrenToUpdate: [] };
+};

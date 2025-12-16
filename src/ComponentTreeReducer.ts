@@ -4,6 +4,7 @@ import { componentRegistry } from '@/componentRegistry';
 import {
   ROOT_VSTACK_ID,
   getCurrentTree,
+  findNodeById,
   updateNodeInTree,
   updateMultipleNodesInTree,
   insertNodeInTree,
@@ -246,9 +247,19 @@ export function componentTreeReducer(
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
+      // Smart selection: if parent is an insertion container, keep it selected
+      const effectiveParentId = parentId || ROOT_VSTACK_ID;
+      const parentNode = findNodeById(newTree, effectiveParentId);
+      const isInsertionContainer = parentNode && [
+        'Grid', 'VStack', 'HStack', 'Flex', 'FlexBlock', 'FlexItem',
+        'CardBody', 'CardHeader', 'CardFooter', 'TabPanel', 'PanelBody', 'PanelRow'
+      ].includes(parentNode.type);
+
+      const newSelectedNodeIds = isInsertionContainer ? [effectiveParentId] : [node.id];
+
       return {
         ...updateHistory(state, newProjects, state.currentProjectId),
-        selectedNodeIds: [node.id],
+        selectedNodeIds: newSelectedNodeIds,
       };
     }
 
@@ -334,7 +345,7 @@ export function componentTreeReducer(
 
     case 'GROUP_COMPONENTS': {
       const { ids } = action.payload;
-      if (ids.length < 2) return state; // Need at least 2 items to group
+      if (ids.length < 1) return state; // Need at least 1 item to group
 
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
@@ -390,13 +401,14 @@ export function componentTreeReducer(
       const parentSpacing = parent.props?.spacing;
       const containerSpacing = parentSpacing && [2, 4].includes(parentSpacing) ? parentSpacing : 2;
 
-      // Create container (VStack by default) with cloned children
+      // Create container: HStack for single item, VStack for multiple items
+      const containerType = ids.length === 1 ? 'HStack' : 'VStack';
       const containerNode: ComponentNode = {
         id: generateId(),
-        type: 'VStack',
+        type: containerType,
         props: {
           spacing: containerSpacing,
-          alignment: 'stretch',
+          alignment: containerType === 'HStack' ? 'center' : 'stretch',
         },
         children: selectedIndices.map(idx => JSON.parse(JSON.stringify(parent.children![idx]))),
       };
