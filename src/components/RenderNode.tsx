@@ -223,7 +223,8 @@ export const RenderNode: React.FC<{
 
     // DOUBLE-CLICK TEXT EDITING (Selection mode)
     // Check for double-click on text components to enter edit mode
-    if (editingMode === 'selection' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
+    // ONLY handle this if the text component is already selected (don't interfere with container drill-in)
+    if (editingMode === 'selection' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') && selectedNodeIds.includes(node.id)) {
       const now = Date.now();
       const timeSinceLastClick = now - lastClickTimeRef.current;
       const isDoubleClick = timeSinceLastClick < 350 && lastClickedIdRef.current === node.id;
@@ -237,7 +238,7 @@ export const RenderNode: React.FC<{
         isSelected: selectedNodeIds.includes(node.id)
       });
 
-      if (isDoubleClick && selectedNodeIds.includes(node.id)) {
+      if (isDoubleClick) {
         console.log('[onClick] DOUBLE-CLICK on text component - entering edit mode');
         setIsEditingText(true);
         lastClickTimeRef.current = 0;
@@ -245,7 +246,7 @@ export const RenderNode: React.FC<{
         return;
       }
 
-      // Update refs for next click
+      // Update refs for next click - only if text component is selected
       lastClickTimeRef.current = now;
       lastClickedIdRef.current = node.id;
     }
@@ -449,32 +450,37 @@ export const RenderNode: React.FC<{
         console.log('[DEBUG Selection] Selecting sibling:', siblingNode.id, 'for clicked node:', node.id);
         toggleNodeSelection(siblingNode.id, false, false, tree);
         lastClickTimeRef.current = now;
-        lastClickedIdRef.current = node.id;
+        lastClickedIdRef.current = siblingNode.id; // Track the SELECTED node, not clicked node
         return;
       }
 
       // Normal selection logic
       // Check if clicked component is a direct child of root
       const parent = findParent(tree, node.id);
+      let selectedId: string;
+
       if (parent && parent.id === ROOT_VSTACK_ID) {
         // Direct child of root - select it directly
         console.log('[DEBUG Selection] Selecting direct child of root:', node.id);
         toggleNodeSelection(node.id, false, false, tree);
+        selectedId = node.id;
       } else {
         // Nested component - select the top-most container
         const topContainer = findTopMostContainer(tree, node.id, componentRegistry);
         if (topContainer) {
           console.log('[DEBUG Selection] Selecting top container:', topContainer.id, 'for clicked node:', node.id);
           toggleNodeSelection(topContainer.id, false, false, tree);
+          selectedId = topContainer.id;
         } else {
           // Fallback: select the clicked node directly
           console.log('[DEBUG Selection] No top container found, selecting clicked node:', node.id);
           toggleNodeSelection(node.id, false, false, tree);
+          selectedId = node.id;
         }
       }
 
       lastClickTimeRef.current = now;
-      lastClickedIdRef.current = node.id;
+      lastClickedIdRef.current = selectedId; // Track the SELECTED node, not clicked node
       return;
     }
 
