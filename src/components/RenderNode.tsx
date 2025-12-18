@@ -464,7 +464,27 @@ export const RenderNode: React.FC<{
     });
 
     if (isDoubleClick) {
-      console.log('[DEBUG Selection] DOUBLE-CLICK detected - drilling into children of:', effectiveSelectedNode!.id);
+      console.log('[DEBUG Selection] DOUBLE-CLICK detected - checking if text component clicked');
+
+      // STRATEGY: Check if the clicked node itself is a text component
+      // If so, enter edit mode instead of drilling in
+      const clickedNode = findNodeById(tree, node.id);
+      const isTextComponent = clickedNode && (
+        clickedNode.type === 'Text' ||
+        clickedNode.type === 'Heading' ||
+        clickedNode.type === 'Badge' ||
+        clickedNode.type === 'Button'
+      );
+
+      if (isTextComponent) {
+        console.log('[DEBUG Selection] TEXT COMPONENT DOUBLE-CLICKED - entering edit mode:', node.id);
+        setIsEditingText(true);
+        lastClickTimeRef.current = 0; // Reset to prevent triple-click issues
+        lastClickedIdRef.current = null;
+        return;
+      }
+
+      console.log('[DEBUG Selection] Non-text component - proceeding with drill-in logic');
 
       // Find child component at click location using DOM
       const clickedElement = document.elementFromPoint(e.clientX, e.clientY);
