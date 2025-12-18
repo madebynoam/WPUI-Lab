@@ -221,8 +221,37 @@ export const RenderNode: React.FC<{
       return;
     }
 
+    // DOUBLE-CLICK TEXT EDITING (Selection mode)
+    // Check for double-click on text components to enter edit mode
+    if (editingMode === 'selection' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTimeRef.current;
+      const isDoubleClick = timeSinceLastClick < 350 && lastClickedIdRef.current === node.id;
+
+      console.log('[onClick] Text component click - double-click check:', {
+        nodeId: node.id,
+        nodeType: node.type,
+        timeSinceLastClick,
+        isDoubleClick,
+        lastClickedId: lastClickedIdRef.current,
+        isSelected: selectedNodeIds.includes(node.id)
+      });
+
+      if (isDoubleClick && selectedNodeIds.includes(node.id)) {
+        console.log('[onClick] DOUBLE-CLICK on text component - entering edit mode');
+        setIsEditingText(true);
+        lastClickTimeRef.current = 0;
+        lastClickedIdRef.current = null;
+        return;
+      }
+
+      // Update refs for next click
+      lastClickTimeRef.current = now;
+      lastClickedIdRef.current = node.id;
+    }
+
     // All other selection logic now happens in mousedown for instant feel
-  }, [isAgentExecuting, draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, setIsEditingText]);
+  }, [isAgentExecuting, draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, setIsEditingText, lastClickTimeRef, lastClickedIdRef]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
@@ -464,7 +493,25 @@ export const RenderNode: React.FC<{
     });
 
     if (isDoubleClick) {
-      console.log('[DEBUG Selection] DOUBLE-CLICK detected - drilling into children of:', effectiveSelectedNode!.id);
+      console.log('[DEBUG Selection] DOUBLE-CLICK detected on:', node.id, 'type:', node.type);
+
+      // SPECIAL CASE: If double-clicking a text component that's already selected,
+      // skip drill-in logic and let onClick handle entering edit mode
+      const clickedNode = findNodeById(tree, node.id);
+      const isTextComponent = clickedNode && (
+        clickedNode.type === 'Text' ||
+        clickedNode.type === 'Heading' ||
+        clickedNode.type === 'Badge' ||
+        clickedNode.type === 'Button'
+      );
+
+      if (isTextComponent && selectedNodeIds.includes(node.id)) {
+        console.log('[DEBUG Selection] Text component double-click - skipping drill-in, letting onClick handle edit mode');
+        // Don't update refs - let onClick handle the double-click
+        return;
+      }
+
+      console.log('[DEBUG Selection] Non-text or not-selected - proceeding with drill-in logic');
 
       // Find child component at click location using DOM
       const clickedElement = document.elementFromPoint(e.clientX, e.clientY);
