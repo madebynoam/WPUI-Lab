@@ -678,7 +678,7 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
     if (params.parentId && params.parentId.startsWith('page-')) {
       console.error("[buildFromMarkup] INVALID parentId - Page IDs are not valid parent IDs!");
       console.error("[buildFromMarkup] Received:", params.parentId);
-      console.error("[buildFromMarkup] Auto-correcting to undefined (will use root-vstack)");
+      console.error("[buildFromMarkup] Auto-correcting to undefined (will use root-grid)");
 
       // Auto-correct instead of failing - this is more helpful
       params.parentId = undefined;

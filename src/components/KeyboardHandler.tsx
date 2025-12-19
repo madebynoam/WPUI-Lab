@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { useComponentTree, ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { useSelection } from '@/contexts/SelectionContext';
 import { findParent } from '@/utils/treeHelpers';
 
@@ -99,7 +99,7 @@ export const KeyboardHandler: React.FC<{
         e.stopPropagation();
         // Remove each selected component
         selectedNodeIds.forEach((id) => {
-          if (id !== ROOT_VSTACK_ID) {
+          if (id !== ROOT_GRID_ID) {
             // Don't delete root
             removeComponent(id);
           }
@@ -201,7 +201,7 @@ export const KeyboardHandler: React.FC<{
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
         e.stopPropagation();
-        toggleNodeSelection(ROOT_VSTACK_ID, false);
+        toggleNodeSelection(ROOT_GRID_ID, false);
       }
 
       // Shift+Enter to select parent
@@ -229,13 +229,13 @@ export const KeyboardHandler: React.FC<{
         const ancestor = findInteractiveAncestor(selectedNodeIds[0]);
         if (ancestor) {
           // Return to root VStack to show full page view
-          toggleNodeSelection(ROOT_VSTACK_ID, false);
+          toggleNodeSelection(ROOT_GRID_ID, false);
         } else {
           // Normal case: deselect everything
           setSelectedNodeIds([]);
           // Reset to default state: no selection means root VStack context
           lastClickTimeRef.current = 0;
-          lastClickedIdRef.current = ROOT_VSTACK_ID;
+          lastClickedIdRef.current = ROOT_GRID_ID;
 
           console.log('[KeyboardHandler] Escape - After reset:', {
             lastClickTime: lastClickTimeRef.current,
@@ -256,7 +256,7 @@ export const KeyboardHandler: React.FC<{
         e.stopPropagation();
 
         // Don't group if root is selected
-        const hasRoot = selectedNodeIds.includes(ROOT_VSTACK_ID);
+        const hasRoot = selectedNodeIds.includes(ROOT_GRID_ID);
         if (!hasRoot) {
           groupComponents(selectedNodeIds);
         }
@@ -298,7 +298,7 @@ export const KeyboardHandler: React.FC<{
       // Only single selection, not in edit mode, and not root
       if (
         selectedNodeIds.length === 1 &&
-        selectedNodeIds[0] !== ROOT_VSTACK_ID &&
+        selectedNodeIds[0] !== ROOT_GRID_ID &&
         !isInEditMode() &&
         ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
       ) {

@@ -4,7 +4,7 @@ import React, { forwardRef, HTMLAttributes, CSSProperties, useState, useEffect, 
 import { DropdownMenu, MenuGroup, MenuItem, Icon } from '@wordpress/components';
 import { moreVertical, page } from '@wordpress/icons';
 import styles from './TreeItem.module.css';
-import { ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { Page } from '../../types';
 
 // Helper to get designer-friendly labels for layout containers

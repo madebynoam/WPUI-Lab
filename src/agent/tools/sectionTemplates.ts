@@ -205,8 +205,8 @@ PARAMETER EXAMPLES:
       // Validate parentId - must be a component ID (starts with 'root-' or 'node-'), not a page ID
       let targetParentId = params.parentId;
       if (targetParentId && targetParentId.startsWith('page-')) {
-        console.warn(`[section_create] Invalid parentId "${targetParentId}" (page ID, not component ID). Defaulting to root-vstack.`);
-        targetParentId = 'root-vstack';
+        console.warn(`[section_create] Invalid parentId "${targetParentId}" (page ID, not component ID). Defaulting to root-grid.`);
+        targetParentId = 'root-grid';
       }
 
       // Handle placement
@@ -214,9 +214,9 @@ PARAMETER EXAMPLES:
         targetParentId = params.placement.replace('after:', '');
       }
 
-      // Default to root-vstack if no valid parent
+      // Default to root-grid if no valid parent
       if (!targetParentId) {
-        targetParentId = 'root-vstack';
+        targetParentId = 'root-grid';
       }
 
       for (const node of result.nodes) {

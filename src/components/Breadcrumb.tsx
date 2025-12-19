@@ -1,7 +1,7 @@
 import React from 'react';
 import { useComponentTree } from '@/contexts/ComponentTreeContext';
 import { ComponentNode } from '../types';
-import { ROOT_VSTACK_ID } from '../utils/treeHelpers';
+import { ROOT_GRID_ID } from '../utils/treeHelpers';
 
 export const Breadcrumb: React.FC = () => {
   const { selectedNodeIds, toggleNodeSelection, tree } = useComponentTree();
@@ -30,7 +30,7 @@ export const Breadcrumb: React.FC = () => {
     return path;
   };
 
-  const path = getNodePath(selectedNodeIds.length > 0 ? selectedNodeIds[0] : ROOT_VSTACK_ID);
+  const path = getNodePath(selectedNodeIds.length > 0 ? selectedNodeIds[0] : ROOT_GRID_ID);
 
   if (path.length === 0) {
     return null;
@@ -80,7 +80,7 @@ export const Breadcrumb: React.FC = () => {
               }
             }}
           >
-            {node.id === ROOT_VSTACK_ID ? 'Page' : node.type}
+            {node.id === ROOT_GRID_ID ? 'Page' : node.type}
           </button>
         </React.Fragment>
       ))}

@@ -2,14 +2,14 @@ import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo, u
 import { ComponentNode, Page, Project, Interaction, PatternNode } from '@/types';
 import { componentRegistry } from '@/componentRegistry';
 import { componentTreeReducer, ComponentTreeState } from '@/ComponentTreeReducer';
-import { ROOT_VSTACK_ID, getCurrentTree, findNodeById, findParent, calculateSmartGridSpan } from '@/utils/treeHelpers';
+import { ROOT_GRID_ID, getCurrentTree, findNodeById, findParent, calculateSmartGridSpan } from '@/utils/treeHelpers';
 import { generateId } from '@/utils/idGenerator';
 import { normalizeComponentNode, normalizeComponentNodes } from '@/utils/normalizeComponent';
 import { DEMO_PROJECT } from '@/demoProject';
 
-// File version 2: Fresh start with clean layout system
-// Changed storage key to not load old projects with complex layout props
-const STORAGE_KEY = 'wp-designer-projects-v2';
+// File version 3: Grid-first layout system
+// Changed storage key to not load old projects with VStack/HStack layout complexity
+const STORAGE_KEY = 'wp-designer-projects-v3';
 
 interface ComponentTreeContextType {
   // Current page's tree
@@ -113,12 +113,11 @@ const createInitialPage = (id: string, name: string): Page => ({
   id,
   name,
   tree: [{
-    id: ROOT_VSTACK_ID,
-    type: 'VStack',
+    id: ROOT_GRID_ID,
+    type: 'Grid',
     props: {
-      spacing: 4,
-      maxWidth: 0, // Always 100% width (0 = no constraint)
-      alignItems: 'center', // Centers children horizontally
+      columns: 12,
+      gap: 24,
     },
     children: [],
   }],
@@ -312,7 +311,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     };
 
     // Smart Grid insertion: if parent is a Grid, calculate smart gridColumnSpan
-    const effectiveParentId = parentId || ROOT_VSTACK_ID;
+    const effectiveParentId = parentId || ROOT_GRID_ID;
     const parentNode = findNodeById(tree, effectiveParentId);
 
     if (parentNode && parentNode.type === 'Grid') {
@@ -402,7 +401,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     // Only access localStorage on client
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem('wp-designer-agent-messages-v2');
+      localStorage.removeItem('wp-designer-agent-messages-v3');
     }
     dispatch({ type: 'RESET_TREE', payload: { defaultProject } });
   };
@@ -431,7 +430,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   const cutComponent = (id: string) => {
     console.log('[ComponentTreeContext] cutComponent called with id:', id);
     const node = getNodeById(id);
-    if (node && id !== ROOT_VSTACK_ID) { // Don't allow cutting root
+    if (node && id !== ROOT_GRID_ID) { // Don't allow cutting root
       console.log('[ComponentTreeContext] Dispatching CUT_COMPONENT for node:', node.type);
       dispatch({ type: 'CUT_COMPONENT', payload: { node, nodeId: id } });
     } else {
@@ -675,5 +674,5 @@ export const useComponentTree = () => {
   return context;
 };
 
-export { ROOT_VSTACK_ID };
+export { ROOT_GRID_ID };
 

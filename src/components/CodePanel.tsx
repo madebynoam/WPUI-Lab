@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { useComponentTree, ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { generatePageCode, generateComponentCode, generateComponentWithInteractions } from '../utils/codeGenerator';
 import { highlightCode } from '../utils/syntaxHighlighter';
 import { Button } from '@wordpress/components';
@@ -18,7 +18,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ width = 280, onResizeStart
 
   const code = useMemo(() => {
     // If no selection or root page selected, show entire page code
-    if (selectedNodeIds.length === 0 || selectedNodeIds[0] === ROOT_VSTACK_ID) {
+    if (selectedNodeIds.length === 0 || selectedNodeIds[0] === ROOT_GRID_ID) {
       return generatePageCode(tree);
     }
 
@@ -75,7 +75,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ width = 280, onResizeStart
         <div>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Code</h3>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-            {selectedNodeIds.length === 0 || selectedNodeIds[0] === ROOT_VSTACK_ID ? 'Page' : 'Component'} Code
+            {selectedNodeIds.length === 0 || selectedNodeIds[0] === ROOT_GRID_ID ? 'Page' : 'Component'} Code
           </div>
         </div>
         <Button

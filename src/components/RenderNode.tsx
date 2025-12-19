@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { useComponentTree, ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { usePlayModeState } from '@/contexts/PlayModeContext';
 import { ComponentNode } from '../types';
 import { componentRegistry } from '@/componentRegistry';
@@ -50,16 +50,16 @@ export const RenderNode: React.FC<{
 
   // Determine if this node should show hover border (Figma-style)
   const shouldShowHoverBorder = useCallback(() => {
-    if (isPlayMode || node.id === ROOT_VSTACK_ID || isDragging || draggedNodeId) return false;
+    if (isPlayMode || node.id === ROOT_GRID_ID || isDragging || draggedNodeId) return false;
     if (!isHovered) return false;
 
     // If nothing is selected (or only root is selected), show hover on top-level items only
     const nothingSelected = selectedNodeIds.length === 0 ||
-      (selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_VSTACK_ID);
+      (selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_GRID_ID);
 
     if (nothingSelected) {
       const parent = findParent(tree, node.id);
-      return parent?.id === ROOT_VSTACK_ID;
+      return parent?.id === ROOT_GRID_ID;
     }
 
     // If something is selected, show hover on siblings and parent's siblings (one level up)
@@ -76,7 +76,7 @@ export const RenderNode: React.FC<{
     }
 
     // Check if node is a sibling of selected's parent (one level up)
-    if (selectedParent && selectedParent.id !== ROOT_VSTACK_ID) {
+    if (selectedParent && selectedParent.id !== ROOT_GRID_ID) {
       const selectedGrandparent = findParent(tree, selectedParent.id);
       if (selectedGrandparent && thisParent && selectedGrandparent.id === thisParent.id) {
         // Same grandparent = parent's siblings
@@ -169,7 +169,7 @@ export const RenderNode: React.FC<{
         const lastSelectedParent = findParent(tree, lastSelectedId);
 
         // If last selected is root or has no parent, use clicked node directly
-        if (!lastSelectedParent || lastSelectedId === ROOT_VSTACK_ID) {
+        if (!lastSelectedParent || lastSelectedId === ROOT_GRID_ID) {
           return hitTargetId;
         }
 
@@ -189,7 +189,7 @@ export const RenderNode: React.FC<{
           }
 
           // Move up one level
-          if (!currentParent || currentParent.id === ROOT_VSTACK_ID) {
+          if (!currentParent || currentParent.id === ROOT_GRID_ID) {
             break;
           }
           current = currentParent;
@@ -331,7 +331,7 @@ export const RenderNode: React.FC<{
     });
 
     // Clicking root VStack clears selection
-    if (node.id === ROOT_VSTACK_ID) {
+    if (node.id === ROOT_GRID_ID) {
       if (selectedNodeIds.length > 0) {
         toggleNodeSelection('', false, false, tree);
       }
@@ -343,18 +343,18 @@ export const RenderNode: React.FC<{
     // Check if component is already selected
     const isSelected = selectedNodeIds.includes(node.id);
 
-    // Special case: ROOT_VSTACK_ID selection is treated as "nothing selected"
+    // Special case: ROOT_GRID_ID selection is treated as "nothing selected"
     // because it can't be dragged and shouldn't affect click behavior
-    const hasOnlyRootSelected = selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_VSTACK_ID;
+    const hasOnlyRootSelected = selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_GRID_ID;
 
     // Check if we're clicking inside a selected ancestor (for drill-in)
-    // Skip this check if only ROOT_VSTACK_ID is selected (treat as nothing selected)
+    // Skip this check if only ROOT_GRID_ID is selected (treat as nothing selected)
     const selectedAncestor = !isSelected && selectedNodeIds.length > 0 && !hasOnlyRootSelected ? (() => {
       let current = findParent(tree, node.id);
       while (current) {
         if (selectedNodeIds.includes(current.id)) {
-          // Skip ROOT_VSTACK_ID as an ancestor - it's not a real selectable container
-          if (current.id === ROOT_VSTACK_ID) {
+          // Skip ROOT_GRID_ID as an ancestor - it's not a real selectable container
+          if (current.id === ROOT_GRID_ID) {
             current = findParent(tree, current.id);
             continue;
           }
@@ -396,7 +396,7 @@ export const RenderNode: React.FC<{
       }
 
       // Second check: is the clicked node a sibling of selected's parent? (one level up)
-      if (selectedParent.id !== ROOT_VSTACK_ID) {
+      if (selectedParent.id !== ROOT_GRID_ID) {
         const selectedGrandparent = findParent(tree, selectedParent.id);
         if (selectedGrandparent && clickedParent && selectedGrandparent.id === clickedParent.id) {
           console.log('[DEBUG Sibling] Parent sibling:', node.id, 'is sibling of selected parent:', selectedParent.id);
@@ -418,7 +418,7 @@ export const RenderNode: React.FC<{
         }
 
         // Check if current node is a sibling of selected's parent (one level up)
-        if (selectedParent.id !== ROOT_VSTACK_ID) {
+        if (selectedParent.id !== ROOT_GRID_ID) {
           const selectedGrandparent = findParent(tree, selectedParent.id);
           if (selectedGrandparent && currentParent && selectedGrandparent.id === currentParent.id) {
             console.log('[DEBUG Sibling] Found parent sibling:', current.id, 'is sibling of selected parent:', selectedParent.id);
@@ -427,7 +427,7 @@ export const RenderNode: React.FC<{
         }
 
         // Move up one level
-        if (!currentParent || currentParent.id === ROOT_VSTACK_ID) {
+        if (!currentParent || currentParent.id === ROOT_GRID_ID) {
           break;
         }
         current = currentParent;
@@ -459,7 +459,7 @@ export const RenderNode: React.FC<{
       const parent = findParent(tree, node.id);
       let selectedId: string;
 
-      if (parent && parent.id === ROOT_VSTACK_ID) {
+      if (parent && parent.id === ROOT_GRID_ID) {
         // Direct child of root - select it directly
         console.log('[DEBUG Selection] Selecting direct child of root:', node.id);
         toggleNodeSelection(node.id, false, false, tree);
@@ -852,7 +852,7 @@ export const RenderNode: React.FC<{
   const gridRow = gridRowSpan && gridRowSpan > 1 ? `span ${gridRowSpan}` : undefined;
 
   // Base wrapper style with grid child properties
-  const isRootVStack = node.id === ROOT_VSTACK_ID;
+  const isRootVStack = node.id === ROOT_GRID_ID;
   const isSelected = selectedNodeIds.includes(node.id);
 
   // Check if this node is a sibling of the dragged node and should animate
@@ -1857,66 +1857,43 @@ export const RenderNode: React.FC<{
   const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
 
   // IMPORTANT: Exclude root VStack from width constraints - it should always be 100% width
-  if (layoutContainers.includes(node.type) && node.id !== ROOT_VSTACK_ID) {
-    // Read width from node.width property (defaults to 'content' = 1344px)
-    const width = node.width || 'content';
+  if (layoutContainers.includes(node.type) && node.id !== ROOT_GRID_ID) {
+    // Grid-first: Simplified layout (no Hug/Fill complexity)
+    // - Grid children: Use gridColumnSpan (converted to grid-column at top)
+    // - VStack/HStack: Content grouping with gap + alignment only
+    // - Top-level containers: width control (content=1344px or full=100%)
 
+    const width = node.width || 'content';
     const alignSelf = props.alignSelf || 'center';
     const padding = props.padding || '';
     const spacing = props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2);
 
-    // Apply explicit gap to ensure spacing works correctly (VStack/HStack only)
-    // WordPress VStack/HStack uses spacing as multiplier of 4px
+    // VStack/HStack: Apply gap for content grouping
     if (node.type === 'VStack' || node.type === 'HStack') {
       const gapValue = `${spacing * 4}px`;
       mergedProps.style = { ...mergedProps.style, gap: gapValue };
-
-      // Handle expanded (Fill) behavior - add explicit height/width styles (unless explicitly set)
-      if (props.expanded) {
-        if (node.type === 'VStack' && !hasExplicitHeight) {
-          // VStack expanded fills height
-          mergedProps.style = { ...mergedProps.style, height: '100%' };
-        }
-        // HStack expanded fills width - width: '100%' is set below
-      }
     }
 
-    // Apply maxWidth and width behavior (only if not explicitly set in inline styles)
-    // content=1344px (centered by root VStack), full=100% (full viewport width)
-    // VStack ALWAYS hugs width (expanded only controls height)
-    // HStack hugs width unless expanded=true (treats undefined as hug)
-    // EXCEPTION 1: Grid children with gridColumnSpan/gridRowSpan need width: 100% to fill their cells
-    // EXCEPTION 2: VStack with alignment="stretch" should fill width so children can stretch
-    // EXCEPTION 3: Explicit inline styles override computed behavior
-    // NOTE: gridColumnSpan/gridRowSpan were extracted at top of function and deleted from props
+    // Grid children: Fill their grid cell (grid-column/grid-row already applied at top)
     const isGridChild = gridColumnSpan || gridRowSpan;
-    const vstackNeedsStretch = node.type === 'VStack' && props.alignment === 'stretch';
-
-    // Track if we're in HUG mode (fit-content) vs FILL mode (100% width)
-    const isHugMode = (node.type === 'VStack' || (node.type === 'HStack' && props.expanded !== true)) && !isGridChild && !vstackNeedsStretch;
-
-    if (!hasExplicitWidth) {
-      if (isHugMode) {
-        mergedProps.style = { ...mergedProps.style, width: 'fit-content', maxWidth: maxWidthPresets[width] };
-      } else {
-        mergedProps.style = { ...mergedProps.style, width: '100%', maxWidth: maxWidthPresets[width] };
-      }
+    if (isGridChild && !hasExplicitWidth) {
+      mergedProps.style = { ...mergedProps.style, width: '100%' };
     }
 
-    // Apply alignSelf (for horizontal positioning) - ONLY for FILL mode with maxWidth constraint
-    // This centers max-width containers (e.g., 1344px centered on wide screens)
-    // HUG mode: NO margin auto - let parent's alignment control position (predictable)
-    // FILL mode without maxWidth (width='full'): NO margin auto - already 100% width
-    // FILL mode with maxWidth (width='content'): YES margin auto - center the constrained container
-    const isFillModeWithMaxWidth = !isHugMode && width === 'content';
-
-    if (isFillModeWithMaxWidth) {
-      if (alignSelf === 'center') {
-        mergedProps.style = { ...mergedProps.style, marginLeft: 'auto', marginRight: 'auto' };
-      } else if (alignSelf === 'start') {
-        mergedProps.style = { ...mergedProps.style, marginRight: 'auto' };
-      } else if (alignSelf === 'end') {
-        mergedProps.style = { ...mergedProps.style, marginLeft: 'auto' };
+    // Top-level containers: Apply width control (content=1344px or full=100%)
+    if (!isGridChild && !hasExplicitWidth) {
+      if (width === 'content') {
+        mergedProps.style = { ...mergedProps.style, maxWidth: maxWidthPresets[width] };
+        // Center content-width containers
+        if (alignSelf === 'center') {
+          mergedProps.style = { ...mergedProps.style, marginLeft: 'auto', marginRight: 'auto' };
+        } else if (alignSelf === 'start') {
+          mergedProps.style = { ...mergedProps.style, marginRight: 'auto' };
+        } else if (alignSelf === 'end') {
+          mergedProps.style = { ...mergedProps.style, marginLeft: 'auto' };
+        }
+      } else if (width === 'full') {
+        mergedProps.style = { ...mergedProps.style, width: '100%' };
       }
     }
 

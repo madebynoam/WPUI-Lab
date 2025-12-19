@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useComponentTree, ROOT_VSTACK_ID } from '@/contexts/ComponentTreeContext';
+import { useComponentTree, ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { PlayModeProvider } from '@/contexts/PlayModeContext';
 import { AgentDebugProvider } from '@/contexts/AgentDebugContext';
 import { TopBar } from './TopBar';
@@ -87,7 +87,7 @@ function EditorContent({ projectId, pageId }: EditorProps) {
       // Escape to deselect and select page (root vstack)
       if (e.key === 'Escape') {
         e.preventDefault();
-        setSelectedNodeIds([ROOT_VSTACK_ID]);
+        setSelectedNodeIds([ROOT_GRID_ID]);
       }
     };
 

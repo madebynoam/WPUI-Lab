@@ -14,8 +14,8 @@ import {
 } from "../agent";
 import { getTool, getToolsForLLM, convertToolToLLM } from "../agent/tools/registry";
 
-// File version 2: Match project storage version
-const AGENT_MESSAGES_STORAGE_KEY = 'wp-designer-agent-messages-v2';
+// File version 3: Match project storage version (Grid-first layout system)
+const AGENT_MESSAGES_STORAGE_KEY = 'wp-designer-agent-messages-v3';
 
 interface AgentPanelProps {
   onClose: () => void;

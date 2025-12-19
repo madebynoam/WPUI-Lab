@@ -1,8 +1,8 @@
 /**
- * Layout Controls: Figma-Style Auto Layout UI Components
+ * Layout Controls: Grid-First Layout UI Components
  *
- * Designer-friendly controls for VStack/HStack containers that hide
- * low-level flex implementation details.
+ * Simple, predictable controls for Grid-based layouts (iOS Today View style)
+ * and VStack/HStack content grouping.
  */
 
 import React from 'react';
@@ -12,7 +12,6 @@ import {
   Tooltip,
 } from '@wordpress/components';
 import {
-  info,
   justifyLeft,
   justifyCenter,
   justifyRight,
@@ -25,95 +24,68 @@ import {
   justifyBottom,
   justifyStretchVertical,
 } from '@wordpress/icons';
-import {
-  ResizingBehavior,
-  PrimaryAlign,
-  CrossAlign,
-} from '@/utils/layoutMappings';
+
+// Simple types for alignment (no Hug/Fill complexity)
+export type PrimaryAlign = 'start' | 'center' | 'end' | 'space-between';
+export type CrossAlign = 'start' | 'center' | 'end' | 'stretch';
 
 // ============================================================================
-// Resizing Control (Hug vs Fill)
+// Width Preset Control (Grid Children - iOS Today View Style)
 // ============================================================================
 
-interface ResizingControlProps {
-  label: string;
-  value: ResizingBehavior;
-  onChange: (value: ResizingBehavior) => void;
-  showWarning?: boolean;
-  warningMessage?: string;
+interface WidthPresetControlProps {
+  value: number; // gridColumnSpan value (3, 4, 6, 8, 12)
+  onChange: (value: number) => void;
 }
 
-export const ResizingControl: React.FC<ResizingControlProps> = ({
-  label,
+export const WidthPresetControl: React.FC<WidthPresetControlProps> = ({
   value,
   onChange,
-  showWarning,
-  warningMessage,
 }) => {
+  const presets = [
+    { label: 'Full', span: 12 },
+    { label: '2/3', span: 8 },
+    { label: 'Half', span: 6 },
+    { label: '1/3', span: 4 },
+    { label: '1/4', span: 3 },
+  ];
+
   return (
     <div style={{ marginBottom: '12px' }}>
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
           marginBottom: '6px',
+          fontSize: '11px',
+          fontWeight: 500,
+          color: '#1e1e1e',
         }}
       >
-        <span
-          style={{
-            fontSize: '11px',
-            fontWeight: 500,
-            color: '#1e1e1e',
-          }}
-        >
-          {label}
-        </span>
-        {showWarning && warningMessage && (
-          <Tooltip text={warningMessage} placement="top">
-            <Button
-              icon={info}
-              size="small"
-              style={{
-                minWidth: '16px',
-                height: '16px',
-                padding: '0',
-                color: '#f0b429',
-              }}
-            />
-          </Tooltip>
-        )}
+        Width
       </div>
-      <div style={{ display: 'flex', gap: '4px' }}>
-        <Button
-          onClick={() => onChange('hug')}
-          style={{
-            flex: 1,
-            height: '32px',
-            justifyContent: 'center',
-            fontSize: '12px',
-            backgroundColor: value === 'hug' ? '#1e1e1e' : 'transparent',
-            color: value === 'hug' ? '#fff' : '#1e1e1e',
-            border: '1px solid #ddd',
-          }}
-        >
-          Hug
-        </Button>
-        <Button
-          onClick={() => onChange('fill')}
-          style={{
-            flex: 1,
-            height: '32px',
-            justifyContent: 'center',
-            fontSize: '12px',
-            backgroundColor: value === 'fill' ? '#1e1e1e' : 'transparent',
-            color: value === 'fill' ? '#fff' : '#1e1e1e',
-            border: '1px solid #ddd',
-          }}
-        >
-          Fill
-        </Button>
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {presets.map((preset) => (
+          <Button
+            key={preset.span}
+            size="small"
+            onClick={() => onChange(preset.span)}
+            style={{
+              height: '28px',
+              flex: '1 1 auto',
+              minWidth: '0',
+              fontSize: '11px',
+              backgroundColor: value === preset.span ? '#1e1e1e' : 'transparent',
+              color: value === preset.span ? '#fff' : '#1e1e1e',
+              border: '1px solid #ddd',
+              justifyContent: 'center',
+            }}
+          >
+            {preset.label}
+          </Button>
+        ))}
       </div>
+      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
+        Spans {value} of 12 columns in parent Grid
+      </p>
     </div>
   );
 };

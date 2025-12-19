@@ -156,8 +156,8 @@ EXAMPLES (ALL use Grid at top level):
 </Grid>
 
 IMPORTANT - parentId RULES:
-- parentId must be a COMPONENT ID (e.g., 'root-vstack', 'node-123'), NOT a page ID (e.g., 'page-456')
-- When in doubt, OMIT parentId entirely (defaults to 'root-vstack')
+- parentId must be a COMPONENT ID (e.g., 'root-grid', 'node-123'), NOT a page ID (e.g., 'page-456')
+- When in doubt, OMIT parentId entirely (defaults to 'root-grid')
 - Page IDs are NOT valid parent IDs
 
 **REMEMBER: You must call buildFromMarkup. Text-only responses will fail.**

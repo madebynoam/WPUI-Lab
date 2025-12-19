@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useMemo } from "react";
-import { useComponentTree, ROOT_VSTACK_ID } from "@/contexts/ComponentTreeContext";
+import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
 import { useAgentDebug } from "@/contexts/AgentDebugContext";
 import { ComponentNode } from "@/types";
 import { Breadcrumb } from "./Breadcrumb";
@@ -61,7 +61,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   }, [setIsDebugMode]);
 
   // Get page-level properties from root VStack
-  const rootVStack = getNodeById(ROOT_VSTACK_ID);
+  const rootVStack = getNodeById(ROOT_GRID_ID);
   const pageBackgroundColor =
     rootVStack?.props.backgroundColor ?? "rgb(249, 250, 251)";
 
@@ -85,7 +85,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   // Apply pageSpacing to root VStack
   const modifiedTree = useMemo(() => {
     return tree.map((node) => {
-      if (node.id === ROOT_VSTACK_ID) {
+      if (node.id === ROOT_GRID_ID) {
         return {
           ...node,
           props: {

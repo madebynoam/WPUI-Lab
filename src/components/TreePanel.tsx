@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { useComponentTree, ROOT_VSTACK_ID } from "@/contexts/ComponentTreeContext";
+import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
 import { ComponentNode, PatternNode } from "../types";
 import { componentRegistry } from "@/componentRegistry";
 import { patterns, assignIds } from "../patterns";
@@ -385,7 +385,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     // Hide the root VStack (page node) from layers panel and adjust depth
     // Since we're removing root (depth 0), subtract 1 from all depths so direct children start at 0
     return filteredTree
-      .filter((item) => item.id !== ROOT_VSTACK_ID)
+      .filter((item) => item.id !== ROOT_GRID_ID)
       .map((item) => ({ ...item, depth: item.depth - 1 }));
   }, [tree, activeId]);
 
@@ -510,12 +510,12 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
   // Handle adding component
   const handleAddComponent = (componentType: string) => {
-    const targetId = selectedNodeIds[0] || ROOT_VSTACK_ID;
+    const targetId = selectedNodeIds[0] || ROOT_GRID_ID;
     const targetNode = getNodeById(targetId);
 
     // Special case: root VStack always accepts children
-    if (targetId === ROOT_VSTACK_ID) {
-      addComponent(componentType, ROOT_VSTACK_ID);
+    if (targetId === ROOT_GRID_ID) {
+      addComponent(componentType, ROOT_GRID_ID);
       setSearchTerm("");
       return;
     }
@@ -535,7 +535,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     const parent = getParentById(targetId);
     if (!parent) {
       // Fallback: add to root if no parent found
-      addComponent(componentType, ROOT_VSTACK_ID);
+      addComponent(componentType, ROOT_GRID_ID);
       setSearchTerm("");
       return;
     }
@@ -583,11 +583,11 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     if (!pattern) return;
 
     let patternWithIds = assignIds(pattern.tree);
-    const targetId = selectedNodeIds[0] || ROOT_VSTACK_ID;
+    const targetId = selectedNodeIds[0] || ROOT_GRID_ID;
     const targetNode = getNodeById(targetId);
 
     // Special case: root VStack always accepts children
-    if (targetId === ROOT_VSTACK_ID) {
+    if (targetId === ROOT_GRID_ID) {
       insertComponent(patternWithIds, undefined);
       setSearchTerm("");
       return;
@@ -985,7 +985,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {flattenedItems.map((item) => {
                 const isSelected = selectedNodeIds.includes(item.id);
-                const isRootVStack = item.id === ROOT_VSTACK_ID;
+                const isRootVStack = item.id === ROOT_GRID_ID;
                 const isOverItem = overId === item.id;
                 const projectedDepth =
                   isOverItem && currentProjection

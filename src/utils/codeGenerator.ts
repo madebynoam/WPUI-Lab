@@ -128,57 +128,15 @@ function generateNodeCode(
       full: '100%',
     };
 
-    // Apply maxWidth ONLY for Grid components
-    // VStack/HStack width/height are controlled by the expanded prop (Hug/Fill)
-    if (componentName === 'Grid') {
-      // Grid always needs width: 100% to work properly
-      if (maxWidth === 'custom' && maxWidthCustom) {
-        styleObj.width = '100%';
-        styleObj.maxWidth = maxWidthCustom;
-      } else if (maxWidth && maxWidth !== 'full') {
-        styleObj.width = '100%';
-        styleObj.maxWidth = maxWidthPresets[maxWidth] || '100%';
-      } else {
-        // Even for 'full', ensure width is 100%
-        styleObj.width = '100%';
-      }
-    } else {
-      // VStack/HStack: Only add maxWidth if specified, but DON'T add width: 100%
-      // Width/height are controlled by expanded prop
-      // EXCEPTION: VStack with alignment="stretch" needs width: 100% so children can stretch
-      if (maxWidth === 'custom' && maxWidthCustom) {
-        styleObj.maxWidth = maxWidthCustom;
-      } else if (maxWidth && maxWidth !== 'full') {
-        styleObj.maxWidth = maxWidthPresets[maxWidth] || '100%';
-      }
+    // Grid-first: Simplified width control (no Hug/Fill complexity)
+    // - Grid children: Use grid-column style (handled below with gridColumnSpan)
+    // - VStack/HStack: Content grouping only, no width control
+    // - Top-level containers: width control (content=maxWidth or full=100%)
 
-      // VStack with alignment="stretch" should fill width (EXCEPTION to normal hug behavior)
-      if (componentName === 'VStack' && props.alignment === 'stretch') {
-        styleObj.width = '100%';
-      }
-    }
-
-    // Apply alignSelf (for horizontal positioning) - ONLY for FILL mode with maxWidth constraint
-    // This centers max-width containers (e.g., 960px centered on wide screens)
-    // Match the logic from RenderNode.tsx for consistency
-    //
-    // VStack: Always hug width (expanded only controls height)
-    //   → NEVER apply margin auto (parent controls horizontal alignment)
-    //   → EXCEPTION: VStack with alignment="stretch" fills width, acts like fill mode
-    //
-    // HStack: Hug width unless expanded=true
-    //   → Hug mode (expanded !== true): NO margin auto (parent controls alignment)
-    //   → Fill mode (expanded === true) + maxWidth: YES margin auto (center constrained container)
-    //
-    // Grid: Always full width
-    //   → If maxWidth set: YES margin auto (center constrained container)
-    //   → If maxWidth not set (full width): NO margin auto (already 100%)
-    const vstackStretchMode = componentName === 'VStack' && props.alignment === 'stretch';
-    const isHStackFillMode = componentName === 'HStack' && props.expanded === true;
-    const isGridWithMaxWidth = componentName === 'Grid' && (maxWidth && maxWidth !== 'full');
-    const shouldApplyMarginAuto = (vstackStretchMode || isHStackFillMode || isGridWithMaxWidth) && (maxWidth && maxWidth !== 'full');
-
-    if (shouldApplyMarginAuto && alignSelf) {
+    // Apply maxWidth for layout containers
+    if (maxWidth === 'custom' && maxWidthCustom) {
+      styleObj.maxWidth = maxWidthCustom;
+      // Center constrained containers
       if (alignSelf === 'center') {
         styleObj.marginLeft = 'auto';
         styleObj.marginRight = 'auto';
@@ -187,6 +145,19 @@ function generateNodeCode(
       } else if (alignSelf === 'end') {
         styleObj.marginLeft = 'auto';
       }
+    } else if (maxWidth && maxWidth !== 'full') {
+      styleObj.maxWidth = maxWidthPresets[maxWidth] || '100%';
+      // Center constrained containers
+      if (alignSelf === 'center') {
+        styleObj.marginLeft = 'auto';
+        styleObj.marginRight = 'auto';
+      } else if (alignSelf === 'start') {
+        styleObj.marginRight = 'auto';
+      } else if (alignSelf === 'end') {
+        styleObj.marginLeft = 'auto';
+      }
+    } else if (maxWidth === 'full') {
+      styleObj.width = '100%';
     }
 
     // Apply padding

@@ -1,6 +1,6 @@
 import { AgentTool, ToolContext, ToolResult } from '../types';
 import { ComponentNode } from '../../types';
-import { ROOT_VSTACK_ID } from '@/utils/treeHelpers';
+import { ROOT_GRID_ID } from '@/utils/treeHelpers';
 
 // Conditionally import componentRegistry
 let componentRegistry: Record<string, any> = {};
@@ -43,7 +43,7 @@ ${availableComponents}
 
 ## Important Rules
 
-1. **Root Node**: Tree must start with VStack node with id="${ROOT_VSTACK_ID}"
+1. **Root Node**: Tree must start with VStack node with id="${ROOT_GRID_ID}"
 2. **Text Components**: Text and Heading components store their content in props.children (NOT as child nodes)
 3. **Container Components**: Components marked as (container) can have children array
 4. **Leaf Components**: Components marked as (leaf) cannot have children
@@ -198,7 +198,7 @@ export const modifyComponentTreeTool: AgentTool = {
             currentTree: context.tree,
             schemaDocumentation: generateSchemaDocumentation(),
             availableComponents: Object.keys(componentRegistry),
-            rootNodeId: ROOT_VSTACK_ID,
+            rootNodeId: ROOT_GRID_ID,
           },
         };
       }

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useRef, ReactNode } from 'react';
-import { ROOT_VSTACK_ID } from './ComponentTreeContext';
+import { ROOT_GRID_ID } from './ComponentTreeContext';
 
 interface SelectionContextType {
   lastClickTimeRef: React.MutableRefObject<number>;
@@ -11,7 +11,7 @@ const SelectionContext = createContext<SelectionContextType | undefined>(undefin
 export const SelectionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Initialize to root VStack context - no selection means root VStack
   const lastClickTimeRef = useRef<number>(0);
-  const lastClickedIdRef = useRef<string | null>(ROOT_VSTACK_ID);
+  const lastClickedIdRef = useRef<string | null>(ROOT_GRID_ID);
 
   console.log('[SelectionContext] Initialized with:', {
     lastClickTime: lastClickTimeRef.current,

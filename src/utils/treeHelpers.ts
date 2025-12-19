@@ -1,7 +1,7 @@
 import { ComponentNode, Page } from '../types';
 import { generateId } from './idGenerator';
 
-export const ROOT_VSTACK_ID = 'root-vstack';
+export const ROOT_GRID_ID = 'root-grid';
 
 /**
  * Get the current tree for a given page
@@ -98,7 +98,7 @@ export const insertNodeInTree = (
 ): ComponentNode[] => {
   // Default to root VStack if no parentId specified
   // This ensures all components are children of root, never siblings
-  const effectiveParentId = parentId || ROOT_VSTACK_ID;
+  const effectiveParentId = parentId || ROOT_GRID_ID;
 
   // Add to specific parent
   return tree.map(n => {
@@ -122,7 +122,7 @@ export const insertNodeInTree = (
  * Remove a node from the tree
  */
 export const removeNodeFromTree = (tree: ComponentNode[], id: string): ComponentNode[] => {
-  if (id === ROOT_VSTACK_ID) return tree; // Prevent deletion of root
+  if (id === ROOT_GRID_ID) return tree; // Prevent deletion of root
 
   return tree
     .filter(node => node.id !== id)
@@ -357,7 +357,7 @@ export const findTopMostContainer = (
   if (!node) return null;
 
   // If clicking root, select it
-  if (node.id === ROOT_VSTACK_ID) {
+  if (node.id === ROOT_GRID_ID) {
     console.log('[findTopMostContainer] Node is root, returning root');
     return node;
   }
@@ -395,7 +395,7 @@ export const findTopMostContainer = (
     const parent = findParent(tree, current.id);
     console.log('[findTopMostContainer] Parent:', parent ? { id: parent.id, type: parent.type } : null);
 
-    if (!parent || parent.id === ROOT_VSTACK_ID) {
+    if (!parent || parent.id === ROOT_GRID_ID) {
       console.log('[findTopMostContainer] Reached root boundary');
       break;
     }

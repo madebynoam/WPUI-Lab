@@ -47,7 +47,7 @@ Project {
 
 Page {
   id, name
-  tree: ComponentNode[]  // Always starts with ROOT_VSTACK_ID
+  tree: ComponentNode[]  // Always starts with ROOT_GRID_ID
 }
 
 ComponentNode {
@@ -59,14 +59,16 @@ ComponentNode {
 }
 ```
 
-### The Root VStack Pattern
+### The Root Grid Pattern
 
-**Every page has exactly one root ComponentNode** with `id: "root-vstack"` and `type: "VStack"`. All components are children of this root. You cannot delete the root VStack.
+**Every page has exactly one root ComponentNode** - a 12-column auto-flow Grid. All components are children of this root. You cannot delete the root Grid.
 
 ```typescript
 // src/utils/treeHelpers.ts
-export const ROOT_VSTACK_ID = 'root-vstack';
+export const ROOT_GRID_ID = 'root-grid';
 ```
+
+**Layout Model**: iOS Today View style - components have width presets (Full, 2/3, Half, 1/3, 1/4) that map to column spans (12, 8, 6, 4, 3). Items automatically flow to next row.
 
 ### State Management Flow
 
@@ -414,12 +416,11 @@ OPENAI_API_KEY=sk-proj-...
 - Single/multi-selection support
 - Interactions editor
 - Page/project settings
-- **Auto Layout Controls** (Figma-style) for VStack/HStack:
-  - Resizing behavior: "Hug" (shrink to content) vs "Fill" (expand to fill space)
-  - Primary/Cross axis alignment with visual icons
-  - Gap control with pixel values
-  - Uses `src/utils/layoutMappings.ts` to translate between Figma concepts and WordPress props
-  - See `src/components/LayoutControls.tsx` for UI components
+- **Grid-First Layout**:
+  - Every page root is a 12-column Grid with auto-flow
+  - Components in Grid: Simple width presets (Full/2/3/Half/1/3/1/4 = spans 12/8/6/4/3)
+  - VStack/HStack: For content grouping only (gap + alignment, no width controls)
+  - Stored as `gridColumnSpan` prop → CSS `grid-column: span X`
 
 **AgentPanel** (`src/components/AgentPanel.tsx`):
 - AI chat interface (Agenttic-UI)
@@ -559,19 +560,18 @@ Escape         Deselect / Exit play mode
 
 1. **Never mutate tree directly** - Always use immutable helpers
 2. **Always normalize AI-generated nodes** before inserting
-3. **Root VStack cannot be deleted** - It's the required root
+3. **Root Grid cannot be deleted** - It's the required root (12-column auto-flow Grid)
 4. **Card components must have CardHeader/CardBody/CardFooter** children
 5. **Dynamic imports with ssr: false** for all Next.js pages using WordPress components
 6. **API keys stay server-side** - Use `/app/api/chat/route.ts` proxy
 7. **Max 50 history states** - Older states are dropped
-8. **Grid layout** - Children use `gridColumnSpan`/`gridRowSpan` props, not `columnSpan`
+8. **Grid layout** - Children use `gridColumnSpan`/`gridRowSpan` props (convert to CSS `grid-column: span X`)
 9. **Agent phases** - Planner creates plan, Builder executes it (no duplication/verification)
-10. **Layout Controls** - Use Figma terminology:
-   - "Hug" (default) = container shrinks to fit content
-   - "Fill" = container expands to fill available space
-   - VStack `expanded={true}` fills HEIGHT, HStack `expanded={true}` fills WIDTH
-   - Primary axis = direction of stack, Cross axis = perpendicular
-   - When using `justify="space-between"`, use CSS values ('flex-start', 'flex-end') for `alignment`, not presets ('left', 'right')
+10. **Grid-First Layout** - Simple, predictable:
+   - Page root = 12-column Grid with auto-flow (columns={12}, gap={24})
+   - Width control: Full (12), 2/3 (8), Half (6), 1/3 (4), 1/4 (3) → `gridColumnSpan`
+   - VStack/HStack: Content grouping only (gap, alignment) - no width/height resize
+   - Nest Grids for complex layouts (sidebar = Grid spanning 4 cols with own 12-col grid inside)
 
 ## Debugging
 

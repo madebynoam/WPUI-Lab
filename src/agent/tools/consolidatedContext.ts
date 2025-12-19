@@ -5,7 +5,7 @@
  */
 
 import { AgentTool, ToolContext, ToolResult } from '../types';
-import { ROOT_VSTACK_ID } from '@/utils/treeHelpers';
+import { ROOT_GRID_ID } from '@/utils/treeHelpers';
 
 // Conditionally import componentRegistry
 let componentRegistry: Record<string, any> = {};
@@ -76,7 +76,7 @@ export const context_getProject: AgentTool = {
 
     // Components information
     if (include.includes('components')) {
-      const rootVStack = context.tree.find(n => n.id === ROOT_VSTACK_ID);
+      const rootVStack = context.tree.find(n => n.id === ROOT_GRID_ID);
 
       if (rootVStack) {
         const componentCount = countComponents(rootVStack.children || []);

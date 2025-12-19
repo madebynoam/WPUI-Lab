@@ -2,7 +2,7 @@ import { ComponentTreeAction } from './ComponentTreeTypes';
 import { ComponentNode, Page, Project, HistoryState } from './types';
 import { componentRegistry } from '@/componentRegistry';
 import {
-  ROOT_VSTACK_ID,
+  ROOT_GRID_ID,
   getCurrentTree,
   findNodeById,
   updateNodeInTree,
@@ -248,7 +248,7 @@ export function componentTreeReducer(
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       // Smart selection: if parent is an insertion container, keep it selected
-      const effectiveParentId = parentId || ROOT_VSTACK_ID;
+      const effectiveParentId = parentId || ROOT_GRID_ID;
       const parentNode = findNodeById(newTree, effectiveParentId);
       const isInsertionContainer = parentNode && [
         'Grid', 'VStack', 'HStack', 'Flex', 'FlexBlock', 'FlexItem',
@@ -265,7 +265,7 @@ export function componentTreeReducer(
 
     case 'REMOVE_COMPONENT': {
       const { id } = action.payload;
-      if (id === ROOT_VSTACK_ID) return state; // Prevent deletion of root
+      if (id === ROOT_GRID_ID) return state; // Prevent deletion of root
 
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
       const newTree = removeNodeFromTree(currentTree, id);
@@ -275,7 +275,7 @@ export function componentTreeReducer(
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       const newSelectedNodeIds = state.selectedNodeIds.filter(selectedId => selectedId !== id);
-      const selectedIds = newSelectedNodeIds.length > 0 ? newSelectedNodeIds : [ROOT_VSTACK_ID];
+      const selectedIds = newSelectedNodeIds.length > 0 ? newSelectedNodeIds : [ROOT_GRID_ID];
 
       return {
         ...updateHistory(state, newProjects, state.currentProjectId),
@@ -386,7 +386,7 @@ export function componentTreeReducer(
       }
 
       // Get the parent node
-      const parent = firstParentId ? findNodeInTree(currentTree, firstParentId) : currentTree.find(n => n.id === ROOT_VSTACK_ID);
+      const parent = firstParentId ? findNodeInTree(currentTree, firstParentId) : currentTree.find(n => n.id === ROOT_GRID_ID);
       if (!parent || !parent.children) return state;
 
       // Find indices of selected children in parent
@@ -462,36 +462,12 @@ export function componentTreeReducer(
 
       if (node.type === newType) return state; // Already the target type
 
-      // Import layout mappings for proper prop translation
-      const { mapFromVStackProps, mapFromHStackProps, mapToVStackProps, mapToHStackProps } = require('./utils/layoutMappings');
-
-      // Convert old props to Figma config, then to new type's props
-      let newProps: Record<string, any>;
-
-      if (node.type === 'VStack' && newType === 'HStack') {
-        // VStack -> HStack: translate through Figma config
-        const figmaConfig = mapFromVStackProps({
-          alignment: node.props.alignment,
-          spacing: node.props.spacing,
-          expanded: node.props.expanded,
-          justify: node.props.justify,
-        });
-        const result = mapToHStackProps(figmaConfig);
-        newProps = result.props;
-      } else if (node.type === 'HStack' && newType === 'VStack') {
-        // HStack -> VStack: translate through Figma config
-        const figmaConfig = mapFromHStackProps({
-          alignment: node.props.alignment,
-          spacing: node.props.spacing,
-          expanded: node.props.expanded,
-          justify: node.props.justify,
-        });
-        const result = mapToVStackProps(figmaConfig);
-        newProps = result.props;
-      } else {
-        // Fallback (shouldn't happen)
-        newProps = { ...componentRegistry[newType]?.defaultProps };
-      }
+      // Grid-first: VStack/HStack are just content grouping with same props
+      // Keep existing props when swapping (justify, alignment, spacing, padding)
+      const newProps = {
+        ...componentRegistry[newType]?.defaultProps,
+        ...node.props,
+      };
 
       // Update node type and props
       const newTree = updateNodeInTree(currentTree, id, (node) => ({
@@ -556,7 +532,7 @@ export function componentTreeReducer(
         if (state.selectedNodeIds.includes(id)) {
           newSelectedNodeIds = state.selectedNodeIds.filter(selectedId => selectedId !== id);
           if (newSelectedNodeIds.length === 0) {
-            newSelectedNodeIds = [ROOT_VSTACK_ID];
+            newSelectedNodeIds = [ROOT_GRID_ID];
           }
         } else {
           newSelectedNodeIds = [...state.selectedNodeIds, id];
@@ -642,7 +618,7 @@ export function componentTreeReducer(
 
       return {
         ...updateHistory(state, newProjects, state.currentProjectId),
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
       };
     }
 
@@ -725,7 +701,7 @@ export function componentTreeReducer(
         ...updateHistory(state, newProjects, state.currentProjectId),
         clipboard: JSON.parse(JSON.stringify(node)),
         cutNodeId: nodeId,
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
       };
     }
 
@@ -895,7 +871,7 @@ export function componentTreeReducer(
         ...state,
         projects: previous.projects,
         currentProjectId: previous.currentProjectId,
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
         gridLinesVisible: new Set(),
         history: {
           past: newPast,
@@ -915,7 +891,7 @@ export function componentTreeReducer(
         ...state,
         projects: next.projects,
         currentProjectId: next.currentProjectId,
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
         gridLinesVisible: new Set(),
         history: {
           past: [...state.history.past, state.history.present],
@@ -943,7 +919,7 @@ export function componentTreeReducer(
       const newProjects = [...state.projects, project];
       return {
         ...updateHistory(state, newProjects, project.id),
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
         gridLinesVisible: new Set(),
       };
     }
@@ -952,7 +928,7 @@ export function componentTreeReducer(
       const { projectId } = action.payload;
       return {
         ...updateHistory(state, state.projects, projectId),
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
         gridLinesVisible: new Set(),
       };
     }
@@ -975,7 +951,7 @@ export function componentTreeReducer(
 
       return {
         ...updateHistory(state, newProjects, newCurrentProjectId),
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
       };
     }
 
@@ -1012,7 +988,7 @@ export function componentTreeReducer(
       const newProjects = [...state.projects, newProject];
       return {
         ...updateHistory(state, newProjects, newProjectId),
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
       };
     }
 
@@ -1037,7 +1013,7 @@ export function componentTreeReducer(
 
       return {
         ...updateHistory(state, newProjects, resetProjectId),
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
         gridLinesVisible: new Set(),
       };
     }
@@ -1055,7 +1031,7 @@ export function componentTreeReducer(
         ...state,
         projects: [defaultProject],
         currentProjectId: defaultProject.id,
-        selectedNodeIds: [ROOT_VSTACK_ID],
+        selectedNodeIds: [ROOT_GRID_ID],
         gridLinesVisible: new Set(),
         history: {
           past: [],
