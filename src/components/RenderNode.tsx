@@ -1856,7 +1856,14 @@ export const RenderNode: React.FC<{
   // Note: CardBody, CardHeader, CardFooter are NOT included - they should always fill parent Card width
   const layoutContainers = ['VStack', 'HStack', 'Grid', 'Card', 'Tabs', 'Spacer', 'Divider', 'Spinner', 'DataViews'];
 
-  // IMPORTANT: Exclude root VStack from width constraints - it should always be 100% width
+  // Special handling for root Grid: Apply gap from projectLayout.spacing
+  if (node.id === ROOT_GRID_ID && node.type === 'Grid') {
+    const spacing = projects.find((p) => p.id === currentProjectId)?.layout?.spacing ?? 4;
+    const gapValue = `${spacing * 4}px`;
+    mergedProps.style = { ...mergedProps.style, gap: gapValue };
+  }
+
+  // IMPORTANT: Exclude root Grid from width constraints - it should always be 100% width
   if (layoutContainers.includes(node.type) && node.id !== ROOT_GRID_ID) {
     // Grid-first: Simplified layout (no Hug/Fill complexity)
     // - Grid children: Use gridColumnSpan (converted to grid-column at top)

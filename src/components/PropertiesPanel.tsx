@@ -307,12 +307,12 @@ export const PropertiesPanel: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  {preset}
+                  {preset * 4}
                 </Button>
               ))}
             </div>
             <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
-              Gap between page elements (multiplier of 4, applies to all pages)
+              Gap between elements in the root Grid ({spacing * 4}px)
             </p>
           </PanelBody>
         </div>

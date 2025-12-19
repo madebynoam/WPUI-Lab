@@ -117,7 +117,7 @@ const createInitialPage = (id: string, name: string): Page => ({
     type: 'Grid',
     props: {
       columns: 12,
-      gap: 24,
+      // gap is applied from projectLayout.spacing in RenderNode
     },
     children: [],
   }],
@@ -142,7 +142,7 @@ const createInitialProject = (id: string, name: string): Project => ({
   layout: {
     maxWidth: 0, // 0 means no constraint (100% width)
     padding: 0,
-    spacing: 4,
+    spacing: 6, // 6 * 4 = 24px gap in root Grid
   },
 });
 
