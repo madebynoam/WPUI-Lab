@@ -14,6 +14,9 @@ import {
 } from "../agent";
 import { getTool, getToolsForLLM, convertToolToLLM } from "../agent/tools/registry";
 
+// File version 2: Match project storage version
+const AGENT_MESSAGES_STORAGE_KEY = 'wp-designer-agent-messages-v2';
+
 interface AgentPanelProps {
   onClose: () => void;
 }
@@ -105,7 +108,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
 
   const [messages, setMessages] = useState<AgentMessage[]>(() => {
     // Load messages from localStorage on mount
-    const savedMessages = localStorage.getItem("wp-designer-agent-messages");
+    const savedMessages = localStorage.getItem(AGENT_MESSAGES_STORAGE_KEY);
     if (savedMessages) {
       try {
         return JSON.parse(savedMessages);
@@ -122,7 +125,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   // Save messages to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem(
-      "wp-designer-agent-messages",
+      AGENT_MESSAGES_STORAGE_KEY,
       JSON.stringify(messages)
     );
   }, [messages]);
@@ -200,7 +203,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
         if (command === "/clear") {
           // Clear messages and reset to welcome message
           setMessages([defaultWelcomeMessage]);
-          localStorage.removeItem("wp-designer-agent-messages");
+          localStorage.removeItem(AGENT_MESSAGES_STORAGE_KEY);
           return;
         }
 

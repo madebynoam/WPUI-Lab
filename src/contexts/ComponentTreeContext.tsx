@@ -7,7 +7,9 @@ import { generateId } from '@/utils/idGenerator';
 import { normalizeComponentNode, normalizeComponentNodes } from '@/utils/normalizeComponent';
 import { DEMO_PROJECT } from '@/demoProject';
 
-const STORAGE_KEY = 'wp-designer-projects';
+// File version 2: Fresh start with clean layout system
+// Changed storage key to not load old projects with complex layout props
+const STORAGE_KEY = 'wp-designer-projects-v2';
 
 interface ComponentTreeContextType {
   // Current page's tree
@@ -400,7 +402,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     // Only access localStorage on client
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem('wp-designer-agent-messages');
+      localStorage.removeItem('wp-designer-agent-messages-v2');
     }
     dispatch({ type: 'RESET_TREE', payload: { defaultProject } });
   };
