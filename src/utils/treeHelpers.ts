@@ -264,8 +264,23 @@ export const reorderNodeInTree = (
   }
 
   // Find and remove the active node
-  const activeNode = findNodeById(tree, activeId);
+  let activeNode = findNodeById(tree, activeId);
   if (!activeNode) return tree;
+
+  // Clear gridColumnStart when reordering within a Grid parent
+  // This allows CSS Grid auto-flow to work correctly
+  if (position === 'before' || position === 'after') {
+    const parent = findParent(tree, activeId);
+    if (parent?.type === 'Grid' && activeNode.props?.gridColumnStart) {
+      activeNode = {
+        ...activeNode,
+        props: {
+          ...activeNode.props,
+          gridColumnStart: undefined,
+        },
+      };
+    }
+  }
 
   const treeWithoutActive = removeNodeFromTree(tree, activeId);
 
