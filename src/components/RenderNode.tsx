@@ -851,7 +851,8 @@ export const RenderNode: React.FC<{
   delete props.gridRowSpan;
 
   // Extract width prop (converted to styles below, not passed to component)
-  const widthProp = props.width || props.resizing; // Support legacy "resizing" prop
+  // Note: width is stored at node level (node.width), not in props, per ComponentTreeReducer
+  const widthProp = node.width || props.width || props.resizing; // Support legacy "resizing" prop
   delete props.width;
   delete props.resizing;
 
@@ -1914,42 +1915,34 @@ export const RenderNode: React.FC<{
   const needsResizeHandles = isGridChild && !isPlayMode;
 
   // Apply width for children of VStack/HStack
-  // User mental model: "width" always means horizontal dimension
-  // Implementation differs based on parent direction (VStack vs HStack)
-  const isVStackChild = parent?.type === 'VStack';
-  const isHStackChild = parent?.type === 'HStack';
-
-  if ((isVStackChild || isHStackChild) && !isGridChild) {
+  // Fill: Stretch to fill container (cross-axis for VStack, main-axis for HStack)
+  // Hug: Shrink to content size
+  const isVStackOrHStackChild = parent?.type === 'VStack' || parent?.type === 'HStack';
+  if (isVStackOrHStackChild && !isGridChild) {
     const width = widthProp || 'fill'; // 'fill' (default) or 'hug'
 
-    if (isVStackChild) {
-      // VStack: width is cross-axis (horizontal)
-      if (width === 'fill') {
-        // Fill width: stretch horizontally
-        mergedProps.style = { ...mergedProps.style, alignSelf: 'stretch' };
-      } else {
-        // Hug width: shrink to content
-        mergedProps.style = {
-          ...mergedProps.style,
-          alignSelf: 'flex-start',
-          width: 'fit-content',
-          maxWidth: 'none'
-        };
-      }
-    } else if (isHStackChild) {
-      // HStack: width is main-axis (horizontal)
-      if (width === 'fill') {
-        // Fill width: expand to take available space
-        mergedProps.style = { ...mergedProps.style, flexGrow: 1 };
-      } else {
-        // Hug width: shrink to content
-        mergedProps.style = {
-          ...mergedProps.style,
-          flexGrow: 0,
-          width: 'fit-content',
-          maxWidth: 'none'
-        };
-      }
+    console.log('[RenderNode] Applying width for', node.id, {
+      nodeType: node.type,
+      parentType: parent?.type,
+      widthProp,
+      width,
+      currentStyle: mergedProps.style
+    });
+
+    if (width === 'fill') {
+      // Fill: Stretch to fill container width
+      mergedProps.style = {
+        ...mergedProps.style,
+        alignSelf: 'stretch',
+        width: '100%' // Explicitly set width to ensure it fills
+      };
+    } else {
+      // Hug: Shrink to content size
+      mergedProps.style = {
+        ...mergedProps.style,
+        alignSelf: 'flex-start',
+        width: 'fit-content'
+      };
     }
   }
 

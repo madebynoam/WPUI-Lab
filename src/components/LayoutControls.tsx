@@ -297,6 +297,8 @@ export const WidthControl: React.FC<WidthControlProps> = ({
   value,
   onChange,
 }) => {
+  console.log('[WidthControl] Rendering with value:', value);
+
   return (
     <div style={{ marginBottom: '12px' }}>
       <div
@@ -311,7 +313,10 @@ export const WidthControl: React.FC<WidthControlProps> = ({
       </div>
       <div style={{ display: 'flex', gap: '4px' }}>
         <Button
-          onClick={() => onChange('fill')}
+          onClick={() => {
+            console.log('[WidthControl] Fill button clicked, calling onChange with "fill"');
+            onChange('fill');
+          }}
           style={{
             flex: 1,
             height: '28px',
@@ -325,7 +330,10 @@ export const WidthControl: React.FC<WidthControlProps> = ({
           Fill
         </Button>
         <Button
-          onClick={() => onChange('hug')}
+          onClick={() => {
+            console.log('[WidthControl] Hug button clicked, calling onChange with "hug"');
+            onChange('hug');
+          }}
           style={{
             flex: 1,
             height: '28px',
