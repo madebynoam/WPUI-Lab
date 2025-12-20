@@ -365,21 +365,12 @@ export const PropertiesPanel: React.FC = () => {
   const isChildOfVStackOrHStack = parent?.type === "VStack" || parent?.type === "HStack";
 
   const handlePropChange = (propName: string, value: any) => {
-    console.log('[PropertiesPanel] handlePropChange called with:', { propName, value, nodeId: selectedNodeIds[0] });
-
     // Special case: For Text and Heading components, 'content' prop should update 'children'
     const actualPropName =
       (firstNode.type === "Text" || firstNode.type === "Heading") &&
       propName === "content"
         ? "children"
         : propName;
-
-    console.log('[PropertiesPanel] actualPropName:', actualPropName);
-    console.log('[PropertiesPanel] About to call updateComponentProps with:', {
-      nodeId: selectedNodeIds[0],
-      props: { [actualPropName]: value },
-      isMultiSelect: selectedNodeIds.length > 1
-    });
 
     // Apply to all selected nodes using batch update
     if (selectedNodeIds.length > 1) {
@@ -449,24 +440,10 @@ export const PropertiesPanel: React.FC = () => {
               })
             }
           >
-            {(() => {
-              // Note: width is stored at node level (firstNode.width), not in props, per ComponentTreeReducer
-              const widthValue = (firstNode as any).width || 'fill';
-              console.log('[PropertiesPanel] Rendering WidthControl with:', {
-                nodeId: firstNode.id,
-                nodeType: firstNode.type,
-                nodeWidth: (firstNode as any).width,
-                propsWidth: firstNode.props.width,
-                widthValue,
-                allProps: firstNode.props
-              });
-              return (
-                <WidthControl
-                  value={widthValue}
-                  onChange={(value) => handlePropChange("width", value)}
-                />
-              );
-            })()}
+            <WidthControl
+              value={(firstNode as any).width || 'fill'}
+              onChange={(value) => handlePropChange("width", value)}
+            />
           </PanelBody>
         )}
 

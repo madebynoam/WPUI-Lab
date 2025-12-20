@@ -1921,14 +1921,6 @@ export const RenderNode: React.FC<{
   if (isVStackOrHStackChild && !isGridChild) {
     const width = widthProp || 'fill'; // 'fill' (default) or 'hug'
 
-    console.log('[RenderNode] Applying width for', node.id, {
-      nodeType: node.type,
-      parentType: parent?.type,
-      widthProp,
-      width,
-      currentStyle: mergedProps.style
-    });
-
     if (width === 'fill') {
       // Fill: Stretch to fill container width
       mergedProps.style = {

@@ -362,7 +362,6 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const updateComponentProps = (id: string, props: Record<string, any>) => {
-    console.log('[ComponentTreeContext] updateComponentProps called with:', { id, props });
     dispatch({ type: 'UPDATE_COMPONENT_PROPS', payload: { id, props } });
   };
 
