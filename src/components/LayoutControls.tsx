@@ -285,6 +285,68 @@ export const PaddingControl: React.FC<PaddingControlProps> = ({
 };
 
 // ============================================================================
+// Resizing Control (Hug vs Fill for VStack/HStack children)
+// ============================================================================
+
+interface ResizingControlProps {
+  value: 'hug' | 'fill';
+  onChange: (value: 'hug' | 'fill') => void;
+}
+
+export const ResizingControl: React.FC<ResizingControlProps> = ({
+  value,
+  onChange,
+}) => {
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <div
+        style={{
+          marginBottom: '6px',
+          fontSize: '11px',
+          fontWeight: 500,
+          color: '#1e1e1e',
+        }}
+      >
+        Resizing
+      </div>
+      <div style={{ display: 'flex', gap: '4px' }}>
+        <Button
+          onClick={() => onChange('fill')}
+          style={{
+            flex: 1,
+            height: '28px',
+            fontSize: '11px',
+            backgroundColor: value === 'fill' ? '#1e1e1e' : 'transparent',
+            color: value === 'fill' ? '#fff' : '#1e1e1e',
+            border: '1px solid #ddd',
+            justifyContent: 'center',
+          }}
+        >
+          Fill
+        </Button>
+        <Button
+          onClick={() => onChange('hug')}
+          style={{
+            flex: 1,
+            height: '28px',
+            fontSize: '11px',
+            backgroundColor: value === 'hug' ? '#1e1e1e' : 'transparent',
+            color: value === 'hug' ? '#fff' : '#1e1e1e',
+            border: '1px solid #ddd',
+            justifyContent: 'center',
+          }}
+        >
+          Hug
+        </Button>
+      </div>
+      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
+        {value === 'fill' ? 'Expands to fill available space' : 'Shrinks to content size'}
+      </p>
+    </div>
+  );
+};
+
+// ============================================================================
 // Preset Alignment Options
 // ============================================================================
 

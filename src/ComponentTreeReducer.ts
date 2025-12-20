@@ -401,6 +401,10 @@ export function componentTreeReducer(
       const parentSpacing = parent.props?.spacing;
       const containerSpacing = parentSpacing && [2, 4].includes(parentSpacing) ? parentSpacing : 2;
 
+      // Get gridColumnSpan from first selected item (if parent is Grid)
+      const firstSelectedNode = parent.children[selectedIndices[0]];
+      const gridColumnSpan = firstSelectedNode?.props?.gridColumnSpan;
+
       // Create container: HStack for single item, VStack for multiple items
       const containerType = ids.length === 1 ? 'HStack' : 'VStack';
       const containerNode: ComponentNode = {
@@ -409,8 +413,20 @@ export function componentTreeReducer(
         props: {
           spacing: containerSpacing,
           alignment: containerType === 'HStack' ? 'center' : 'stretch',
+          // Copy gridColumnSpan from first item if it exists (for Grid children)
+          ...(gridColumnSpan ? { gridColumnSpan } : {}),
         },
-        children: selectedIndices.map(idx => JSON.parse(JSON.stringify(parent.children![idx]))),
+        // Clone children and remove their gridColumnSpan (they're now inside a container)
+        children: selectedIndices.map(idx => {
+          const child = JSON.parse(JSON.stringify(parent.children![idx]));
+          if (child.props?.gridColumnSpan) {
+            delete child.props.gridColumnSpan;
+          }
+          if (child.props?.gridRowSpan) {
+            delete child.props.gridRowSpan;
+          }
+          return child;
+        }),
       };
 
       // Remove selected nodes from parent and insert container at first selected position
@@ -709,6 +725,12 @@ export function componentTreeReducer(
       let { parentId } = action.payload;
       if (!state.clipboard) return state;
 
+      console.log('[PASTE_COMPONENT] Initial:', {
+        hasParentId: !!parentId,
+        selectedNodeIds: state.selectedNodeIds,
+        clipboardType: state.clipboard.type,
+      });
+
       // If no parentId specified, use smart paste logic
       if (!parentId && state.selectedNodeIds.length > 0) {
         const selectedId = state.selectedNodeIds[0];
@@ -738,16 +760,28 @@ export function componentTreeReducer(
           // Check if node accepts children
           const definition = componentRegistry[node.type];
 
+          console.log('[PASTE_COMPONENT] Smart paste logic:', {
+            selectedNodeType: node.type,
+            selectedNodeId: node.id,
+            acceptsChildren: definition?.acceptsChildren,
+            nodeParentId,
+          });
+
           // If selected node is a container, paste inside it
-          if (definition?.acceptsChildren) {
+          // Exception: Card should paste as sibling, not inside
+          if (definition?.acceptsChildren && node.type !== 'Card') {
             parentId = node.id;
+            console.log('[PASTE_COMPONENT] Pasting inside selected container:', parentId);
           } else if (nodeParentId) {
             // Otherwise, paste into the parent of the selected node
             parentId = nodeParentId;
+            console.log('[PASTE_COMPONENT] Pasting into parent:', parentId);
           }
           // If nodeParentId is undefined, it means selected node is at root, so paste at root (parentId stays undefined)
         }
       }
+
+      console.log('[PASTE_COMPONENT] Final parentId:', parentId);
 
       // Create a new node with new ID
       const deepCloneWithNewIds = (node: ComponentNode): ComponentNode => ({

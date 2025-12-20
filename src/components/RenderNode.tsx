@@ -1933,6 +1933,16 @@ export const RenderNode: React.FC<{
   const parentColumns = parent?.props?.columns || 12;
   const needsResizeHandles = isGridChild && !isPlayMode;
 
+  // Apply flex-grow for children of VStack/HStack
+  // Default: flex-grow: 1 (fill container width)
+  // Override with resizing='hug' for flex-grow: 0 (shrink to content)
+  const isVStackOrHStackChild = parent?.type === 'VStack' || parent?.type === 'HStack';
+  if (isVStackOrHStackChild && !isGridChild) {
+    const resizing = props.resizing || 'fill'; // 'fill' (default) or 'hug'
+    const flexGrow = resizing === 'fill' ? 1 : 0;
+    mergedProps.style = { ...mergedProps.style, flexGrow };
+  }
+
   const finalProps = {
     ...editorProps,
     ...mergedProps,
@@ -2001,60 +2011,34 @@ export const RenderNode: React.FC<{
 
                 const elements = [];
 
-                // Draw column boundaries and gutters
-                for (let i = 1; i < columns; i++) {
-                  if (gapPx > 0) {
-                    // CSS Grid formula: position after column i =
-                    // (i / columns * 100%) for column end + ((i-1) * gapPx) for accumulated gaps
-                    // But we need to account for the fact that gaps take up space
-                    // Use calc() to compute: (100% - total_gap_width) * (i / columns) + (i * gap)
-                    const totalGapWidth = (columns - 1) * gapPx;
-                    const columnFraction = i / columns;
-                    const gapsBeforeColumn = i;
+                // Draw columns (content areas) instead of gutters
+                const totalGapWidth = (columns - 1) * gapPx;
 
-                    elements.push(
-                      <rect
-                        key={`gutter-${i}`}
-                        x={`calc((100% - ${totalGapWidth}px) * ${columnFraction} + ${(gapsBeforeColumn - 1) * gapPx}px)`}
-                        y="0"
-                        width={`${gapPx}px`}
-                        height="100%"
-                        fill={guideColor}
-                        opacity="0.15"
-                      />
-                    );
+                for (let i = 0; i < columns; i++) {
+                  // Calculate column position and width
+                  // Each column width = (100% - total_gap_width) / columns
+                  // Column i starts at: column_width * i + gap * i
+                  const columnWidthPercent = `(100% - ${totalGapWidth}px) / ${columns}`;
+                  const columnX = i === 0
+                    ? '0px'
+                    : `calc(${columnWidthPercent} * ${i} + ${gapPx * i}px)`;
+                  const columnWidth = `calc(${columnWidthPercent})`;
 
-                    // Draw line in the center of the gutter
-                    elements.push(
-                      <line
-                        key={`col-${i}`}
-                        x1={`calc((100% - ${totalGapWidth}px) * ${columnFraction} + ${gapsBeforeColumn * gapPx - gapPx/2}px)`}
-                        y1="0"
-                        x2={`calc((100% - ${totalGapWidth}px) * ${columnFraction} + ${gapsBeforeColumn * gapPx - gapPx/2}px)`}
-                        y2="100%"
-                        stroke={guideColor}
-                        strokeWidth="1"
-                        strokeDasharray="4 4"
-                        opacity="0.5"
-                      />
-                    );
-                  } else {
-                    // No gap - just draw divider lines at column boundaries
-                    const xPercent = (100 / columns) * i;
-                    elements.push(
-                      <line
-                        key={`col-${i}`}
-                        x1={`${xPercent}%`}
-                        y1="0"
-                        x2={`${xPercent}%`}
-                        y2="100%"
-                        stroke={guideColor}
-                        strokeWidth="1"
-                        strokeDasharray="4 4"
-                        opacity="0.5"
-                      />
-                    );
-                  }
+                  elements.push(
+                    <rect
+                      key={`column-${i}`}
+                      x={columnX}
+                      y="0"
+                      width={columnWidth}
+                      height="100%"
+                      fill={guideColor}
+                      opacity="0.08"
+                      stroke={guideColor}
+                      strokeWidth="1"
+                      strokeOpacity="0.25"
+                      strokeDasharray="4 4"
+                    />
+                  );
                 }
 
                 return elements;

@@ -47,6 +47,7 @@ import {
   AlignmentControl,
   SpacingControl,
   PaddingControl,
+  ResizingControl,
   VSTACK_PRIMARY_OPTIONS,
   VSTACK_CROSS_OPTIONS,
   HSTACK_PRIMARY_OPTIONS,
@@ -361,6 +362,7 @@ export const PropertiesPanel: React.FC = () => {
   // Find parent to check if it's a Grid (only for single select)
   const parent = !isMultiSelect ? findParent(tree, selectedNodeIds[0]) : null;
   const isChildOfGrid = parent?.type === "Grid";
+  const isChildOfVStackOrHStack = parent?.type === "VStack" || parent?.type === "HStack";
 
   const handlePropChange = (propName: string, value: any) => {
     // Special case: For Text and Heading components, 'content' prop should update 'children'
@@ -519,6 +521,25 @@ export const PropertiesPanel: React.FC = () => {
             <WidthPresetControl
               value={firstNode.props.gridColumnSpan || 12}
               onChange={(value) => handlePropChange("gridColumnSpan", value)}
+            />
+          </PanelBody>
+        )}
+
+        {/* Resizing Control for VStack/HStack children */}
+        {!isMultiSelect && isChildOfVStackOrHStack && !isChildOfGrid && (
+          <PanelBody
+            title="Resizing"
+            initialOpen={openPanels["resizing"]}
+            onToggle={() =>
+              setOpenPanels({
+                ...openPanels,
+                resizing: !openPanels["resizing"],
+              })
+            }
+          >
+            <ResizingControl
+              value={firstNode.props.resizing || 'fill'}
+              onChange={(value) => handlePropChange("resizing", value)}
             />
           </PanelBody>
         )}
