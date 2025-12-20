@@ -1908,14 +1908,20 @@ export const RenderNode: React.FC<{
   const parentColumns = parent?.props?.columns || 12;
   const needsResizeHandles = isGridChild && !isPlayMode;
 
-  // Apply flex-grow for children of VStack/HStack
-  // Default: flex-grow: 1 (fill container width)
-  // Override with resizing='hug' for flex-grow: 0 (shrink to content)
+  // Apply resizing for children of VStack/HStack
+  // Fill: Stretch to fill container width (VStack) or height (HStack)
+  // Hug: Shrink to content size
   const isVStackOrHStackChild = parent?.type === 'VStack' || parent?.type === 'HStack';
   if (isVStackOrHStackChild && !isGridChild) {
     const resizing = props.resizing || 'fill'; // 'fill' (default) or 'hug'
-    const flexGrow = resizing === 'fill' ? 1 : 0;
-    mergedProps.style = { ...mergedProps.style, flexGrow };
+
+    if (resizing === 'fill') {
+      // Fill: Stretch on cross axis (width for VStack, height for HStack)
+      mergedProps.style = { ...mergedProps.style, alignSelf: 'stretch' };
+    } else {
+      // Hug: Shrink to content size
+      mergedProps.style = { ...mergedProps.style, alignSelf: 'flex-start' };
+    }
   }
 
   const finalProps = {
