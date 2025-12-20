@@ -1992,9 +1992,10 @@ export const RenderNode: React.FC<{
               {(() => {
                 // Get grid properties
                 const columns = (mergedProps as any).columns || 2;
-                // gap is a multiplier of 4px in WordPress components
-                const gapMultiplier = typeof (mergedProps as any).gap === 'number' ? (mergedProps as any).gap : 0;
-                const gapPx = gapMultiplier * 4;
+                // Parse gap - could be a string like "16px" or a number
+                const gapValue = (mergedProps as any).style?.gap || (mergedProps as any).gap || '0px';
+                const gapPx = typeof gapValue === 'string' ? parseFloat(gapValue) : (gapValue * 4);
+
                 // Get grid guide color from props or use default
                 const guideColor = node.props.gridGuideColor || '#3858e9';
 
@@ -2003,14 +2004,18 @@ export const RenderNode: React.FC<{
                 // Draw column boundaries and gutters
                 for (let i = 1; i < columns; i++) {
                   if (gapPx > 0) {
-                    // Calculate gutter position
-                    // In CSS Grid, gaps are between columns, so position is at end of column i-1
-                    const gutterXPercent = (100 / columns) * i;
+                    // CSS Grid formula: position after column i =
+                    // (i / columns * 100%) for column end + ((i-1) * gapPx) for accumulated gaps
+                    // But we need to account for the fact that gaps take up space
+                    // Use calc() to compute: (100% - total_gap_width) * (i / columns) + (i * gap)
+                    const totalGapWidth = (columns - 1) * gapPx;
+                    const columnFraction = i / columns;
+                    const gapsBeforeColumn = i;
 
                     elements.push(
                       <rect
                         key={`gutter-${i}`}
-                        x={`calc(${gutterXPercent}% - ${gapPx / 2}px)`}
+                        x={`calc((100% - ${totalGapWidth}px) * ${columnFraction} + ${(gapsBeforeColumn - 1) * gapPx}px)`}
                         y="0"
                         width={`${gapPx}px`}
                         height="100%"
@@ -2023,9 +2028,9 @@ export const RenderNode: React.FC<{
                     elements.push(
                       <line
                         key={`col-${i}`}
-                        x1={`${gutterXPercent}%`}
+                        x1={`calc((100% - ${totalGapWidth}px) * ${columnFraction} + ${gapsBeforeColumn * gapPx - gapPx/2}px)`}
                         y1="0"
-                        x2={`${gutterXPercent}%`}
+                        x2={`calc((100% - ${totalGapWidth}px) * ${columnFraction} + ${gapsBeforeColumn * gapPx - gapPx/2}px)`}
                         y2="100%"
                         stroke={guideColor}
                         strokeWidth="1"
@@ -2059,16 +2064,28 @@ export const RenderNode: React.FC<{
         )}
 
         {/* Grid Resize Handles */}
-        {needsResizeHandles && (
-          <GridResizeHandles
-            nodeId={node.id}
-            gridColumnSpan={gridColumnSpan || 1}
-            gridColumnStart={gridColumnStart}
-            parentColumns={parentColumns}
-            isSelected={isSelected}
-            isPlayMode={isPlayMode}
-          />
-        )}
+        {needsResizeHandles && (() => {
+          // Collect sibling grid positions for smart resize behavior
+          const siblings = parent?.children
+            ?.filter(child => child.id !== node.id && child.props.gridColumnSpan)
+            ?.map(child => ({
+              id: child.id,
+              gridColumnStart: child.props.gridColumnStart || 1,
+              gridColumnSpan: child.props.gridColumnSpan || 1,
+            })) || [];
+
+          return (
+            <GridResizeHandles
+              nodeId={node.id}
+              gridColumnSpan={gridColumnSpan || 1}
+              gridColumnStart={gridColumnStart}
+              parentColumns={parentColumns}
+              isSelected={isSelected}
+              isPlayMode={isPlayMode}
+              siblings={siblings}
+            />
+          );
+        })()}
       </Component>
     </React.Fragment>
   );

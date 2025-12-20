@@ -8,6 +8,7 @@ interface GridResizeHandlesProps {
   parentColumns: number;
   isSelected: boolean;
   isPlayMode: boolean;
+  siblings?: Array<{ id: string; gridColumnStart: number; gridColumnSpan: number }>;
 }
 
 export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
@@ -17,6 +18,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
   parentColumns = 12,
   isSelected,
   isPlayMode,
+  siblings = [],
 }) => {
   const { updateComponentProps, isAgentExecuting } = useComponentTree();
 
@@ -115,14 +117,49 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
 
       if (dragState.side === 'left') {
         // Dragging left handle: Change gridColumnStart (keep right edge fixed)
-        const newStart = Math.max(1, Math.min(
-          parentColumns - dragState.initialSpan + 1,
-          dragState.initialStart + columnsDelta
-        ));
-        const newSpan = dragState.initialSpan + (dragState.initialStart - newStart);
+        // Right edge = initialStart + initialSpan (this stays fixed)
+        const rightEdge = dragState.initialStart + dragState.initialSpan;
 
-        if (newSpan >= 1 && newSpan <= parentColumns && newStart + newSpan - 1 <= parentColumns) {
-          console.log('[GridResizeHandles] Updating left:', { newStart, newSpan });
+        // Calculate desired new start position
+        const unconstrainedNewStart = dragState.initialStart + columnsDelta;
+        const newStart = Math.max(1, Math.min(
+          rightEdge - 1,  // Leave room for minimum span of 1
+          unconstrainedNewStart
+        ));
+
+        // Calculate new span to keep right edge fixed
+        const newSpan = rightEdge - newStart;
+
+        if (newSpan >= 1 && newSpan <= parentColumns) {
+          // Check if the new position would overlap with any siblings
+          // If so, resize those siblings to make room (push behavior)
+          siblings.forEach(sibling => {
+            if (sibling.id === nodeId) return;  // Skip self
+
+            const siblingStart = sibling.gridColumnStart;
+            const siblingEnd = siblingStart + sibling.gridColumnSpan;
+
+            // Check if sibling overlaps with our new position
+            const wouldOverlap = siblingStart < newStart + newSpan && siblingEnd > newStart;
+
+            if (wouldOverlap) {
+              // Resize sibling to end just before our new start
+              const newSiblingSpan = newStart - siblingStart;
+
+              if (newSiblingSpan >= 1) {
+                console.log('[GridResizeHandles] Resizing sibling to make room:', {
+                  siblingId: sibling.id,
+                  oldSpan: sibling.gridColumnSpan,
+                  newSpan: newSiblingSpan,
+                });
+                updateComponentProps(sibling.id, {
+                  gridColumnSpan: newSiblingSpan,
+                });
+              }
+            }
+          });
+
+          console.log('[GridResizeHandles] Updating left:', { newStart, newSpan, rightEdge });
           updateComponentProps(nodeId, {
             gridColumnStart: newStart,
             gridColumnSpan: newSpan,
