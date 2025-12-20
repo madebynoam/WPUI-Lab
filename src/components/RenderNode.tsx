@@ -12,6 +12,7 @@ import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } 
 import { useSelection } from '@/contexts/SelectionContext';
 import { useSimpleDrag } from '@/contexts/SimpleDragContext';
 import { useRouter } from 'next/navigation';
+import { GridResizeHandles } from './GridResizeHandles';
 
 // Simple Figma-style drag-and-drop component
 export const RenderNode: React.FC<{
@@ -843,12 +844,20 @@ export const RenderNode: React.FC<{
 
   // Extract grid child properties to apply to wrapper
   const gridColumnSpan = props.gridColumnSpan;
+  const gridColumnStart = props.gridColumnStart;
   const gridRowSpan = props.gridRowSpan;
   delete props.gridColumnSpan;
+  delete props.gridColumnStart;
   delete props.gridRowSpan;
 
   // Convert span numbers to CSS grid syntax
-  const gridColumn = gridColumnSpan && gridColumnSpan > 1 ? `span ${gridColumnSpan}` : undefined;
+  // If gridColumnStart is specified, use it; otherwise just use span
+  let gridColumn: string | undefined;
+  if (gridColumnStart && gridColumnSpan) {
+    gridColumn = `${gridColumnStart} / span ${gridColumnSpan}`;
+  } else if (gridColumnSpan && gridColumnSpan > 1) {
+    gridColumn = `span ${gridColumnSpan}`;
+  }
   const gridRow = gridRowSpan && gridRowSpan > 1 ? `span ${gridRowSpan}` : undefined;
 
   // Base wrapper style with grid child properties
@@ -1881,11 +1890,10 @@ export const RenderNode: React.FC<{
       mergedProps.style = { ...mergedProps.style, gap: gapValue };
     }
 
-    // Grid children: Fill their grid cell (grid-column/grid-row already applied at top)
+    // Grid children: Fill their grid cell automatically (grid-column/grid-row already applied)
+    // NOTE: Don't apply width: '100%' to grid children - CSS Grid handles sizing automatically
+    // and explicit width interferes with grid-column resizing
     const isGridChild = gridColumnSpan || gridRowSpan;
-    if (isGridChild && !hasExplicitWidth) {
-      mergedProps.style = { ...mergedProps.style, width: '100%' };
-    }
 
     // Top-level containers: Apply width control (content=1344px or full=100%)
     if (!isGridChild && !hasExplicitWidth) {
@@ -1918,13 +1926,20 @@ export const RenderNode: React.FC<{
 
   // Pass editor props directly to regular components
   const editorProps = getEditorProps();
+
+  // Check if this is a grid child that needs resize handles
+  const parent = findParent(tree, node.id);
+  const isGridChild = gridColumnSpan !== undefined && parent?.type === 'Grid';
+  const parentColumns = parent?.props?.columns || 12;
+  const needsResizeHandles = isGridChild && !isPlayMode;
+
   const finalProps = {
     ...editorProps,
     ...mergedProps,
     style: {
       ...editorProps.style,
       ...mergedProps.style,
-      position: showGridLines ? 'relative' : (editorProps.style?.position || mergedProps.style?.position),
+      position: (showGridLines || needsResizeHandles) ? 'relative' : (editorProps.style?.position || mergedProps.style?.position),
       opacity: draggedNodeId === node.id ? 0 : 1,
     },
   };
@@ -2041,6 +2056,18 @@ export const RenderNode: React.FC<{
               })()}
             </svg>
           </div>
+        )}
+
+        {/* Grid Resize Handles */}
+        {needsResizeHandles && (
+          <GridResizeHandles
+            nodeId={node.id}
+            gridColumnSpan={gridColumnSpan || 1}
+            gridColumnStart={gridColumnStart}
+            parentColumns={parentColumns}
+            isSelected={isSelected}
+            isPlayMode={isPlayMode}
+          />
         )}
       </Component>
     </React.Fragment>
