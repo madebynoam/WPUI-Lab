@@ -850,6 +850,11 @@ export const RenderNode: React.FC<{
   delete props.gridColumnStart;
   delete props.gridRowSpan;
 
+  // Extract width prop (converted to styles below, not passed to component)
+  const widthProp = props.width || props.resizing; // Support legacy "resizing" prop
+  delete props.width;
+  delete props.resizing;
+
   // Convert span numbers to CSS grid syntax
   // If gridColumnStart is specified, use it; otherwise just use span
   let gridColumn: string | undefined;
@@ -1908,19 +1913,33 @@ export const RenderNode: React.FC<{
   const parentColumns = parent?.props?.columns || 12;
   const needsResizeHandles = isGridChild && !isPlayMode;
 
-  // Apply resizing for children of VStack/HStack
-  // Fill: Stretch to fill container width (VStack) or height (HStack)
-  // Hug: Shrink to content size
-  const isVStackOrHStackChild = parent?.type === 'VStack' || parent?.type === 'HStack';
-  if (isVStackOrHStackChild && !isGridChild) {
-    const resizing = props.resizing || 'fill'; // 'fill' (default) or 'hug'
+  // Apply width for children of VStack/HStack
+  // User mental model: "width" always means horizontal dimension
+  // Implementation differs based on parent direction (VStack vs HStack)
+  const isVStackChild = parent?.type === 'VStack';
+  const isHStackChild = parent?.type === 'HStack';
 
-    if (resizing === 'fill') {
-      // Fill: Stretch on cross axis (width for VStack, height for HStack)
-      mergedProps.style = { ...mergedProps.style, alignSelf: 'stretch' };
-    } else {
-      // Hug: Shrink to content size
-      mergedProps.style = { ...mergedProps.style, alignSelf: 'flex-start' };
+  if ((isVStackChild || isHStackChild) && !isGridChild) {
+    const width = widthProp || 'fill'; // 'fill' (default) or 'hug'
+
+    if (isVStackChild) {
+      // VStack: width is cross-axis (horizontal)
+      if (width === 'fill') {
+        // Fill width: stretch horizontally
+        mergedProps.style = { ...mergedProps.style, alignSelf: 'stretch' };
+      } else {
+        // Hug width: shrink to content
+        mergedProps.style = { ...mergedProps.style, alignSelf: 'flex-start' };
+      }
+    } else if (isHStackChild) {
+      // HStack: width is main-axis (horizontal)
+      if (width === 'fill') {
+        // Fill width: expand to take available space
+        mergedProps.style = { ...mergedProps.style, flexGrow: 1 };
+      } else {
+        // Hug width: shrink to content
+        mergedProps.style = { ...mergedProps.style, flexGrow: 0 };
+      }
     }
   }
 

@@ -47,7 +47,7 @@ import {
   AlignmentControl,
   SpacingControl,
   PaddingControl,
-  ResizingControl,
+  WidthControl,
   VSTACK_PRIMARY_OPTIONS,
   VSTACK_CROSS_OPTIONS,
   HSTACK_PRIMARY_OPTIONS,
@@ -428,21 +428,21 @@ export const PropertiesPanel: React.FC = () => {
           </PanelBody>
         )}
 
-        {/* Resizing Control for VStack/HStack children */}
+        {/* Width Control for VStack/HStack children */}
         {!isMultiSelect && isChildOfVStackOrHStack && !isChildOfGrid && (
           <PanelBody
-            title="Resizing"
-            initialOpen={openPanels["resizing"]}
+            title="Width"
+            initialOpen={openPanels["width"]}
             onToggle={() =>
               setOpenPanels({
                 ...openPanels,
-                resizing: !openPanels["resizing"],
+                width: !openPanels["width"],
               })
             }
           >
-            <ResizingControl
-              value={firstNode.props.resizing || 'fill'}
-              onChange={(value) => handlePropChange("resizing", value)}
+            <WidthControl
+              value={firstNode.props.width || 'fill'}
+              onChange={(value) => handlePropChange("width", value)}
             />
           </PanelBody>
         )}

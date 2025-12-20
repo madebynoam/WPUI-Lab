@@ -285,15 +285,15 @@ export const PaddingControl: React.FC<PaddingControlProps> = ({
 };
 
 // ============================================================================
-// Resizing Control (Hug vs Fill for VStack/HStack children)
+// Width Control (Hug vs Fill for VStack/HStack children)
 // ============================================================================
 
-interface ResizingControlProps {
+interface WidthControlProps {
   value: 'hug' | 'fill';
   onChange: (value: 'hug' | 'fill') => void;
 }
 
-export const ResizingControl: React.FC<ResizingControlProps> = ({
+export const WidthControl: React.FC<WidthControlProps> = ({
   value,
   onChange,
 }) => {
@@ -307,7 +307,7 @@ export const ResizingControl: React.FC<ResizingControlProps> = ({
           color: '#1e1e1e',
         }}
       >
-        Resizing
+        Width
       </div>
       <div style={{ display: 'flex', gap: '4px' }}>
         <Button
@@ -340,7 +340,7 @@ export const ResizingControl: React.FC<ResizingControlProps> = ({
         </Button>
       </div>
       <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
-        {value === 'fill' ? 'Expands to fill available space' : 'Shrinks to content size'}
+        {value === 'fill' ? 'Expands to fill container width' : 'Shrinks to content width'}
       </p>
     </div>
   );
