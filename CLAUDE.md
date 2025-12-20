@@ -572,6 +572,11 @@ Escape         Deselect / Exit play mode
    - Width control: Full (12), 2/3 (8), Half (6), 1/3 (4), 1/4 (3) → `gridColumnSpan`
    - VStack/HStack: Content grouping only (gap, alignment) - no width/height resize
    - Nest Grids for complex layouts (sidebar = Grid spanning 4 cols with own 12-col grid inside)
+11. **WYSIWYG - Avoid Wrapper Divs** - This is meant to be WYSIWYG with core WordPress components:
+   - Never wrap components in extra divs unless absolutely necessary
+   - Extra wrappers break the visual match between editor and generated code
+   - If editor-only UI is needed (resize handles, overlays), use portals or absolutely-positioned siblings
+   - Exception: Wrappers are acceptable ONLY in play mode for runtime state management
 
 ## Debugging
 
