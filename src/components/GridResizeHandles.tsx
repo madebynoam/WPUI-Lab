@@ -20,7 +20,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
   isPlayMode,
   siblings = [],
 }) => {
-  const { updateComponentProps, isAgentExecuting } = useComponentTree();
+  const { updateComponentProps, isAgentExecuting, undo } = useComponentTree();
 
   // Only use state for hover and active drag side
   const [isHoveringLeft, setIsHoveringLeft] = useState(false);
@@ -36,11 +36,17 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
     columnWidth: number;
     gapWidth: number;
     element: HTMLElement;
-    finalStart?: number;
-    finalSpan?: number;
+    currentStart?: number;
+    currentSpan?: number;
   } | null>(null);
 
+  // Ref to track the element being resized for live visual updates
+  const elementRef = useRef<HTMLElement | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Track how many updates occur during drag for smart history consolidation
+  const updateCountRef = useRef(0);
 
   // Don't show handles in play mode or during agent execution
   if (isPlayMode || isAgentExecuting) {
@@ -90,6 +96,9 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
       columnWidth,
       gapWidth,
     };
+
+    // Reset update counter for smart history consolidation
+    updateCountRef.current = 0;
 
     setActiveDragSide(side);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -150,11 +159,18 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
         const newSpan = rightEdge - newStart;
 
         if (newSpan >= 1 && newSpan <= parentColumns) {
-          console.log('[GridResizeHandles] Updating left:', { newStart, newSpan, rightEdge, maxAllowedStart });
+          console.log('[GridResizeHandles] Dragging left to:', { newStart, newSpan, rightEdge, maxAllowedStart });
+          // Store values for final update on pointer up
+          dragState.currentStart = newStart;
+          dragState.currentSpan = newSpan;
+
+          // Update component props for visual feedback
+          // Note: This creates history entries on every move (will be consolidated on pointer up)
           updateComponentProps(nodeId, {
             gridColumnStart: newStart,
             gridColumnSpan: newSpan,
           });
+          updateCountRef.current++;
         }
       } else if (dragState.side === 'right') {
         // Dragging right handle: Change gridColumnSpan (keep left edge fixed)
@@ -164,10 +180,16 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
         ));
 
         if (newSpan >= 1 && newSpan <= parentColumns) {
-          console.log('[GridResizeHandles] Updating right:', { newSpan });
+          console.log('[GridResizeHandles] Dragging right to span:', { newSpan });
+          // Store values for final update on pointer up
+          dragState.currentSpan = newSpan;
+
+          // Update component props for visual feedback
+          // Note: This creates history entries on every move (will be consolidated on pointer up)
           updateComponentProps(nodeId, {
             gridColumnSpan: newSpan,
           });
+          updateCountRef.current++;
         }
       }
     };
@@ -177,6 +199,40 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
       e.stopPropagation();
       e.preventDefault();
 
+      const dragState = dragStateRef.current;
+      if (dragState) {
+        // Smart history consolidation: undo all intermediate moves, then create ONE final entry
+        const updateCount = updateCountRef.current;
+        console.log('[GridResizeHandles] Consolidating history:', {
+          updateCount,
+          finalStart: dragState.currentStart,
+          finalSpan: dragState.currentSpan,
+        });
+
+        if (updateCount > 0) {
+          // Undo all intermediate updates
+          for (let i = 0; i < updateCount; i++) {
+            undo();
+          }
+
+          // Create ONE final history entry with the final values
+          if (dragState.side === 'left' && dragState.currentStart !== undefined && dragState.currentSpan !== undefined) {
+            updateComponentProps(nodeId, {
+              gridColumnStart: dragState.currentStart,
+              gridColumnSpan: dragState.currentSpan,
+            });
+          } else if (dragState.side === 'right' && dragState.currentSpan !== undefined) {
+            updateComponentProps(nodeId, {
+              gridColumnSpan: dragState.currentSpan,
+            });
+          }
+        }
+
+        // Reset counter
+        updateCountRef.current = 0;
+      }
+
+      // Clean up drag state
       dragStateRef.current = null;
       setActiveDragSide(null);
     };
@@ -190,7 +246,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [activeDragSide, parentColumns, nodeId, updateComponentProps]);
+  }, [activeDragSide, parentColumns, nodeId, updateComponentProps, siblings, undo]);
 
   const showHandles = isSelected || isHoveringLeft || isHoveringRight || activeDragSide !== null;
 
@@ -204,8 +260,8 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
       pointerEvents: 'none',
       zIndex: 1500, // Above grid lines (1000)
     }}>
-      {/* Left Handle */}
-      <div
+      {/* Left Handle - Temporarily disabled */}
+      {/* <div
         onPointerDown={handleLeftPointerDown}
         onPointerEnter={() => setIsHoveringLeft(true)}
         onPointerLeave={() => {
@@ -236,7 +292,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
             boxShadow: '0 0 4px rgba(0,0,0,0.2)',
           }} />
         )}
-      </div>
+      </div> */}
 
       {/* Right Handle */}
       <div
