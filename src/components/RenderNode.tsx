@@ -1877,40 +1877,14 @@ export const RenderNode: React.FC<{
     // Grid-first: Simplified layout
     // - Grid children: Use gridColumnSpan (converted to grid-column at top)
     // - VStack/HStack children: Use flex-grow (applied below)
-    // - Grid containers: Can have width control (content=1344px or full=100%)
 
-    const width = node.width || 'content';
-    const alignSelf = props.alignSelf || 'center';
     const padding = props.padding || '';
     const spacing = props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2);
 
-    // VStack/HStack: Apply gap for content grouping
-    if (node.type === 'VStack' || node.type === 'HStack') {
+    // VStack/HStack/Grid: Apply gap for content grouping
+    if (node.type === 'VStack' || node.type === 'HStack' || node.type === 'Grid') {
       const gapValue = `${spacing * 4}px`;
       mergedProps.style = { ...mergedProps.style, gap: gapValue };
-    }
-
-    // Grid children: Fill their grid cell automatically (grid-column/grid-row already applied)
-    // NOTE: Don't apply width: '100%' to grid children - CSS Grid handles sizing automatically
-    // and explicit width interferes with grid-column resizing
-    const isGridChild = gridColumnSpan || gridRowSpan;
-
-    // Grid containers only: Apply width control (content=1344px or full=100%)
-    // VStack/HStack: Skip width control - they use flex-grow now
-    if (node.type === 'Grid' && !isGridChild && !hasExplicitWidth) {
-      if (width === 'content') {
-        mergedProps.style = { ...mergedProps.style, maxWidth: maxWidthPresets[width] };
-        // Center content-width containers
-        if (alignSelf === 'center') {
-          mergedProps.style = { ...mergedProps.style, marginLeft: 'auto', marginRight: 'auto' };
-        } else if (alignSelf === 'start') {
-          mergedProps.style = { ...mergedProps.style, marginRight: 'auto' };
-        } else if (alignSelf === 'end') {
-          mergedProps.style = { ...mergedProps.style, marginLeft: 'auto' };
-        }
-      } else if (width === 'full') {
-        mergedProps.style = { ...mergedProps.style, width: '100%' };
-      }
     }
 
     // Apply padding
