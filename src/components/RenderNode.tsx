@@ -1874,10 +1874,10 @@ export const RenderNode: React.FC<{
 
   // IMPORTANT: Exclude root Grid from width constraints - it should always be 100% width
   if (layoutContainers.includes(node.type) && node.id !== ROOT_GRID_ID) {
-    // Grid-first: Simplified layout (no Hug/Fill complexity)
+    // Grid-first: Simplified layout
     // - Grid children: Use gridColumnSpan (converted to grid-column at top)
-    // - VStack/HStack: Content grouping with gap + alignment only
-    // - Top-level containers: width control (content=1344px or full=100%)
+    // - VStack/HStack children: Use flex-grow (applied below)
+    // - Grid containers: Can have width control (content=1344px or full=100%)
 
     const width = node.width || 'content';
     const alignSelf = props.alignSelf || 'center';
@@ -1895,8 +1895,9 @@ export const RenderNode: React.FC<{
     // and explicit width interferes with grid-column resizing
     const isGridChild = gridColumnSpan || gridRowSpan;
 
-    // Top-level containers: Apply width control (content=1344px or full=100%)
-    if (!isGridChild && !hasExplicitWidth) {
+    // Grid containers only: Apply width control (content=1344px or full=100%)
+    // VStack/HStack: Skip width control - they use flex-grow now
+    if (node.type === 'Grid' && !isGridChild && !hasExplicitWidth) {
       if (width === 'content') {
         mergedProps.style = { ...mergedProps.style, maxWidth: maxWidthPresets[width] };
         // Center content-width containers
