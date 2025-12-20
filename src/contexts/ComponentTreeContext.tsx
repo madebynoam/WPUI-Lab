@@ -49,6 +49,7 @@ interface ComponentTreeContextType {
   getParentById: (id: string) => ComponentNode | null;
   gridLinesVisible: Set<string>;
   toggleGridLines: (id: string) => void;
+  toggleAllGridLines: () => void;
 
   // Copy/Paste management
   clipboard: ComponentNode | null;
@@ -418,6 +419,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'TOGGLE_GRID_LINES', payload: { id } });
   };
 
+  const toggleAllGridLines = () => {
+    dispatch({ type: 'TOGGLE_ALL_GRID_LINES' });
+  };
+
   // ===== Copy/Paste =====
 
   const copyComponent = (id: string) => {
@@ -617,6 +622,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     getParentById,
     gridLinesVisible: state.gridLinesVisible,
     toggleGridLines,
+    toggleAllGridLines,
     clipboard: state.clipboard,
     cutNodeId: state.cutNodeId,
     copyComponent,

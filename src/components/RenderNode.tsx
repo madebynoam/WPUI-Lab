@@ -18,7 +18,7 @@ export const RenderNode: React.FC<{
   node: ComponentNode;
   renderInteractive?: boolean;
 }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentPageId, currentProjectId, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentPageId, currentProjectId, projects, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode } = useComponentTree();
   const playModeState = usePlayModeState();
   const router = useRouter();
   const definition = componentRegistry[node.type];
@@ -1980,6 +1980,8 @@ export const RenderNode: React.FC<{
                 // gap is a multiplier of 4px in WordPress components
                 const gapMultiplier = typeof (mergedProps as any).gap === 'number' ? (mergedProps as any).gap : 0;
                 const gapPx = gapMultiplier * 4;
+                // Get grid guide color from props or use default
+                const guideColor = node.props.gridGuideColor || '#3858e9';
 
                 const elements = [];
 
@@ -1997,7 +1999,7 @@ export const RenderNode: React.FC<{
                         y="0"
                         width={`${gapPx}px`}
                         height="100%"
-                        fill="#3858e9"
+                        fill={guideColor}
                         opacity="0.15"
                       />
                     );
@@ -2010,7 +2012,7 @@ export const RenderNode: React.FC<{
                         y1="0"
                         x2={`${gutterXPercent}%`}
                         y2="100%"
-                        stroke="#3858e9"
+                        stroke={guideColor}
                         strokeWidth="1"
                         strokeDasharray="4 4"
                         opacity="0.5"
@@ -2026,7 +2028,7 @@ export const RenderNode: React.FC<{
                         y1="0"
                         x2={`${xPercent}%`}
                         y2="100%"
-                        stroke="#3858e9"
+                        stroke={guideColor}
                         strokeWidth="1"
                         strokeDasharray="4 4"
                         opacity="0.5"

@@ -18,6 +18,7 @@ export const KeyboardHandler: React.FC<{
     toggleNodeSelection,
     getNodeById,
     toggleGridLines,
+    toggleAllGridLines,
     undo,
     redo,
     canUndo,
@@ -55,6 +56,18 @@ export const KeyboardHandler: React.FC<{
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Debug logging for 'g' key
+      if (e.key === 'g') {
+        console.log('[KeyboardHandler] G key pressed:', {
+          key: e.key,
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          shiftKey: e.shiftKey,
+          isInEditMode: isInEditMode(),
+          isAgentExecuting,
+        });
+      }
+
       // Disable all keyboard shortcuts when agent is executing
       if (isAgentExecuting) {
         return;
@@ -262,20 +275,17 @@ export const KeyboardHandler: React.FC<{
         }
       }
 
-      // Ctrl+G to toggle grid lines for selected Grid component
+      // Ctrl+G to toggle all grid guides on/off (Cmd+G is for grouping)
       if (
         e.ctrlKey &&
         !e.metaKey &&
         e.key === "g" &&
-        selectedNodeIds.length > 0 &&
         !isInEditMode()
       ) {
-        const selectedNode = getNodeById(selectedNodeIds[0]);
-        if (selectedNode && selectedNode.type === "Grid") {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleGridLines(selectedNodeIds[0]);
-        }
+        console.log('[KeyboardHandler] Ctrl+G pressed - toggling all grid lines');
+        e.preventDefault();
+        e.stopPropagation();
+        toggleAllGridLines();
       }
 
       // V key to switch to selection mode (skip if in edit mode)
@@ -382,6 +392,7 @@ export const KeyboardHandler: React.FC<{
     reorderComponent,
     groupComponents,
     toggleGridLines,
+    toggleAllGridLines,
     getNodeById,
     editingMode,
     setEditingMode,

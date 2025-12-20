@@ -775,6 +775,21 @@ export const PropertiesPanel: React.FC = () => {
                     />
                   )}
 
+                  {propDef.type === "color" && (
+                    <ColorSwatchButton
+                      label={propDef.name}
+                      color={currentValue || propDef.defaultValue || '#000000'}
+                      onChange={(value) =>
+                        handlePropChange(propDef.name, value)
+                      }
+                      help={
+                        isMultiSelect && !isShared
+                          ? `${propDef.description} (applying to all ${selectedNodes.length} items)`
+                          : propDef.description
+                      }
+                    />
+                  )}
+
                   {propDef.type === "select" && propDef.name === "icon" && (
                     <IconPicker
                       label={propDef.name}
@@ -899,7 +914,7 @@ export const PropertiesPanel: React.FC = () => {
                 label="Show Grid Lines"
                 checked={gridLinesVisible.has(selectedNodeIds[0])}
                 onChange={() => toggleGridLines(selectedNodeIds[0])}
-                help="Toggle grid overlay (Control+G)"
+                help="Toggle grid overlay for this Grid (Control+G toggles all grids)"
               />
             )}
           </PanelBody>

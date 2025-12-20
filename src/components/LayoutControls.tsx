@@ -44,6 +44,7 @@ export const WidthPresetControl: React.FC<WidthPresetControlProps> = ({
 }) => {
   const presets = [
     { label: 'Full', span: 12 },
+    { label: '3/4', span: 9 },
     { label: '2/3', span: 8 },
     { label: 'Half', span: 6 },
     { label: '1/3', span: 4 },

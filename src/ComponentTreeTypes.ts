@@ -47,6 +47,7 @@ export type ComponentTreeAction =
 
   // Grid actions
   | { type: 'TOGGLE_GRID_LINES'; payload: { id: string } }
+  | { type: 'TOGGLE_ALL_GRID_LINES' }
   | { type: 'SET_GRID_LINES'; payload: { gridLines: Set<string> } }
 
   // Play mode actions

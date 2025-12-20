@@ -69,6 +69,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     defaultProps: {
       columns: 12,
       gap: 4,
+      gridGuideColor: '#3858e9',
     },
     propDefinitions: [
       {
@@ -132,6 +133,12 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'boolean',
         defaultValue: false,
         description: 'Display as inline-grid',
+      },
+      {
+        name: 'gridGuideColor',
+        type: 'color',
+        defaultValue: '#3858e9',
+        description: 'Color of grid guide lines (when grid lines are visible)',
       },
     ],
   },

@@ -785,6 +785,64 @@ export function componentTreeReducer(
       return { ...state, gridLinesVisible: newGridLines };
     }
 
+    case 'TOGGLE_ALL_GRID_LINES': {
+      console.log('[Reducer] TOGGLE_ALL_GRID_LINES action received');
+
+      // Find current project and page
+      if (!state.projects || state.projects.length === 0) {
+        console.log('[Reducer] No projects found, returning state');
+        return state;
+      }
+
+      const currentProject = state.projects.find((p) => p.id === state.currentProjectId);
+      if (!currentProject || !currentProject.pages) {
+        console.log('[Reducer] Current project or pages not found, returning state');
+        return state;
+      }
+
+      const currentPage = currentProject.pages.find((p) => p.id === currentProject.currentPageId);
+      if (!currentPage) {
+        console.log('[Reducer] Current page not found, returning state');
+        return state;
+      }
+
+      const findAllGridIds = (nodes: ComponentNode[]): string[] => {
+        const gridIds: string[] = [];
+        for (const node of nodes) {
+          if (node.type === 'Grid') {
+            gridIds.push(node.id);
+          }
+          if (node.children) {
+            gridIds.push(...findAllGridIds(node.children));
+          }
+        }
+        return gridIds;
+      };
+
+      const allGridIds = findAllGridIds(currentPage.tree);
+      console.log('[Reducer] Found Grid IDs:', allGridIds);
+
+      // Check if all grids are currently visible
+      const allVisible = allGridIds.every((id) => state.gridLinesVisible.has(id));
+      console.log('[Reducer] All visible?', allVisible, 'Current visible:', Array.from(state.gridLinesVisible));
+
+      const newGridLines = new Set(state.gridLinesVisible);
+
+      if (allVisible) {
+        // Hide all grids
+        console.log('[Reducer] Hiding all grids');
+        allGridIds.forEach((id) => newGridLines.delete(id));
+      } else {
+        // Show all grids
+        console.log('[Reducer] Showing all grids');
+        allGridIds.forEach((id) => newGridLines.add(id));
+      }
+
+      console.log('[Reducer] New grid lines visible:', Array.from(newGridLines));
+
+      return { ...state, gridLinesVisible: newGridLines };
+    }
+
     case 'SET_GRID_LINES': {
       const { gridLines } = action.payload;
       return { ...state, gridLinesVisible: gridLines };
