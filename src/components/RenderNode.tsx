@@ -1929,7 +1929,12 @@ export const RenderNode: React.FC<{
         mergedProps.style = { ...mergedProps.style, alignSelf: 'stretch' };
       } else {
         // Hug width: shrink to content
-        mergedProps.style = { ...mergedProps.style, alignSelf: 'flex-start' };
+        mergedProps.style = {
+          ...mergedProps.style,
+          alignSelf: 'flex-start',
+          width: 'fit-content',
+          maxWidth: 'none'
+        };
       }
     } else if (isHStackChild) {
       // HStack: width is main-axis (horizontal)
@@ -1938,7 +1943,12 @@ export const RenderNode: React.FC<{
         mergedProps.style = { ...mergedProps.style, flexGrow: 1 };
       } else {
         // Hug width: shrink to content
-        mergedProps.style = { ...mergedProps.style, flexGrow: 0 };
+        mergedProps.style = {
+          ...mergedProps.style,
+          flexGrow: 0,
+          width: 'fit-content',
+          maxWidth: 'none'
+        };
       }
     }
   }
