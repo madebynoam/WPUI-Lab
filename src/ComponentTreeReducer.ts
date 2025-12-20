@@ -57,6 +57,7 @@ const HISTORY_ACTIONS = new Set([
   'REORDER_COMPONENT',
   'SET_TREE',
   'GROUP_COMPONENTS',
+  'UNGROUP_COMPONENTS',
   'SWAP_LAYOUT_TYPE',
   'ADD_PAGE',
   'DELETE_PAGE',
@@ -448,6 +449,111 @@ export function componentTreeReducer(
       return {
         ...updateHistory(state, newProjects, state.currentProjectId),
         selectedNodeIds: [containerNode.id],
+      };
+    }
+
+    case 'UNGROUP_COMPONENTS': {
+      const { id } = action.payload;
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
+
+      // Helper to find a node by ID anywhere in the tree
+      const findNodeInTree = (nodes: ComponentNode[], targetId: string): ComponentNode | null => {
+        for (const node of nodes) {
+          if (node.id === targetId) return node;
+          if (node.children) {
+            const found = findNodeInTree(node.children, targetId);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      // Find parent ID for a node
+      const findParentId = (nodes: ComponentNode[], targetId: string, parentId?: string): string | null => {
+        for (const node of nodes) {
+          if (node.id === targetId) {
+            return parentId || null;
+          }
+          if (node.children) {
+            const found = findParentId(node.children, targetId, node.id);
+            if (found !== null) return found;
+          }
+        }
+        return null;
+      };
+
+      // Find the container to ungroup
+      const container = findNodeInTree(currentTree, id);
+      if (!container) {
+        console.warn('[Reducer] UNGROUP_COMPONENTS: Container not found:', id);
+        return state;
+      }
+
+      // Only ungroup VStack or HStack
+      if (container.type !== 'VStack' && container.type !== 'HStack') {
+        console.warn('[Reducer] UNGROUP_COMPONENTS: Can only ungroup VStack or HStack, got:', container.type);
+        return state;
+      }
+
+      // Container must have children to ungroup
+      if (!container.children || container.children.length === 0) {
+        console.warn('[Reducer] UNGROUP_COMPONENTS: Container has no children');
+        return state;
+      }
+
+      // Get container's parent
+      const parentId = findParentId(currentTree, id);
+      const parent = parentId ? findNodeInTree(currentTree, parentId) : currentTree.find(n => n.id === ROOT_GRID_ID);
+
+      if (!parent || !parent.children) {
+        console.warn('[Reducer] UNGROUP_COMPONENTS: Parent not found');
+        return state;
+      }
+
+      // Find container's position in parent
+      const containerIndex = parent.children.findIndex(child => child.id === id);
+      if (containerIndex === -1) {
+        console.warn('[Reducer] UNGROUP_COMPONENTS: Container not found in parent');
+        return state;
+      }
+
+      // If parent is a Grid, restore gridColumnSpan to children
+      const isParentGrid = parent.type === 'Grid';
+      const containerGridColumnSpan = container.props?.gridColumnSpan;
+      const containerGridRowSpan = container.props?.gridRowSpan;
+
+      // Clone children and restore gridColumnSpan if needed
+      const childrenToInsert = container.children.map(child => {
+        const clonedChild = JSON.parse(JSON.stringify(child));
+        if (isParentGrid && containerGridColumnSpan) {
+          clonedChild.props = clonedChild.props || {};
+          clonedChild.props.gridColumnSpan = containerGridColumnSpan;
+        }
+        if (isParentGrid && containerGridRowSpan) {
+          clonedChild.props = clonedChild.props || {};
+          clonedChild.props.gridRowSpan = containerGridRowSpan;
+        }
+        return clonedChild;
+      });
+
+      // Remove the container
+      let newTree = removeNodeFromTree(currentTree, id);
+
+      // Insert children at the container's position
+      for (let i = 0; i < childrenToInsert.length; i++) {
+        newTree = insertNodeInTree(newTree, childrenToInsert[i], parentId || undefined, containerIndex + i);
+      }
+
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      // Select the first ungrouped child
+      const firstChildId = childrenToInsert[0]?.id;
+
+      return {
+        ...updateHistory(state, newProjects, state.currentProjectId),
+        selectedNodeIds: firstChildId ? [firstChildId] : state.selectedNodeIds,
       };
     }
 

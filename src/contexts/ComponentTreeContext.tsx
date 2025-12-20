@@ -43,6 +43,7 @@ interface ComponentTreeContextType {
   moveComponent: (id: string, direction: 'up' | 'down') => void;
   reorderComponent: (activeId: string, overId: string, position?: 'before' | 'after' | 'inside') => void;
   groupComponents: (ids: string[]) => void;
+  ungroupComponents: (id: string) => void;
   swapLayoutType: (id: string, newType: 'VStack' | 'HStack') => void;
   resetTree: () => void;
   getNodeById: (id: string) => ComponentNode | null;
@@ -393,6 +394,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'GROUP_COMPONENTS', payload: { ids } });
   };
 
+  const ungroupComponents = (id: string) => {
+    dispatch({ type: 'UNGROUP_COMPONENTS', payload: { id } });
+  };
+
   const swapLayoutType = (id: string, newType: 'VStack' | 'HStack') => {
     dispatch({ type: 'SWAP_LAYOUT_TYPE', payload: { id, newType } });
   };
@@ -616,6 +621,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     moveComponent,
     reorderComponent,
     groupComponents,
+    ungroupComponents,
     swapLayoutType,
     resetTree,
     getNodeById,

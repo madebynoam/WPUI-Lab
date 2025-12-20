@@ -13,6 +13,7 @@ export type ComponentTreeAction =
   | { type: 'REORDER_COMPONENT'; payload: { activeId: string; overId: string; position?: 'before' | 'after' | 'inside' } }
   | { type: 'SET_TREE'; payload: { tree: ComponentNode[] } }
   | { type: 'GROUP_COMPONENTS'; payload: { ids: string[] } }
+  | { type: 'UNGROUP_COMPONENTS'; payload: { id: string } }
   | { type: 'SWAP_LAYOUT_TYPE'; payload: { id: string; newType: 'VStack' | 'HStack' } }
 
   // Selection actions

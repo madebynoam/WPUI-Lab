@@ -31,6 +31,7 @@ export const KeyboardHandler: React.FC<{
     duplicateComponent,
     reorderComponent,
     groupComponents,
+    ungroupComponents,
     editingMode,
     setEditingMode,
     pages,
@@ -261,6 +262,7 @@ export const KeyboardHandler: React.FC<{
       if (
         e.metaKey &&
         !e.ctrlKey &&
+        !e.shiftKey &&
         e.key === "g" &&
         selectedNodeIds.length >= 1 &&
         !isInEditMode()
@@ -272,6 +274,25 @@ export const KeyboardHandler: React.FC<{
         const hasRoot = selectedNodeIds.includes(ROOT_GRID_ID);
         if (!hasRoot) {
           groupComponents(selectedNodeIds);
+        }
+      }
+
+      // Cmd+Shift+G to ungroup components
+      if (
+        e.metaKey &&
+        !e.ctrlKey &&
+        e.shiftKey &&
+        e.key === "g" &&
+        selectedNodeIds.length === 1 &&
+        !isInEditMode()
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const selectedNode = getNodeById(selectedNodeIds[0]);
+        // Only ungroup VStack or HStack
+        if (selectedNode && (selectedNode.type === 'VStack' || selectedNode.type === 'HStack')) {
+          ungroupComponents(selectedNodeIds[0]);
         }
       }
 
@@ -391,6 +412,7 @@ export const KeyboardHandler: React.FC<{
     duplicateComponent,
     reorderComponent,
     groupComponents,
+    ungroupComponents,
     toggleGridLines,
     toggleAllGridLines,
     getNodeById,
