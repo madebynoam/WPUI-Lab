@@ -80,6 +80,7 @@ function generateNodeCode(
   delete props.text;
   delete props.placeholder;
   delete props.children;
+  delete props.gridGuideColor; // Editor-only prop for grid line visualization
 
   // Convert gridColumnSpan/gridRowSpan to CSS Grid styles
   const gridColumnSpan = props.gridColumnSpan;
