@@ -282,7 +282,8 @@ function generateNodeCode(
 function generatePropsString(entries: [string, any][]): string {
   return entries
     .map(([key, value]) => {
-      const jsxKey = key.replace(/([A-Z])/g, (match) => `${match.toLowerCase()}`);
+      // Keep prop names in camelCase for JSX (don't convert to lowercase)
+      const jsxKey = key;
 
       if (typeof value === 'string') {
         // Check if it looks like a variable/function call
