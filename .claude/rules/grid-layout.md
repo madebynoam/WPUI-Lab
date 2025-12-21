@@ -128,7 +128,8 @@ const gridLayoutProps = [
   'columns', 'rows',                     // Grid dimensions
   'gap', 'rowGap', 'columnGap',         // Spacing
   'templateColumns', 'templateRows',    // CSS Grid templates
-  'align', 'justify'                     // Grid alignment
+  'align', 'justify',                    // Grid alignment
+  'isInline'                             // Grid display mode
 ];
 ```
 

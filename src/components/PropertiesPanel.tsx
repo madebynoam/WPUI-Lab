@@ -687,7 +687,8 @@ export const PropertiesPanel: React.FC = () => {
                 const gridLayoutProps = [
                   'gridColumnSpan', 'gridRowSpan', // Grid child props
                   'columns', 'rows', 'gap', 'rowGap', 'columnGap', // Grid layout props
-                  'templateColumns', 'templateRows', 'align', 'justify' // Grid template props
+                  'templateColumns', 'templateRows', 'align', 'justify', // Grid template props
+                  'isInline' // Grid display mode (not needed in UI)
                 ];
                 return !gridLayoutProps.includes(propDef.name);
               })

@@ -49,6 +49,25 @@ Layout containers (VStack, HStack, Grid, Card) may have a `width` prop in the ed
 // Generated: style={{ maxWidth: '1344px' }} or style={{ width: '100%' }}
 ```
 
+## Component Names
+
+Component names (set via `node.name`) are automatically included in exported code:
+
+```typescript
+// Unique names → id attribute
+<Card id="hero-section">
+
+// Duplicate names → className attribute
+<Card className="pricing-card">
+<Card className="pricing-card">
+```
+
+**Name Sanitization**:
+- Convert to lowercase
+- Replace spaces and special chars with hyphens
+- Remove leading/trailing hyphens
+- Collapse multiple hyphens
+
 ## Interaction Handlers
 
 When `includeInteractions: true`, generate handler functions for navigation and modal interactions:

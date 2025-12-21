@@ -18,6 +18,40 @@ interface CodeGeneratorOptions {
 }
 
 /**
+ * Sanitize a component name to be a valid HTML id/class name
+ * - Convert to lowercase
+ * - Replace spaces and special chars with hyphens
+ * - Remove leading/trailing hyphens
+ */
+function sanitizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, '-') // Replace invalid chars with hyphens
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+    .replace(/-+/g, '-'); // Collapse multiple hyphens
+}
+
+/**
+ * Collect all component names in the tree to detect duplicates
+ */
+function collectComponentNames(nodes: ComponentNode[]): Map<string, number> {
+  const nameCount = new Map<string, number>();
+
+  function traverse(node: ComponentNode) {
+    if (node.name) {
+      const sanitized = sanitizeName(node.name);
+      nameCount.set(sanitized, (nameCount.get(sanitized) || 0) + 1);
+    }
+    if (node.children) {
+      node.children.forEach(traverse);
+    }
+  }
+
+  nodes.forEach(traverse);
+  return nameCount;
+}
+
+/**
  * Convert a component node to React JSX code
  */
 export const generateComponentCode = (
@@ -27,8 +61,11 @@ export const generateComponentCode = (
   const { includeInteractions = true, indent = 0 } = options;
   const nodes = Array.isArray(node) ? node : [node];
 
+  // Collect all names to detect duplicates
+  const nameCount = collectComponentNames(nodes);
+
   return nodes
-    .map((n) => generateNodeCode(n, indent, includeInteractions))
+    .map((n) => generateNodeCode(n, indent, includeInteractions, undefined, nameCount))
     .join('\n');
 };
 
@@ -39,7 +76,8 @@ function generateNodeCode(
   node: ComponentNode,
   indent: number,
   includeInteractions: boolean,
-  handlerMap?: Record<string, string>
+  handlerMap?: Record<string, string>,
+  nameCount?: Map<string, number>
 ): string {
   const indentStr = '  '.repeat(indent);
   const componentName = node.type;
@@ -51,7 +89,7 @@ function generateNodeCode(
     const generateChildrenFunc = () => {
       if (!node.children || node.children.length === 0) return '';
       return node.children
-        .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap))
+        .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap, nameCount))
         .join('\n');
     };
 
@@ -81,6 +119,20 @@ function generateNodeCode(
   delete props.placeholder;
   delete props.children;
   delete props.gridGuideColor; // Editor-only prop for grid line visualization
+
+  // Handle component names: add as id if unique, className if duplicate
+  if (node.name && nameCount) {
+    const sanitized = sanitizeName(node.name);
+    const count = nameCount.get(sanitized) || 0;
+
+    if (count === 1) {
+      // Unique name: use as id
+      props.id = sanitized;
+    } else if (count > 1) {
+      // Duplicate name: use as className
+      props.className = sanitized;
+    }
+  }
 
   // Convert gridColumnSpan/gridRowSpan to CSS Grid styles
   const gridColumnSpan = props.gridColumnSpan;
@@ -252,7 +304,7 @@ function generateNodeCode(
   // Handle components with children
   if (node.children && node.children.length > 0) {
     const childrenCode = node.children
-      .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap))
+      .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap, nameCount))
       .join('\n');
 
     return `${comment}${indentStr}<${componentName}${propsStr}>\n${childrenCode}\n${indentStr}</${componentName}>`;
@@ -413,9 +465,12 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
 
   imports.push('');
 
+  // Collect component names to detect duplicates
+  const nameCount = collectComponentNames(nodes);
+
   // Generate component code with handlers
   const componentCode = nodes
-    .map((n) => generateNodeCode(n, 0, true, handlerMap))
+    .map((n) => generateNodeCode(n, 0, true, handlerMap, nameCount))
     .join('\n');
 
   // Build handler section
