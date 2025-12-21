@@ -48,6 +48,8 @@ import {
   SpacingControl,
   PaddingControl,
   WidthControl,
+  GridAlignmentControl,
+  GridAlignment,
   VSTACK_PRIMARY_OPTIONS,
   VSTACK_CROSS_OPTIONS,
   HSTACK_PRIMARY_OPTIONS,
@@ -424,6 +426,40 @@ export const PropertiesPanel: React.FC = () => {
             <WidthPresetControl
               value={firstNode.props.gridColumnSpan || 12}
               onChange={(value) => handlePropChange("gridColumnSpan", value)}
+            />
+
+            <GridAlignmentControl
+              value={(() => {
+                // Determine current alignment from gridColumnStart and gridColumnSpan
+                const gridColumnStart = firstNode.props.gridColumnStart || 1;
+                const gridColumnSpan = firstNode.props.gridColumnSpan || 12;
+                const parentColumns = parent?.props?.columns || 12;
+
+                // Calculate alignment based on position
+                if (gridColumnStart === 1) return 'start';
+                const centerStart = Math.ceil((parentColumns - gridColumnSpan) / 2) + 1;
+                const endStart = parentColumns - gridColumnSpan + 1;
+
+                if (gridColumnStart === centerStart) return 'center';
+                if (gridColumnStart === endStart) return 'end';
+                return 'start'; // Default
+              })()}
+              onChange={(alignment: GridAlignment) => {
+                const gridColumnSpan = firstNode.props.gridColumnSpan || 12;
+                const parentColumns = parent?.props?.columns || 12;
+
+                // Calculate gridColumnStart based on alignment
+                let gridColumnStart = 1;
+                if (alignment === 'center') {
+                  gridColumnStart = Math.ceil((parentColumns - gridColumnSpan) / 2) + 1;
+                } else if (alignment === 'end') {
+                  gridColumnStart = parentColumns - gridColumnSpan + 1;
+                }
+
+                updateComponentProps(firstNode.id, { gridColumnStart });
+              }}
+              gridColumnSpan={firstNode.props.gridColumnSpan || 12}
+              parentColumns={parent?.props?.columns || 12}
             />
           </PanelBody>
         )}

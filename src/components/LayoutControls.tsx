@@ -347,6 +347,82 @@ export const WidthControl: React.FC<WidthControlProps> = ({
 };
 
 // ============================================================================
+// Grid Alignment Control (Horizontal Alignment for Grid Children)
+// ============================================================================
+
+export type GridAlignment = 'start' | 'center' | 'end';
+
+interface GridAlignmentControlProps {
+  value: GridAlignment;
+  onChange: (value: GridAlignment) => void;
+  gridColumnSpan: number;
+  parentColumns?: number;
+}
+
+export const GridAlignmentControl: React.FC<GridAlignmentControlProps> = ({
+  value,
+  onChange,
+  gridColumnSpan,
+  parentColumns = 12,
+}) => {
+  // Only enable alignment if child doesn't span full width
+  const isFullWidth = gridColumnSpan >= parentColumns;
+  const disabled = isFullWidth;
+
+  const options = [
+    { value: 'start' as GridAlignment, label: 'Left', icon: justifyLeft },
+    { value: 'center' as GridAlignment, label: 'Center', icon: justifyCenter },
+    { value: 'end' as GridAlignment, label: 'Right', icon: justifyRight },
+  ];
+
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <div
+        style={{
+          marginBottom: '6px',
+          fontSize: '11px',
+          fontWeight: 500,
+          color: disabled ? '#999' : '#1e1e1e',
+        }}
+      >
+        Alignment
+      </div>
+      <div style={{ display: 'flex', gap: '4px' }}>
+        {options.map((option) => (
+          <Tooltip
+            key={option.value}
+            text={disabled ? 'Disabled for full-width items' : option.label}
+            placement="top"
+          >
+            <Button
+              icon={option.icon}
+              onClick={() => !disabled && onChange(option.value)}
+              disabled={disabled}
+              style={{
+                flex: 1,
+                height: '32px',
+                minWidth: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: !disabled && value === option.value ? '#1e1e1e' : 'transparent',
+                color: disabled ? '#ccc' : (value === option.value ? '#fff' : '#1e1e1e'),
+                border: '1px solid #ddd',
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.5 : 1,
+              }}
+            />
+          </Tooltip>
+        ))}
+      </div>
+      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
+        {disabled ? 'Full-width items cannot be aligned' : `Positions ${gridColumnSpan}-column item horizontally`}
+      </p>
+    </div>
+  );
+};
+
+// ============================================================================
 // Preset Alignment Options
 // ============================================================================
 
