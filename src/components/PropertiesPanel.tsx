@@ -595,8 +595,15 @@ export const PropertiesPanel: React.FC = () => {
             }
           >
             {definition.propDefinitions
-              // Filter out grid layout props - they're handled in the dedicated "Grid Layout" panel above
-              .filter((propDef) => propDef.name !== 'gridColumnSpan' && propDef.name !== 'gridRowSpan')
+              // Filter out grid layout props - low-level implementation details
+              .filter((propDef) => {
+                const gridLayoutProps = [
+                  'gridColumnSpan', 'gridRowSpan', // Grid child props
+                  'columns', 'rows', 'gap', 'rowGap', 'columnGap', // Grid layout props
+                  'templateColumns', 'templateRows', 'align', 'justify' // Grid template props
+                ];
+                return !gridLayoutProps.includes(propDef.name);
+              })
               .map((propDef) => {
               // Special case: For Text and Heading, read 'content' from 'children' prop
               const actualPropToRead =

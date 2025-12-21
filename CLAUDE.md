@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Note**: Additional path-scoped rules are in `.claude/rules/`:
+- `code-generation.md` - Code export rules, prop filtering
+- `tree-operations.md` - Immutability, tree helpers, history
+- `agent-system.md` - Multi-agent architecture, memory, context preservation
+- `grid-layout.md` - Grid-first layout, width control, resize handles
+
 ## Project Overview
 
 WP-Designer is a visual UI builder for WordPress-style interfaces with AI assistance. It uses a tree-based architecture where everything is a `ComponentNode`, managed through a Redux-style reducer pattern with comprehensive undo/redo support.
@@ -530,16 +536,7 @@ generateComponentCode(tree: ComponentNode[]): string
 
 Used by CodePanel (`src/components/CodePanel.tsx`) to show generated code.
 
-**CRITICAL RULE: Exported Code Props**
-
-Only export props that exist on the actual React/WordPress component:
-- ✅ **Real component props**: `variant`, `text`, `icon`, `onClick`, etc.
-- ✅ **Inline styles for layout**: `style={{ gridColumn: 'span 6' }}` for grid positioning
-- ❌ **Editor-only props**: `gridGuideColor`, `gridColumnSpan`, `gridRowSpan` (converted to inline styles)
-- ❌ **Internal props**: `content`, `placeholder`, `children` (handled separately)
-- ❌ **Magic props**: Any prop that doesn't exist on the WordPress component API
-
-**Rationale**: Generated code must be clean, production-ready React/JSX that uses only real component APIs. Layout properties (grid positioning, flex behavior) are converted to inline `style` props. Editor visualization properties are stripped out entirely.
+See `.claude/rules/code-generation.md` for detailed code export rules.
 
 ## Patterns System
 
@@ -569,16 +566,16 @@ Escape         Deselect / Exit play mode
 
 ## Important Constraints
 
-1. **Never mutate tree directly** - Always use immutable helpers
+1. **Never mutate tree directly** - Always use immutable helpers (see `.claude/rules/tree-operations.md`)
 2. **Always normalize AI-generated nodes** before inserting
 3. **Root Grid cannot be deleted** - It's the required root (12-column auto-flow Grid)
 4. **Card components must have CardHeader/CardBody/CardFooter** children
 5. **Dynamic imports with ssr: false** for all Next.js pages using WordPress components
 6. **API keys stay server-side** - Use `/app/api/chat/route.ts` proxy
 7. **Max 50 history states** - Older states are dropped
-8. **Grid layout** - Children use `gridColumnSpan`/`gridRowSpan` props (convert to CSS `grid-column: span X`)
-9. **Agent phases** - Planner creates plan, Builder executes it (no duplication/verification)
-10. **Grid-First Layout** - Simple, predictable:
+8. **Grid layout** - Children use `gridColumnSpan`/`gridRowSpan` props (see `.claude/rules/grid-layout.md`)
+9. **Agent context preservation** - ALL LLM calls include full context (see `.claude/rules/agent-system.md`)
+10. **Grid-First Layout** - Simple, predictable (see `.claude/rules/grid-layout.md` for details):
    - Page root = 12-column Grid with auto-flow (columns={12}, gap={24})
    - Width control: Full (12), 2/3 (8), Half (6), 1/3 (4), 1/4 (3) → `gridColumnSpan`
    - VStack/HStack: Content grouping only (gap, alignment) - no width/height resize
@@ -588,6 +585,7 @@ Escape         Deselect / Exit play mode
    - Extra wrappers break the visual match between editor and generated code
    - If editor-only UI is needed (resize handles, overlays), use portals or absolutely-positioned siblings
    - Exception: Wrappers are acceptable ONLY in play mode for runtime state management
+12. **Exported code props** - Only real component props, no editor-only magic (see `.claude/rules/code-generation.md`)
 
 ## Debugging
 
@@ -609,6 +607,7 @@ Common issues:
 
 ## Additional Documentation
 
+- `.claude/rules/` - Modular, path-scoped rules for specific files/directories
 - `docs/AGENT_ARCHITECTURE.md` - Agent system evolution and design decisions
 - `README.md` - Project overview
 - [@wordpress/components docs](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-components/)
