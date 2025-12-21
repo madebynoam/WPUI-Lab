@@ -530,6 +530,17 @@ generateComponentCode(tree: ComponentNode[]): string
 
 Used by CodePanel (`src/components/CodePanel.tsx`) to show generated code.
 
+**CRITICAL RULE: Exported Code Props**
+
+Only export props that exist on the actual React/WordPress component:
+- ✅ **Real component props**: `variant`, `text`, `icon`, `onClick`, etc.
+- ✅ **Inline styles for layout**: `style={{ gridColumn: 'span 6' }}` for grid positioning
+- ❌ **Editor-only props**: `gridGuideColor`, `gridColumnSpan`, `gridRowSpan` (converted to inline styles)
+- ❌ **Internal props**: `content`, `placeholder`, `children` (handled separately)
+- ❌ **Magic props**: Any prop that doesn't exist on the WordPress component API
+
+**Rationale**: Generated code must be clean, production-ready React/JSX that uses only real component APIs. Layout properties (grid positioning, flex behavior) are converted to inline `style` props. Editor visualization properties are stripped out entirely.
+
 ## Patterns System
 
 Pre-built UI patterns in `src/patterns/*.ts`:
