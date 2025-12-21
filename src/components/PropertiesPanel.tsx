@@ -411,6 +411,57 @@ export const PropertiesPanel: React.FC = () => {
 
     return (
       <div style={{ flex: 1, overflow: "auto" }}>
+        {/* Grid Settings - for Grid components */}
+        {!isMultiSelect && firstNode.type === "Grid" && (
+          <PanelBody
+            title="Grid Settings"
+            initialOpen={openPanels["gridSettings"]}
+            onToggle={() =>
+              setOpenPanels({
+                ...openPanels,
+                gridSettings: !openPanels["gridSettings"],
+              })
+            }
+          >
+            {/* Gap Control with Presets */}
+            <div style={{ marginBottom: '6px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
+              Gap
+            </div>
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
+              {[0, 2, 4, 6, 8, 12, 16].map((preset) => (
+                <Button
+                  key={preset}
+                  size="small"
+                  onClick={() => updateComponentProps(firstNode.id, { spacing: preset })}
+                  style={{
+                    height: '24px',
+                    flex: '1 1 auto',
+                    minWidth: '0',
+                    fontSize: '11px',
+                    backgroundColor: (firstNode.props.spacing ?? 6) === preset ? '#1e1e1e' : 'transparent',
+                    color: (firstNode.props.spacing ?? 6) === preset ? '#fff' : '#1e1e1e',
+                    border: '1px solid #ddd',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {preset * 4}
+                </Button>
+              ))}
+            </div>
+            <p style={{ margin: '4px 0 16px', fontSize: '11px', color: '#757575' }}>
+              Gap between grid items ({(firstNode.props.spacing ?? 6) * 4}px)
+            </p>
+
+            {/* Show Grid Lines Toggle */}
+            <ToggleControl
+              label="Show Grid Lines"
+              checked={gridLinesVisible.has(selectedNodeIds[0])}
+              onChange={() => toggleGridLines(selectedNodeIds[0])}
+              help="Toggle grid overlay for this Grid (Control+G toggles all grids)"
+            />
+          </PanelBody>
+        )}
+
         {/* Grid child properties - only for single select */}
         {!isMultiSelect && isChildOfGrid && (
           <PanelBody
@@ -874,16 +925,6 @@ export const PropertiesPanel: React.FC = () => {
                 </div>
               );
             })}
-
-            {/* Grid Lines Toggle - only for Grid components, single select */}
-            {!isMultiSelect && firstNode.type === "Grid" && (
-              <ToggleControl
-                label="Show Grid Lines"
-                checked={gridLinesVisible.has(selectedNodeIds[0])}
-                onChange={() => toggleGridLines(selectedNodeIds[0])}
-                help="Toggle grid overlay for this Grid (Control+G toggles all grids)"
-              />
-            )}
           </PanelBody>
         )}
         {definition.propDefinitions.length === 0 && !isChildOfGrid && (
