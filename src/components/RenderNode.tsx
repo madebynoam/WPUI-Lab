@@ -1902,15 +1902,12 @@ export const RenderNode: React.FC<{
 
     // Apply gridAutoRows and height for root Grid when it has a definite height
     const minHeight = minHeightProp || 'auto';
-    console.log('[ROOT_GRID_ID] minHeightProp:', minHeightProp, 'customMinHeightProp:', customMinHeightProp, 'node.props:', node.props);
     if (minHeight === '100vh') {
-      console.log('[ROOT_GRID_ID] Applying height: 100%');
       mergedProps.style = {
         ...mergedProps.style,
         height: '100%',
         gridAutoRows: '1fr'
       };
-      console.log('[ROOT_GRID_ID] mergedProps.style after:', mergedProps.style);
     } else if (minHeight === 'custom' && customMinHeightProp) {
       mergedProps.style = {
         ...mergedProps.style,

@@ -327,7 +327,6 @@ export const PropertiesPanel: React.FC = () => {
               value={(selectedNodes[0]?.props.minHeight as GridHeightPreset) || 'auto'}
               customValue={selectedNodes[0]?.props.customMinHeight || ''}
               onChange={(preset, customValue) => {
-                console.log('[ROOT GRID HeightControl] onChange called:', { preset, customValue });
                 updateComponentProps(ROOT_GRID_ID, {
                   minHeight: preset,
                   customMinHeight: customValue || '',
@@ -474,7 +473,6 @@ export const PropertiesPanel: React.FC = () => {
               value={(firstNode.props.minHeight as GridHeightPreset) || 'auto'}
               customValue={firstNode.props.customMinHeight || ''}
               onChange={(preset, customValue) => {
-                console.log('[HeightControl] onChange called:', { nodeId: firstNode.id, preset, customValue });
                 updateComponentProps(firstNode.id, {
                   minHeight: preset,
                   customMinHeight: customValue || '',
