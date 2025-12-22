@@ -11,48 +11,75 @@ import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $getRoot, $createParagraphNode, $createTextNode, EditorState } from 'lexical';
 
-// Plugin to set initial HTML value
-function InitialValuePlugin({ html }: { html: string }) {
+// Plugin to sync external HTML changes to editor
+function SyncValuePlugin({ html }: { html: string }) {
   const [editor] = useLexicalComposerContext();
-  const isInitialized = useRef(false);
+  const previousHtml = useRef<string>('');
+  const isInternalChange = useRef(false);
 
   useEffect(() => {
-    if (!isInitialized.current && html && html.trim()) {
-      isInitialized.current = true;
-      editor.update(() => {
-        try {
-          const root = $getRoot();
-          if (root.getChildrenSize() === 0) {
-            const parser = new DOMParser();
-            const dom = parser.parseFromString(html, 'text/html');
-            const nodes = $generateNodesFromDOM(editor, dom);
+    // Skip if this is an internal change (from typing)
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
 
-            // Filter to only valid block nodes (paragraphs)
-            const validNodes = nodes.filter((node) => {
-              return node.getType() === 'paragraph' || node.getType() === 'heading' || node.getType() === 'list';
-            });
+    // Skip if html hasn't actually changed
+    if (html === previousHtml.current) {
+      return;
+    }
 
-            if (validNodes.length > 0) {
-              root.append(...validNodes);
-            } else if (html.trim()) {
-              // Fallback: create a paragraph with the text content
-              const paragraph = $createParagraphNode();
-              paragraph.append($createTextNode(html));
-              root.append(paragraph);
-            }
+    previousHtml.current = html;
+
+    editor.update(() => {
+      const root = $getRoot();
+
+      try {
+        // Clear existing content
+        root.clear();
+
+        if (html && html.trim()) {
+          const parser = new DOMParser();
+          const dom = parser.parseFromString(html, 'text/html');
+          const nodes = $generateNodesFromDOM(editor, dom);
+
+          // Filter to only valid block nodes (paragraphs)
+          const validNodes = nodes.filter((node) => {
+            return node.getType() === 'paragraph' || node.getType() === 'heading' || node.getType() === 'list';
+          });
+
+          if (validNodes.length > 0) {
+            root.append(...validNodes);
+          } else {
+            // Fallback: create a paragraph with the text content
+            const paragraph = $createParagraphNode();
+            paragraph.append($createTextNode(html));
+            root.append(paragraph);
           }
-        } catch (error) {
-          console.error('Error setting initial HTML:', error);
-          // Fallback: just set plain text
-          const root = $getRoot();
+        } else {
+          // Empty content - add empty paragraph
           const paragraph = $createParagraphNode();
-          paragraph.append($createTextNode(html));
-          root.clear();
           root.append(paragraph);
         }
-      });
-    }
+      } catch (error) {
+        console.error('Error setting HTML:', error);
+        // Fallback: just set plain text
+        root.clear();
+        const paragraph = $createParagraphNode();
+        if (html) {
+          paragraph.append($createTextNode(html));
+        }
+        root.append(paragraph);
+      }
+    });
   }, [editor, html]);
+
+  // Expose method to mark internal changes
+  useEffect(() => {
+    (editor as any).markInternalChange = () => {
+      isInternalChange.current = true;
+    };
+  }, [editor]);
 
   return null;
 }
@@ -91,6 +118,10 @@ export const RichTextControl: React.FC<RichTextControlProps> = ({
       const htmlString = $generateHtmlFromNodes(editor);
       // Only call onChange if value actually changed
       if (htmlString !== value) {
+        // Mark this as an internal change so SyncValuePlugin doesn't override it
+        if ((editor as any).markInternalChange) {
+          (editor as any).markInternalChange();
+        }
         onChange(htmlString);
       }
     });
@@ -150,7 +181,7 @@ export const RichTextControl: React.FC<RichTextControlProps> = ({
           />
           <HistoryPlugin />
           <OnChangePlugin onChange={handleChange} />
-          <InitialValuePlugin html={value} />
+          <SyncValuePlugin html={value} />
         </div>
       </LexicalComposer>
 
