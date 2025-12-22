@@ -50,6 +50,10 @@ import {
   WidthControl,
   GridAlignmentControl,
   GridAlignment,
+  HeightControl,
+  GridChildHeightControl,
+  GridHeightPreset,
+  GridChildHeightPreset,
   VSTACK_PRIMARY_OPTIONS,
   VSTACK_CROSS_OPTIONS,
   HSTACK_PRIMARY_OPTIONS,
@@ -314,9 +318,22 @@ export const PropertiesPanel: React.FC = () => {
                 </Button>
               ))}
             </div>
-            <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
+            <p style={{ margin: '4px 0 16px', fontSize: '11px', color: '#757575' }}>
               Gap between elements in the root Grid ({spacing * 4}px)
             </p>
+
+            {/* Height Control for Root Grid */}
+            <HeightControl
+              value={(selectedNodes[0]?.props.minHeight as GridHeightPreset) || 'auto'}
+              customValue={selectedNodes[0]?.props.customMinHeight || ''}
+              onChange={(preset, customValue) => {
+                console.log('[ROOT GRID HeightControl] onChange called:', { preset, customValue });
+                updateComponentProps(ROOT_GRID_ID, {
+                  minHeight: preset,
+                  customMinHeight: customValue || '',
+                });
+              }}
+            />
           </PanelBody>
         </div>
       </div>
@@ -452,6 +469,19 @@ export const PropertiesPanel: React.FC = () => {
               Gap between grid items ({(firstNode.props.spacing ?? 6) * 4}px)
             </p>
 
+            {/* Height Control */}
+            <HeightControl
+              value={(firstNode.props.minHeight as GridHeightPreset) || 'auto'}
+              customValue={firstNode.props.customMinHeight || ''}
+              onChange={(preset, customValue) => {
+                console.log('[HeightControl] onChange called:', { nodeId: firstNode.id, preset, customValue });
+                updateComponentProps(firstNode.id, {
+                  minHeight: preset,
+                  customMinHeight: customValue || '',
+                });
+              }}
+            />
+
             {/* Show Grid Lines Toggle */}
             <ToggleControl
               label="Show Grid Lines"
@@ -511,6 +541,17 @@ export const PropertiesPanel: React.FC = () => {
               }}
               gridColumnSpan={firstNode.props.gridColumnSpan || 12}
               parentColumns={parent?.props?.columns || 12}
+            />
+
+            <GridChildHeightControl
+              value={(firstNode.props.height as GridChildHeightPreset) || 'auto'}
+              customValue={firstNode.props.customHeight || ''}
+              onChange={(preset, customValue) => {
+                updateComponentProps(firstNode.id, {
+                  height: preset,
+                  customHeight: customValue || '',
+                });
+              }}
             />
           </PanelBody>
         )}
@@ -688,7 +729,8 @@ export const PropertiesPanel: React.FC = () => {
                   'gridColumnSpan', 'gridRowSpan', // Grid child props
                   'columns', 'rows', 'gap', 'rowGap', 'columnGap', // Grid layout props
                   'templateColumns', 'templateRows', 'align', 'justify', // Grid template props
-                  'isInline' // Grid display mode (not needed in UI)
+                  'isInline', // Grid display mode (not needed in UI)
+                  'minHeight', 'customMinHeight', 'height', 'customHeight', // Height controls (custom UI in Grid Layout panel)
                 ];
                 return !gridLayoutProps.includes(propDef.name);
               })

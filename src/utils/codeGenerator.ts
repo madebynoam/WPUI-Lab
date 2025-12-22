@@ -140,6 +140,16 @@ function generateNodeCode(
   delete props.gridColumnSpan;
   delete props.gridRowSpan;
 
+  // Extract height props for Grid containers and children
+  const minHeight = props.minHeight;
+  const customMinHeight = props.customMinHeight;
+  const height = props.height;
+  const customHeight = props.customHeight;
+  delete props.minHeight;
+  delete props.customMinHeight;
+  delete props.height;
+  delete props.customHeight;
+
   // Extract layout constraint props for VStack/HStack/Grid
   const maxWidth = props.maxWidth;
   const maxWidthCustom = props.maxWidthCustom;
@@ -169,6 +179,22 @@ function generateNodeCode(
   // Handle gridRowSpan - convert to CSS Grid style
   if (gridRowSpan !== undefined) {
     styleObj.gridRow = `span ${gridRowSpan}`;
+  }
+
+  // Handle minHeight for Grid containers
+  if (minHeight === '100vh') {
+    styleObj.height = '100vh'; // Use height instead of minHeight for definite grid sizing
+    styleObj.gridAutoRows = '1fr'; // Make rows stretch to fill grid height
+  } else if (minHeight === 'custom' && customMinHeight) {
+    styleObj.height = customMinHeight; // Use height instead of minHeight
+    styleObj.gridAutoRows = '1fr'; // Make rows stretch for custom heights too
+  }
+
+  // Handle height for Grid children
+  if (height === 'fill') {
+    styleObj.height = '100%';
+  } else if (height === 'custom' && customHeight) {
+    styleObj.height = customHeight;
   }
 
   // Handle layout constraints for VStack/HStack/Grid

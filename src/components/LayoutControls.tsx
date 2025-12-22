@@ -465,3 +465,177 @@ export const HSTACK_CROSS_OPTIONS = [
   { value: 'end' as CrossAlign, label: 'Bottom', icon: justifyBottom },
   { value: 'stretch' as CrossAlign, label: 'Stretch', icon: justifyStretchVertical },
 ];
+
+// ============================================================================
+// Height Control (Grid Containers)
+// ============================================================================
+
+export type GridHeightPreset = 'auto' | '100vh' | 'custom';
+
+interface HeightControlProps {
+  value: GridHeightPreset; // minHeight preset
+  customValue?: string; // customMinHeight value
+  onChange: (preset: GridHeightPreset, customValue?: string) => void;
+}
+
+/**
+ * Height control for Grid containers
+ * - Auto: No height constraint (default)
+ * - Full: 100vh (full viewport height)
+ * - Custom: User-defined value (e.g., "500px", "50vh")
+ */
+export const HeightControl: React.FC<HeightControlProps> = ({
+  value,
+  customValue = '',
+  onChange,
+}) => {
+  const presets: { label: string; value: GridHeightPreset }[] = [
+    { label: 'Auto', value: 'auto' },
+    { label: 'Full', value: '100vh' },
+    { label: 'Custom', value: 'custom' },
+  ];
+
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <div
+        style={{
+          marginBottom: '6px',
+          fontSize: '11px',
+          fontWeight: 500,
+          color: '#1e1e1e',
+        }}
+      >
+        Height
+      </div>
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
+        {presets.map((preset) => (
+          <Button
+            key={preset.value}
+            size="small"
+            onClick={() => onChange(preset.value, customValue)}
+            style={{
+              height: '28px',
+              flex: '1 1 auto',
+              minWidth: '0',
+              fontSize: '11px',
+              backgroundColor: value === preset.value ? '#1e1e1e' : 'transparent',
+              color: value === preset.value ? '#fff' : '#1e1e1e',
+              border: '1px solid #ddd',
+              justifyContent: 'center',
+            }}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
+      {value === 'custom' && (
+        <input
+          type="text"
+          value={customValue}
+          onChange={(e) => onChange('custom', e.target.value)}
+          placeholder="e.g., 500px, 50vh"
+          style={{
+            width: '100%',
+            padding: '6px 8px',
+            fontSize: '13px',
+            border: '1px solid #ddd',
+            borderRadius: '2px',
+            marginBottom: '4px',
+          }}
+        />
+      )}
+      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
+        {value === 'auto' && 'Height grows with content'}
+        {value === '100vh' && 'Full viewport height'}
+        {value === 'custom' && (customValue ? `Custom: ${customValue}` : 'Enter custom height')}
+      </p>
+    </div>
+  );
+};
+
+// ============================================================================
+// Grid Child Height Control
+// ============================================================================
+
+export type GridChildHeightPreset = 'auto' | 'fill' | 'custom';
+
+interface GridChildHeightControlProps {
+  value: GridChildHeightPreset; // height preset
+  customValue?: string; // customHeight value
+  onChange: (preset: GridChildHeightPreset, customValue?: string) => void;
+}
+
+/**
+ * Height control for Grid children
+ * - Auto: Content-based height (default)
+ * - Fill: 100% of Grid row
+ * - Custom: User-defined value (e.g., "300px", "100%")
+ */
+export const GridChildHeightControl: React.FC<GridChildHeightControlProps> = ({
+  value,
+  customValue = '',
+  onChange,
+}) => {
+  const presets: { label: string; value: GridChildHeightPreset }[] = [
+    { label: 'Auto', value: 'auto' },
+    { label: 'Fill', value: 'fill' },
+    { label: 'Custom', value: 'custom' },
+  ];
+
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <div
+        style={{
+          marginBottom: '6px',
+          fontSize: '11px',
+          fontWeight: 500,
+          color: '#1e1e1e',
+        }}
+      >
+        Height
+      </div>
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
+        {presets.map((preset) => (
+          <Button
+            key={preset.value}
+            size="small"
+            onClick={() => onChange(preset.value, customValue)}
+            style={{
+              height: '28px',
+              flex: '1 1 auto',
+              minWidth: '0',
+              fontSize: '11px',
+              backgroundColor: value === preset.value ? '#1e1e1e' : 'transparent',
+              color: value === preset.value ? '#fff' : '#1e1e1e',
+              border: '1px solid #ddd',
+              justifyContent: 'center',
+            }}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
+      {value === 'custom' && (
+        <input
+          type="text"
+          value={customValue}
+          onChange={(e) => onChange('custom', e.target.value)}
+          placeholder="e.g., 300px, 100%"
+          style={{
+            width: '100%',
+            padding: '6px 8px',
+            fontSize: '13px',
+            border: '1px solid #ddd',
+            borderRadius: '2px',
+            marginBottom: '4px',
+          }}
+        />
+      )}
+      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#757575' }}>
+        {value === 'auto' && 'Height based on content'}
+        {value === 'fill' && 'Fill Grid row height (100%)'}
+        {value === 'custom' && (customValue ? `Custom: ${customValue}` : 'Enter custom height')}
+      </p>
+    </div>
+  );
+};

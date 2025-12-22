@@ -856,6 +856,18 @@ export const RenderNode: React.FC<{
   delete props.width;
   delete props.resizing;
 
+  // Extract height props for Grid children (converted to wrapper styles, not passed to component)
+  const heightProp = props.height;
+  const customHeightProp = props.customHeight;
+  delete props.height;
+  delete props.customHeight;
+
+  // Extract minHeight props for Grid containers (converted to inline styles, not passed to component)
+  const minHeightProp = props.minHeight;
+  const customMinHeightProp = props.customMinHeight;
+  delete props.minHeight;
+  delete props.customMinHeight;
+
   // Convert span numbers to CSS grid syntax
   // If gridColumnStart is specified, use it; otherwise just use span
   let gridColumn: string | undefined;
@@ -865,6 +877,9 @@ export const RenderNode: React.FC<{
     gridColumn = `span ${gridColumnSpan}`;
   }
   const gridRow = gridRowSpan && gridRowSpan > 1 ? `span ${gridRowSpan}` : undefined;
+
+  // Find parent early - needed for height calculation in getWrapperStyle
+  const parent = findParent(tree, node.id);
 
   // Base wrapper style with grid child properties
   const isRootVStack = node.id === ROOT_GRID_ID;
@@ -1049,6 +1064,13 @@ export const RenderNode: React.FC<{
       return 'default';
     };
 
+    // Apply height for Grid children
+    const gridChildHeight = parent?.type === 'Grid' && heightProp === 'fill' ? '100%' :
+                           parent?.type === 'Grid' && heightProp === 'custom' && customHeightProp ? customHeightProp :
+                           undefined;
+
+    // Grid container height is applied to component props, not wrapper
+
     const baseStyle: React.CSSProperties = {
       outline: isSelected && !isRootVStack && !isPlayMode
         ? '2px solid #3858e9'
@@ -1057,6 +1079,7 @@ export const RenderNode: React.FC<{
       position: 'relative',
       ...(gridColumn && { gridColumn }),
       ...(gridRow && { gridRow }),
+      ...(gridChildHeight && { height: gridChildHeight }),
       backgroundColor,
 
       // Sibling animation: shift to make space for drop
@@ -1876,6 +1899,25 @@ export const RenderNode: React.FC<{
     const spacing = projects.find((p) => p.id === currentProjectId)?.layout?.spacing ?? 4;
     const gapValue = `${spacing * 4}px`;
     mergedProps.style = { ...mergedProps.style, gap: gapValue };
+
+    // Apply gridAutoRows and height for root Grid when it has a definite height
+    const minHeight = minHeightProp || 'auto';
+    console.log('[ROOT_GRID_ID] minHeightProp:', minHeightProp, 'customMinHeightProp:', customMinHeightProp, 'node.props:', node.props);
+    if (minHeight === '100vh') {
+      console.log('[ROOT_GRID_ID] Applying height: 100%');
+      mergedProps.style = {
+        ...mergedProps.style,
+        height: '100%',
+        gridAutoRows: '1fr'
+      };
+      console.log('[ROOT_GRID_ID] mergedProps.style after:', mergedProps.style);
+    } else if (minHeight === 'custom' && customMinHeightProp) {
+      mergedProps.style = {
+        ...mergedProps.style,
+        height: customMinHeightProp,
+        gridAutoRows: '1fr'
+      };
+    }
   }
 
   // IMPORTANT: Exclude root Grid from width constraints - it should always be 100% width
@@ -1897,6 +1939,25 @@ export const RenderNode: React.FC<{
     if (padding) {
       mergedProps.style = { ...mergedProps.style, padding };
     }
+
+    // Apply gridAutoRows and height for Grid containers when they have a definite height
+    if (node.type === 'Grid') {
+      const minHeight = minHeightProp || 'auto';
+      if (minHeight === '100vh') {
+        mergedProps.style = {
+          ...mergedProps.style,
+          height: '100vh',
+          gridAutoRows: '1fr'
+        };
+      } else if (minHeight === 'custom' && customMinHeightProp) {
+        mergedProps.style = {
+          ...mergedProps.style,
+          height: customMinHeightProp,
+          gridAutoRows: '1fr'
+        };
+      }
+      // 'auto' = no style applied (default browser behavior)
+    }
   }
 
   // Check if this is a Grid with grid lines enabled
@@ -1909,7 +1970,6 @@ export const RenderNode: React.FC<{
   const editorProps = getEditorProps();
 
   // Check if this is a grid child that needs resize handles
-  const parent = findParent(tree, node.id);
   const isGridChild = gridColumnSpan !== undefined && parent?.type === 'Grid';
   const parentColumns = parent?.props?.columns || 12;
   const needsResizeHandles = isGridChild && !isPlayMode;
@@ -1937,6 +1997,9 @@ export const RenderNode: React.FC<{
       };
     }
   }
+
+  // Note: Height for Grid children is applied to wrapper (baseStyle),
+  // not to component props - see gridChildHeight calculation above
 
   const finalProps = {
     ...editorProps,

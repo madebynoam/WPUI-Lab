@@ -118,6 +118,29 @@ VStack/HStack use Figma terminology:
 
 See `src/components/LayoutControls.tsx` and `src/utils/layoutMappings.ts` for UI components.
 
+## Height Controls
+
+Grid containers and children have proper height controls:
+
+### Grid Container Height
+- **Auto** (default): Height grows with content
+- **Full**: `minHeight: '100vh'` (full viewport height)
+- **Custom**: User-defined value (e.g., "500px", "50vh")
+
+UI: Grid Settings panel → Height control with Auto/Full/Custom buttons
+
+### Grid Child Height
+- **Auto** (default): Height based on content
+- **Fill**: `height: '100%'` (fill Grid row height)
+- **Custom**: User-defined value (e.g., "300px", "100%")
+
+UI: Grid Layout panel → Height control with Auto/Fill/Custom buttons
+
+**Implementation**:
+- Props stored: `minHeight`, `customMinHeight` (Grid), `height`, `customHeight` (Grid children)
+- Converted to inline styles in RenderNode.tsx
+- Filtered from exported code and converted to inline styles in codeGenerator.ts
+
 ## Properties Panel
 
 Grid-specific properties are HIDDEN from the Settings panel:

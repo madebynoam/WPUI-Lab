@@ -140,6 +140,19 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: '#3858e9',
         description: 'Color of grid guide lines (when grid lines are visible)',
       },
+      {
+        name: 'minHeight',
+        type: 'select',
+        options: ['auto', '100vh', 'custom'],
+        defaultValue: 'auto',
+        description: 'Minimum height of grid container',
+      },
+      {
+        name: 'customMinHeight',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom minHeight value (e.g., "500px", "50vh")',
+      },
     ],
   },
 
@@ -222,6 +235,19 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'number',
         defaultValue: undefined,
         description: 'Row span when inside Grid'
+      },
+      {
+        name: 'height',
+        type: 'select',
+        options: ['auto', 'fill', 'custom'],
+        defaultValue: 'auto',
+        description: 'Height behavior in Grid'
+      },
+      {
+        name: 'customHeight',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom height value (e.g., "300px", "100%")'
       },
     ],
   },
@@ -457,6 +483,31 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: '',
         description: 'Padding (e.g., "16px", "1rem 2rem")'
       },
+      {
+        name: 'gridColumnSpan',
+        type: 'number',
+        defaultValue: undefined,
+        description: 'Column span when inside Grid (e.g., 6 for half width in 12-column grid)'
+      },
+      {
+        name: 'gridRowSpan',
+        type: 'number',
+        defaultValue: undefined,
+        description: 'Row span when inside Grid'
+      },
+      {
+        name: 'height',
+        type: 'select',
+        options: ['auto', 'fill', 'custom'],
+        defaultValue: 'auto',
+        description: 'Height behavior in Grid'
+      },
+      {
+        name: 'customHeight',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom height value (e.g., "300px", "100%")'
+      },
     ],
   },
   VStack: {
@@ -510,6 +561,31 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'string',
         defaultValue: '',
         description: 'Padding (e.g., "16px", "1rem 2rem")'
+      },
+      {
+        name: 'gridColumnSpan',
+        type: 'number',
+        defaultValue: undefined,
+        description: 'Column span when inside Grid (e.g., 6 for half width in 12-column grid)'
+      },
+      {
+        name: 'gridRowSpan',
+        type: 'number',
+        defaultValue: undefined,
+        description: 'Row span when inside Grid'
+      },
+      {
+        name: 'height',
+        type: 'select',
+        options: ['auto', 'fill', 'custom'],
+        defaultValue: 'auto',
+        description: 'Height behavior in Grid'
+      },
+      {
+        name: 'customHeight',
+        type: 'string',
+        defaultValue: '',
+        description: 'Custom height value (e.g., "300px", "100%")'
       },
     ],
   },
