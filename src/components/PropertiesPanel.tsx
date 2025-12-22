@@ -42,6 +42,7 @@ import { IconPicker } from "./IconPicker";
 import { ColorVariantPicker } from "./ColorVariantPicker";
 import { TabContainer } from "./TabContainer";
 import { componentIconMap } from "./ComponentInserter";
+import { RichTextControl } from "./RichTextControl";
 import {
   WidthPresetControl,
   AlignmentControl,
@@ -751,7 +752,17 @@ export const PropertiesPanel: React.FC = () => {
 
               return (
                 <div key={propDef.name} style={{ marginBottom: "16px" }}>
-                  {propDef.type === "string" && (
+                  {propDef.type === "string" && propDef.name === "content" && firstNode.type === "Text" && !isMultiSelect ? (
+                    <RichTextControl
+                      label={propDef.name}
+                      value={currentValue || ""}
+                      onChange={(value) =>
+                        handlePropChange(propDef.name, value)
+                      }
+                      help={propDef.description}
+                      placeholder="Type text... (Cmd+B for bold, Cmd+I for italic)"
+                    />
+                  ) : propDef.type === "string" ? (
                     <TextControl
                       label={propDef.name}
                       value={currentValue || ""}
@@ -767,7 +778,7 @@ export const PropertiesPanel: React.FC = () => {
                         isMultiSelect && !isShared ? "Mixed values" : undefined
                       }
                     />
-                  )}
+                  ) : null}
 
                   {propDef.type === "number" && propDef.name === "padding" && firstNode.type === "Spacer" && (
                     <>

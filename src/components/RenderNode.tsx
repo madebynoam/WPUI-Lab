@@ -1327,7 +1327,22 @@ export const RenderNode: React.FC<{
       );
     }
 
-    // For non-button text components
+    // For Text component - use innerHTML to preserve formatting
+    if (node.type === 'Text') {
+      const mergedStyle = { ...editorProps.style, ...buttonStyle };
+
+      return (
+        <Component
+          {...editorProps}
+          {...buttonProps}
+          style={mergedStyle}
+        >
+          <span dangerouslySetInnerHTML={{ __html: content }} />
+        </Component>
+      );
+    }
+
+    // For non-button, non-Text components (Heading, Badge)
     const mergedStyle = { ...editorProps.style, ...buttonStyle };
 
     return (
