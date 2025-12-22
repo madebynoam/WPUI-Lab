@@ -115,7 +115,16 @@ export const RichTextControl: React.FC<RichTextControlProps> = ({
 
   const handleChange = (editorState: EditorState, editor: any) => {
     editorState.read(() => {
-      const htmlString = $generateHtmlFromNodes(editor);
+      // Generate HTML and strip paragraph tags to avoid spacing issues
+      let htmlString = $generateHtmlFromNodes(editor);
+
+      // Remove wrapping <p> tags and replace closing </p> with <br>
+      // This gives us simple HTML with just <strong>, <em>, and <br> for line breaks
+      htmlString = htmlString
+        .replace(/<p[^>]*>/g, '') // Remove opening <p> tags
+        .replace(/<\/p>/g, '<br>') // Replace closing </p> with <br>
+        .replace(/<br>$/, ''); // Remove trailing <br>
+
       // Only call onChange if value actually changed
       if (htmlString !== value) {
         // Mark this as an internal change so SyncValuePlugin doesn't override it
