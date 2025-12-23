@@ -167,10 +167,17 @@ export const RichTextControl: React.FC<RichTextControlProps> = ({
       )}
 
       <LexicalComposer initialConfig={initialConfig}>
-        <div style={{ position: 'relative' }}>
+        <div
+          style={{ position: 'relative' }}
+          onKeyDown={(e) => {
+            // Prevent keyboard shortcuts from bubbling to canvas
+            e.stopPropagation();
+          }}
+        >
           <RichTextPlugin
             contentEditable={
               <ContentEditable
+                className="rich-text-editor"
                 style={{
                   minHeight: '80px',
                   padding: '8px',
@@ -220,14 +227,22 @@ export const RichTextControl: React.FC<RichTextControlProps> = ({
         </p>
       )}
 
-      <style jsx global>{`
-        .editor-text-bold {
-          font-weight: bold;
-        }
-        .editor-text-italic {
-          font-style: italic;
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .rich-text-editor .editor-text-bold {
+            font-weight: bold;
+          }
+          .rich-text-editor .editor-text-italic {
+            font-style: italic;
+          }
+          .rich-text-editor strong {
+            font-weight: bold;
+          }
+          .rich-text-editor em {
+            font-style: italic;
+          }
+        `
+      }} />
     </div>
   );
 };
