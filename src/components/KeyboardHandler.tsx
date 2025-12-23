@@ -49,7 +49,9 @@ export const KeyboardHandler: React.FC<{
     const isEditable =
       activeElement.tagName === "INPUT" ||
       activeElement.tagName === "TEXTAREA" ||
-      (activeElement as HTMLElement).contentEditable === "true";
+      (activeElement as HTMLElement).contentEditable === "true" ||
+      (activeElement as HTMLElement).classList.contains("rich-text-editor") ||
+      !!(activeElement as HTMLElement).closest(".rich-text-editor");
 
     return isEditable;
   }, []);
@@ -218,8 +220,8 @@ export const KeyboardHandler: React.FC<{
         toggleNodeSelection(ROOT_GRID_ID, false);
       }
 
-      // Shift+Enter to select parent
-      if (e.shiftKey && e.key === "Enter" && selectedNodeIds.length > 0) {
+      // Shift+Enter to select parent (skip if in edit mode)
+      if (e.shiftKey && e.key === "Enter" && selectedNodeIds.length > 0 && !isInEditMode()) {
         e.preventDefault();
         e.stopPropagation();
         const parent = findParent(tree, selectedNodeIds[0]);
