@@ -44,12 +44,16 @@ function SyncValuePlugin({ html }: { html: string }) {
             .replace(/<span[^>]*style="white-space:\s*pre-wrap;"[^>]*>(.*?)<\/span>/g, '$1') // Remove white-space wrapper
             .replace(/<b>/g, '<strong>').replace(/<\/b>/g, '</strong>') // Normalize bold tags
             .replace(/<i>/g, '<em>').replace(/<\/i>/g, '</em>') // Normalize italic tags
-            .replace(/\sclass="[^"]*"/g, '') // Remove class attributes
-            .replace(/\sstyle="[^"]*"/g, ''); // Remove style attributes
+            .replace(/\sclass="editor-text-[^"]*"/g, '') // Remove only editor-specific classes
+            .replace(/\sstyle="white-space:\s*pre-wrap;?"/g, ''); // Remove only white-space styles
+
+          console.log('[RichTextControl] Parsing HTML:', cleanHtml);
 
           const parser = new DOMParser();
           const dom = parser.parseFromString(cleanHtml, 'text/html');
           const nodes = $generateNodesFromDOM(editor, dom);
+
+          console.log('[RichTextControl] Generated nodes:', nodes.length);
 
           // Filter to only valid block nodes (paragraphs)
           const validNodes = nodes.filter((node) => {
@@ -170,8 +174,9 @@ export const RichTextControl: React.FC<RichTextControlProps> = ({
         <div
           style={{ position: 'relative' }}
           onKeyDown={(e) => {
-            // Prevent keyboard shortcuts from bubbling to canvas
+            // Prevent ALL keyboard events from bubbling to canvas
             e.stopPropagation();
+            // Don't prevent default for text editing keys
           }}
         >
           <RichTextPlugin
@@ -227,22 +232,23 @@ export const RichTextControl: React.FC<RichTextControlProps> = ({
         </p>
       )}
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .rich-text-editor .editor-text-bold {
-            font-weight: bold;
-          }
-          .rich-text-editor .editor-text-italic {
-            font-style: italic;
-          }
-          .rich-text-editor strong {
-            font-weight: bold;
-          }
-          .rich-text-editor em {
-            font-style: italic;
-          }
-        `
-      }} />
+      <style>{`
+        .rich-text-editor .editor-text-bold {
+          font-weight: bold !important;
+        }
+        .rich-text-editor .editor-text-italic {
+          font-style: italic !important;
+        }
+        .rich-text-editor strong {
+          font-weight: bold !important;
+        }
+        .rich-text-editor em {
+          font-style: italic !important;
+        }
+        .rich-text-editor [data-lexical-text="true"] {
+          white-space: pre-wrap;
+        }
+      `}</style>
     </div>
   );
 };
