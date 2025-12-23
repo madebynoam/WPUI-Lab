@@ -39,8 +39,16 @@ function SyncValuePlugin({ html }: { html: string }) {
         root.clear();
 
         if (html && html.trim()) {
+          // Clean up HTML before parsing - remove wrapper spans and normalize
+          let cleanHtml = html
+            .replace(/<span[^>]*style="white-space:\s*pre-wrap;"[^>]*>(.*?)<\/span>/g, '$1') // Remove white-space wrapper
+            .replace(/<b>/g, '<strong>').replace(/<\/b>/g, '</strong>') // Normalize bold tags
+            .replace(/<i>/g, '<em>').replace(/<\/i>/g, '</em>') // Normalize italic tags
+            .replace(/\sclass="[^"]*"/g, '') // Remove class attributes
+            .replace(/\sstyle="[^"]*"/g, ''); // Remove style attributes
+
           const parser = new DOMParser();
-          const dom = parser.parseFromString(html, 'text/html');
+          const dom = parser.parseFromString(cleanHtml, 'text/html');
           const nodes = $generateNodesFromDOM(editor, dom);
 
           // Filter to only valid block nodes (paragraphs)
@@ -53,7 +61,9 @@ function SyncValuePlugin({ html }: { html: string }) {
           } else {
             // Fallback: create a paragraph with the text content
             const paragraph = $createParagraphNode();
-            paragraph.append($createTextNode(html));
+            // Get text content from the DOM to strip any remaining HTML
+            const textContent = dom.body.textContent || cleanHtml;
+            paragraph.append($createTextNode(textContent));
             root.append(paragraph);
           }
         } else {
@@ -67,7 +77,9 @@ function SyncValuePlugin({ html }: { html: string }) {
         root.clear();
         const paragraph = $createParagraphNode();
         if (html) {
-          paragraph.append($createTextNode(html));
+          // Extract text content only
+          const textContent = html.replace(/<[^>]*>/g, '');
+          paragraph.append($createTextNode(textContent));
         }
         root.append(paragraph);
       }
