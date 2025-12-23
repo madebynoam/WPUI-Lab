@@ -47,6 +47,15 @@ function SyncValuePlugin({ html }: { html: string }) {
             .replace(/\sclass="editor-text-[^"]*"/g, '') // Remove only editor-specific classes
             .replace(/\sstyle="white-space:\s*pre-wrap;?"/g, ''); // Remove only white-space styles
 
+          // If HTML doesn't start with a block element, wrap it in <p> tags
+          // This ensures formatting is preserved when parsing
+          if (!cleanHtml.match(/^<(p|h[1-6]|div|ul|ol|li|blockquote)/i)) {
+            // Replace <br> tags with paragraph breaks for proper structure
+            const parts = cleanHtml.split(/<br\s*\/?>/i);
+            cleanHtml = parts.map(part => part.trim() ? `<p>${part}</p>` : '').filter(Boolean).join('');
+            if (!cleanHtml) cleanHtml = `<p>${html}</p>`; // Fallback if all parts were empty
+          }
+
           console.log('[RichTextControl] Parsing HTML:', cleanHtml);
 
           const parser = new DOMParser();
@@ -63,11 +72,10 @@ function SyncValuePlugin({ html }: { html: string }) {
           if (validNodes.length > 0) {
             root.append(...validNodes);
           } else {
-            // Fallback: create a paragraph with the text content
+            // This should rarely happen now that we wrap in <p> tags
+            console.warn('[RichTextControl] No valid nodes found, falling back to plain text');
             const paragraph = $createParagraphNode();
-            // Get text content from the DOM to strip any remaining HTML
-            const textContent = dom.body.textContent || cleanHtml;
-            paragraph.append($createTextNode(textContent));
+            paragraph.append($createTextNode(html));
             root.append(paragraph);
           }
         } else {
