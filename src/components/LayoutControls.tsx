@@ -577,9 +577,9 @@ export const GridChildHeightControl: React.FC<GridChildHeightControlProps> = ({
   onChange,
 }) => {
   const presets: { label: string; value: GridChildHeightPreset }[] = [
-    { label: 'Auto', value: 'auto' },
+    { label: 'Fit Content', value: 'auto' },
     { label: 'Fill', value: 'fill' },
-    { label: 'Custom', value: 'custom' },
+    // { label: 'Custom', value: 'custom' }, // Hidden for now
   ];
 
   return (

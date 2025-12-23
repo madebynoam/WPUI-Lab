@@ -1066,6 +1066,7 @@ export const RenderNode: React.FC<{
 
     // Apply height for Grid children
     const gridChildHeight = parent?.type === 'Grid' && heightProp === 'fill' ? '100%' :
+                           parent?.type === 'Grid' && heightProp === 'auto' ? 'fit-content' :
                            parent?.type === 'Grid' && heightProp === 'custom' && customHeightProp ? customHeightProp :
                            undefined;
 
