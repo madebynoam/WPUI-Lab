@@ -311,21 +311,22 @@ export const KeyboardHandler: React.FC<{
         toggleAllGridLines();
       }
 
+      // COMMENTED OUT: Mode switcher keyboard shortcuts (now using RichTextControl in Properties Panel)
       // V key to switch to selection mode (skip if in edit mode)
-      if (e.key === "v" && !isInEditMode()) {
-        e.preventDefault();
-        e.stopPropagation();
-        setEditingMode('selection');
-        return;
-      }
+      // if (e.key === "v" && !isInEditMode()) {
+      //   e.preventDefault();
+      //   e.stopPropagation();
+      //   setEditingMode('selection');
+      //   return;
+      // }
 
       // T key to switch to text mode (skip if in edit mode)
-      if (e.key === "t" && !isInEditMode()) {
-        e.preventDefault();
-        e.stopPropagation();
-        setEditingMode('text');
-        return;
-      }
+      // if (e.key === "t" && !isInEditMode()) {
+      //   e.preventDefault();
+      //   e.stopPropagation();
+      //   setEditingMode('text');
+      //   return;
+      // }
 
       // Arrow keys to reorder items (Figma-style)
       // Only single selection, not in edit mode, and not root

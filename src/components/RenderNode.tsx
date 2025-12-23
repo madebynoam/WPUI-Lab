@@ -211,46 +211,48 @@ export const RenderNode: React.FC<{
       return;
     }
 
+    // COMMENTED OUT: Text mode single-click editing (now using RichTextControl in Properties Panel)
     // Text mode: Single click on text components immediately enters edit mode
-    if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
-      // Select the component first if not selected
-      if (!selectedNodeIds.includes(node.id)) {
-        toggleNodeSelection(node.id, false, false, tree);
-      }
-      // Enter edit mode immediately
-      setIsEditingText(true);
-      return;
-    }
+    // if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
+    //   // Select the component first if not selected
+    //   if (!selectedNodeIds.includes(node.id)) {
+    //     toggleNodeSelection(node.id, false, false, tree);
+    //   }
+    //   // Enter edit mode immediately
+    //   setIsEditingText(true);
+    //   return;
+    // }
 
+    // COMMENTED OUT: Double-click text editing (now using RichTextControl in Properties Panel)
     // DOUBLE-CLICK TEXT EDITING (Selection mode)
     // Check for double-click on text components to enter edit mode
     // ONLY handle this if the text component is already selected (don't interfere with container drill-in)
-    if (editingMode === 'selection' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') && selectedNodeIds.includes(node.id)) {
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTimeRef.current;
-      const isDoubleClick = timeSinceLastClick < 350 && lastClickedIdRef.current === node.id;
+    // if (editingMode === 'selection' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') && selectedNodeIds.includes(node.id)) {
+    //   const now = Date.now();
+    //   const timeSinceLastClick = now - lastClickTimeRef.current;
+    //   const isDoubleClick = timeSinceLastClick < 350 && lastClickedIdRef.current === node.id;
 
-      console.log('[onClick] Text component click - double-click check:', {
-        nodeId: node.id,
-        nodeType: node.type,
-        timeSinceLastClick,
-        isDoubleClick,
-        lastClickedId: lastClickedIdRef.current,
-        isSelected: selectedNodeIds.includes(node.id)
-      });
+    //   console.log('[onClick] Text component click - double-click check:', {
+    //     nodeId: node.id,
+    //     nodeType: node.type,
+    //     timeSinceLastClick,
+    //     isDoubleClick,
+    //     lastClickedId: lastClickedIdRef.current,
+    //     isSelected: selectedNodeIds.includes(node.id)
+    //   });
 
-      if (isDoubleClick) {
-        console.log('[onClick] DOUBLE-CLICK on text component - entering edit mode');
-        setIsEditingText(true);
-        lastClickTimeRef.current = 0;
-        lastClickedIdRef.current = null;
-        return;
-      }
+    //   if (isDoubleClick) {
+    //     console.log('[onClick] DOUBLE-CLICK on text component - entering edit mode');
+    //     setIsEditingText(true);
+    //     lastClickTimeRef.current = 0;
+    //     lastClickedIdRef.current = null;
+    //     return;
+    //   }
 
-      // Update refs for next click - only if text component is selected
-      lastClickTimeRef.current = now;
-      lastClickedIdRef.current = node.id;
-    }
+    //   // Update refs for next click - only if text component is selected
+    //   lastClickTimeRef.current = now;
+    //   lastClickedIdRef.current = node.id;
+    // }
 
     // All other selection logic now happens in mousedown for instant feel
   }, [isAgentExecuting, draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, setIsEditingText, lastClickTimeRef, lastClickedIdRef]);
@@ -1055,10 +1057,11 @@ export const RenderNode: React.FC<{
       // In play mode, don't set cursor - let native components use their natural cursor styles
       if (isPlayMode) return undefined;
 
+      // COMMENTED OUT: Text mode cursor (now using RichTextControl in Properties Panel)
       // In text mode, show text cursor for text components
-      if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
-        return 'text';
-      }
+      // if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
+      //   return 'text';
+      // }
 
       // Default cursor for selection mode
       return 'default';
@@ -1184,10 +1187,11 @@ export const RenderNode: React.FC<{
       buttonProps = props;
     }
 
+    // COMMENTED OUT: In-canvas text editing (now using RichTextControl in Properties Panel)
     // Render contenteditable wrapper preserving component styling (WYSIWYG)
     // NOTE: In text mode, always render as contentEditable so clicks naturally position cursor
     // In selection mode, only make contentEditable when actively editing (isEditingText)
-    if ((editingMode === 'text' && !isPlayMode) || isEditingText) {
+    if (false && ((editingMode === 'text' && !isPlayMode) || isEditingText)) {
       return (
         <div
           ref={wrapperRef}
