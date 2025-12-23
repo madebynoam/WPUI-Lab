@@ -135,6 +135,7 @@ export const RichTextControl: React.FC<RichTextControlProps> = ({
       htmlString = htmlString
         .replace(/<p[^>]*>/g, '') // Remove opening <p> tags
         .replace(/<\/p>/g, '<br>') // Replace closing </p> with <br>
+        .replace(/(<br\s*\/?>){2,}/g, '<br>') // Collapse multiple <br> tags to single
         .replace(/<br>$/, ''); // Remove trailing <br>
 
       // Only call onChange if value actually changed
