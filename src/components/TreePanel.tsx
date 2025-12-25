@@ -588,12 +588,14 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
     // Special case: root Grid always accepts children
     if (targetId === ROOT_GRID_ID) {
-      // Root is a Grid, so set gridColumnSpan: 12 on pattern root
+      // Root is a Grid, so set default Grid child props on pattern root
       patternWithIds = {
         ...patternWithIds,
         props: {
           ...patternWithIds.props,
           gridColumnSpan: 12,
+          height: 'auto',
+          gridColumnStart: 1,
         },
       };
       insertComponent(patternWithIds, undefined);
@@ -607,13 +609,15 @@ export const TreePanel: React.FC<TreePanelProps> = ({
 
     // If it's an insertion container, insert as child
     if (isInsertionContainer) {
-      // If target is a Grid, set default gridColumnSpan for the pattern root
+      // If target is a Grid, set default Grid child props for the pattern root
       if (targetNode.type === "Grid") {
         patternWithIds = {
           ...patternWithIds,
           props: {
             ...patternWithIds.props,
             gridColumnSpan: 12,
+            height: 'auto',
+            gridColumnStart: 1,
           },
         };
       }
@@ -641,13 +645,15 @@ export const TreePanel: React.FC<TreePanelProps> = ({
       return;
     }
 
-    // If parent is a Grid, set default gridColumnSpan for the pattern root
+    // If parent is a Grid, set default Grid child props for the pattern root
     if (parent.type === "Grid") {
       patternWithIds = {
         ...patternWithIds,
         props: {
           ...patternWithIds.props,
           gridColumnSpan: 12,
+          height: 'auto',
+          gridColumnStart: 1,
         },
       };
     }

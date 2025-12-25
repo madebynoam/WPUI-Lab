@@ -322,6 +322,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       // Apply smart span to new node
       newNode.props.gridColumnSpan = span;
 
+      // Set default Grid child props to match PropertiesPanel defaults
+      newNode.props.height = 'auto';          // Default to "Fit Content"
+      newNode.props.gridColumnStart = 1;      // Default grid position
+
       // Update existing children if needed (e.g., rebalancing)
       if (childrenToUpdate.length > 0) {
         childrenToUpdate.forEach(({ id, gridColumnSpan }) => {
