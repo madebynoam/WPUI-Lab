@@ -586,8 +586,16 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     const targetId = selectedNodeIds[0] || ROOT_GRID_ID;
     const targetNode = getNodeById(targetId);
 
-    // Special case: root VStack always accepts children
+    // Special case: root Grid always accepts children
     if (targetId === ROOT_GRID_ID) {
+      // Root is a Grid, so set gridColumnSpan: 12 on pattern root
+      patternWithIds = {
+        ...patternWithIds,
+        props: {
+          ...patternWithIds.props,
+          gridColumnSpan: 12,
+        },
+      };
       insertComponent(patternWithIds, undefined);
       setSearchTerm("");
       return;
