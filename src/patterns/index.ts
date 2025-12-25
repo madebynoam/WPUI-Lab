@@ -10,12 +10,14 @@ import { actionPatterns } from './actions';
 import { dashboardPatterns } from './dashboard';
 import { activityPatterns } from './activity';
 import { authPatterns } from './auth';
+import { cardPatterns } from './cards';
 
 // Combine all patterns
 export const patterns: Pattern[] = [
   ...dashboardPatterns,
   ...activityPatterns,
   ...authPatterns,
+  ...cardPatterns,
   ...featurePatterns,
   ...pricingPatterns,
   ...formPatterns,
@@ -30,6 +32,7 @@ export const patternCategories = [
   'Dashboard',
   'Activity',
   'Auth',
+  'Cards',
   'Features',
   'Pricing',
   'Forms',
