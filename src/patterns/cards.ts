@@ -15,7 +15,7 @@ export const cardPatterns: Pattern[] = [
     tree: {
       type: 'Grid',
       name: 'Action cards',
-      props: { columns: 12, gap: 16 },
+      props: { columns: 12, gap: 4 },
       children: [
         {
           type: 'Card',
@@ -186,7 +186,7 @@ export const cardPatterns: Pattern[] = [
     category: 'Cards',
     tree: {
       type: 'Grid',
-      props: { columns: 12, gap: 16 },
+      props: { columns: 12, gap: 4 },
       children: [
         {
           type: 'Card',
@@ -582,7 +582,7 @@ export const cardPatterns: Pattern[] = [
     tree: {
       type: 'Grid',
       name: 'Info cards',
-      props: { columns: 12, gap: 16, rowGap: 0, align: 'start', justify: 'space-between', spacing: 4, gridColumnSpan: 8 },
+      props: { columns: 12, gap: 4, rowGap: 0, align: 'start', justify: 'space-between', spacing: 4, gridColumnSpan: 8 },
       children: [
         {
           type: 'Card',
