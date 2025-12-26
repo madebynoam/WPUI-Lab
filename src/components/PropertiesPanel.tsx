@@ -449,14 +449,14 @@ export const PropertiesPanel: React.FC = () => {
                 <Button
                   key={preset}
                   size="small"
-                  onClick={() => updateComponentProps(firstNode.id, { spacing: preset })}
+                  onClick={() => updateComponentProps(firstNode.id, { gap: preset })}
                   style={{
                     height: '24px',
                     flex: '1 1 auto',
                     minWidth: '0',
                     fontSize: '11px',
-                    backgroundColor: (firstNode.props.spacing ?? 4) === preset ? '#1e1e1e' : 'transparent',
-                    color: (firstNode.props.spacing ?? 4) === preset ? '#fff' : '#1e1e1e',
+                    backgroundColor: (firstNode.props.gap ?? 4) === preset ? '#1e1e1e' : 'transparent',
+                    color: (firstNode.props.gap ?? 4) === preset ? '#fff' : '#1e1e1e',
                     border: '1px solid #ddd',
                     justifyContent: 'center',
                   }}
@@ -466,7 +466,7 @@ export const PropertiesPanel: React.FC = () => {
               ))}
             </div>
             <p style={{ margin: '4px 0 16px', fontSize: '11px', color: '#757575' }}>
-              Gap between grid items ({(firstNode.props.spacing ?? 4) * 4}px)
+              Gap between grid items ({(firstNode.props.gap ?? 4) * 4}px)
             </p>
 
             {/* Height Control */}
