@@ -1944,7 +1944,10 @@ export const RenderNode: React.FC<{
     // - VStack/HStack children: Use flex-grow (applied below)
 
     const padding = props.padding || '';
-    const spacing = props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2);
+    // Grid uses 'gap' prop, VStack/HStack use 'spacing' prop
+    const spacing = node.type === 'Grid'
+      ? (props.gap !== undefined ? props.gap : (definition.defaultProps?.gap || 4))
+      : (props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2));
 
     // VStack/HStack/Grid: Apply gap for content grouping
     if (node.type === 'VStack' || node.type === 'HStack' || node.type === 'Grid') {
