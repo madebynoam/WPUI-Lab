@@ -15,12 +15,12 @@ export const cardPatterns: Pattern[] = [
     tree: {
       type: 'Grid',
       name: 'Action cards',
-      props: { columns: 3, gap: 16 },
+      props: { columns: 12, gap: 16 },
       children: [
         {
           type: 'Card',
           name: 'Deployments',
-          props: { size: 'medium' },
+          props: { size: 'medium', gridColumnSpan: 4 },
           children: [
             {
               type: 'CardBody',
@@ -73,7 +73,7 @@ export const cardPatterns: Pattern[] = [
         {
           type: 'Card',
           name: 'Analytics',
-          props: { size: 'medium' },
+          props: { size: 'medium', gridColumnSpan: 4 },
           children: [
             {
               type: 'CardBody',
@@ -126,7 +126,7 @@ export const cardPatterns: Pattern[] = [
         {
           type: 'Card',
           name: 'Security',
-          props: { size: 'medium' },
+          props: { size: 'medium', gridColumnSpan: 4 },
           children: [
             {
               type: 'CardBody',
