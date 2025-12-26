@@ -135,6 +135,7 @@ export const PropertiesPanel: React.FC = () => {
     settings: true,
     gridLayout: true,
     theme: true,
+    guides: true,
   });
   const [openInteractionId, setOpenInteractionId] = useState<string | null>(
     null
@@ -294,34 +295,22 @@ export const PropertiesPanel: React.FC = () => {
               Padding around the page content (applies to all pages)
             </p>
 
-            {/* Gap Control with Presets */}
-            <div style={{ marginBottom: '6px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
-              Gap
-            </div>
-            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
-              {[0, 2, 4, 6, 8, 12, 16].map((preset) => (
-                <Button
-                  key={preset}
-                  size="small"
-                  onClick={() => updateProjectLayout({ spacing: preset })}
-                  style={{
-                    height: '24px',
-                    flex: '1 1 auto',
-                    minWidth: '0',
-                    fontSize: '11px',
-                    backgroundColor: spacing === preset ? '#1e1e1e' : 'transparent',
-                    color: spacing === preset ? '#fff' : '#1e1e1e',
-                    border: '1px solid #ddd',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {preset * 4}
-                </Button>
-              ))}
-            </div>
-            <p style={{ margin: '4px 0 16px', fontSize: '11px', color: '#757575' }}>
-              Gap between elements in the root Grid ({spacing * 4}px)
-            </p>
+            {/* Gap Control with Dropdown */}
+            <SelectControl
+              label="Gap"
+              value={spacing.toString()}
+              options={[
+                { label: '0px', value: '0' },
+                { label: '8px', value: '2' },
+                { label: '16px', value: '4' },
+                { label: '24px', value: '6' },
+                { label: '32px', value: '8' },
+                { label: '48px', value: '12' },
+                { label: '64px', value: '16' },
+              ]}
+              onChange={(value) => updateProjectLayout({ spacing: parseInt(value) })}
+              help={`Gap between elements in the root Grid (${spacing * 4}px)`}
+            />
 
             {/* Height Control for Root Grid */}
             <HeightControl
@@ -440,34 +429,22 @@ export const PropertiesPanel: React.FC = () => {
               })
             }
           >
-            {/* Gap Control with Presets */}
-            <div style={{ marginBottom: '6px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
-              Gap
-            </div>
-            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
-              {[0, 2, 4, 6, 8, 12, 16].map((preset) => (
-                <Button
-                  key={preset}
-                  size="small"
-                  onClick={() => updateComponentProps(firstNode.id, { gap: preset })}
-                  style={{
-                    height: '24px',
-                    flex: '1 1 auto',
-                    minWidth: '0',
-                    fontSize: '11px',
-                    backgroundColor: (firstNode.props.gap ?? 4) === preset ? '#1e1e1e' : 'transparent',
-                    color: (firstNode.props.gap ?? 4) === preset ? '#fff' : '#1e1e1e',
-                    border: '1px solid #ddd',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {preset * 4}
-                </Button>
-              ))}
-            </div>
-            <p style={{ margin: '4px 0 16px', fontSize: '11px', color: '#757575' }}>
-              Gap between grid items ({(firstNode.props.gap ?? 4) * 4}px)
-            </p>
+            {/* Gap Control with Dropdown */}
+            <SelectControl
+              label="Gap"
+              value={(firstNode.props.gap ?? 4).toString()}
+              options={[
+                { label: '0px', value: '0' },
+                { label: '8px', value: '2' },
+                { label: '16px', value: '4' },
+                { label: '24px', value: '6' },
+                { label: '32px', value: '8' },
+                { label: '48px', value: '12' },
+                { label: '64px', value: '16' },
+              ]}
+              onChange={(value) => updateComponentProps(firstNode.id, { gap: parseInt(value) })}
+              help={`Gap between grid items (${(firstNode.props.gap ?? 4) * 4}px)`}
+            />
 
             {/* Height Control */}
             <HeightControl
@@ -479,14 +456,6 @@ export const PropertiesPanel: React.FC = () => {
                   customMinHeight: customValue || '',
                 });
               }}
-            />
-
-            {/* Show Grid Lines Toggle */}
-            <ToggleControl
-              label="Show Grid Lines"
-              checked={gridLinesVisible.has(selectedNodeIds[0])}
-              onChange={() => toggleGridLines(selectedNodeIds[0])}
-              help="Toggle grid overlay for this Grid (Control+G toggles all grids)"
             />
           </PanelBody>
         )}
@@ -710,31 +679,32 @@ export const PropertiesPanel: React.FC = () => {
         )}
 
         {/* Properties - Hide Settings panel for VStack/HStack (they use Content Grouping panel) */}
-        {definition.propDefinitions.length > 0 &&
-         firstNode.type !== 'VStack' &&
-         firstNode.type !== 'HStack' && (
-          <PanelBody
-            title="Settings"
-            initialOpen={openPanels["settings"]}
-            onToggle={() =>
-              setOpenPanels({
-                ...openPanels,
-                settings: !openPanels["settings"],
-              })
-            }
-          >
-            {definition.propDefinitions
-              // Filter out grid layout props - low-level implementation details
-              .filter((propDef) => {
-                const gridLayoutProps = [
-                  'gridColumnSpan', 'gridRowSpan', // Grid child props
-                  'columns', 'rows', 'gap', 'rowGap', 'columnGap', // Grid layout props
-                  'templateColumns', 'templateRows', 'align', 'justify', // Grid template props
-                  'isInline', // Grid display mode (not needed in UI)
-                  'minHeight', 'customMinHeight', 'height', 'customHeight', // Height controls (custom UI in Grid Layout panel)
-                ];
-                return !gridLayoutProps.includes(propDef.name);
-              })
+        {(() => {
+          // Filter out grid layout props - low-level implementation details
+          const gridLayoutProps = [
+            'gridColumnSpan', 'gridRowSpan', // Grid child props
+            'columns', 'rows', 'gap', 'rowGap', 'columnGap', // Grid layout props
+            'templateColumns', 'templateRows', 'align', 'justify', // Grid template props
+            'isInline', // Grid display mode (not needed in UI)
+            'minHeight', 'customMinHeight', 'height', 'customHeight', // Height controls (custom UI in Grid Layout panel)
+            'gridGuideColor', // Guide color (custom UI in Guides panel)
+          ];
+          const filteredProps = definition.propDefinitions.filter((propDef) => !gridLayoutProps.includes(propDef.name));
+
+          return filteredProps.length > 0 &&
+            firstNode.type !== 'VStack' &&
+            firstNode.type !== 'HStack' && (
+            <PanelBody
+              title="Settings"
+              initialOpen={openPanels["settings"]}
+              onToggle={() =>
+                setOpenPanels({
+                  ...openPanels,
+                  settings: !openPanels["settings"],
+                })
+              }
+            >
+              {filteredProps
               .map((propDef) => {
               // Special case: For Text and Heading, read 'content' from 'children' prop
               const actualPropToRead =
@@ -980,7 +950,39 @@ export const PropertiesPanel: React.FC = () => {
               );
             })}
           </PanelBody>
+          );
+        })()}
+
+        {/* Guides - for Grid components */}
+        {!isMultiSelect && firstNode.type === "Grid" && (
+          <PanelBody
+            title="Guides"
+            initialOpen={openPanels["guides"]}
+            onToggle={() =>
+              setOpenPanels({
+                ...openPanels,
+                guides: !openPanels["guides"],
+              })
+            }
+          >
+            {/* Show Grid Lines Toggle */}
+            <ToggleControl
+              label="Show Grid Lines"
+              checked={gridLinesVisible.has(selectedNodeIds[0])}
+              onChange={() => toggleGridLines(selectedNodeIds[0])}
+              help="Toggle grid overlay for this Grid (Control+G toggles all grids)"
+            />
+
+            {/* Grid Guide Color */}
+            <ColorSwatchButton
+              label="Guide Color"
+              color={firstNode.props.gridGuideColor || '#3858e9'}
+              onChange={(value) => updateComponentProps(firstNode.id, { gridGuideColor: value })}
+              help="Color of grid guide lines (when grid lines are visible)"
+            />
+          </PanelBody>
         )}
+
         {definition.propDefinitions.length === 0 && !isChildOfGrid && (
           <div
             style={{
