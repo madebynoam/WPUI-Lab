@@ -8,62 +8,6 @@ import { Pattern } from './types';
 
 export const cardPatterns: Pattern[] = [
   {
-    id: 'action-card-single',
-    name: 'Action Card',
-    description: 'Interactive card with icon, title, description, and chevron indicator',
-    category: 'Cards',
-    tree: {
-      type: 'Card',
-      props: { size: 'medium' },
-      children: [
-        {
-          type: 'CardBody',
-          props: { size: 'small' },
-          children: [
-            {
-              type: 'HStack',
-              props: { spacing: 2, justify: 'space-between', alignment: 'center' },
-              children: [
-                {
-                  type: 'HStack',
-                  props: { spacing: 4, alignment: 'top', expanded: true },
-                  children: [
-                    {
-                      type: 'Icon',
-                      props: { icon: 'globe', size: 24 },
-                      children: [],
-                    },
-                    {
-                      type: 'VStack',
-                      props: { spacing: 1 },
-                      children: [
-                        {
-                          type: 'Heading',
-                          props: { level: 4, children: 'Deployments' },
-                          children: [],
-                        },
-                        {
-                          type: 'Text',
-                          props: { variant: 'muted', children: 'Automate deployments from GitHub to streamline your workflow.' },
-                          children: [],
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: 'Icon',
-                  props: { icon: 'chevronRight', size: 24 },
-                  children: [],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
     id: 'action-cards-3col',
     name: 'Action Cards - 3 Column',
     description: 'Three interactive action cards with icons, titles, descriptions, and chevrons',
@@ -71,7 +15,7 @@ export const cardPatterns: Pattern[] = [
     tree: {
       type: 'Grid',
       name: 'Action cards',
-      props: { columns: 3, gap: 4 },
+      props: { columns: 3, gap: 16 },
       children: [
         {
           type: 'Card',
@@ -242,7 +186,7 @@ export const cardPatterns: Pattern[] = [
     category: 'Cards',
     tree: {
       type: 'Grid',
-      props: { columns: 12, gap: 6 },
+      props: { columns: 12, gap: 16 },
       children: [
         {
           type: 'Card',
@@ -638,7 +582,7 @@ export const cardPatterns: Pattern[] = [
     tree: {
       type: 'Grid',
       name: 'Info cards',
-      props: { columns: 12, gap: 6, rowGap: 0, align: 'start', justify: 'space-between', spacing: 4, gridColumnSpan: 8 },
+      props: { columns: 12, gap: 16, rowGap: 0, align: 'start', justify: 'space-between', spacing: 4, gridColumnSpan: 8 },
       children: [
         {
           type: 'Card',
