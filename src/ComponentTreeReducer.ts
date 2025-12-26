@@ -405,6 +405,7 @@ export function componentTreeReducer(
       // Get gridColumnSpan from first selected item (if parent is Grid)
       const firstSelectedNode = parent.children[selectedIndices[0]];
       const gridColumnSpan = firstSelectedNode?.props?.gridColumnSpan;
+      const isParentGrid = parent.type === 'Grid';
 
       // Create container: HStack for single item, VStack for multiple items
       const containerType = ids.length === 1 ? 'HStack' : 'VStack';
@@ -416,6 +417,8 @@ export function componentTreeReducer(
           alignment: containerType === 'HStack' ? 'center' : 'stretch',
           // Copy gridColumnSpan from first item if it exists (for Grid children)
           ...(gridColumnSpan ? { gridColumnSpan } : {}),
+          // Set height: 'auto' for Grid children to match PropertiesPanel default
+          ...(isParentGrid ? { height: 'auto' } : {}),
         },
         // Clone children and remove their gridColumnSpan (they're now inside a container)
         children: selectedIndices.map(idx => {
@@ -525,13 +528,16 @@ export function componentTreeReducer(
       // Clone children and restore gridColumnSpan if needed
       const childrenToInsert = container.children.map(child => {
         const clonedChild = JSON.parse(JSON.stringify(child));
-        if (isParentGrid && containerGridColumnSpan) {
+        if (isParentGrid) {
           clonedChild.props = clonedChild.props || {};
-          clonedChild.props.gridColumnSpan = containerGridColumnSpan;
-        }
-        if (isParentGrid && containerGridRowSpan) {
-          clonedChild.props = clonedChild.props || {};
-          clonedChild.props.gridRowSpan = containerGridRowSpan;
+          if (containerGridColumnSpan) {
+            clonedChild.props.gridColumnSpan = containerGridColumnSpan;
+          }
+          if (containerGridRowSpan) {
+            clonedChild.props.gridRowSpan = containerGridRowSpan;
+          }
+          // Set height: 'auto' for Grid children to match PropertiesPanel default
+          clonedChild.props.height = 'auto';
         }
         return clonedChild;
       });
