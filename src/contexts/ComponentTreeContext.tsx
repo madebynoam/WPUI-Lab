@@ -324,7 +324,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
       // Set default Grid child props to match PropertiesPanel defaults
       newNode.props.height = 'auto';          // Default to "Fit Content"
-      newNode.props.gridColumnStart = 1;      // Default grid position
+      // NOTE: Don't set gridColumnStart - let Grid auto-flow handle positioning
 
       // Update existing children if needed (e.g., rebalancing)
       if (childrenToUpdate.length > 0) {

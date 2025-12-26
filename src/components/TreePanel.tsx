@@ -595,7 +595,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
           ...patternWithIds.props,
           gridColumnSpan: 12,
           height: 'auto',
-          gridColumnStart: 1,
         },
       };
       insertComponent(patternWithIds, undefined);
@@ -617,7 +616,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
             ...patternWithIds.props,
             gridColumnSpan: 12,
             height: 'auto',
-            gridColumnStart: 1,
           },
         };
       }
@@ -653,7 +651,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
           ...patternWithIds.props,
           gridColumnSpan: 12,
           height: 'auto',
-          gridColumnStart: 1,
         },
       };
     }
