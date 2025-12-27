@@ -2031,6 +2031,11 @@ export const RenderNode: React.FC<{
     if (node.type === 'VStack' || node.type === 'HStack' || node.type === 'Grid') {
       const gapValue = `${spacing * 4}px`;
       mergedProps.style = { ...mergedProps.style, gap: gapValue };
+
+      // Grid: Use dense auto-flow to allow items to fill gaps when using explicit column positioning
+      if (node.type === 'Grid') {
+        mergedProps.style = { ...mergedProps.style, gridAutoFlow: 'dense' };
+      }
     }
 
     // Apply padding
