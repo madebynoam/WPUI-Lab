@@ -134,10 +134,12 @@ function generateNodeCode(
     }
   }
 
-  // Convert gridColumnSpan/gridRowSpan to CSS Grid styles
+  // Convert gridColumnSpan/gridRowSpan/gridColumnStart to CSS Grid styles
   const gridColumnSpan = props.gridColumnSpan;
+  const gridColumnStart = props.gridColumnStart;
   const gridRowSpan = props.gridRowSpan;
   delete props.gridColumnSpan;
+  delete props.gridColumnStart;
   delete props.gridRowSpan;
 
   // Extract height props for Grid containers and children
@@ -171,14 +173,23 @@ function generateNodeCode(
   // Build style object for special props
   let styleObj: Record<string, any> = props.style ? { ...props.style } : {};
 
-  // Handle gridColumnSpan - convert to CSS Grid style
-  if (gridColumnSpan !== undefined) {
+  // Handle gridColumnSpan and gridColumnStart - convert to CSS Grid style
+  if (gridColumnStart !== undefined && gridColumnSpan !== undefined) {
+    // Both start and span: use "start / span X" syntax
+    styleObj.gridColumn = `${gridColumnStart} / span ${gridColumnSpan}`;
+  } else if (gridColumnSpan !== undefined) {
+    // Only span: use "span X" syntax (auto-flow)
     styleObj.gridColumn = `span ${gridColumnSpan}`;
   }
 
   // Handle gridRowSpan - convert to CSS Grid style
   if (gridRowSpan !== undefined) {
     styleObj.gridRow = `span ${gridRowSpan}`;
+  }
+
+  // Add grid-auto-flow: dense to Grid components to allow items to fill gaps
+  if (componentName === 'Grid') {
+    styleObj.gridAutoFlow = 'dense';
   }
 
   // Handle minHeight for Grid containers
