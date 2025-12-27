@@ -13,6 +13,13 @@ interface SimpleDragContextType {
   setJustFinishedDragging: (value: boolean) => void;
   draggedItemParentId: string | null;
   setDraggedItemParentId: (id: string | null) => void;
+  // Column drag state
+  dragMode: 'reorder' | 'column' | null;
+  setDragMode: (mode: 'reorder' | 'column' | null) => void;
+  targetGridColumnStart: number | null;
+  setTargetGridColumnStart: (column: number | null) => void;
+  parentGridColumns: number | null;
+  setParentGridColumns: (columns: number | null) => void;
 }
 
 const SimpleDragContext = createContext<SimpleDragContextType | undefined>(undefined);
@@ -24,6 +31,10 @@ export const SimpleDragProvider: React.FC<{ children: ReactNode }> = ({ children
   const [draggedSize, setDraggedSize] = useState<{ width: number; height: number } | null>(null);
   const [justFinishedDragging, setJustFinishedDragging] = useState<boolean>(false);
   const [draggedItemParentId, setDraggedItemParentId] = useState<string | null>(null);
+  // Column drag state
+  const [dragMode, setDragMode] = useState<'reorder' | 'column' | null>(null);
+  const [targetGridColumnStart, setTargetGridColumnStart] = useState<number | null>(null);
+  const [parentGridColumns, setParentGridColumns] = useState<number | null>(null);
 
   return (
     <SimpleDragContext.Provider
@@ -40,6 +51,13 @@ export const SimpleDragProvider: React.FC<{ children: ReactNode }> = ({ children
         setJustFinishedDragging,
         draggedItemParentId,
         setDraggedItemParentId,
+        // Column drag state
+        dragMode,
+        setDragMode,
+        targetGridColumnStart,
+        setTargetGridColumnStart,
+        parentGridColumns,
+        setParentGridColumns,
       }}
     >
       {children}

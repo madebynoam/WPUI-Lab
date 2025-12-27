@@ -469,6 +469,18 @@ export const PropertiesPanel: React.FC = () => {
               })
             }
           >
+            {/* Drag hint */}
+            {(firstNode.props.gridColumnSpan || 12) < (parent?.props?.columns || 12) && (
+              <p style={{
+                margin: '0 0 16px 0',
+                fontSize: '12px',
+                color: '#757575',
+                fontStyle: 'italic'
+              }}>
+                Tip: Drag element horizontally to reposition, or vertically to reorder
+              </p>
+            )}
+
             <div style={{ marginBottom: '16px' }}>
               <BaseControl
                 help={`Spans ${firstNode.props.gridColumnSpan || 12} of 12 columns in parent Grid`}

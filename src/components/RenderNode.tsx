@@ -28,7 +28,7 @@ export const RenderNode: React.FC<{
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
 
   // Simple drag state
-  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize, justFinishedDragging, setJustFinishedDragging, draggedItemParentId, setDraggedItemParentId } = useSimpleDrag();
+  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize, justFinishedDragging, setJustFinishedDragging, draggedItemParentId, setDraggedItemParentId, dragMode, setDragMode, targetGridColumnStart, setTargetGridColumnStart, parentGridColumns: contextParentGridColumns, setParentGridColumns: setContextParentGridColumns } = useSimpleDrag();
   const [isDragging, setIsDragging] = useState(false);
   const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -603,6 +603,8 @@ export const RenderNode: React.FC<{
 
           // Find the parent and store its ID for sibling validation
           const parent = findParent(tree, pendingDragTargetId);
+          const draggedNode = findNodeById(tree, pendingDragTargetId);
+
           if (parent) {
             // Store parent ID - used to validate drop targets are siblings
             setDraggedItemParentId(parent.id);
@@ -615,6 +617,34 @@ export const RenderNode: React.FC<{
               setParentGridColumns(parent.props?.columns || 3);
             } else {
               setParentLayoutDirection('horizontal');
+            }
+
+            // Detect drag mode: column positioning vs reordering
+            // Column drag only for grid children with gridColumnSpan
+            const isGridChild = parent.type === 'Grid' && draggedNode?.props?.gridColumnSpan;
+            const gridColumnSpan = draggedNode?.props?.gridColumnSpan || 12;
+            const parentColumns = parent.props?.columns || 12;
+            const isFullWidth = gridColumnSpan >= parentColumns;
+
+            if (isGridChild && !isFullWidth) {
+              // Determine drag direction: horizontal (column) or vertical (reorder)
+              const absDx = Math.abs(dx);
+              const absDy = Math.abs(dy);
+
+              // Use 1.2 ratio to bias towards intended direction (20% threshold)
+              if (absDx > absDy * 1.2) {
+                // Horizontal drag - column positioning mode
+                console.log('[DEBUG Drag] Column drag mode activated');
+                setDragMode('column');
+                setContextParentGridColumns(parentColumns);
+              } else {
+                // Vertical drag - reorder mode (default)
+                console.log('[DEBUG Drag] Reorder drag mode activated');
+                setDragMode('reorder');
+              }
+            } else {
+              // Not a grid child or full-width - always reorder mode
+              setDragMode('reorder');
             }
 
             // Capture dragged component size and clone it
@@ -670,6 +700,43 @@ export const RenderNode: React.FC<{
         // Direction and edge-based hover detection
         if (!draggedItemParentId || !draggedSize || !dragOffsetRef.current) return;
 
+        // Get parent node
+        const parent = findNodeById(tree, draggedItemParentId);
+        if (!parent || !parent.children) return;
+
+        // Column drag mode: Calculate target column position
+        if (dragMode === 'column' && parentLayoutDirection === 'grid' && contextParentGridColumns) {
+          const parentElement = document.querySelector(`[data-component-id="${parent.id}"]`);
+          const draggedNode = findNodeById(tree, draggedNodeId);
+
+          if (parentElement && draggedNode) {
+            const parentRect = parentElement.getBoundingClientRect();
+            const gap = parent.props?.gap || 24; // Grid gap (default 24px)
+            const gridColumnSpan = draggedNode.props?.gridColumnSpan || 12;
+
+            // Calculate column width
+            const totalGapWidth = gap * (contextParentGridColumns - 1);
+            const availableWidth = parentRect.width - totalGapWidth;
+            const columnWidth = availableWidth / contextParentGridColumns;
+
+            // Calculate which column the cursor is over (relative to parent)
+            const relativeX = e.clientX - parentRect.left;
+            const columnWithGap = columnWidth + gap;
+            let targetColumn = Math.floor(relativeX / columnWithGap) + 1;
+
+            // Clamp to valid range (can't position beyond what spans allow)
+            const maxStartColumn = contextParentGridColumns - gridColumnSpan + 1;
+            targetColumn = Math.max(1, Math.min(maxStartColumn, targetColumn));
+
+            setTargetGridColumnStart(targetColumn);
+
+            console.log('[DEBUG Drag] Column mode - Target column:', targetColumn, 'Max:', maxStartColumn);
+          }
+
+          return; // Skip reorder logic in column mode
+        }
+
+        // Reorder mode: Sibling hover detection
         // Calculate dragged item's bounds
         const draggedLeft = e.clientX - dragOffsetRef.current.x;
         const draggedTop = e.clientY - dragOffsetRef.current.y;
@@ -684,10 +751,6 @@ export const RenderNode: React.FC<{
           movingDown = e.clientY >= prevMousePosRef.current.y;
         }
         prevMousePosRef.current = { x: e.clientX, y: e.clientY };
-
-        // Get parent node
-        const parent = findNodeById(tree, draggedItemParentId);
-        if (!parent || !parent.children) return;
 
         let foundSlot = false;
 
@@ -755,7 +818,7 @@ export const RenderNode: React.FC<{
 
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, [draggedNodeId, tree, setHoveredSiblingId, setDropPosition, setDraggedNodeId, setDraggedSize, draggedItemParentId, parentLayoutDirection]);
+  }, [draggedNodeId, tree, setHoveredSiblingId, setDropPosition, setDraggedNodeId, setDraggedSize, draggedItemParentId, parentLayoutDirection, dragMode, contextParentGridColumns, setTargetGridColumnStart, setDragMode, setContextParentGridColumns]);
 
   // Document-level mouse up for drop
   React.useEffect(() => {
@@ -772,9 +835,21 @@ export const RenderNode: React.FC<{
       // Capture values immediately to avoid race conditions
       const targetSiblingId = hoveredSiblingId;
       const targetPosition = dropPosition;
+      const currentDragMode = dragMode;
+      const currentTargetColumn = targetGridColumnStart;
 
-      // Perform drop if we have a valid target
-      if (targetSiblingId && targetPosition && draggedItemParentId) {
+      // Column drag mode: Update gridColumnStart
+      if (currentDragMode === 'column' && currentTargetColumn !== null) {
+        const draggedNode = findNodeById(tree, draggedNodeId);
+        const currentColumnStart = draggedNode?.props?.gridColumnStart || 1;
+
+        if (currentTargetColumn !== currentColumnStart) {
+          console.log('[Drop] Updating column position from', currentColumnStart, 'to', currentTargetColumn);
+          updateComponentProps(draggedNodeId, { gridColumnStart: currentTargetColumn });
+        }
+      }
+      // Reorder mode: Reorder within parent
+      else if (currentDragMode === 'reorder' && targetSiblingId && targetPosition && draggedItemParentId) {
         // Simple validation: check if target shares the same parent
         const targetParent = findParent(tree, targetSiblingId);
 
@@ -822,6 +897,9 @@ export const RenderNode: React.FC<{
       setIsDragging(false);
       setHoveredSiblingId(null);
       setDropPosition(null);
+      setDragMode(null);
+      setTargetGridColumnStart(null);
+      setContextParentGridColumns(null);
       setGhostPosition(null);
       setDraggedSize(null);
       setDraggedItemParentId(null);
@@ -834,7 +912,7 @@ export const RenderNode: React.FC<{
 
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, [draggedNodeId, hoveredSiblingId, dropPosition, draggedItemParentId, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition, setJustFinishedDragging, setDraggedItemParentId, setDraggedSize, tree, node.id]);
+  }, [draggedNodeId, hoveredSiblingId, dropPosition, draggedItemParentId, reorderComponent, setDraggedNodeId, setHoveredSiblingId, setDropPosition, setJustFinishedDragging, setDraggedItemParentId, setDraggedSize, tree, node.id, dragMode, targetGridColumnStart, updateComponentProps, setDragMode, setTargetGridColumnStart, setContextParentGridColumns]);
 
   // Skip rendering interactive components unless explicitly allowed
   if (INTERACTIVE_COMPONENT_TYPES.includes(node.type) && !renderInteractive) {
@@ -2120,6 +2198,87 @@ export const RenderNode: React.FC<{
                 }
 
                 return elements;
+              })()}
+            </svg>
+          </div>
+        )}
+
+        {/* Column Drag Target Overlay */}
+        {dragMode === 'column' && targetGridColumnStart !== null && node.type === 'Grid' && draggedItemParentId === node.id && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              zIndex: 1001,
+            }}
+          >
+            <svg
+              width="100%"
+              height="100%"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+              }}
+            >
+              {(() => {
+                // Get grid properties
+                const columns = (mergedProps as any).columns || 12;
+                const gapValue = (mergedProps as any).style?.gap || (mergedProps as any).gap || '24px';
+                const gapPx = typeof gapValue === 'string' ? parseFloat(gapValue) : (gapValue * 4);
+
+                // Find dragged node to get its span
+                const draggedNode = findNodeById(tree, draggedNodeId || '');
+                const span = draggedNode?.props?.gridColumnSpan || 1;
+
+                // Calculate target column area
+                const totalGapWidth = (columns - 1) * gapPx;
+                const columnWidthPercent = `(100% - ${totalGapWidth}px) / ${columns}`;
+
+                // Calculate start position (targetGridColumnStart is 1-indexed)
+                const startIndex = targetGridColumnStart - 1;
+                const columnX = startIndex === 0
+                  ? '0px'
+                  : `calc(${columnWidthPercent} * ${startIndex} + ${gapPx * startIndex}px)`;
+
+                // Calculate width spanning multiple columns
+                const spanWidth = span === 1
+                  ? `calc(${columnWidthPercent})`
+                  : `calc(${columnWidthPercent} * ${span} + ${gapPx * (span - 1)}px)`;
+
+                return (
+                  <>
+                    {/* Highlight target columns */}
+                    <rect
+                      x={columnX}
+                      y="0"
+                      width={spanWidth}
+                      height="100%"
+                      fill="#3858e9"
+                      opacity="0.15"
+                      stroke="#3858e9"
+                      strokeWidth="2"
+                      strokeOpacity="0.5"
+                    />
+                    {/* Column number indicator */}
+                    <text
+                      x={`calc(${columnX} + ${spanWidth} / 2)`}
+                      y="50%"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="#3858e9"
+                      fontSize="24"
+                      fontWeight="bold"
+                      opacity="0.8"
+                    >
+                      Column {targetGridColumnStart}
+                    </text>
+                  </>
+                );
               })()}
             </svg>
           </div>
