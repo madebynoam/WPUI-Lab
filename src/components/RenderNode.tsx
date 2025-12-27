@@ -733,10 +733,10 @@ export const RenderNode: React.FC<{
             console.log('[DEBUG Drag] Column mode - Target column:', targetColumn, 'Max:', maxStartColumn);
           }
 
-          return; // Skip reorder logic in column mode
+          // Continue to sibling hover detection (don't skip it)
         }
 
-        // Reorder mode: Sibling hover detection
+        // Sibling hover detection (works in both reorder and column modes)
         // Calculate dragged item's bounds
         const draggedLeft = e.clientX - dragOffsetRef.current.x;
         const draggedTop = e.clientY - dragOffsetRef.current.y;
@@ -848,8 +848,10 @@ export const RenderNode: React.FC<{
           updateComponentProps(draggedNodeId, { gridColumnStart: currentTargetColumn });
         }
       }
-      // Reorder mode: Reorder within parent
-      else if (currentDragMode === 'reorder' && targetSiblingId && targetPosition && draggedItemParentId) {
+
+      // Reorder in tree (if hovering over a sibling)
+      // This happens in BOTH column and reorder modes
+      if (targetSiblingId && targetPosition && draggedItemParentId) {
         // Simple validation: check if target shares the same parent
         const targetParent = findParent(tree, targetSiblingId);
 
@@ -2117,6 +2119,13 @@ export const RenderNode: React.FC<{
 
   return (
     <React.Fragment>
+      {node.type === 'Grid' && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          [data-component-id="${node.id}"] {
+            grid-auto-flow: dense !important;
+          }
+        ` }} />
+      )}
       <Component {...finalProps}>
         {node.children && node.children.length > 0
           ? node.children.map((child) =>
