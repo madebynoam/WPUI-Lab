@@ -21,6 +21,9 @@ import {
   __experimentalVStack as VStack,
   __experimentalItemGroup as ItemGroup,
   __experimentalItem as Item,
+  __experimentalToggleGroupControl as ToggleGroupControl,
+  __experimentalToggleGroupControlOption as ToggleGroupControlOption,
+  BaseControl,
 } from "@wordpress/components";
 import {
   plus as plusIcon,
@@ -28,15 +31,9 @@ import {
   close,
   blockDefault,
   moreVertical,
-  arrowRight,
   button,
   seen,
   dragHandle,
-  justifyTop,
-  stretchFullWidth,
-  positionCenter,
-  arrowDown,
-  menu,
 } from "@wordpress/icons";
 import { IconPicker } from "./IconPicker";
 import { ColorVariantPicker } from "./ColorVariantPicker";
@@ -250,7 +247,7 @@ export const PropertiesPanel: React.FC = () => {
           >
             <ColorSwatchButton
               color={projectTheme.primaryColor || "#3858e9"}
-              label="Primary Color"
+              label="PRIMARY COLOR"
               onChange={(color) => updateProjectTheme({ primaryColor: color })}
               help="Theme primary color for buttons and interactive elements"
             />
@@ -297,7 +294,7 @@ export const PropertiesPanel: React.FC = () => {
 
             {/* Gap Control with Dropdown */}
             <SelectControl
-              label="Gap"
+              label="GAP"
               value={spacing.toString()}
               options={[
                 { label: '0px', value: '0' },
@@ -431,7 +428,7 @@ export const PropertiesPanel: React.FC = () => {
           >
             {/* Gap Control with Dropdown */}
             <SelectControl
-              label="Gap"
+              label="GAP"
               value={(firstNode.props.gap ?? 4).toString()}
               options={[
                 { label: '0px', value: '0' },
@@ -463,7 +460,7 @@ export const PropertiesPanel: React.FC = () => {
         {/* Grid child properties - only for single select */}
         {!isMultiSelect && isChildOfGrid && (
           <PanelBody
-            title="Grid Layout"
+            title="Placement"
             initialOpen={openPanels["gridLayout"]}
             onToggle={() =>
               setOpenPanels({
@@ -472,55 +469,108 @@ export const PropertiesPanel: React.FC = () => {
               })
             }
           >
-            <WidthPresetControl
-              value={firstNode.props.gridColumnSpan || 12}
-              onChange={(value) => handlePropChange("gridColumnSpan", value)}
-            />
+            <div style={{ marginBottom: '16px' }}>
+              <BaseControl
+                help={`Spans ${firstNode.props.gridColumnSpan || 12} of 12 columns in parent Grid`}
+              >
+                <ToggleGroupControl
+                  label="SPAN"
+                  value={(firstNode.props.gridColumnSpan || 12).toString()}
+                  onChange={(value) => handlePropChange("gridColumnSpan", parseInt(value || "12"))}
+                  isBlock
+                >
+                  <ToggleGroupControlOption value="12" label="Full" />
+                  <ToggleGroupControlOption value="9" label="3/4" />
+                  <ToggleGroupControlOption value="8" label="2/3" />
+                  <ToggleGroupControlOption value="6" label="Half" />
+                  <ToggleGroupControlOption value="4" label="1/3" />
+                  <ToggleGroupControlOption value="3" label="1/4" />
+                </ToggleGroupControl>
+              </BaseControl>
+            </div>
 
-            <GridAlignmentControl
-              value={(() => {
-                // Determine current alignment from gridColumnStart and gridColumnSpan
-                const gridColumnStart = firstNode.props.gridColumnStart || 1;
-                const gridColumnSpan = firstNode.props.gridColumnSpan || 12;
-                const parentColumns = parent?.props?.columns || 12;
+            <div style={{ marginBottom: '16px' }}>
+              <BaseControl
+                help={((firstNode.props.gridColumnSpan || 12) >= (parent?.props?.columns || 12))
+                  ? 'Full-width items cannot be aligned'
+                  : `Positions ${firstNode.props.gridColumnSpan || 12}-column item horizontally`}
+              >
+                <ToggleGroupControl
+                  label="ALIGN"
+                  value={(() => {
+                    const disabled = (firstNode.props.gridColumnSpan || 12) >= (parent?.props?.columns || 12);
+                    if (disabled) return 'start';
 
-                // Calculate alignment based on position
-                if (gridColumnStart === 1) return 'start';
-                const centerStart = Math.ceil((parentColumns - gridColumnSpan) / 2) + 1;
-                const endStart = parentColumns - gridColumnSpan + 1;
+                    const gridColumnStart = firstNode.props.gridColumnStart || 1;
+                    const gridColumnSpan = firstNode.props.gridColumnSpan || 12;
+                    const parentColumns = parent?.props?.columns || 12;
 
-                if (gridColumnStart === centerStart) return 'center';
-                if (gridColumnStart === endStart) return 'end';
-                return 'start'; // Default
-              })()}
-              onChange={(alignment: GridAlignment) => {
-                const gridColumnSpan = firstNode.props.gridColumnSpan || 12;
-                const parentColumns = parent?.props?.columns || 12;
+                    if (gridColumnStart === 1) return 'start';
+                    const centerStart = Math.ceil((parentColumns - gridColumnSpan) / 2) + 1;
+                    const endStart = parentColumns - gridColumnSpan + 1;
 
-                // Calculate gridColumnStart based on alignment
-                let gridColumnStart = 1;
-                if (alignment === 'center') {
-                  gridColumnStart = Math.ceil((parentColumns - gridColumnSpan) / 2) + 1;
-                } else if (alignment === 'end') {
-                  gridColumnStart = parentColumns - gridColumnSpan + 1;
+                    if (gridColumnStart === centerStart) return 'center';
+                    if (gridColumnStart === endStart) return 'end';
+                    return 'start';
+                  })()}
+                  onChange={(value) => {
+                    const gridColumnSpan = firstNode.props.gridColumnSpan || 12;
+                    const parentColumns = parent?.props?.columns || 12;
+
+                    let gridColumnStart = 1;
+                    if (value === 'center') {
+                      gridColumnStart = Math.ceil((parentColumns - gridColumnSpan) / 2) + 1;
+                    } else if (value === 'end') {
+                      gridColumnStart = parentColumns - gridColumnSpan + 1;
+                    }
+
+                    updateComponentProps(firstNode.id, { gridColumnStart });
+                  }}
+                  isBlock
+                >
+                  <ToggleGroupControlOption
+                    value="start"
+                    label="Left"
+                    disabled={(firstNode.props.gridColumnSpan || 12) >= (parent?.props?.columns || 12)}
+                  />
+                  <ToggleGroupControlOption
+                    value="center"
+                    label="Center"
+                    disabled={(firstNode.props.gridColumnSpan || 12) >= (parent?.props?.columns || 12)}
+                  />
+                  <ToggleGroupControlOption
+                    value="end"
+                    label="Right"
+                    disabled={(firstNode.props.gridColumnSpan || 12) >= (parent?.props?.columns || 12)}
+                  />
+                </ToggleGroupControl>
+              </BaseControl>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <BaseControl
+                help={
+                  ((firstNode.props.height as GridChildHeightPreset) || 'auto') === 'auto'
+                    ? 'Height based on content'
+                    : 'Fill Grid row height (100%)'
                 }
-
-                updateComponentProps(firstNode.id, { gridColumnStart });
-              }}
-              gridColumnSpan={firstNode.props.gridColumnSpan || 12}
-              parentColumns={parent?.props?.columns || 12}
-            />
-
-            <GridChildHeightControl
-              value={(firstNode.props.height as GridChildHeightPreset) || 'auto'}
-              customValue={firstNode.props.customHeight || ''}
-              onChange={(preset, customValue) => {
-                updateComponentProps(firstNode.id, {
-                  height: preset,
-                  customHeight: customValue || '',
-                });
-              }}
-            />
+              >
+                <ToggleGroupControl
+                  label="VERTICAL SIZING"
+                  value={((firstNode.props.height as GridChildHeightPreset) || 'auto')}
+                  onChange={(value) => {
+                    updateComponentProps(firstNode.id, {
+                      height: value as GridChildHeightPreset,
+                      customHeight: '',
+                    });
+                  }}
+                  isBlock
+                >
+                  <ToggleGroupControlOption value="auto" label="Fit Content" />
+                  <ToggleGroupControlOption value="fill" label="Fill" />
+                </ToggleGroupControl>
+              </BaseControl>
+            </div>
           </PanelBody>
         )}
 
@@ -556,62 +606,30 @@ export const PropertiesPanel: React.FC = () => {
             }
           >
             {/* Layout Direction Switcher */}
-            <div style={{ marginBottom: "16px" }}>
-              <div
-                style={{
-                  marginBottom: "8px",
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: "#1e1e1e",
-                }}
-              >
-                Layout Direction
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <Button
-                  icon={arrowDown}
-                  onClick={() => {
-                    if (firstNode.type !== 'VStack') {
-                      swapLayoutType(firstNode.id, 'VStack');
+            <div style={{ marginBottom: '16px' }}>
+              <BaseControl>
+                <ToggleGroupControl
+                  label="LAYOUT DIRECTION"
+                  value={firstNode.type === 'VStack' ? 'vertical' : 'horizontal'}
+                  onChange={(value) => {
+                    const newType = value === 'vertical' ? 'VStack' : 'HStack';
+                    if (firstNode.type !== newType) {
+                      swapLayoutType(firstNode.id, newType);
                     }
                   }}
-                  style={{
-                    flex: 1,
-                    height: "36px",
-                    justifyContent: "center",
-                    backgroundColor:
-                      firstNode.type === 'VStack' ? "#1e1e1e" : "transparent",
-                    color: firstNode.type === 'VStack' ? "#fff" : "#1e1e1e",
-                    border: "1px solid #ddd",
-                  }}
-                  label="Vertical Stack"
-                />
-                <Button
-                  icon={arrowRight}
-                  onClick={() => {
-                    if (firstNode.type !== 'HStack') {
-                      swapLayoutType(firstNode.id, 'HStack');
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    height: "36px",
-                    justifyContent: "center",
-                    backgroundColor:
-                      firstNode.type === 'HStack' ? "#1e1e1e" : "transparent",
-                    color: firstNode.type === 'HStack' ? "#fff" : "#1e1e1e",
-                    border: "1px solid #ddd",
-                  }}
-                  label="Horizontal Stack"
-                />
-              </div>
+                  isBlock
+                >
+                  <ToggleGroupControlOption value="vertical" label="Vertical" />
+                  <ToggleGroupControlOption value="horizontal" label="Horizontal" />
+                </ToggleGroupControl>
+              </BaseControl>
             </div>
 
             {/* Alignment Controls */}
             <div style={{ marginBottom: "16px" }}>
               {/* Primary Axis Alignment */}
               <AlignmentControl
-                label={firstNode.type === 'VStack' ? "Vertical Align" : "Horizontal Align"}
+                label={firstNode.type === 'VStack' ? "VERTICAL ALIGN" : "HORIZONTAL ALIGN"}
                 value={(() => {
                   const justify = firstNode.props.justify || 'flex-start';
                   if (justify === 'flex-start') return 'start';
@@ -634,7 +652,7 @@ export const PropertiesPanel: React.FC = () => {
 
               {/* Cross Axis Alignment */}
               <AlignmentControl
-                label={firstNode.type === 'VStack' ? "Horizontal Align" : "Vertical Align"}
+                label={firstNode.type === 'VStack' ? "HORIZONTAL ALIGN" : "VERTICAL ALIGN"}
                 value={(() => {
                   // VStack default is 'stretch', HStack default is 'center' (from componentRegistry)
                   const defaultAlignment = firstNode.type === 'VStack' ? 'stretch' : 'center';
@@ -726,7 +744,7 @@ export const PropertiesPanel: React.FC = () => {
                 <div key={propDef.name} style={{ marginBottom: "16px" }}>
                   {propDef.type === "string" && propDef.name === "content" && firstNode.type === "Text" && !isMultiSelect ? (
                     <RichTextControl
-                      label={propDef.name}
+                      label={propDef.name.toUpperCase()}
                       value={currentValue || ""}
                       onChange={(value) =>
                         handlePropChange(propDef.name, value)
@@ -736,7 +754,7 @@ export const PropertiesPanel: React.FC = () => {
                     />
                   ) : propDef.type === "string" ? (
                     <TextControl
-                      label={propDef.name}
+                      label={propDef.name.toUpperCase()}
                       value={currentValue || ""}
                       onChange={(value) =>
                         handlePropChange(propDef.name, value)
@@ -788,7 +806,7 @@ export const PropertiesPanel: React.FC = () => {
 
                   {propDef.type === "number" && (propDef.name !== "padding" || firstNode.type !== "Spacer") && (
                     <NumberControl
-                      label={propDef.name}
+                      label={propDef.name.toUpperCase()}
                       value={currentValue}
                       onChange={(value) =>
                         handlePropChange(propDef.name, Number(value))
@@ -819,7 +837,7 @@ export const PropertiesPanel: React.FC = () => {
 
                   {propDef.type === "color" && (
                     <ColorSwatchButton
-                      label={propDef.name}
+                      label={propDef.name.toUpperCase()}
                       color={currentValue || propDef.defaultValue || '#000000'}
                       onChange={(value) =>
                         handlePropChange(propDef.name, value)
@@ -834,7 +852,7 @@ export const PropertiesPanel: React.FC = () => {
 
                   {propDef.type === "select" && propDef.name === "icon" && (
                     <IconPicker
-                      label={propDef.name}
+                      label={propDef.name.toUpperCase()}
                       value={currentValue}
                       onChange={(value) =>
                         handlePropChange(propDef.name, value)
@@ -845,7 +863,7 @@ export const PropertiesPanel: React.FC = () => {
                   {propDef.type === "select" &&
                     propDef.name === "colorVariant" && (
                       <ColorVariantPicker
-                        label={propDef.name}
+                        label={propDef.name.toUpperCase()}
                         value={currentValue || "default"}
                         onChange={(value) =>
                           handlePropChange(propDef.name, value)
@@ -854,72 +872,20 @@ export const PropertiesPanel: React.FC = () => {
                     )}
 
                   {propDef.type === "select" && propDef.name === "maxWidth" && (
-                    <div style={{ marginBottom: "16px" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontSize: "11px",
-                          fontWeight: 500,
-                          textTransform: "uppercase",
-                          marginBottom: "8px",
-                          color: "#1e1e1e",
-                        }}
-                      >
-                        Width
-                      </label>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <Button
-                          icon={positionCenter}
-                          onClick={() =>
-                            handlePropChange(propDef.name, "content")
+                    <div style={{ marginBottom: '16px' }}>
+                      <BaseControl help={propDef.description}>
+                        <ToggleGroupControl
+                          label="WIDTH"
+                          value={
+                            currentValue === "full" ? "full" : "content"
                           }
-                          style={{
-                            flex: 1,
-                            height: "36px",
-                            justifyContent: "center",
-                            backgroundColor:
-                              currentValue === "content" ||
-                              !["content", "full"].includes(currentValue)
-                                ? "#1e1e1e"
-                                : "transparent",
-                            color:
-                              currentValue === "content" ||
-                              !["content", "full"].includes(currentValue)
-                                ? "#fff"
-                                : "#1e1e1e",
-                            border: "1px solid #ddd",
-                          }}
-                          label="Content Width (1344px, centered)"
-                        />
-                        <Button
-                          icon={stretchFullWidth}
-                          onClick={() => handlePropChange(propDef.name, "full")}
-                          style={{
-                            flex: 1,
-                            height: "36px",
-                            justifyContent: "center",
-                            backgroundColor:
-                              currentValue === "full"
-                                ? "#1e1e1e"
-                                : "transparent",
-                            color: currentValue === "full" ? "#fff" : "#1e1e1e",
-                            border: "1px solid #ddd",
-                          }}
-                          label="Full Width (100%)"
-                        />
-                      </div>
-                      {propDef.description && (
-                        <p
-                          style={{
-                            margin: "8px 0 0",
-                            fontSize: "12px",
-                            fontStyle: "normal",
-                            color: "#757575",
-                          }}
+                          onChange={(value) => handlePropChange(propDef.name, value)}
+                          isBlock
                         >
-                          {propDef.description}
-                        </p>
-                      )}
+                          <ToggleGroupControlOption value="content" label="Content" aria-label="Content Width (1344px, centered)" />
+                          <ToggleGroupControlOption value="full" label="Full" aria-label="Full Width (100%)" />
+                        </ToggleGroupControl>
+                      </BaseControl>
                     </div>
                   )}
 
@@ -929,7 +895,7 @@ export const PropertiesPanel: React.FC = () => {
                     propDef.name !== "maxWidth" &&
                     propDef.options && (
                       <SelectControl
-                        label={propDef.name}
+                        label={propDef.name.toUpperCase()}
                         value={currentValue}
                         options={propDef.options.map((opt) =>
                           typeof opt === "string"
@@ -967,7 +933,7 @@ export const PropertiesPanel: React.FC = () => {
           >
             {/* Show Grid Lines Toggle */}
             <ToggleControl
-              label="Show Grid Lines"
+              label="Show grid lines"
               checked={gridLinesVisible.has(selectedNodeIds[0])}
               onChange={() => toggleGridLines(selectedNodeIds[0])}
               help="Toggle grid overlay for this Grid (Control+G toggles all grids)"
@@ -975,7 +941,7 @@ export const PropertiesPanel: React.FC = () => {
 
             {/* Grid Guide Color */}
             <ColorSwatchButton
-              label="Guide Color"
+              label="GUIDE COLOR"
               color={firstNode.props.gridGuideColor || '#3858e9'}
               onChange={(value) => updateComponentProps(firstNode.id, { gridGuideColor: value })}
               help="Color of grid guide lines (when grid lines are visible)"
