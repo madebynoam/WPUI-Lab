@@ -967,166 +967,18 @@ export const RenderNode: React.FC<{
   const isRootVStack = node.id === ROOT_GRID_ID;
   const isSelected = selectedNodeIds.includes(node.id);
 
-  // Check if this node is a sibling of the dragged node and should animate
-  const shouldAnimateAsSibling = React.useMemo(() => {
-    if (!draggedNodeId || draggedNodeId === node.id || !hoveredSiblingId || !dropPosition) {
-      return false;
-    }
+  // DISABLED: Sibling animations - replaced with simple grid line indicator
+  const shouldAnimateAsSibling = false;
 
-    // Get parent of dragged node
-    const draggedParent = findParent(tree, draggedNodeId);
-    const thisParent = findParent(tree, node.id);
-
-    // Must be siblings (same parent)
-    if (draggedParent?.id !== thisParent?.id || !thisParent) {
-      return false;
-    }
-
-    // Get the children array to find indices
-    const siblings = thisParent.children || [];
-    const thisIndex = siblings.findIndex(child => child.id === node.id);
-    const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
-    const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
-
-    if (thisIndex === -1 || draggedIndex === -1 || hoveredIndex === -1) {
-      return false;
-    }
-
-    // Determine which items should animate based on drag direction
-    let shouldAnimate = false;
-    if (draggedIndex < hoveredIndex) {
-      // Dragging forward (left→right): items between dragged and hovered shift left
-      if (dropPosition === 'after') {
-        shouldAnimate = thisIndex > draggedIndex && thisIndex <= hoveredIndex;
-      } else {
-        shouldAnimate = thisIndex > draggedIndex && thisIndex < hoveredIndex;
-      }
-    } else {
-      // Dragging backward (right→left): items between hovered and dragged shift right
-      if (dropPosition === 'before') {
-        shouldAnimate = thisIndex >= hoveredIndex && thisIndex < draggedIndex;
-      } else {
-        shouldAnimate = thisIndex >= hoveredIndex && thisIndex < draggedIndex;
-      }
-    }
-
-    if (shouldAnimate) {
-      console.log(`[ShouldAnimate] Node ${node.id}: YES`, {
-        thisIndex,
-        draggedIndex,
-        hoveredIndex,
-        dropPosition,
-        parentType: thisParent.type
-      });
-    }
-
-    return shouldAnimate;
-  }, [draggedNodeId, hoveredSiblingId, dropPosition, node.id, tree]);
+  // Check if this is the hovered sibling (used for drop indicator)
+  const isHoveredSibling = hoveredSiblingId === node.id;
 
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => {
-    // Calculate proper sibling animation transform
-    let transform = 'none';
-    if (shouldAnimateAsSibling && dropPosition && draggedSize && draggedNodeId) {
-      // Get parent to determine layout direction
-      const parent = findParent(tree, node.id);
-      if (parent) {
-        console.log(`[Transform Debug] Node ${node.id}: parent.type = '${parent.type}'`);
+    // DISABLED: Transform calculation for sibling animations
+    const transform = 'none';
 
-        // Get parent's spacing/gap (default to 8px if not set)
-        const parentGap = parent.props?.gap !== undefined ?
-          (typeof parent.props.gap === 'number' ? parent.props.gap * 4 : 8) : 8;
-
-        // Check if parent uses vertical layout
-        const isVerticalLayout =
-          parent.type === 'VStack' ||
-          (parent.type === 'Flex' && parent.props?.direction === 'column');
-
-        if (isVerticalLayout) {
-          // Vertical layout: shift up/down
-          const siblings = parent.children || [];
-          const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
-          const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
-
-          const shiftAmount = draggedSize.height + parentGap;
-          // Direction based on drag direction: forward (up→down) = shift up (-1), backward (down→up) = shift down (+1)
-          const direction = draggedIndex < hoveredIndex ? -1 : 1;
-          transform = `translateY(${direction * shiftAmount}px)`;
-          console.log(`[Animation] Vertical node ${node.id}: translateY(${direction * shiftAmount}px)`, {
-            draggedIndex,
-            hoveredIndex,
-            direction: draggedIndex < hoveredIndex ? 'forward' : 'backward',
-            parentType: parent.type
-          });
-        } else if (parent.type === 'Grid') {
-          // Grid layout: calculate 2D displacement
-          const siblings = parent.children || [];
-          const thisIndex = siblings.findIndex(child => child.id === node.id);
-          const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
-          const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
-
-          if (thisIndex !== -1 && draggedIndex !== -1 && hoveredIndex !== -1) {
-            const columns = parent.props?.columns || 3;
-
-            // Calculate where this item will be after the reorder
-            let newIndex = thisIndex;
-            if (draggedIndex < hoveredIndex) {
-              // Dragging forward: items between dragged and hovered shift backward
-              if (thisIndex > draggedIndex && thisIndex <= hoveredIndex) {
-                newIndex = thisIndex - 1;
-              }
-            } else {
-              // Dragging backward: items between hovered and dragged shift forward
-              if (thisIndex < draggedIndex && thisIndex >= hoveredIndex) {
-                newIndex = thisIndex + 1;
-              }
-            }
-
-            // Convert indices to grid positions (row, col)
-            const oldRow = Math.floor(thisIndex / columns);
-            const oldCol = thisIndex % columns;
-            const newRow = Math.floor(newIndex / columns);
-            const newCol = newIndex % columns;
-
-            // Calculate displacement
-            const colDiff = newCol - oldCol;
-            const rowDiff = newRow - oldRow;
-
-            if (colDiff !== 0 || rowDiff !== 0) {
-              const translateX = colDiff * (draggedSize.width + parentGap);
-              const translateY = rowDiff * (draggedSize.height + parentGap);
-              transform = `translate(${translateX}px, ${translateY}px)`;
-              console.log(`[Animation] Grid node ${node.id}: translate(${translateX}px, ${translateY}px)`, {
-                thisIndex, draggedIndex, hoveredIndex, newIndex,
-                oldRow, oldCol, newRow, newCol, colDiff, rowDiff
-              });
-            }
-          }
-        } else {
-          // Horizontal layout (HStack): shift left/right
-          const siblings = parent.children || [];
-          const draggedIndex = siblings.findIndex(child => child.id === draggedNodeId);
-          const hoveredIndex = siblings.findIndex(child => child.id === hoveredSiblingId);
-
-          const shiftAmount = draggedSize.width + parentGap;
-          // Direction based on drag direction: forward (left→right) = shift left (-1), backward (right→left) = shift right (+1)
-          const direction = draggedIndex < hoveredIndex ? -1 : 1;
-          transform = `translateX(${direction * shiftAmount}px)`;
-          console.log(`[Animation] HStack node ${node.id}: translateX(${direction * shiftAmount}px)`, {
-            draggedIndex,
-            hoveredIndex,
-            direction: draggedIndex < hoveredIndex ? 'forward' : 'backward'
-          });
-        }
-      }
-    }
-
-    // Highlight hovered sibling
-    const isHoveredSibling = hoveredSiblingId === node.id;
-    const backgroundColor = isHoveredSibling ? 'rgba(56, 88, 233, 0.1)' : undefined;
-
-    if (isHoveredSibling) {
-      console.log(`[Hover] Highlighting node ${node.id} as hovered sibling`);
-    }
+    // DISABLED: Background highlight for hovered sibling
+    const backgroundColor = undefined;
 
     // Figma-style hover border - single pixel blue outline
     const showHoverBorder = shouldShowHoverBorder();
@@ -1166,15 +1018,9 @@ export const RenderNode: React.FC<{
       ...(gridChildHeight && { height: gridChildHeight }),
       backgroundColor,
 
-      // Sibling animation: shift to make space for drop
-      // Only apply transform and transition when actually animating to prevent unwanted animations
-      ...(shouldAnimateAsSibling && transform !== 'none' ? {
-        transform,
-        transition: 'transform 0.2s ease',
-      } : {
-        transform: 'none',
-        transition: 'none',
-      }),
+      // DISABLED: Sibling animation transforms
+      transform: 'none',
+      transition: 'none',
     };
 
     return { ...baseStyle, ...additionalStyles };
@@ -2217,85 +2063,23 @@ export const RenderNode: React.FC<{
           </div>
         )}
 
-        {/* Column Drag Target Overlay */}
-        {dragMode === 'column' && targetGridColumnStart !== null && node.type === 'Grid' && draggedItemParentId === node.id && (
+        {/* DISABLED: Column Drag Target Overlay - replaced with simple line indicator */}
+
+        {/* Drop Position Indicator - Figma-style grid line */}
+        {isHoveredSibling && dropPosition && !isPlayMode && (
           <div
             style={{
               position: 'absolute',
               top: 0,
-              left: 0,
-              right: 0,
               bottom: 0,
+              width: '3px',
+              backgroundColor: '#3858e9',
               pointerEvents: 'none',
-              zIndex: 1001,
+              zIndex: 10000,
+              left: dropPosition === 'before' ? '-1.5px' : undefined,
+              right: dropPosition === 'after' ? '-1.5px' : undefined,
             }}
-          >
-            <svg
-              width="100%"
-              height="100%"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-              }}
-            >
-              {(() => {
-                // Get grid properties
-                const columns = (mergedProps as any).columns || 12;
-                const gapValue = (mergedProps as any).style?.gap || (mergedProps as any).gap || '24px';
-                const gapPx = typeof gapValue === 'string' ? parseFloat(gapValue) : (gapValue * 4);
-
-                // Find dragged node to get its span
-                const draggedNode = findNodeById(tree, draggedNodeId || '');
-                const span = draggedNode?.props?.gridColumnSpan || 1;
-
-                // Calculate target column area
-                const totalGapWidth = (columns - 1) * gapPx;
-                const columnWidthPercent = `(100% - ${totalGapWidth}px) / ${columns}`;
-
-                // Calculate start position (targetGridColumnStart is 1-indexed)
-                const startIndex = targetGridColumnStart - 1;
-                const columnX = startIndex === 0
-                  ? '0px'
-                  : `calc(${columnWidthPercent} * ${startIndex} + ${gapPx * startIndex}px)`;
-
-                // Calculate width spanning multiple columns
-                const spanWidth = span === 1
-                  ? `calc(${columnWidthPercent})`
-                  : `calc(${columnWidthPercent} * ${span} + ${gapPx * (span - 1)}px)`;
-
-                return (
-                  <>
-                    {/* Highlight target columns */}
-                    <rect
-                      x={columnX}
-                      y="0"
-                      width={spanWidth}
-                      height="100%"
-                      fill="#3858e9"
-                      opacity="0.15"
-                      stroke="#3858e9"
-                      strokeWidth="2"
-                      strokeOpacity="0.5"
-                    />
-                    {/* Column number indicator */}
-                    <text
-                      x={`calc(${columnX} + ${spanWidth} / 2)`}
-                      y="50%"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="#3858e9"
-                      fontSize="24"
-                      fontWeight="bold"
-                      opacity="0.8"
-                    >
-                      Column {targetGridColumnStart}
-                    </text>
-                  </>
-                );
-              })()}
-            </svg>
-          </div>
+          />
         )}
 
         {/* Grid Resize Handles */}
