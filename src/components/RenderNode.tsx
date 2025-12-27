@@ -973,6 +973,45 @@ export const RenderNode: React.FC<{
   // Check if this is the hovered sibling (used for drop indicator)
   const isHoveredSibling = hoveredSiblingId === node.id;
 
+  // Render drop indicator at body level to avoid clipping
+  React.useEffect(() => {
+    if (!isHoveredSibling || !dropPosition || isPlayMode) return;
+
+    const element = document.querySelector(`[data-component-id="${node.id}"]`);
+    if (!element) return;
+
+    const rect = element.getBoundingClientRect();
+    const indicator = document.createElement('div');
+    indicator.id = `drop-indicator-${node.id}`;
+    indicator.style.position = 'fixed';
+    indicator.style.backgroundColor = '#3858e9';
+    indicator.style.pointerEvents = 'none';
+    indicator.style.zIndex = '10000';
+
+    // Determine parent layout
+    const isVerticalLayout = parent?.type === 'VStack' ||
+      (parent?.type === 'Flex' && parent?.props?.direction === 'column');
+
+    if (isVerticalLayout) {
+      // VStack: horizontal line
+      indicator.style.left = `${rect.left - 4}px`;
+      indicator.style.width = `${rect.width + 8}px`;
+      indicator.style.height = '3px';
+      indicator.style.top = dropPosition === 'before' ? `${rect.top - 1.5}px` : `${rect.bottom - 1.5}px`;
+    } else {
+      // HStack/Grid: vertical line
+      indicator.style.top = `${rect.top - 4}px`;
+      indicator.style.height = `${rect.height + 8}px`;
+      indicator.style.width = '3px';
+      indicator.style.left = dropPosition === 'before' ? `${rect.left - 1.5}px` : `${rect.right - 1.5}px`;
+    }
+
+    document.body.appendChild(indicator);
+    return () => {
+      document.body.removeChild(indicator);
+    };
+  }, [isHoveredSibling, dropPosition, isPlayMode, node.id, parent?.type, parent?.props?.direction]);
+
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => {
     // DISABLED: Transform calculation for sibling animations
     const transform = 'none';
@@ -2064,23 +2103,6 @@ export const RenderNode: React.FC<{
         )}
 
         {/* DISABLED: Column Drag Target Overlay - replaced with simple line indicator */}
-
-        {/* Drop Position Indicator - Figma-style grid line */}
-        {isHoveredSibling && dropPosition && !isPlayMode && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              width: '3px',
-              backgroundColor: '#3858e9',
-              pointerEvents: 'none',
-              zIndex: 10000,
-              left: dropPosition === 'before' ? '-1.5px' : undefined,
-              right: dropPosition === 'after' ? '-1.5px' : undefined,
-            }}
-          />
-        )}
 
         {/* Grid Resize Handles */}
         {needsResizeHandles && (() => {
