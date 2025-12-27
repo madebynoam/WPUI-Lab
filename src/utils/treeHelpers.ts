@@ -138,9 +138,16 @@ export const removeNodeFromTree = (tree: ComponentNode[], id: string): Component
  * Deep clone a node with new IDs
  */
 export const deepCloneNode = (node: ComponentNode): ComponentNode => {
+  // Clone props, but clear gridColumnStart for grid children to avoid overlap
+  const props = { ...node.props };
+  if (props.gridColumnStart !== undefined) {
+    delete props.gridColumnStart;
+  }
+
   return {
     ...node,
     id: generateId(),
+    props,
     children: node.children?.map(deepCloneNode),
   };
 };
