@@ -294,8 +294,8 @@ export const RenderNode: React.FC<{
     // Disable all interactions when agent is executing
     if (isAgentExecuting) return;
 
-    // Skip if in play mode, already dragging, or just finished dragging
-    if (isPlayMode || draggedNodeId || justFinishedDragging) return;
+    // Skip if in play mode or already dragging
+    if (isPlayMode || draggedNodeId) return;
 
     // Skip if not left click
     if (e.button !== 0) return;
