@@ -1076,7 +1076,7 @@ export function componentTreeReducer(
         projects: previous.projects,
         currentProjectId: previous.currentProjectId,
         selectedNodeIds: [ROOT_GRID_ID],
-        gridLinesVisible: new Set(),
+        gridLinesVisible: state.gridLinesVisible, // Preserve UI state across undo
         history: {
           past: newPast,
           present: previous,
@@ -1096,7 +1096,7 @@ export function componentTreeReducer(
         projects: next.projects,
         currentProjectId: next.currentProjectId,
         selectedNodeIds: [ROOT_GRID_ID],
-        gridLinesVisible: new Set(),
+        gridLinesVisible: state.gridLinesVisible, // Preserve UI state across redo
         history: {
           past: [...state.history.past, state.history.present],
           present: next,
