@@ -13,8 +13,6 @@ interface SimpleDragContextType {
   setJustFinishedDragging: (value: boolean) => void;
   draggedItemParentId: string | null;
   setDraggedItemParentId: (id: string | null) => void;
-  justFinishedResizing: boolean;
-  setJustFinishedResizing: (value: boolean) => void;
   // Column drag state
   dragMode: 'reorder' | 'column' | null;
   setDragMode: (mode: 'reorder' | 'column' | null) => void;
@@ -33,7 +31,6 @@ export const SimpleDragProvider: React.FC<{ children: ReactNode }> = ({ children
   const [draggedSize, setDraggedSize] = useState<{ width: number; height: number } | null>(null);
   const [justFinishedDragging, setJustFinishedDragging] = useState<boolean>(false);
   const [draggedItemParentId, setDraggedItemParentId] = useState<string | null>(null);
-  const [justFinishedResizing, setJustFinishedResizing] = useState<boolean>(false);
   // Column drag state
   const [dragMode, setDragMode] = useState<'reorder' | 'column' | null>(null);
   const [targetGridColumnStart, setTargetGridColumnStart] = useState<number | null>(null);
@@ -54,8 +51,6 @@ export const SimpleDragProvider: React.FC<{ children: ReactNode }> = ({ children
         setJustFinishedDragging,
         draggedItemParentId,
         setDraggedItemParentId,
-        justFinishedResizing,
-        setJustFinishedResizing,
         // Column drag state
         dragMode,
         setDragMode,

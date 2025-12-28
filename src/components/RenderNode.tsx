@@ -28,7 +28,7 @@ export const RenderNode: React.FC<{
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
 
   // Simple drag state
-  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize, justFinishedDragging, setJustFinishedDragging, draggedItemParentId, setDraggedItemParentId, justFinishedResizing, dragMode, setDragMode, targetGridColumnStart, setTargetGridColumnStart, parentGridColumns: contextParentGridColumns, setParentGridColumns: setContextParentGridColumns } = useSimpleDrag();
+  const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize, justFinishedDragging, setJustFinishedDragging, draggedItemParentId, setDraggedItemParentId, dragMode, setDragMode, targetGridColumnStart, setTargetGridColumnStart, parentGridColumns: contextParentGridColumns, setParentGridColumns: setContextParentGridColumns } = useSimpleDrag();
   const [isDragging, setIsDragging] = useState(false);
   const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -335,8 +335,7 @@ export const RenderNode: React.FC<{
 
     // Clicking root VStack clears selection
     if (node.id === ROOT_GRID_ID) {
-      // Don't clear selection if we just finished dragging or resizing (prevents clearing Grid selection)
-      if (!justFinishedDragging && !justFinishedResizing && selectedNodeIds.length > 0) {
+      if (selectedNodeIds.length > 0) {
         toggleNodeSelection('', false, false, tree);
       }
       lastClickTimeRef.current = now;

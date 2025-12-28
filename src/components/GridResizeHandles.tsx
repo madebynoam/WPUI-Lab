@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useComponentTree } from '@/contexts/ComponentTreeContext';
-import { useSimpleDrag } from '@/contexts/SimpleDragContext';
 
 interface GridResizeHandlesProps {
   nodeId: string;
@@ -22,7 +21,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
   siblings = [],
 }) => {
   const { updateComponentProps, isAgentExecuting, undo } = useComponentTree();
-  const { setJustFinishedResizing } = useSimpleDrag();
 
   // Only use state for hover and active drag side
   const [isHoveringLeft, setIsHoveringLeft] = useState(false);
@@ -237,12 +235,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
       // Clean up drag state
       dragStateRef.current = null;
       setActiveDragSide(null);
-
-      // Set flag to prevent selection clearing immediately after resize
-      setJustFinishedResizing(true);
-      setTimeout(() => {
-        setJustFinishedResizing(false);
-      }, 200);
     };
 
     // Attach to document for proper capture
