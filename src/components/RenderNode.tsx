@@ -725,13 +725,30 @@ export const RenderNode: React.FC<{
             const absDx = Math.abs(dx);
             const absDy = Math.abs(dy);
 
-            // Apply same human-friendly thresholds as initial detection
-            const isHorizontalIntent = absDy < 40 || absDx > absDy * 2.5;
+            // Asymmetric thresholds - make column mode "sticky"
+            let newMode = dragMode;
 
-            // Update drag mode dynamically
-            const newMode = isHorizontalIntent ? 'column' : 'reorder';
+            if (dragMode === 'column') {
+              // Already in column mode - require significant vertical movement to switch to reorder
+              // Need: vertical > 80px AND vertical > 1.5x horizontal
+              const shouldSwitchToReorder = absDy > 80 && absDy > absDx * 1.5;
+              if (shouldSwitchToReorder) {
+                newMode = 'reorder';
+                console.log('[DEBUG Drag] Column → Reorder (strong vertical intent, dx:', absDx, 'dy:', absDy, ')');
+              }
+            } else {
+              // In reorder mode (or initial) - use normal thresholds to enter column mode
+              const isHorizontalIntent = absDy < 40 || absDx > absDy * 2.5;
+              if (isHorizontalIntent) {
+                newMode = 'column';
+                console.log('[DEBUG Drag] Reorder → Column (horizontal intent, dx:', absDx, 'dy:', absDy, ')');
+              } else {
+                newMode = 'reorder';
+              }
+            }
+
+            // Apply mode change
             if (newMode !== dragMode) {
-              console.log('[DEBUG Drag] Mode switched:', dragMode, '→', newMode, '(dx:', absDx, 'dy:', absDy, ')');
               setDragMode(newMode);
               if (newMode === 'column') {
                 setContextParentGridColumns(parentColumns);

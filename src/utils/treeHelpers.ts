@@ -298,7 +298,7 @@ export const reorderNodeInTree = (
 
     if (overIndex !== -1) {
       // Found it at this level - perform the insertion
-      const newNodes = [...nodes];
+      let newNodes = [...nodes];
       if (position === 'before') {
         newNodes.splice(overIndex, 0, activeNode);
       } else if (position === 'after') {
@@ -310,6 +310,27 @@ export const reorderNodeInTree = (
           children: [...(overNode.children || []), activeNode],
         };
       }
+
+      // CRITICAL FIX: Clear gridColumnStart from ALL siblings when reordering in a Grid
+      // This prevents layout bugs where some items have explicit positions and others auto-flow
+      if (position === 'before' || position === 'after') {
+        const parent = findParent(tree, overId);
+        if (parent?.type === 'Grid') {
+          newNodes = newNodes.map(node => {
+            if (node.props?.gridColumnStart) {
+              return {
+                ...node,
+                props: {
+                  ...node.props,
+                  gridColumnStart: undefined,
+                },
+              };
+            }
+            return node;
+          });
+        }
+      }
+
       return newNodes;
     }
 
