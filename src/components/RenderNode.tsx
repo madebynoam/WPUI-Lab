@@ -719,8 +719,10 @@ export const RenderNode: React.FC<{
             const availableWidth = parentRect.width - totalGapWidth;
             const columnWidth = availableWidth / contextParentGridColumns;
 
-            // Calculate which column the cursor is over (relative to parent)
-            const relativeX = e.clientX - parentRect.left;
+            // Calculate which column the card's LEFT EDGE is over (not cursor position)
+            // Card's left edge = cursor X - drag offset X
+            const cardLeftEdge = e.clientX - dragOffsetRef.current.x;
+            const relativeX = cardLeftEdge - parentRect.left;
             const columnWithGap = columnWidth + gap;
             let targetColumn = Math.floor(relativeX / columnWithGap) + 1;
 
