@@ -631,15 +631,20 @@ export const RenderNode: React.FC<{
               const absDx = Math.abs(dx);
               const absDy = Math.abs(dy);
 
-              // Use 1.2 ratio to bias towards intended direction (20% threshold)
-              if (absDx > absDy * 1.2) {
+              // Human-friendly thresholds for drag mode detection:
+              // 1. Vertical movement < 40px: Always column mode (tolerates natural hand drift)
+              // 2. OR horizontal movement > 2.5x vertical: Column mode (clear horizontal intent)
+              // 3. Otherwise: Reorder mode (clear vertical intent)
+              const isHorizontalIntent = absDy < 40 || absDx > absDy * 2.5;
+
+              if (isHorizontalIntent) {
                 // Horizontal drag - column positioning mode
-                console.log('[DEBUG Drag] Column drag mode activated');
+                console.log('[DEBUG Drag] Column drag mode activated (dx:', absDx, 'dy:', absDy, ')');
                 setDragMode('column');
                 setContextParentGridColumns(parentColumns);
               } else {
-                // Vertical drag - reorder mode (default)
-                console.log('[DEBUG Drag] Reorder drag mode activated');
+                // Vertical drag - reorder mode (clear vertical movement)
+                console.log('[DEBUG Drag] Reorder drag mode activated (dx:', absDx, 'dy:', absDy, ')');
                 setDragMode('reorder');
               }
             } else {
@@ -703,6 +708,37 @@ export const RenderNode: React.FC<{
         // Get parent node
         const parent = findNodeById(tree, draggedItemParentId);
         if (!parent || !parent.children) return;
+
+        // DYNAMIC DRAG MODE RE-EVALUATION
+        // Re-evaluate drag mode during drag to handle natural cursor movement
+        if (parent.type === 'Grid' && dragStartPosRef.current) {
+          const draggedNode = findNodeById(tree, draggedNodeId);
+          const isGridChild = draggedNode?.props?.gridColumnSpan;
+          const gridColumnSpan = draggedNode?.props?.gridColumnSpan || 12;
+          const parentColumns = parent.props?.columns || 12;
+          const isFullWidth = gridColumnSpan >= parentColumns;
+
+          if (isGridChild && !isFullWidth) {
+            // Calculate movement from drag start
+            const dx = e.clientX - dragStartPosRef.current.x;
+            const dy = e.clientY - dragStartPosRef.current.y;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+
+            // Apply same human-friendly thresholds as initial detection
+            const isHorizontalIntent = absDy < 40 || absDx > absDy * 2.5;
+
+            // Update drag mode dynamically
+            const newMode = isHorizontalIntent ? 'column' : 'reorder';
+            if (newMode !== dragMode) {
+              console.log('[DEBUG Drag] Mode switched:', dragMode, '→', newMode, '(dx:', absDx, 'dy:', absDy, ')');
+              setDragMode(newMode);
+              if (newMode === 'column') {
+                setContextParentGridColumns(parentColumns);
+              }
+            }
+          }
+        }
 
         // Column drag mode: Calculate target column position
         if (dragMode === 'column' && parentLayoutDirection === 'grid' && contextParentGridColumns) {
