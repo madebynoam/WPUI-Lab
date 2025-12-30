@@ -1964,7 +1964,7 @@ export const RenderNode: React.FC<{
     // - VStack/HStack children: Use flex-grow (applied below)
 
     const padding = props.padding || '';
-    // Grid uses 'gap' prop, VStack/HStack use 'spacing' prop
+    // Grid uses numeric 'gap' prop, VStack/HStack use numeric 'spacing' prop
     const spacing = node.type === 'Grid'
       ? (props.gap !== undefined ? props.gap : (definition.defaultProps?.gap || 4))
       : (props.spacing !== undefined ? props.spacing : (definition.defaultProps?.spacing || 2));
@@ -2022,15 +2022,19 @@ export const RenderNode: React.FC<{
   // Apply width for children of VStack/HStack
   // Fill: Stretch to fill container (cross-axis for VStack, main-axis for HStack)
   // Hug: Shrink to content size
+  // IMPORTANT: Only apply alignSelf if parent alignment is 'stretch', otherwise let parent control alignment
   const isVStackOrHStackChild = parent?.type === 'VStack' || parent?.type === 'HStack';
   if (isVStackOrHStackChild && !isGridChild) {
     const width = widthProp || 'fill'; // 'fill' (default) or 'hug'
+    const parentAlignment = parent?.props?.alignment || 'stretch';
+    const shouldRespectParentAlignment = parentAlignment !== 'stretch';
 
     if (width === 'fill') {
       // Fill: Stretch to fill container width
       mergedProps.style = {
         ...mergedProps.style,
-        alignSelf: 'stretch',
+        // Only set alignSelf if parent uses stretch alignment, otherwise let parent control
+        ...(shouldRespectParentAlignment ? {} : { alignSelf: 'stretch' }),
         width: '100%' // Explicitly set width to ensure it fills
       };
     } else {
@@ -2159,29 +2163,25 @@ export const RenderNode: React.FC<{
 
         {/* DISABLED: Column Drag Target Overlay - replaced with simple line indicator */}
 
-        {/* Grid Resize Handles */}
-        {needsResizeHandles && (() => {
-          // Collect sibling grid positions for smart resize behavior
-          const siblings = parent?.children
-            ?.filter(child => child.id !== node.id && child.props.gridColumnSpan)
-            ?.map(child => ({
-              id: child.id,
-              gridColumnStart: child.props.gridColumnStart || 1,
-              gridColumnSpan: child.props.gridColumnSpan || 1,
-            })) || [];
-
-          return (
-            <GridResizeHandles
-              nodeId={node.id}
-              gridColumnSpan={gridColumnSpan || 1}
-              gridColumnStart={gridColumnStart}
-              parentColumns={parentColumns}
-              isSelected={isSelected}
-              isPlayMode={isPlayMode}
-              siblings={siblings}
-            />
-          );
-        })()}
+        {/* Grid Resize Handles - Always rendered to maintain consistent hook calls */}
+        <GridResizeHandles
+          nodeId={node.id}
+          gridColumnSpan={gridColumnSpan || 1}
+          gridColumnStart={gridColumnStart}
+          parentColumns={parentColumns}
+          isSelected={isSelected}
+          isPlayMode={isPlayMode}
+          needsHandles={needsResizeHandles}
+          siblings={
+            parent?.children
+              ?.filter(child => child.id !== node.id && child.props.gridColumnSpan)
+              ?.map(child => ({
+                id: child.id,
+                gridColumnStart: child.props.gridColumnStart || 1,
+                gridColumnSpan: child.props.gridColumnSpan || 1,
+              })) || []
+          }
+        />
       </Component>
     </React.Fragment>
   );

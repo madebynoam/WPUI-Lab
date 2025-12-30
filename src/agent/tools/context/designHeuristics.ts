@@ -15,12 +15,12 @@ const HEURISTICS = {
   ],
 
   spacing: [
-    "4px Grid System: All spacing uses multiples of 4px. spacing={1} = 4px, spacing={2} = 8px, spacing={3} = 12px, spacing={4} = 16px, etc.",
+    "4px Grid System: All spacing uses multiples of 4px. spacing={1} = 4px, spacing={2} = 8px, spacing={3} = 12px, spacing={4} = 16px, etc. VALID VALUES: 0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24 (enforced by validation)",
     "Tight Proximity (1-2): Use spacing={1-2} (4-8px) for tightly related items like icon+text pairs, button groups, or label+value pairs that form a single conceptual unit",
     "Normal Spacing (3-4): Use spacing={3-4} (12-16px) for form fields, list items within cards, or vertical content stacks. This is the default spacing for most content",
     "Relaxed Spacing (5-6): Use spacing={5-6} (20-24px) to create breathing room between distinct content sections within a container",
-    "Loose Spacing (8+): Use spacing={8+} (32px+) for major section breaks, like between hero sections and feature grids",
-    "Grid Gap Scales with Columns: When using Grid layouts, gap={4} (16px) works for 3-column layouts, gap={6} (24px) for 2-column layouts. More columns = tighter gaps"
+    "Loose Spacing (8+): Use spacing={8, 10, 12} (32-48px) for major section breaks, like between hero sections and feature grids",
+    "Grid Gap Scales with Columns: When using Grid layouts, gap={4} (16px) works for 3-column layouts, gap={6} (24px) for 2-column layouts. More columns = tighter gaps. VALID gap VALUES: 0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24"
   ],
 
   hierarchy: [
@@ -32,12 +32,14 @@ const HEURISTICS = {
   ],
 
   composition: [
-    "Grid-Only Top Level: ALL top-level markup MUST start with Grid columns={12}. NEVER use VStack or HStack at the top level. Grid provides the 12-column layout system for all content",
+    "Grid-Only Top Level: ALL top-level markup MUST start with Grid columns={12}. NEVER use VStack, HStack, or Stack at the top level. Grid provides the 12-column layout system for all content",
     "Grid Spans Must Fill Columns: In a Grid with columns={12}, child gridColumnSpan values MUST add up to 12. Examples: 1 item = gridColumnSpan={12}, 2 items = gridColumnSpan={6} each, 3 items = gridColumnSpan={4} each, 4 items = gridColumnSpan={3} each",
-    "VStack/HStack Placement: VStack and HStack are ONLY allowed inside Card parts (CardHeader/CardBody/CardFooter) OR as Grid children with gridColumnSpan={12}. They are container-level components, NOT top-level containers",
+    "Stack Component (PREFERRED): Use <Stack gap='md' direction='vertical'> for vertical/horizontal content flow. Stack uses WordPress semantic tokens (gap='xs'|'sm'|'md'|'lg'|'xl') for better design system alignment. Preferred over VStack/HStack",
+    "Stack Placement: Stack is ONLY allowed inside Card parts (CardHeader/CardBody/CardFooter) OR as Grid children with gridColumnSpan={12}. It's a container-level component, NOT a top-level container",
+    "Stack Gap Tokens: Use gap='xs' (8px) for tight pairs, gap='sm' (12px) for compact lists, gap='md' (16px) for normal spacing (DEFAULT), gap='lg' (24px) for relaxed sections, gap='xl' (32px) for major breaks",
     "Form Field Pattern: Use label prop for field labels. TextControl/TextareaControl children contain placeholder text. SelectControl uses options prop with array of {label, value} objects. Examples: <TextControl label='Name'>Your name</TextControl>, <SelectControl label='Size' options={[{label: 'Small', value: 's'}, {label: 'Large', value: 'l'}]} />",
-    "VStack for Vertical Flow: Inside containers, use VStack for form fields, card bodies, testimonial content. Use alignment='stretch' for forms so fields have consistent width",
-    "HStack for Horizontal Grouping: Inside containers, use HStack for 'icon + label' pairs, breadcrumbs, or toolbar buttons with spacing={2}",
+    "Stack for Vertical Flow: Inside containers, use <Stack direction='vertical' gap='md'> for form fields, card bodies, testimonial content. Use alignment='stretch' for forms so fields have consistent width",
+    "Stack for Horizontal Grouping: Inside containers, use <Stack direction='horizontal' gap='sm'> for 'icon + label' pairs, breadcrumbs, or toolbar buttons",
     "Space-Between for Edge Alignment: Use justify='space-between' to push items to opposite edges (e.g., checkbox left, link right)"
   ],
 
@@ -51,6 +53,16 @@ const HEURISTICS = {
   typography: [
     "Text vs Heading Distinction: Use Text for body content, descriptions, and metadata. Use Heading for titles, labels, values, and anything that needs semantic weight",
     "Semantic Weight Matters: Even if they look similar visually, the semantic distinction between Text and Heading matters for accessibility and hierarchy"
+  ],
+
+  layout: [
+    "Centered Content Pattern: For full pages/dashboards, create professional layouts with margins. Use full-width header (gridColumnSpan={12}), then nest a Grid with gridColumnStart={2} gridColumnSpan={10} columns={12} for content. This creates 1-column margins on each side (Automattic style)",
+    "Sidebar Pattern: For pages with navigation, use gridColumnSpan={3} for sidebar, gridColumnSpan={9} for main content. Nest a Grid inside the main content area with columns={12} for further layout",
+    "Asymmetric Pattern: For dashboards with activity feeds, use uneven splits like gridColumnSpan={7} for primary content and gridColumnSpan={5} for secondary sidebar. This creates visual hierarchy",
+    "Column Span by Content Type: Full-width (12 cols) for navbars/headers/heroes/tables. Primary content (6-8 cols) for featured cards/forms/CTAs. Equal distribution: 2 items=6 each, 3 items=4 each, 4 items=3 each. Secondary content (4-5 cols) for sidebars/activity feeds/stats (3-4 cols)",
+    "Dashboard Layout Selection: Default 'create a dashboard' → Centered Content pattern. 'Dashboard with sidebar' → Sidebar pattern. 'Dashboard with activity feed' → Asymmetric pattern. Context determines pattern",
+    "Nested Grids for Complex Layouts: When creating multi-region layouts (like sidebar + content), use nested Grids. Outer Grid divides space (sidebar span 3, content span 9), inner Grid in content area has its own columns={12} for layout flexibility",
+    "Context-Aware Layout: If parent is ROOT_GRID_ID → use dashboard patterns. If parent is VStack/HStack → just add children (no layout pattern). If parent is nested Grid → use appropriate gridColumnSpan"
   ]
 };
 
@@ -99,6 +111,16 @@ export function getRelevantHeuristics(context: string): string {
       contextLower.includes('button') || contextLower.includes('action') ||
       contextLower.includes('link') || contextLower.includes('menu')) {
     relevant.push(...HEURISTICS.interaction);
+  }
+
+  // Include layout for page-level or multi-column contexts
+  if (contextLower.includes('dashboard') || contextLower.includes('page') ||
+      contextLower.includes('sidebar') || contextLower.includes('layout') ||
+      contextLower.includes('full') || contextLower.includes('centered') ||
+      contextLower.includes('asymmetric') || contextLower.includes('activity') ||
+      contextLower.includes('feed') || contextLower.includes('hero') ||
+      contextLower.includes('section')) {
+    relevant.push(...HEURISTICS.layout);
   }
 
   // Always include typography basics

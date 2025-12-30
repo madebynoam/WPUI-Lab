@@ -18,6 +18,7 @@ import {
 } from './utils/treeHelpers';
 import { generateId } from './utils/idGenerator';
 import { validateTree, formatValidationErrors } from './utils/treeValidation';
+import { normalizeComponentNode } from './utils/normalizeComponent';
 
 // Debug flag - set to true to enable console logging
 const DEBUG = false;
@@ -239,7 +240,13 @@ export function componentTreeReducer(
 
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
-      const newTree = insertNodeInTree(currentTree, node, parentId, index);
+      // Normalize node before insertion to ensure defaultProps are applied
+      const normalizedNode = normalizeComponentNode(node);
+      if (DEBUG) {
+        console.log('[Reducer] INSERT_COMPONENT - Normalized node:', JSON.stringify(normalizedNode, null, 2));
+      }
+
+      const newTree = insertNodeInTree(currentTree, normalizedNode, parentId, index);
       if (DEBUG) {
         console.log('[Reducer] INSERT_COMPONENT - New tree after insertion:', JSON.stringify(newTree, null, 2));
       }
@@ -903,8 +910,12 @@ export function componentTreeReducer(
       });
 
       const newNode = deepCloneWithNewIds(state.clipboard);
+
+      // Normalize the pasted node to ensure defaultProps are applied
+      const normalizedNode = normalizeComponentNode(newNode);
+
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
-      const newTree = insertNodeInTree(currentTree, newNode, parentId);
+      const newTree = insertNodeInTree(currentTree, normalizedNode, parentId);
 
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);

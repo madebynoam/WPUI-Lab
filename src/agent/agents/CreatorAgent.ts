@@ -164,9 +164,11 @@ export class CreatorAgent extends BaseAgent {
       // Check memory for active page
       this.emit('progress', 'Searching for active page...');
       const recentPage = memory.search({ action: 'page_created', latest: true });
+      // NOTE: Don't include page ID in context - it's NEVER used as parentId
+      // This prevents LLM confusion about when to use page IDs
       const pageContext = recentPage.length > 0
-        ? `Recently created page: ${recentPage[0].details.name} (${recentPage[0].entityId})`
-        : `Current page: ${context.currentPageId}`;
+        ? `Working on page: ${recentPage[0].details.name}`
+        : `Working on current page`;
 
       // Get original user request for additional domain context
       const originalContext = this.getOriginalContext(memory);
@@ -175,7 +177,7 @@ export class CreatorAgent extends BaseAgent {
         : '';
 
       if (recentPage.length > 0) {
-        this.emit('progress', `Found page ${recentPage[0].entityId}`);
+        this.emit('progress', `Found page: ${recentPage[0].details.name}`);
       }
 
       // Decompose request into sub-requests
@@ -238,6 +240,7 @@ export class CreatorAgent extends BaseAgent {
         const response = await this.callLLM({
           messages: messages as never[],
           tools: toolSchemas,
+          temperature: 0.1,  // Low temperature for deterministic layout decisions
           max_tokens: 1500,  // Smaller per sub-request (not generating everything at once)
           signal,
         });
@@ -361,7 +364,7 @@ export class CreatorAgent extends BaseAgent {
                 },
               ],
               tools: toolSchemas,
-              temperature: 0.7,
+              temperature: 0.1,  // Low temperature for deterministic layout decisions
               max_tokens: 2000,
               signal,
             });

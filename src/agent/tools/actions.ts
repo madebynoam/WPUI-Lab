@@ -626,8 +626,8 @@ export const buildFromMarkupTool: AgentTool = {
 
 Example:
 {
-  markup: \`<Grid columns={3} gap={4}>
-  <Card>
+  markup: \`<Grid columns={12}>
+  <Card gridColumnSpan={4}>
     <CardHeader>
       <Heading level={3}>Spring Special</Heading>
     </CardHeader>

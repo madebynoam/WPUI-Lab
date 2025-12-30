@@ -111,23 +111,32 @@ interface ComponentTreeContextType {
 
 const ComponentTreeContext = createContext<ComponentTreeContextType | undefined>(undefined);
 
-const createInitialPage = (id: string, name: string): Page => ({
-  id,
-  name,
-  tree: [{
+const createInitialPage = (id: string, name: string): Page => {
+  // Create root Grid with basic props
+  const rootGrid: ComponentNode = {
     id: ROOT_GRID_ID,
     type: 'Grid',
     props: {
       columns: 12,
-      // gap is applied from projectLayout.spacing in RenderNode
+      // Other props will be filled by normalization
     },
     children: [],
-  }],
-  theme: {
-    primaryColor: '#3858e9',
-    backgroundColor: '#ffffff',
-  },
-});
+    interactions: [],
+  };
+
+  // Normalize to apply defaultProps (gap, etc.)
+  const normalizedRootGrid = normalizeComponentNode(rootGrid);
+
+  return {
+    id,
+    name,
+    tree: [normalizedRootGrid],
+    theme: {
+      primaryColor: '#3858e9',
+      backgroundColor: '#ffffff',
+    },
+  };
+};
 
 const createInitialProject = (id: string, name: string): Project => ({
   id,

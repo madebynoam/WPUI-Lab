@@ -33,6 +33,67 @@ export interface ParseResult {
 }
 
 /**
+ * Valid spacing values for WordPress 4px grid system
+ * spacing={1} = 4px, spacing={2} = 8px, etc.
+ */
+const VALID_SPACING_VALUES = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24];
+
+/**
+ * Validate design tokens (spacing, gap) to enforce WordPress 4px grid system
+ */
+function validateDesignTokens(componentName: string, props: Record<string, any>, state: ParseState): void {
+  // Validate spacing prop (VStack, HStack) - numeric values
+  if ('spacing' in props && typeof props.spacing === 'number') {
+    if (!VALID_SPACING_VALUES.includes(props.spacing)) {
+      throw createError(
+        state,
+        `Invalid spacing value: ${props.spacing}. Must be one of: ${VALID_SPACING_VALUES.join(', ')} (WordPress 4px grid system)`
+      );
+    }
+  }
+
+  // Validate gap prop - numeric values for Grid
+  if ('gap' in props && typeof props.gap === 'number') {
+    if (!VALID_SPACING_VALUES.includes(props.gap)) {
+      throw createError(
+        state,
+        `Invalid gap value: ${props.gap}. Must be one of: ${VALID_SPACING_VALUES.join(', ')} (WordPress 4px grid system)`
+      );
+    }
+  }
+
+  // Validate gridColumnSpan (Grid children)
+  if ('gridColumnSpan' in props && typeof props.gridColumnSpan === 'number') {
+    if (props.gridColumnSpan < 1 || props.gridColumnSpan > 12 || !Number.isInteger(props.gridColumnSpan)) {
+      throw createError(
+        state,
+        `Invalid gridColumnSpan value: ${props.gridColumnSpan}. Must be an integer between 1 and 12`
+      );
+    }
+  }
+
+  // Validate gridRowSpan (Grid children)
+  if ('gridRowSpan' in props && typeof props.gridRowSpan === 'number') {
+    if (props.gridRowSpan < 1 || !Number.isInteger(props.gridRowSpan)) {
+      throw createError(
+        state,
+        `Invalid gridRowSpan value: ${props.gridRowSpan}. Must be a positive integer`
+      );
+    }
+  }
+
+  // Validate Grid columns (must be 12 for WP-Designer's layout system)
+  if (componentName === 'Grid' && 'columns' in props) {
+    if (props.columns !== 12) {
+      throw createError(
+        state,
+        `Invalid Grid columns value: ${props.columns}. Grid must use columns={12} (12-column system)`
+      );
+    }
+  }
+}
+
+/**
  * Parse JSX-like markup into ComponentNode tree
  *
  * Supports:
@@ -179,6 +240,381 @@ function getContext(state: ParseState, pos: number): string {
 }
 
 /**
+ * Transform pre-composed component shortcuts into full ComponentNode trees
+ * These are markup abstractions that save tokens for the agent but expand to real structure
+ */
+function transformPrecomposedComponent(componentName: string, props: Record<string, any>): ComponentNode | null {
+  const precomposedComponents: Record<string, (props: Record<string, any>) => ComponentNode> = {
+    ActionCard: (props) => ({
+      id: generateId(),
+      type: 'Card',
+      name: '',
+      props: { size: 'medium', ...props, gridColumnSpan: props.gridColumnSpan || 4 },
+      children: [
+        {
+          id: generateId(),
+          type: 'CardBody',
+          name: '',
+          props: { size: 'small' },
+          children: [
+            {
+              id: generateId(),
+              type: 'HStack',
+              name: '',
+              props: { spacing: 2, justify: 'space-between', alignment: 'center' },
+              children: [
+                {
+                  id: generateId(),
+                  type: 'HStack',
+                  name: '',
+                  props: { spacing: 4, alignment: 'top', expanded: true },
+                  children: [
+                    {
+                      id: generateId(),
+                      type: 'Icon',
+                      name: '',
+                      props: { icon: props.icon || 'globe', size: 24 },
+                      children: [],
+                      interactions: [],
+                    },
+                    {
+                      id: generateId(),
+                      type: 'VStack',
+                      name: '',
+                      props: { spacing: 1 },
+                      children: [
+                        {
+                          id: generateId(),
+                          type: 'Heading',
+                          name: '',
+                          props: { level: 4, children: props.title || 'Title' },
+                          children: [],
+                          interactions: [],
+                        },
+                        {
+                          id: generateId(),
+                          type: 'Text',
+                          name: '',
+                          props: { variant: 'muted', children: props.description || 'Description' },
+                          children: [],
+                          interactions: [],
+                        },
+                      ],
+                      interactions: [],
+                    },
+                  ],
+                  interactions: [],
+                },
+                {
+                  id: generateId(),
+                  type: 'Icon',
+                  name: '',
+                  props: { icon: 'chevronRight', size: 24 },
+                  children: [],
+                  interactions: [],
+                },
+              ],
+              interactions: [],
+            },
+          ],
+          interactions: [],
+        },
+      ],
+      interactions: [],
+    }),
+
+    MetricCard: (props) => ({
+      id: generateId(),
+      type: 'Card',
+      name: '',
+      props: { size: 'medium', ...props, gridColumnSpan: props.gridColumnSpan || 3 },
+      children: [
+        {
+          id: generateId(),
+          type: 'CardHeader',
+          name: '',
+          props: { isBorderless: false },
+          children: [
+            {
+              id: generateId(),
+              type: 'HStack',
+              name: '',
+              props: { spacing: 2, justify: 'flex-start' },
+              children: [
+                {
+                  id: generateId(),
+                  type: 'Icon',
+                  name: '',
+                  props: { icon: props.icon || 'chartBar', size: 24 },
+                  children: [],
+                  interactions: [],
+                },
+                {
+                  id: generateId(),
+                  type: 'Heading',
+                  name: '',
+                  props: { level: 5, children: props.label || 'Metric' },
+                  children: [],
+                  interactions: [],
+                },
+              ],
+              interactions: [],
+            },
+            {
+              id: generateId(),
+              type: 'Icon',
+              name: '',
+              props: { icon: 'chevronRight', size: 24 },
+              children: [],
+              interactions: [],
+            },
+          ],
+          interactions: [],
+        },
+        {
+          id: generateId(),
+          type: 'CardBody',
+          name: '',
+          props: {},
+          children: [
+            {
+              id: generateId(),
+              type: 'VStack',
+              name: '',
+              props: { spacing: 2, alignment: 'stretch', justify: 'flex-start' },
+              children: [
+                {
+                  id: generateId(),
+                  type: 'Heading',
+                  name: '',
+                  props: { level: 3, children: props.value || '0' },
+                  children: [],
+                  interactions: [],
+                },
+                {
+                  id: generateId(),
+                  type: 'Text',
+                  name: '',
+                  props: { variant: 'muted', children: props.description || '' },
+                  children: [],
+                  interactions: [],
+                },
+              ],
+              interactions: [],
+            },
+          ],
+          interactions: [],
+        },
+      ],
+      interactions: [],
+    }),
+
+    PricingCard: (props) => {
+      const features = props.features || [];
+      const label = props.label; // Optional label like "RECOMMENDED"
+      const badge = props.badge; // Optional badge for discounts
+
+      return {
+        id: generateId(),
+        type: 'Card',
+        name: '',
+        props: { elevation: 0, isRounded: true, isBorderless: false, ...props, gridColumnSpan: props.gridColumnSpan || 3 },
+        children: [
+          {
+            id: generateId(),
+            type: 'CardHeader',
+            name: '',
+            props: { size: 'small', isBorderless: true, isShady: false },
+            children: [
+              {
+                id: generateId(),
+                type: 'VStack',
+                name: '',
+                props: { spacing: 1, alignment: 'stretch', expanded: true },
+                children: [
+                  ...(label ? [{
+                    id: generateId(),
+                    type: 'Text',
+                    name: '',
+                    props: { children: label, variant: 'muted' },
+                    children: [],
+                    interactions: [],
+                  }] : []),
+                  {
+                    id: generateId(),
+                    type: 'Heading',
+                    name: '',
+                    props: { level: 3, children: props.title || 'Plan' },
+                    children: [],
+                    interactions: [],
+                  },
+                  {
+                    id: generateId(),
+                    type: 'HStack',
+                    name: '',
+                    props: { spacing: 2, alignment: 'top', justify: 'space-between', expanded: true },
+                    children: [
+                      {
+                        id: generateId(),
+                        type: 'VStack',
+                        name: '',
+                        props: { spacing: 2 },
+                        children: [
+                          {
+                            id: generateId(),
+                            type: badge ? 'HStack' : 'Heading',
+                            name: '',
+                            props: badge ? { spacing: 2, justify: 'flex-start' } : { level: 3, children: props.price || '$0' },
+                            children: badge ? [
+                              {
+                                id: generateId(),
+                                type: 'Heading',
+                                name: '',
+                                props: { level: 3, children: props.price || '$0' },
+                                children: [],
+                                interactions: [],
+                              },
+                              {
+                                id: generateId(),
+                                type: 'Badge',
+                                name: '',
+                                props: { children: badge, intent: 'success' },
+                                children: [],
+                                interactions: [],
+                              },
+                            ] : [],
+                            interactions: [],
+                          },
+                          {
+                            id: generateId(),
+                            type: 'Text',
+                            name: '',
+                            props: { children: props.period || 'Per month, paid yearly', variant: 'muted' },
+                            children: [],
+                            interactions: [],
+                          },
+                        ],
+                        interactions: [],
+                      },
+                    ],
+                    interactions: [],
+                  },
+                ],
+                interactions: [],
+              },
+            ],
+            interactions: [],
+          },
+          {
+            id: generateId(),
+            type: 'CardBody',
+            name: '',
+            props: { size: 'small' },
+            children: [
+              {
+                id: generateId(),
+                type: 'VStack',
+                name: '',
+                props: { spacing: 2, alignment: 'stretch', justify: 'flex-start', expanded: true, wrap: false },
+                children: [
+                  {
+                    id: generateId(),
+                    type: 'Button',
+                    name: '',
+                    props: {
+                      text: props.buttonText || 'Get Started',
+                      variant: props.variant === 'primary' ? 'primary' : 'secondary',
+                      disabled: false,
+                      stretchFullWidth: true,
+                    },
+                    children: [],
+                    interactions: [],
+                  },
+                  {
+                    id: generateId(),
+                    type: 'Spacer',
+                    name: '',
+                    props: { margin: 0 },
+                    children: [],
+                    interactions: [],
+                  },
+                  ...features.map((feature: string) => ({
+                    id: generateId(),
+                    type: 'Text',
+                    name: '',
+                    props: { children: `✓ ${feature}` },
+                    children: [],
+                    interactions: [],
+                  })),
+                ],
+                interactions: [],
+              },
+            ],
+            interactions: [],
+          },
+        ],
+        interactions: [],
+      };
+    },
+
+    InfoCard: (props) => ({
+      id: generateId(),
+      type: 'Card',
+      name: '',
+      props: { size: 'medium', isBorderless: false, ...props, gridColumnSpan: props.gridColumnSpan || 3 },
+      children: [
+        {
+          id: generateId(),
+          type: 'CardHeader',
+          name: '',
+          props: { isBorderless: true },
+          children: [
+            {
+              id: generateId(),
+              type: 'Heading',
+              name: '',
+              props: { level: 4, children: props.title || 'Info' },
+              children: [],
+              interactions: [],
+            },
+            {
+              id: generateId(),
+              type: 'Icon',
+              name: '',
+              props: { icon: props.icon || 'published', size: 24 },
+              children: [],
+              interactions: [],
+            },
+          ],
+          interactions: [],
+        },
+        {
+          id: generateId(),
+          type: 'CardFooter',
+          name: '',
+          props: { isBorderless: true },
+          children: [
+            {
+              id: generateId(),
+              type: 'Text',
+              name: '',
+              props: { children: props.description || '' },
+              children: [],
+              interactions: [],
+            },
+          ],
+          interactions: [],
+        },
+      ],
+      interactions: [],
+    }),
+  };
+
+  const transformer = precomposedComponents[componentName];
+  return transformer ? transformer(props) : null;
+}
+
+/**
  * Parse a single element (opening tag, children, closing tag)
  */
 function parseElement(state: ParseState): ComponentNode | null {
@@ -200,17 +636,33 @@ function parseElement(state: ParseState): ComponentNode | null {
   // Parse component name
   const componentName = parseComponentName(state);
 
-  // Validate component exists in registry (allow "Table" as special component for buildFromMarkup)
-  if (!componentRegistry[componentName] && componentName !== 'Table') {
-    throw createError(state, `Unknown component type: ${componentName}. Available components: ${Object.keys(componentRegistry).join(', ')}, Table`);
-  }
-
   skipWhitespace(state);
 
   // Parse props
   const props = parseProps(state);
 
   skipWhitespace(state);
+
+  // Check if this is a pre-composed component that should be transformed
+  const precomposedNode = transformPrecomposedComponent(componentName, props);
+  if (precomposedNode) {
+    // For pre-composed components, they must be self-closing
+    if (state.source[state.pos] === '/' && state.source[state.pos + 1] === '>') {
+      state.pos += 2;
+      state.column += 2;
+      return precomposedNode;
+    } else {
+      throw createError(state, `Pre-composed component ${componentName} must be self-closing (use />, not nested children)`);
+    }
+  }
+
+  // Validate component exists in registry (allow "Table" as special component for buildFromMarkup)
+  if (!componentRegistry[componentName] && componentName !== 'Table') {
+    throw createError(state, `Unknown component type: ${componentName}. Available components: ${Object.keys(componentRegistry).join(', ')}, Table`);
+  }
+
+  // Validate design tokens (spacing, gap, grid values)
+  validateDesignTokens(componentName, props, state);
 
   // Check for self-closing tag
   if (state.source[state.pos] === '/' && state.source[state.pos + 1] === '>') {

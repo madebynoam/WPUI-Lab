@@ -80,7 +80,7 @@ export interface ComponentDefinition {
 
 export interface PropDefinition {
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'select' | 'object';
+  type: 'string' | 'number' | 'boolean' | 'select' | 'object' | 'color';
   options?: string[];
   defaultValue?: any;
   description?: string;

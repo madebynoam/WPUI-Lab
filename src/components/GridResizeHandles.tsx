@@ -8,6 +8,7 @@ interface GridResizeHandlesProps {
   parentColumns: number;
   isSelected: boolean;
   isPlayMode: boolean;
+  needsHandles: boolean;
   siblings?: Array<{ id: string; gridColumnStart: number; gridColumnSpan: number }>;
 }
 
@@ -18,6 +19,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
   parentColumns = 12,
   isSelected,
   isPlayMode,
+  needsHandles,
   siblings = [],
 }) => {
   const { updateComponentProps, isAgentExecuting, undo } = useComponentTree();
@@ -47,11 +49,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
 
   // Track how many updates occur during drag for smart history consolidation
   const updateCountRef = useRef(0);
-
-  // Don't show handles in play mode or during agent execution
-  if (isPlayMode || isAgentExecuting) {
-    return null;
-  }
 
   const startDrag = useCallback((e: React.PointerEvent, side: 'left' | 'right') => {
     e.stopPropagation();
@@ -95,6 +92,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
       initialSpan: gridColumnSpan,
       columnWidth,
       gapWidth,
+      element: e.target as HTMLElement,
     };
 
     // Reset update counter for smart history consolidation
@@ -249,6 +247,11 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
   }, [activeDragSide, parentColumns, nodeId, updateComponentProps, siblings, undo]);
 
   const showHandles = isSelected || isHoveringLeft || isHoveringRight || activeDragSide !== null;
+
+  // Don't show handles if not needed, in play mode, or during agent execution
+  if (!needsHandles || isPlayMode || isAgentExecuting) {
+    return null;
+  }
 
   return (
     <div ref={containerRef} style={{

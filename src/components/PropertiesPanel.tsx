@@ -295,7 +295,7 @@ export const PropertiesPanel: React.FC = () => {
             {/* Gap Control with Dropdown */}
             <SelectControl
               label="GAP"
-              value={spacing.toString()}
+              value={spacing.toString() as '0' | '2' | '4' | '6' | '8' | '12' | '16'}
               options={[
                 { label: '0px', value: '0' },
                 { label: '8px', value: '2' },
@@ -488,7 +488,7 @@ export const PropertiesPanel: React.FC = () => {
                 <ToggleGroupControl
                   label="SPAN"
                   value={(firstNode.props.gridColumnSpan || 12).toString()}
-                  onChange={(value) => handlePropChange("gridColumnSpan", parseInt(value || "12"))}
+                  onChange={(value) => handlePropChange("gridColumnSpan", parseInt(String(value) || "12"))}
                   isBlock
                 >
                   <ToggleGroupControlOption value="12" label="Full" />
@@ -669,18 +669,32 @@ export const PropertiesPanel: React.FC = () => {
                   // VStack default is 'stretch', HStack default is 'center' (from componentRegistry)
                   const defaultAlignment = firstNode.type === 'VStack' ? 'stretch' : 'center';
                   const alignment = firstNode.props.alignment || defaultAlignment;
-                  if (alignment === 'flex-start') return 'start';
-                  if (alignment === 'flex-end') return 'end';
+                  // HStack uses 'top'/'bottom', VStack uses 'flex-start'/'flex-end'
+                  if (firstNode.type === 'HStack') {
+                    if (alignment === 'top') return 'start';
+                    if (alignment === 'bottom') return 'end';
+                  } else {
+                    if (alignment === 'flex-start') return 'start';
+                    if (alignment === 'flex-end') return 'end';
+                  }
                   if (alignment === 'center') return 'center';
                   if (alignment === 'stretch') return 'stretch';
                   return defaultAlignment === 'stretch' ? 'stretch' : 'center';
                 })()}
                 onChange={(value) => {
                   let alignment = 'center';
-                  if (value === 'start') alignment = 'flex-start';
-                  if (value === 'end') alignment = 'flex-end';
-                  if (value === 'center') alignment = 'center';
-                  if (value === 'stretch') alignment = 'stretch';
+                  // HStack uses 'top'/'bottom', VStack uses 'flex-start'/'flex-end'
+                  if (firstNode.type === 'HStack') {
+                    if (value === 'start') alignment = 'top';
+                    if (value === 'end') alignment = 'bottom';
+                    if (value === 'center') alignment = 'center';
+                    if (value === 'stretch') alignment = 'stretch';
+                  } else {
+                    if (value === 'start') alignment = 'flex-start';
+                    if (value === 'end') alignment = 'flex-end';
+                    if (value === 'center') alignment = 'center';
+                    if (value === 'stretch') alignment = 'stretch';
+                  }
                   updateComponentProps(firstNode.id, { alignment });
                 }}
                 options={firstNode.type === 'VStack' ? VSTACK_CROSS_OPTIONS : HSTACK_CROSS_OPTIONS}

@@ -34,12 +34,13 @@ export function normalizeComponentNode(node: ComponentNode): ComponentNode {
     return node;
   }
 
-  // Clone the node to avoid mutations
+  // Clone the node to avoid mutations and merge defaultProps
   const normalized: ComponentNode = {
     id: node.id,
     type: node.type,
     name: node.name || '',
-    props: { ...node.props },
+    // Apply defaultProps first, then override with actual props
+    props: { ...definition.defaultProps, ...node.props },
     children: node.children || [],
     interactions: node.interactions || [],
   };
