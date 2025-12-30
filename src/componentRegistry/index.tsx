@@ -40,7 +40,7 @@ import {
   TabPanel,
   Spinner,
   Notice,
-  DateTimePicker,
+  DatePicker,
   FontSizePicker,
   AnglePickerControl,
   __experimentalBoxControl as BoxControl,
@@ -1549,11 +1549,11 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
   },
 
   // PHASE 6: Typography & Advanced Controls
-  DateTimePicker: {
-    name: 'DateTimePicker',
-    component: DateTimePicker,
+  DatePicker: {
+    name: 'DatePicker',
+    component: DatePicker,
     acceptsChildren: false,
-    description: 'Calendar interface for selecting dates and times.',
+    description: 'Calendar interface for selecting dates.',
     defaultProps: { currentDate: new Date().toISOString() },
     propDefinitions: [
       {

@@ -1838,7 +1838,7 @@ export const RenderNode: React.FC<{
     'Spacer',
     'Divider',
     'Spinner',
-    'DateTimePicker',
+    'DatePicker',
     'FontSizePicker',
     'AnglePickerControl',
     'BoxControl',

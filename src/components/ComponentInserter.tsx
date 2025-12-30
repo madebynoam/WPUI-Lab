@@ -66,7 +66,7 @@ export const componentIconMap: Record<string, any> = {
   CheckboxControl: check,
   RadioControl: published,
   RangeControl: tag,
-  DateTimePicker: calendar,
+  DatePicker: calendar,
   FontSizePicker: textColor,
   AnglePickerControl: tag,
   // Color

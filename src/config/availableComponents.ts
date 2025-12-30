@@ -66,7 +66,7 @@ export const componentGroups: ComponentGroup[] = [
       "CheckboxControl",
       "RadioControl",
       "RangeControl",
-      "DateTimePicker",
+      "DatePicker",
     ],
   },
   {
