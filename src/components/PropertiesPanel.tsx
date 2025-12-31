@@ -666,7 +666,6 @@ export const PropertiesPanel: React.FC = () => {
               <AlignmentControl
                 label={firstNode.type === 'VStack' ? "HORIZONTAL ALIGN" : "VERTICAL ALIGN"}
                 value={(() => {
-                  // VStack default is 'stretch', HStack default is 'center' (from componentRegistry)
                   const defaultAlignment = firstNode.type === 'VStack' ? 'stretch' : 'center';
                   const alignment = firstNode.props.alignment || defaultAlignment;
                   // HStack uses 'top'/'bottom', VStack uses 'flex-start'/'flex-end'

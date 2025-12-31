@@ -436,7 +436,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     component: HStack,
     acceptsChildren: true,
     description: 'Stack child elements horizontally with spacing control.',
-    defaultProps: { spacing: 2, justify: 'flex-start' },
+    defaultProps: { spacing: 2, justify: 'flex-start', alignment: 'center' },
     propDefinitions: [
       {
         name: 'spacing',
@@ -447,7 +447,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
       {
         name: 'alignment',
         type: 'select',
-        options: ['top', 'topLeft', 'topRight', 'left', 'center', 'right', 'bottom', 'bottomLeft', 'bottomRight', 'edge', 'stretch'],
+        options: ['top', 'center', 'bottom', 'stretch'],
         defaultValue: 'center',
         description: 'Vertical alignment'
       },
