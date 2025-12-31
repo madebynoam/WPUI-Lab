@@ -1820,6 +1820,7 @@ export const RenderNode: React.FC<{
     const shouldStretch = parent?.type === 'VStack' && parent.props?.alignment === 'stretch';
 
     // Form controls need a wrapper div to be selectable (components don't forward ref/event handlers)
+    // In design mode, disable pointer events on inner div to prevent input focus capture
     const componentProps = {
       ...mergedProps,
       style: {
@@ -1830,7 +1831,9 @@ export const RenderNode: React.FC<{
 
     return (
       <div {...editorProps}>
-        <Component {...componentProps} />
+        <div style={!isPlayMode ? { pointerEvents: 'none' } : undefined}>
+          <Component {...componentProps} />
+        </div>
       </div>
     );
   }
