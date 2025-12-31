@@ -572,6 +572,7 @@ Escape         Deselect / Exit play mode
    - VStack `expanded={true}` fills HEIGHT, HStack `expanded={true}` fills WIDTH
    - Primary axis = direction of stack, Cross axis = perpendicular
    - When using `justify="space-between"`, use CSS values ('flex-start', 'flex-end') for `alignment`, not presets ('left', 'right')
+11. **Canvas wrapper requirements** - In RenderNode.tsx, DataViews and form fields (TextControl, SelectControl, etc.) require a wrapper `<div>` with editor props for selection to work. These WordPress components don't forward ref/event handlers. Other components receive editor props directly. This is canvas-only, not in code generator.
 
 ## Debugging
 

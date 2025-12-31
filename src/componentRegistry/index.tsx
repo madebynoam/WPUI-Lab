@@ -664,19 +664,13 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     component: SelectControl,
     acceptsChildren: false,
     description: 'Dropdown menu for selecting from a list of options.',
-    defaultProps: { label: 'Select', value: '', options: [{ label: 'Option 1', value: 'option1' }, { label: 'Option 2', value: 'option2' }] },
+    defaultProps: { label: 'Select', value: 'option1', options: [{ label: 'Option 1', value: 'option1' }, { label: 'Option 2', value: 'option2' }] },
     propDefinitions: [
       {
         name: 'label',
         type: 'string',
         defaultValue: 'Select',
         description: 'Field label',
-      },
-      {
-        name: 'value',
-        type: 'string',
-        defaultValue: '',
-        description: 'Selected value',
       },
       {
         name: 'help',
@@ -689,6 +683,12 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'boolean',
         defaultValue: false,
         description: 'Disable field',
+      },
+      {
+        name: 'options',
+        type: 'selectOptions',
+        defaultValue: [{ label: 'Option 1', value: 'option1' }, { label: 'Option 2', value: 'option2' }],
+        description: 'Dropdown options',
       },
     ],
   },
