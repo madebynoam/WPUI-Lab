@@ -1168,8 +1168,13 @@ export const RenderNode: React.FC<{
       if (stretchFullWidth) {
         buttonStyle = { width: '100%', justifyContent: 'center' };
       } else {
-        // Prevent button from stretching in VStack with alignment='stretch'
-        buttonStyle = { alignSelf: 'flex-start' };
+        // Only prevent button from stretching in VStack with alignment='stretch'
+        // Don't set alignSelf for HStack - let HStack's alignment prop control vertical position
+        const parentNode = findParent(tree, node.id);
+        const isInStretchVStack = parentNode?.type === 'VStack' && parentNode.props?.alignment === 'stretch';
+        if (isInStretchVStack) {
+          buttonStyle = { alignSelf: 'flex-start' };
+        }
       }
 
       // Handle disabled styling in design mode
@@ -1978,6 +1983,7 @@ export const RenderNode: React.FC<{
       if (node.type === 'Grid') {
         mergedProps.style = { ...mergedProps.style, gridAutoFlow: 'dense' };
       }
+
     }
 
     // Apply padding

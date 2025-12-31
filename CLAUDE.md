@@ -586,6 +586,11 @@ Escape         Deselect / Exit play mode
    - If editor-only UI is needed (resize handles, overlays), use portals or absolutely-positioned siblings
    - Exception: Wrappers are acceptable ONLY in play mode for runtime state management
 12. **Exported code props** - Only real component props, no editor-only magic (see `.claude/rules/code-generation.md`)
+13. **Clean code output** - Generated code must be usable as-is by developers:
+   - Never use `!important` CSS overrides
+   - Never add extra wrapper containers/divs for styling hacks
+   - Use proper component props instead of inline style workarounds
+   - If a WordPress component prop doesn't work, find the correct prop name (e.g., `align` vs `alignment`)
 
 ## Debugging
 
