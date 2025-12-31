@@ -2011,6 +2011,9 @@ export const RenderNode: React.FC<{
   // Check if Grid is empty
   const isEmptyGrid = node.type === 'Grid' && (!node.children || node.children.length === 0);
 
+  // Check if VStack/HStack is empty (for design mode min-height)
+  const isEmptyContainer = (node.type === 'VStack' || node.type === 'HStack') && (!node.children || node.children.length === 0);
+
   // Pass editor props directly to regular components
   const editorProps = getEditorProps();
 
@@ -2058,6 +2061,8 @@ export const RenderNode: React.FC<{
       ...mergedProps.style,
       position: (showGridLines || needsResizeHandles) ? 'relative' : (editorProps.style?.position || mergedProps.style?.position),
       opacity: draggedNodeId === node.id ? 0 : 1,
+      // Add min-height and background for empty VStack/HStack containers in design mode
+      ...(isEmptyContainer && !isPlayMode ? { minHeight: '60px', backgroundColor: '#f5f5f5' } : {}),
     },
   };
 
