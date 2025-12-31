@@ -915,16 +915,16 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         description: 'Radio group label',
       },
       {
-        name: 'selected',
-        type: 'string',
-        defaultValue: 'option1',
-        description: 'Selected value',
-      },
-      {
         name: 'help',
         type: 'string',
         defaultValue: '',
         description: 'Help text below radio',
+      },
+      {
+        name: 'options',
+        type: 'selectOptions',
+        defaultValue: [{ label: 'Option 1', value: 'option1' }, { label: 'Option 2', value: 'option2' }],
+        description: 'Radio options',
       },
     ],
   },
