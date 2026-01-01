@@ -585,6 +585,7 @@ Escape         Deselect / Exit play mode
    - Extra wrappers break the visual match between editor and generated code
    - If editor-only UI is needed (resize handles, overlays), use portals or absolutely-positioned siblings
    - Exception: Wrappers are acceptable ONLY in play mode for runtime state management
+   - Exception: DataViews and form fields (TextControl, SelectControl, etc.) require a wrapper div in RenderNode.tsx for selection to work (these WordPress components don't forward ref/event handlers). This is canvas-only, not in generated code.
 12. **Exported code props** - Only real component props, no editor-only magic (see `.claude/rules/code-generation.md`)
 13. **Clean code output** - Generated code must be usable as-is by developers:
    - Never use `!important` CSS overrides

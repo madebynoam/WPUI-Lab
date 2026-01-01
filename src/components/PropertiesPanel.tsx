@@ -937,6 +937,89 @@ export const PropertiesPanel: React.FC = () => {
                         }
                       />
                     )}
+
+                  {propDef.type === "selectOptions" && (
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "8px",
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {propDef.name}
+                      </label>
+                      {(currentValue || []).map(
+                        (
+                          option: { label: string; value: string },
+                          index: number
+                        ) => (
+                          <HStack
+                            key={index}
+                            spacing={2}
+                            style={{ marginBottom: "8px" }}
+                          >
+                            <TextControl
+                              placeholder="Label"
+                              value={option.label}
+                              onChange={(newLabel) => {
+                                const newOptions = [...(currentValue || [])];
+                                newOptions[index] = {
+                                  ...newOptions[index],
+                                  label: newLabel,
+                                };
+                                handlePropChange(propDef.name, newOptions);
+                              }}
+                              __nextHasNoMarginBottom
+                            />
+                            <TextControl
+                              placeholder="Value"
+                              value={option.value}
+                              onChange={(newValue) => {
+                                const newOptions = [...(currentValue || [])];
+                                newOptions[index] = {
+                                  ...newOptions[index],
+                                  value: newValue,
+                                };
+                                handlePropChange(propDef.name, newOptions);
+                              }}
+                              __nextHasNoMarginBottom
+                            />
+                            <Button
+                              icon={trashIcon}
+                              isDestructive
+                              size="small"
+                              onClick={() => {
+                                const newOptions = (currentValue || []).filter(
+                                  (_: any, i: number) => i !== index
+                                );
+                                handlePropChange(propDef.name, newOptions);
+                              }}
+                            />
+                          </HStack>
+                        )
+                      )}
+                      <Button
+                        icon={plusIcon}
+                        variant="secondary"
+                        size="small"
+                        onClick={() => {
+                          const newOptions = [
+                            ...(currentValue || []),
+                            {
+                              label: `Option ${(currentValue || []).length + 1}`,
+                              value: `option${(currentValue || []).length + 1}`,
+                            },
+                          ];
+                          handlePropChange(propDef.name, newOptions);
+                        }}
+                      >
+                        Add Option
+                      </Button>
+                    </div>
+                  )}
                 </div>
               );
             })}
