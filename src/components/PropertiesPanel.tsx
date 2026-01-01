@@ -845,20 +845,30 @@ export const PropertiesPanel: React.FC = () => {
                     />
                   )}
 
-                  {propDef.type === "boolean" && (
-                    <ToggleControl
-                      label={propDef.name}
-                      checked={currentValue || false}
-                      onChange={(value) =>
-                        handlePropChange(propDef.name, value)
-                      }
-                      help={
-                        isMultiSelect && !isShared
-                          ? `${propDef.description} (applying to all ${selectedNodes.length} items)`
-                          : propDef.description
-                      }
-                    />
-                  )}
+                  {propDef.type === "boolean" && (() => {
+                    // Check if this control should be disabled based on another prop's value
+                    const disabledWhen = (propDef as any).disabledWhen;
+                    const isDisabled = disabledWhen &&
+                      firstNode.props?.[disabledWhen.prop] === disabledWhen.value;
+
+                    return (
+                      <ToggleControl
+                        label={propDef.name}
+                        checked={currentValue || false}
+                        onChange={(value) =>
+                          handlePropChange(propDef.name, value)
+                        }
+                        disabled={isDisabled}
+                        help={
+                          isMultiSelect && !isShared
+                            ? `${propDef.description} (applying to all ${selectedNodes.length} items)`
+                            : isDisabled
+                            ? `${propDef.description} (requires ${disabledWhen.prop} to be enabled)`
+                            : propDef.description
+                        }
+                      />
+                    );
+                  })()}
 
                   {propDef.type === "color" && (
                     <ColorSwatchButton

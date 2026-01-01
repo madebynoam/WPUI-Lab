@@ -1708,6 +1708,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         type: 'boolean',
         defaultValue: true,
         description: 'Show filter controls',
+        disabledWhen: { prop: 'showSearch', value: false },
       },
       {
         name: 'showPagination',
