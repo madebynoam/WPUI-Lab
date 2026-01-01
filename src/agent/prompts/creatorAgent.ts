@@ -39,31 +39,60 @@ TOOLS AVAILABLE:
 **buildFromMarkup** - PRIMARY TOOL for creating ALL components including tables
 Parameters: { markup: string }
 
-**CRITICAL: Tables in Markup**
+**TABLES/DATAVIEWS - GENERATE CUSTOM DATA:**
 
-**NEVER use <DataViews /> directly - it will fail!**
-**ALWAYS use <Table template="..." /> for tables!**
+When creating tables, **ALWAYS generate realistic data based on the user's request**. Never use generic placeholders.
 
-Tables are created using the <Table /> component INSIDE buildFromMarkup markup:
-- Use <Table template="users" /> for a users table
-- Use <Table template="deployments" /> for a deployments table
-- Use <Table template="orders" /> for an orders table
-- Available templates: users, orders, products, tasks, invoices, transactions, tickets, inventory, leads, deployments
-- Tables work like any other component - they can be nested in cards, sections, etc.
-- The <Table /> component is automatically converted to DataViews internally
+**Use <DataViews> with custom data:**
+<DataViews
+  data="custom"
+  customData={[
+    { id: 1, name: "Acme Corp", status: "Active", revenue: "$125,000" },
+    { id: 2, name: "TechStart Inc", status: "Pending", revenue: "$45,000" },
+    { id: 3, name: "CloudFirst LLC", status: "Active", revenue: "$89,000" },
+  ]}
+  fields={[
+    { id: "name", label: "Company Name" },
+    { id: "status", label: "Status" },
+    { id: "revenue", label: "Revenue" },
+  ]}
+  viewType="table"
+  gridColumnSpan={12}
+/>
 
-Example - Card with table:
+**Guidelines:**
+- Generate 3-5 rows of realistic sample data based on the user's context
+- Column/field names should match the user's domain (clients, products, orders, etc.)
+- Use data="custom" with customData array containing the actual data
+- Use fields array to define column labels
+- DON'T rely on templates - generate the data yourself based on what the user asked for
+
+**Alternative: <Table> shortcut (for quick preset data):**
+If you just need a quick table with preset data, you can use:
+- <Table template="users" /> - Sample users data
+- <Table template="orders" /> - Sample orders data
+- Available templates: users, orders, products, tasks, invoices, deployments
+But prefer generating custom data when the user has a specific context!
+
+Example - Card with custom table:
 <Grid columns={12}>
   <Card gridColumnSpan={12}>
     <CardBody>
-      <Table template="users" />
+      <DataViews
+        data="custom"
+        customData={[
+          { id: 1, client: "WordPress Agency Pro", plan: "Enterprise", sites: 45 },
+          { id: 2, client: "Dev Studio", plan: "Professional", sites: 12 },
+        ]}
+        fields={[
+          { id: "client", label: "Client" },
+          { id: "plan", label: "Plan" },
+          { id: "sites", label: "Sites" },
+        ]}
+        viewType="table"
+      />
     </CardBody>
   </Card>
-</Grid>
-
-Example - Standalone table:
-<Grid columns={12}>
-  <Table template="deployments" gridColumnSpan={12} />
 </Grid>
 
 **MARKUP SHORTCUTS (SAVE TOKENS - AUTOMATICALLY EXPAND TO FULL STRUCTURE):**

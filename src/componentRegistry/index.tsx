@@ -1657,8 +1657,8 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     acceptsChildren: false,
     description: 'Display tabular data with sorting, filtering, and pagination.',
     defaultProps: {
-      dataSource: 'sites',
-      // Don't set data/fields in defaultProps - let RenderNode generate them based on dataSource
+      data: 'sites',
+      // Don't set customData/fields in defaultProps - let RenderNode generate them based on data preset
       view: {
         type: 'table',
         perPage: 10,
@@ -1666,23 +1666,23 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
     },
     propDefinitions: [
       {
-        name: 'dataSource',
+        name: 'data',
         type: 'select',
         options: ['sites', 'blog', 'products', 'users', 'custom'],
         defaultValue: 'sites',
-        description: 'Data source to display (use "custom" for inline data)',
+        description: 'Data preset to display, or "custom" to use your own data array',
       },
       {
-        name: 'data',
+        name: 'customData',
         type: 'object',
         defaultValue: [],
-        description: 'Custom data array (only used when dataSource is "custom"). Array of objects with consistent keys.',
+        description: 'Your data array (only used when data is "custom"). Array of objects with consistent keys.',
       },
       {
-        name: 'columns',
+        name: 'fields',
         type: 'object',
         defaultValue: [],
-        description: 'Column definitions for custom data. Array of objects with {id, label} properties.',
+        description: 'Field/column definitions. Array of objects with {id, label} properties.',
       },
       {
         name: 'viewType',
@@ -1697,6 +1697,24 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         defaultValue: 10,
         description: 'Items per page',
       },
+      {
+        name: 'showSearch',
+        type: 'boolean',
+        defaultValue: true,
+        description: 'Show the search input',
+      },
+      {
+        name: 'showFilters',
+        type: 'boolean',
+        defaultValue: true,
+        description: 'Show filter controls',
+      },
+      {
+        name: 'showPagination',
+        type: 'boolean',
+        defaultValue: true,
+        description: 'Show pagination controls',
+      },
     ],
     codeGeneration: {
       imports: {
@@ -1704,21 +1722,21 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         components: ['DataViews'],
       },
       generateCode: (node, generateChildren) => {
-        const dataSource = node.props.dataSource || 'sites';
+        const dataPreset = node.props.data || 'sites';
         const viewType = node.props.viewType || 'table';
         const itemsPerPage = node.props.itemsPerPage || 10;
 
-        // Generate data and fields based on dataSource
+        // Generate data and fields based on data preset
         let data, fields;
 
-        if (dataSource === 'custom' && node.props.data && Array.isArray(node.props.data) && node.props.data.length > 0) {
+        if (dataPreset === 'custom' && node.props.customData && Array.isArray(node.props.customData) && node.props.customData.length > 0) {
           // Use custom data
-          data = node.props.data;
+          data = node.props.customData;
 
-          // Generate fields from columns
-          const columnDefs = node.props.columns || [];
-          if (columnDefs && columnDefs.length > 0) {
-            fields = columnDefs.map((col: any) => {
+          // Generate fields from field definitions
+          const fieldDefs = node.props.fields || [];
+          if (fieldDefs && fieldDefs.length > 0) {
+            fields = fieldDefs.map((col: any) => {
               const id = typeof col === 'string' ? col : (col.id || col);
               const label = typeof col === 'string' ? col : (col.label || id);
 
@@ -1743,8 +1761,8 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
           }
         } else {
           // Use mock data
-          data = getMockData(dataSource as any);
-          fields = getFieldDefinitions(dataSource as any);
+          data = getMockData(dataPreset as any);
+          fields = getFieldDefinitions(dataPreset as any);
         }
 
         // Generate field definitions code
@@ -1784,7 +1802,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         const sortField = fields.length > 0 ? fields[0].id : 'id';
 
         // Generate the complete DataViews JSX
-        return `{/* DataViews component - Designer abstraction: dataSource="${dataSource}", viewType="${viewType}", itemsPerPage=${itemsPerPage} */}
+        return `{/* DataViews component - Designer abstraction: data="${dataPreset}", viewType="${viewType}", itemsPerPage=${itemsPerPage} */}
 <DataViews
   data={${JSON.stringify(data, null, 2).split('\n').join('\n  ')}}
   fields={[

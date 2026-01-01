@@ -170,6 +170,17 @@ export class CreatorAgent extends BaseAgent {
         ? `Working on page: ${recentPage[0].details.name}`
         : `Working on current page`;
 
+      // Build selection context - tell LLM about currently selected component
+      let selectionContext = '';
+      if (context.selectedNodeIds && context.selectedNodeIds.length > 0) {
+        const selectedId = context.selectedNodeIds[0];
+        const selectedNode = context.getNodeById(selectedId);
+        if (selectedNode) {
+          selectionContext = `\n\nCURRENTLY SELECTED: ${selectedNode.type} (id: "${selectedId}")
+When user says "selected", "the selected", or "this" - use parentId: "${selectedId}"`;
+        }
+      }
+
       // Get original user request for additional domain context
       const originalContext = this.getOriginalContext(memory);
       const contextNote = originalContext
@@ -206,7 +217,7 @@ export class CreatorAgent extends BaseAgent {
           },
           {
             role: 'user',
-            content: `${pageContext}${contextNote}\n\nUser request: ${subRequest}`,
+            content: `${pageContext}${selectionContext}${contextNote}\n\nUser request: ${subRequest}`,
           },
         ];
 
@@ -350,7 +361,7 @@ export class CreatorAgent extends BaseAgent {
                 },
                 {
                   role: 'user',
-                  content: `${pageContext}${contextNote}\n\nUser request: ${subRequest}`,
+                  content: `${pageContext}${selectionContext}${contextNote}\n\nUser request: ${subRequest}`,
                 },
                 {
                   role: 'assistant',

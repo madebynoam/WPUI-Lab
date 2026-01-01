@@ -30,6 +30,53 @@ function processTableNodes(nodes: ComponentNode[]): ComponentNode[] {
 }
 
 function processTableNode(node: ComponentNode): ComponentNode {
+  // Handle DataViews with custom data provided by AI - PRESERVE IT, don't override
+  if (node.type === 'DataViews') {
+    // Check if AI provided custom data directly (new prop names: customData/fields, or legacy: data array/columns)
+    const hasCustomData = (node.props.customData && Array.isArray(node.props.customData)) ||
+                          (Array.isArray(node.props.data) && node.props.data.length > 0);
+
+    if (hasCustomData) {
+      console.log('[buildFromMarkup] DataViews has custom data, preserving it');
+      // Normalize to new prop names
+      const customData = node.props.customData || node.props.data;
+      const fields = node.props.fields || node.props.columns;
+      return {
+        ...node,
+        props: {
+          ...node.props,
+          data: 'custom',  // Set preset to custom
+          customData,
+          fields,
+          viewType: node.props.viewType || 'table',
+          itemsPerPage: node.props.itemsPerPage || 10,
+        },
+      };
+    }
+
+    // Handle DataViews with template prop (LLM sometimes uses this instead of <Table>)
+    if (node.props.template) {
+      console.log('[buildFromMarkup] Processing DataViews with template:', node.props.template);
+      const template = node.props.template;
+      const templateData = TABLE_TEMPLATES[template as keyof typeof TABLE_TEMPLATES];
+
+      if (templateData) {
+        // Replace with proper DataViews using template data
+        return {
+          ...node,
+          props: {
+            ...node.props,
+            data: 'custom',
+            customData: templateData.sampleData,
+            fields: templateData.columns,
+            viewType: node.props.viewType || 'table',
+            itemsPerPage: node.props.itemsPerPage || 10,
+          },
+        };
+      }
+    }
+  }
+
   // If this is a Table node, replace it with Grid+DataViews
   if (node.type === 'Table') {
     console.log('[buildFromMarkup] Processing Table node with props:', node.props);
@@ -39,39 +86,39 @@ function processTableNode(node: ComponentNode): ComponentNode {
     const itemsPerPage = node.props.itemsPerPage || 10;
 
     // Get template data
-    let tableColumns: Array<{ id: string; label: string }>;
+    let tableFields: Array<{ id: string; label: string }>;
     let tableData: Array<any>;
 
     if (template === 'custom') {
       if (!node.props.columns || !node.props.data) {
         console.error('[buildFromMarkup] Custom table template requires columns and data props');
-        tableColumns = [];
+        tableFields = [];
         tableData = [];
       } else {
-        tableColumns = node.props.columns;
-        tableData = node.props.data;
+        tableFields = node.props.columns || node.props.fields;
+        tableData = node.props.data || node.props.customData;
       }
     } else {
       const templateData = TABLE_TEMPLATES[template as keyof typeof TABLE_TEMPLATES];
       if (!templateData) {
         console.error(`[buildFromMarkup] Unknown table template: ${template}`);
-        tableColumns = [];
+        tableFields = [];
         tableData = [];
       } else {
-        tableColumns = templateData.columns;
+        tableFields = templateData.columns;
         tableData = templateData.sampleData;
       }
     }
 
-    // Create DataViews node
+    // Create DataViews node with new prop names
     const dataViewsNode: ComponentNode = {
       id: generateId(),
       type: 'DataViews',
       name: '',
       props: {
-        dataSource: 'custom',
-        data: tableData,
-        columns: tableColumns,
+        data: 'custom',
+        customData: tableData,
+        fields: tableFields,
         viewType,
         itemsPerPage,
         gridColumnSpan: 12,  // Full width in 12-column grid
@@ -682,6 +729,22 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
 
       // Auto-correct instead of failing - this is more helpful
       params.parentId = undefined;
+    }
+
+    // Resolve placeholder parentIds like "selected", "selected-card-body", etc.
+    // LLM sometimes uses descriptive names instead of actual node IDs
+    if (params.parentId && !params.parentId.startsWith('node-') && !params.parentId.startsWith('root-')) {
+      console.log("[buildFromMarkup] Resolving placeholder parentId:", params.parentId);
+
+      // Use the first selected node if available
+      if (context.selectedNodeIds && context.selectedNodeIds.length > 0) {
+        const selectedId = context.selectedNodeIds[0];
+        console.log("[buildFromMarkup] Resolved to selected node:", selectedId);
+        params.parentId = selectedId;
+      } else {
+        console.log("[buildFromMarkup] No selection, using root-grid");
+        params.parentId = undefined;
+      }
     }
 
     try {

@@ -1510,27 +1510,31 @@ export const RenderNode: React.FC<{
   // DataViews component - special handling for data-driven component
   if (node.type === 'DataViews') {
     try {
-      const dataSource = (props.dataSource || 'sites') as DataSetType;
+      // Support both new prop names (data, customData, fields) and legacy names (dataSource, data, columns)
+      const dataPreset = (props.data || props.dataSource || 'sites') as DataSetType;
       const viewType = props.viewType || 'table';
       const itemsPerPage = props.itemsPerPage || 10;
 
-      console.log('[DataViews] Rendering with:', { dataSource, viewType, nodeId: node.id, propsDataSource: props.dataSource });
+      console.log('[DataViews] Rendering with:', { dataPreset, viewType, nodeId: node.id, propsData: props.data });
 
       // Memoize mockData and fields to prevent infinite re-renders
       const { mockData, fields } = useMemo(() => {
         let data, fieldDefs;
 
-        // SMART MODE: If dataSource is 'custom' and data prop is provided, use custom data
-        // Otherwise, use mock data based on dataSource
-        if (dataSource === 'custom' && props.data && Array.isArray(props.data) && props.data.length > 0) {
-          data = props.data;
+        // Get custom data (support both new 'customData' and legacy 'data' array props)
+        const customDataArray = props.customData || (Array.isArray(props.data) ? props.data : null);
 
-          // Accept both 'columns' and 'fields' props (LLM might use either)
-          const columnDefs = props.columns || props.fields;
+        // SMART MODE: If data preset is 'custom' and customData is provided, use it
+        // Otherwise, use mock data based on preset
+        if (dataPreset === 'custom' && customDataArray && Array.isArray(customDataArray) && customDataArray.length > 0) {
+          data = customDataArray;
 
-          if (columnDefs && Array.isArray(columnDefs) && columnDefs.length > 0) {
-            // Generate field definitions from column/field definitions
-            fieldDefs = columnDefs.map((col: any) => {
+          // Accept 'fields', 'columns' props (LLM might use either)
+          const fieldDefs_raw = props.fields || props.columns;
+
+          if (fieldDefs_raw && Array.isArray(fieldDefs_raw) && fieldDefs_raw.length > 0) {
+            // Generate field definitions from field/column definitions
+            fieldDefs = fieldDefs_raw.map((col: any) => {
               // Handle both string format and object format
               const id = typeof col === 'string' ? col : (col.id || col.accessor || col);
               const label = typeof col === 'string' ? col : (col.label || col.header || id);
@@ -1559,11 +1563,11 @@ export const RenderNode: React.FC<{
             }));
           }
         } else {
-          // Fall back to mock data based on dataSource
-          data = getMockData(dataSource);
-          fieldDefs = getFieldDefinitions(dataSource);
+          // Fall back to mock data based on preset
+          data = getMockData(dataPreset);
+          fieldDefs = getFieldDefinitions(dataPreset);
           console.log('[DataViews] Using mock data:', {
-            dataSource,
+            dataPreset,
             mockDataLength: data?.length,
             firstItem: data?.[0],
             fieldsLength: fieldDefs?.length
@@ -1571,13 +1575,13 @@ export const RenderNode: React.FC<{
         }
 
         return { mockData: data, fields: fieldDefs };
-      }, [dataSource, props.data, props.columns, props.fields]);
+      }, [dataPreset, props.customData, props.data, props.columns, props.fields]);
 
       // Validate data and fields exist
       if (!mockData || !Array.isArray(mockData) || mockData.length === 0) {
-        console.warn(`DataViews: No data available for source "${dataSource}"`);
-        // For custom datasource, show helpful error message
-        if (dataSource === 'custom') {
+        console.warn(`DataViews: No data available for preset "${dataPreset}"`);
+        // For custom preset, show helpful error message
+        if (dataPreset === 'custom') {
           return (
             <div
               style={{
@@ -1593,7 +1597,7 @@ export const RenderNode: React.FC<{
                 DataViews: Missing Data
               </p>
               <p style={{ margin: '0', fontSize: '14px' }}>
-                This DataViews component has dataSource set to "custom" but no data is provided.
+                This DataViews has data set to "custom" but no customData is provided.
                  Select this component and ask the agent to generate data for it.
               </p>
             </div>
@@ -1601,9 +1605,9 @@ export const RenderNode: React.FC<{
         }
       }
       if (!fields || !Array.isArray(fields) || fields.length === 0) {
-        console.warn(`DataViews: No field definitions available for source "${dataSource}"`);
-        // For custom datasource, show helpful error message
-        if (dataSource === 'custom') {
+        console.warn(`DataViews: No field definitions available for preset "${dataPreset}"`);
+        // For custom preset, show helpful error message
+        if (dataPreset === 'custom') {
           return (
             <div
               style={{
@@ -1616,10 +1620,10 @@ export const RenderNode: React.FC<{
               }}
             >
               <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>
-                DataViews: Missing Columns
+                DataViews: Missing Fields
               </p>
               <p style={{ margin: '0', fontSize: '14px' }}>
-                This DataViews component has dataSource set to "custom" but no columns are defined.
+                This DataViews has data set to "custom" but no fields are defined.
                  Select this component and ask the agent to generate data for it.
               </p>
             </div>
@@ -1799,9 +1803,29 @@ export const RenderNode: React.FC<{
       // DataViews needs a wrapper to be selectable (doesn't accept ref/event handlers)
       const editorProps = getEditorProps({ minHeight: '400px', height: '100%' });
 
+      // Get visibility props (default to true)
+      const showSearch = props.showSearch !== false;
+      const showFilters = props.showFilters !== false;
+      const showPagination = props.showPagination !== false;
+
+      // Build CSS classes for visibility control
+      const visibilityClasses = [
+        !showSearch && 'dataviews-hide-search',
+        !showFilters && 'dataviews-hide-filters',
+        !showPagination && 'dataviews-hide-pagination',
+      ].filter(Boolean).join(' ');
+
       return (
-        <div {...editorProps}>
-          <Component key={`${node.id}-${dataSource}-${viewType}`} {...mergedProps} />
+        <div {...editorProps} className={`${editorProps.className || ''} ${visibilityClasses}`.trim()}>
+          <style>{`
+            .dataviews-hide-search .dataviews-search { display: none !important; }
+            .dataviews-hide-search [class*="dataviews"][class*="search"] { display: none !important; }
+            .dataviews-hide-filters .dataviews-filters-bar { display: none !important; }
+            .dataviews-hide-filters [class*="dataviews"][class*="filter"] { display: none !important; }
+            .dataviews-hide-pagination .dataviews-pagination { display: none !important; }
+            .dataviews-hide-pagination [class*="dataviews"][class*="pagination"] { display: none !important; }
+          `}</style>
+          <Component key={`${node.id}-${dataPreset}-${viewType}`} {...mergedProps} />
         </div>
       );
     } catch (error) {
