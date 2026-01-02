@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   __experimentalVStack as VStack,
   __experimentalHStack as HStack,
@@ -14,55 +15,64 @@ import {
   DropdownMenu,
   MenuGroup,
   MenuItem,
+  Spinner,
 } from '@wordpress/components';
-import { moreVertical, trash, pencil, copy, pages, plus, update } from '@wordpress/icons';
-import { Project } from '../types';
+import { moreVertical, trash, pages, plus } from '@wordpress/icons';
+import { useCloudProject } from '@/hooks/useCloudProject';
 import { NewProjectModal } from './NewProjectModal';
 
-interface ProjectsScreenProps {
-  projects: Project[];
-  onCreateProject: (name: string) => void;
-  onOpenProject: (projectId: string) => void;
-  onDeleteProject: (projectId: string) => void;
-  onRenameProject: (projectId: string, name: string) => void;
-  onDuplicateProject: (projectId: string) => void;
-  onResetExampleProject: () => void;
+interface CloudProject {
+  binId: string;
+  projectId: string;
+  pageId: string;
+  name: string;
+  lastSaved: number;
 }
 
-export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
-  projects,
-  onCreateProject,
-  onOpenProject,
-  onDeleteProject,
-  onRenameProject,
-  onDuplicateProject,
-  onResetExampleProject,
-}) => {
+export const ProjectsScreen: React.FC = () => {
+  const router = useRouter();
+  const { listProjects, createProject, deleteProject, isLoading } = useCloudProject();
+  const [projects, setProjects] = useState<CloudProject[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
-  const handleRenameStart = (project: Project) => {
-    setRenamingProjectId(project.id);
-    setRenameValue(project.name);
-  };
+  useEffect(() => {
+    listProjects().then(data => {
+      const mapped = (Array.isArray(data) ? data : []).map((b: any) => ({
+        binId: b.metadata?.id || b.binId,
+        projectId: b.record?.project?.id || b.metadata?.id || b.binId,
+        pageId: b.record?.project?.pages?.[0]?.id || 'page-1',
+        name: b.record?.project?.name || 'Untitled',
+        lastSaved: b.record?.meta?.lastSaved || Date.now(),
+      }));
+      setProjects(mapped);
+      setInitialLoadDone(true);
+    });
+  }, [listProjects]);
 
-  const handleRenameSubmit = (projectId: string) => {
-    if (renameValue.trim()) {
-      onRenameProject(projectId, renameValue.trim());
+  const handleCreate = async (name: string) => {
+    const result = await createProject(name);
+    if (result?.binId && result?.project) {
+      const pageId = result.project.pages[0]?.id || 'page-1';
+      router.push(`/editor/${result.binId}/${pageId}`);
     }
-    setRenamingProjectId(null);
-    setRenameValue('');
+    setShowNewProjectModal(false);
   };
 
-  const handleRenameCancel = () => {
-    setRenamingProjectId(null);
-    setRenameValue('');
+  const handleOpen = (project: CloudProject) => {
+    router.push(`/editor/${project.binId}/${project.pageId}`);
+  };
+
+  const handleDelete = async (binId: string, name: string) => {
+    if (confirm(`Delete "${name}"? This cannot be undone.`)) {
+      await deleteProject(binId);
+      setProjects(projects.filter(p => p.binId !== binId));
+    }
   };
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
-    return `Created ${date.toLocaleDateString('en-US', {
+    return `Last saved ${date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -89,132 +99,67 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
 
             <Spacer margin={0} />
 
-            {/* Projects List */}
-            {projects.map((project) => (
-              <Card key={project.id} size="medium">
-                <CardBody size="small">
-                  {renamingProjectId === project.id ? (
-                    // Rename mode
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input
-                        type="text"
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleRenameSubmit(project.id);
-                          if (e.key === 'Escape') handleRenameCancel();
-                        }}
-                        autoFocus
-                        style={{
-                          flex: 1,
-                          padding: '8px 12px',
-                          fontSize: '14px',
-                          border: '1px solid #3858e9',
-                          borderRadius: '4px',
-                          outline: 'none',
-                        }}
-                      />
-                      <Button
-                        variant="primary"
-                        size="compact"
-                        onClick={() => handleRenameSubmit(project.id)}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        size="compact"
-                        onClick={handleRenameCancel}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    // Normal mode
-                    <HStack
-                      spacing={6}
-                      style={{
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => onOpenProject(project.id)}
-                    >
-                      <HStack spacing={2} style={{ alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
-                        <Icon icon={pages} size={24} />
-                        <VStack spacing={1} style={{ flex: 1, minWidth: 0 }}>
-                          <Heading level={4} style={{ margin: 0 }}>{project.name}</Heading>
-                          <Text variant="muted">
-                            {formatDate(project.createdAt || project.lastModified)}
-                          </Text>
-                        </VStack>
-                      </HStack>
+            {/* Loading state */}
+            {!initialLoadDone && (
+              <Card size="medium">
+                <CardBody size="small" style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <Spinner />
+                  <Text variant="muted" style={{ marginTop: 16 }}>Loading projects...</Text>
+                </CardBody>
+              </Card>
+            )}
 
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu
-                          icon={moreVertical}
-                          label="Project actions"
-                        >
-                          {({ onClose }) => (
-                            <MenuGroup>
-                              {!project.isExampleProject && (
-                                <MenuItem
-                                  icon={pencil}
-                                  onClick={() => {
-                                    handleRenameStart(project);
-                                    onClose();
-                                  }}
-                                >
-                                  Rename
-                                </MenuItem>
-                              )}
-                              <MenuItem
-                                icon={copy}
-                                onClick={() => {
-                                  onDuplicateProject(project.id);
-                                  onClose();
-                                }}
-                              >
-                                Duplicate
-                              </MenuItem>
-                              {project.isExampleProject && (
-                                <MenuItem
-                                  icon={update}
-                                  onClick={() => {
-                                    if (confirm('Reset example project to default? Any changes will be lost.')) {
-                                      onResetExampleProject();
-                                      onClose();
-                                    }
-                                  }}
-                                >
-                                  Reset to default
-                                </MenuItem>
-                              )}
-                              {!project.isExampleProject && projects.length > 1 && (
-                                <MenuItem
-                                  icon={trash}
-                                  onClick={() => {
-                                    if (confirm(`Delete "${project.name}"? This cannot be undone.`)) {
-                                      onDeleteProject(project.id);
-                                      onClose();
-                                    }
-                                  }}
-                                  isDestructive
-                                >
-                                  Delete
-                                </MenuItem>
-                              )}
-                            </MenuGroup>
-                          )}
-                        </DropdownMenu>
-                      </div>
+            {/* Projects List */}
+            {initialLoadDone && projects.map((project) => (
+              <Card key={project.binId} size="medium">
+                <CardBody size="small">
+                  <HStack
+                    spacing={6}
+                    style={{
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => handleOpen(project)}
+                  >
+                    <HStack spacing={2} style={{ alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                      <Icon icon={pages} size={24} />
+                      <VStack spacing={1} style={{ flex: 1, minWidth: 0 }}>
+                        <Heading level={4} style={{ margin: 0 }}>{project.name}</Heading>
+                        <Text variant="muted">
+                          {formatDate(project.lastSaved)}
+                        </Text>
+                      </VStack>
                     </HStack>
-                  )}
+
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu
+                        icon={moreVertical}
+                        label="Project actions"
+                      >
+                        {({ onClose }) => (
+                          <MenuGroup>
+                            <MenuItem
+                              icon={trash}
+                              onClick={() => {
+                                handleDelete(project.binId, project.name);
+                                onClose();
+                              }}
+                              isDestructive
+                            >
+                              Delete
+                            </MenuItem>
+                          </MenuGroup>
+                        )}
+                      </DropdownMenu>
+                    </div>
+                  </HStack>
                 </CardBody>
               </Card>
             ))}
 
             {/* Empty state */}
-            {projects.length === 0 && (
+            {initialLoadDone && projects.length === 0 && (
               <Card size="medium">
                 <CardBody size="small" style={{ textAlign: 'center', padding: '60px 20px' }}>
                   <Text variant="muted">No projects yet</Text>
@@ -234,10 +179,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({
       {showNewProjectModal && (
         <NewProjectModal
           onClose={() => setShowNewProjectModal(false)}
-          onCreate={(name) => {
-            onCreateProject(name);
-            setShowNewProjectModal(false);
-          }}
+          onCreate={handleCreate}
         />
       )}
     </div>

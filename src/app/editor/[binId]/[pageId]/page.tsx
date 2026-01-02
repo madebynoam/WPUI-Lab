@@ -9,7 +9,7 @@ const DynamicEditor = dynamic(() => import('@/components/Editor'), {
   loading: () => <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Loading editor...</div>
 });
 
-export default function EditorPage({ params }: { params: Promise<{ projectId: string; pageId: string }> }) {
-  const { projectId, pageId } = use(params);
-  return <DynamicEditor projectId={projectId} pageId={pageId} />;
+export default function EditorPage({ params }: { params: Promise<{ binId: string; pageId: string }> }) {
+  const { binId, pageId } = use(params);
+  return <DynamicEditor binId={binId} pageId={pageId} />;
 }

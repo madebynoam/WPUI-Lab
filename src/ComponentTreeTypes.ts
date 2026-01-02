@@ -71,7 +71,11 @@ export type ComponentTreeAction =
   | { type: 'CLEAR_HISTORY' }
 
   // Bulk actions
-  | { type: 'RESET_TREE'; payload: { defaultProject: Project } };
+  | { type: 'RESET_TREE'; payload: { defaultProject: Project } }
+
+  // Cloud save actions
+  | { type: 'MARK_SAVED' }
+  | { type: 'MARK_DIRTY' };
 
 // Metadata for actions to control history behavior
 export interface ActionMetadata {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useComponentTree, ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { PlayModeProvider } from '@/contexts/PlayModeContext';
 import { AgentDebugProvider } from '@/contexts/AgentDebugContext';
@@ -11,27 +11,100 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { AgentPanel } from './AgentPanel';
 import { useRouter } from 'next/navigation';
+import { useCloudProject } from '@/hooks/useCloudProject';
 
 interface EditorProps {
-  projectId: string;
+  binId: string;  // JSONBin ID - this IS the project identifier
   pageId: string;
 }
 
-function EditorContent({ projectId, pageId }: EditorProps) {
+function EditorContent({ binId, pageId }: EditorProps) {
   const router = useRouter();
   const {
     isPlayMode,
     setSelectedNodeIds,
-    setCurrentProject,
     setCurrentPage,
     isAgentExecuting,
+    projects,
+    currentProjectId,
+    currentPageId,
+    importProject,
+    isDirty,
+    markSaved,
   } = useComponentTree();
 
-  // Set the current project and page when the component mounts
+  // Get current project from projects array
+  const currentProject = projects.find(p => p.id === currentProjectId);
+
+  // Cloud save state - binId from route IS the cloud identifier
+  const { loadProject, saveProject, isSaving } = useCloudProject();
+  const [cloudMeta, setCloudMeta] = useState<any>(null);
+
+  // Check if project is already loaded in context (survives route changes)
+  const isProjectLoaded = currentProject && currentProject.pages?.some((p: any) => p.id === pageId || currentPageId);
+
+  // Load from cloud on mount (only if project not already in context)
   useEffect(() => {
-    setCurrentProject(projectId);
-    setCurrentPage(pageId);
-  }, [projectId, pageId, setCurrentProject, setCurrentPage]);
+    if (binId && !isProjectLoaded) {
+      loadProject(binId).then(data => {
+        if (data?.project) {
+          // Ensure each page has a root grid (fix for old projects)
+          const rootGrid = {
+            id: 'root-grid',
+            type: 'Grid',
+            props: { columns: 12, gap: 24, gridGuideColor: '#3858e9' },
+            children: [],
+            interactions: [],
+          };
+          const fixedProject = {
+            ...data.project,
+            pages: data.project.pages.map((page: any) => ({
+              ...page,
+              tree: page.tree?.length > 0 ? page.tree : [rootGrid],
+            })),
+          };
+
+          // Import the project into context and set as current
+          importProject(fixedProject);
+          // Set the current page (use first page if pageId doesn't match)
+          const validPageId = fixedProject.pages.some((p: any) => p.id === pageId)
+            ? pageId
+            : fixedProject.pages[0]?.id;
+          if (validPageId) {
+            setCurrentPage(validPageId);
+          }
+          setCloudMeta(data.meta);
+          // Mark as saved since we just loaded from cloud
+          markSaved();
+        }
+      });
+    } else if (isProjectLoaded && currentPageId !== pageId) {
+      // Project already loaded, just switch page
+      setCurrentPage(pageId);
+    }
+  }, [binId, loadProject, importProject, pageId, setCurrentPage, isProjectLoaded, currentPageId, markSaved]);
+
+  // Warn before close if unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty && binId) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty, binId]);
+
+  // Save handler
+  const handleSave = useCallback(async () => {
+    if (!binId || !currentProject) return;
+    const result = await saveProject(binId, currentProject, cloudMeta);
+    if (result) {
+      setCloudMeta({ ...cloudMeta, ...result });
+      markSaved();
+    }
+  }, [binId, currentProject, cloudMeta, saveProject, markSaved]);
 
   const [showPanels, setShowPanels] = useState(true);
   const [showInserter, setShowInserter] = useState(false);
@@ -77,6 +150,14 @@ function EditorContent({ projectId, pageId }: EditorProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (binId && isDirty && !isSaving) {
+          handleSave();
+        }
+      }
+
       // Cmd/Ctrl+\ to toggle header and sidebars with animation
       if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
         e.preventDefault();
@@ -93,7 +174,7 @@ function EditorContent({ projectId, pageId }: EditorProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedNodeIds]);
+  }, [setSelectedNodeIds, binId, isDirty, isSaving, handleSave]);
 
   // Handle panel resize
   useEffect(() => {
@@ -129,9 +210,29 @@ function EditorContent({ projectId, pageId }: EditorProps) {
   // Hide panels when in play mode, even if showPanels is true
   const shouldShowPanels = showPanels && !isPlayMode;
 
-  const handleNavigateToProjects = () => {
+  const handleNavigateToProjects = useCallback(() => {
+    if (isDirty) {
+      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+      if (!confirmed) return;
+    }
     router.push('/');
-  };
+  }, [isDirty, router]);
+
+  // Show loading state while loading from cloud
+  if (binId && !isProjectLoaded) {
+    return (
+      <div style={{
+        display: 'flex',
+        height: '100vh',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#1F1F1F',
+        color: '#fff'
+      }}>
+        Loading project...
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', cursor: isAgentExecuting ? 'progress' : 'default' }}>
@@ -183,8 +284,12 @@ function EditorContent({ projectId, pageId }: EditorProps) {
                 rightPanel={rightPanel}
                 onToggleRightPanel={setRightPanel}
                 onNavigateToProjects={handleNavigateToProjects}
-                projectId={projectId}
+                binId={binId}
                 pageId={pageId}
+                // Cloud save props
+                isDirty={isDirty}
+                isSaving={isSaving}
+                onSave={handleSave}
               />
             </div>
           )}
@@ -252,11 +357,11 @@ function EditorContent({ projectId, pageId }: EditorProps) {
   );
 }
 
-export default function Editor({ projectId, pageId }: EditorProps) {
+export default function Editor({ binId, pageId }: EditorProps) {
   return (
     <PlayModeProvider>
       <AgentDebugProvider>
-        <EditorContent projectId={projectId} pageId={pageId} />
+        <EditorContent binId={binId} pageId={pageId} />
       </AgentDebugProvider>
     </PlayModeProvider>
   );

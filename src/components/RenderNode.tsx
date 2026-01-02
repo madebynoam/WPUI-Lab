@@ -11,7 +11,7 @@ import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockData
 import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } from '../utils/treeHelpers';
 import { useSelection } from '@/contexts/SelectionContext';
 import { useSimpleDrag } from '@/contexts/SimpleDragContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { GridResizeHandles } from './GridResizeHandles';
 
 // Simple Figma-style drag-and-drop component
@@ -22,6 +22,8 @@ export const RenderNode: React.FC<{
   const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentPageId, currentProjectId, projects, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode } = useComponentTree();
   const playModeState = usePlayModeState();
   const router = useRouter();
+  const params = useParams();
+  const binId = params.binId as string; // Get binId from URL for navigation
   const definition = componentRegistry[node.type];
 
   // Shared click tracking for Figma-style selection
@@ -266,15 +268,13 @@ export const RenderNode: React.FC<{
         if (interaction.action === 'navigate') {
           // Navigate to the target page
           const targetPage = pages.find(p => p.id === interaction.targetId);
-          if (targetPage) {
+          if (targetPage && binId) {
             // In play mode, use router for smooth client-side navigation
-            if (isPlayMode && currentProjectId) {
-              router.push(`/play/${currentProjectId}/${interaction.targetId}`);
+            if (isPlayMode) {
+              router.push(`/play/${binId}/${interaction.targetId}`);
             } else {
               // In editor mode, use router for navigation
-              if (currentProjectId) {
-                router.push(`/editor/${currentProjectId}/${interaction.targetId}`);
-              }
+              router.push(`/editor/${binId}/${interaction.targetId}`);
             }
           }
         } else if (interaction.action === 'showModal') {

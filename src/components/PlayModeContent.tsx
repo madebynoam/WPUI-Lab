@@ -1,36 +1,76 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useComponentTree } from '@/contexts/ComponentTreeContext';
 import { PlayModeProvider } from '@/contexts/PlayModeContext';
 import { AgentDebugProvider } from '@/contexts/AgentDebugContext';
 import { Canvas } from '@/components/Canvas';
+import { useCloudProject } from '@/hooks/useCloudProject';
 
-export default function PlayModeContent({ projectId, pageId }: { projectId: string; pageId: string }) {
-  const { currentProjectId, currentPageId, setCurrentProject, setCurrentPage, setSelectedNodeIds, setPlayMode } = useComponentTree();
+export default function PlayModeContent({ binId, pageId }: { binId: string; pageId: string }) {
+  const { currentPageId, setCurrentPage, setSelectedNodeIds, setPlayMode, importProject } = useComponentTree();
+  const { loadProject } = useCloudProject();
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
-  // Set the current project and page when they change
+  // Load project from cloud on mount
   useEffect(() => {
-    // Only update if the values are different to avoid infinite loops
-    if (currentProjectId !== projectId) {
-      setCurrentProject(projectId);
+    if (binId && !initialLoadDone) {
+      loadProject(binId).then(data => {
+        if (data?.project) {
+          // Ensure each page has a root grid (fix for old projects)
+          const rootGrid = {
+            id: 'root-grid',
+            type: 'Grid',
+            props: { columns: 12, gap: 24, gridGuideColor: '#3858e9' },
+            children: [],
+            interactions: [],
+          };
+          const fixedProject = {
+            ...data.project,
+            pages: data.project.pages.map((page: any) => ({
+              ...page,
+              tree: page.tree?.length > 0 ? page.tree : [rootGrid],
+            })),
+          };
+
+          importProject(fixedProject);
+          const validPageId = fixedProject.pages.some((p: any) => p.id === pageId)
+            ? pageId
+            : fixedProject.pages[0]?.id;
+          if (validPageId) {
+            setCurrentPage(validPageId);
+          }
+          setInitialLoadDone(true);
+        }
+      });
     }
-    if (currentPageId !== pageId) {
-      setCurrentPage(pageId);
-    }
-    // Clear selection in play mode (do this once on mount)
-    setSelectedNodeIds([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, pageId]);
+  }, [binId, loadProject, initialLoadDone, importProject, pageId, setCurrentPage]);
 
   // Enable play mode on mount, disable on unmount
   useEffect(() => {
     setPlayMode(true);
+    setSelectedNodeIds([]);
     return () => {
       setPlayMode(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Show loading state while loading from cloud
+  if (!initialLoadDone) {
+    return (
+      <div style={{
+        display: 'flex',
+        height: '100vh',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff',
+        color: '#333'
+      }}>
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

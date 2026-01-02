@@ -19,8 +19,12 @@ interface TopBarProps {
   rightPanel: "props" | "code" | "none";
   onToggleRightPanel: (panel: "props" | "code" | "none") => void;
   onNavigateToProjects?: () => void;
-  projectId: string;
+  binId: string;
   pageId: string;
+  // Cloud save props
+  isDirty?: boolean;
+  isSaving?: boolean;
+  onSave?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -31,8 +35,11 @@ export const TopBar: React.FC<TopBarProps> = ({
   rightPanel,
   onToggleRightPanel,
   onNavigateToProjects,
-  projectId,
+  binId,
   pageId,
+  isDirty,
+  isSaving,
+  onSave,
 }) => {
   const router = useRouter();
   const { pages, currentPageId, isPlayMode, setPlayMode, editingMode, setEditingMode } = useComponentTree();
@@ -317,9 +324,32 @@ export const TopBar: React.FC<TopBarProps> = ({
             }}
           />
 
+          {/* Cloud Save button */}
+          {onSave && (
+            <Button
+              onClick={onSave}
+              disabled={isSaving}
+              variant={isDirty ? "primary" : "secondary"}
+              style={{
+                backgroundColor: isDirty ? "#3858e9" : "#f0f0f0",
+                color: isDirty ? "#fff" : "#1e1e1e",
+                border: "none",
+                borderRadius: "2px",
+                padding: "0 16px",
+                height: "36px",
+                fontSize: "13px",
+                fontWeight: 400,
+                cursor: isSaving ? "wait" : "pointer",
+                opacity: isSaving ? 0.7 : 1,
+              }}
+            >
+              {isSaving ? "Saving..." : isDirty ? "Save" : "Saved"}
+            </Button>
+          )}
+
           <Button
             onClick={() =>
-              window.open(`/play/${projectId}/${currentPageId}`, "_blank")
+              window.open(`/play/${binId}/${currentPageId}`, "_blank")
             }
             variant="primary"
             style={{

@@ -38,6 +38,9 @@ export interface ComponentTreeState {
   isAgentExecuting: boolean; // Disable UI interactions while AI agent is working
   editingMode: 'selection' | 'text';
 
+  // Cloud save state
+  isDirty: boolean; // True when there are unsaved changes
+
   // History state
   history: {
     past: HistoryState[];
@@ -89,6 +92,14 @@ const DEBOUNCED_ACTIONS = new Set([
   'RENAME_PAGE',
   'RENAME_PROJECT',
 ]);
+
+// Actions that modify content and should mark the document as dirty
+// Excludes navigation actions (SET_CURRENT_PAGE, SET_CURRENT_PROJECT) that don't change content
+const CONTENT_MODIFYING_ACTIONS = new Set(
+  Array.from(HISTORY_ACTIONS).filter(
+    action => action !== 'SET_CURRENT_PAGE' && action !== 'SET_CURRENT_PROJECT'
+  )
+);
 
 /**
  * Helper to get current project from projects array
@@ -1259,7 +1270,33 @@ export function componentTreeReducer(
       };
     }
 
+    case 'MARK_SAVED':
+      return { ...state, isDirty: false };
+
+    case 'MARK_DIRTY':
+      return { ...state, isDirty: true };
+
     default:
       return state;
   }
+
+  // This code is unreachable but TypeScript doesn't know that
+  // The actual isDirty logic is handled in the wrapper function below
+}
+
+/**
+ * Wrapper that sets isDirty for content-modifying actions
+ */
+export function componentTreeReducerWithDirtyTracking(
+  state: ComponentTreeState,
+  action: ComponentTreeAction
+): ComponentTreeState {
+  const newState = componentTreeReducer(state, action);
+
+  // If state changed and action modifies content, mark as dirty
+  if (newState !== state && CONTENT_MODIFYING_ACTIONS.has(action.type)) {
+    return { ...newState, isDirty: true };
+  }
+
+  return newState;
 }

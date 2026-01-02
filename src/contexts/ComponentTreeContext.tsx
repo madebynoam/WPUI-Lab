@@ -1,7 +1,7 @@
 import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo, useCallback } from 'react';
 import { ComponentNode, Page, Project, Interaction, PatternNode } from '@/types';
 import { componentRegistry } from '@/componentRegistry';
-import { componentTreeReducer, ComponentTreeState } from '@/ComponentTreeReducer';
+import { componentTreeReducerWithDirtyTracking, ComponentTreeState } from '@/ComponentTreeReducer';
 import { ROOT_GRID_ID, getCurrentTree, findNodeById, findParent, calculateSmartGridSpan } from '@/utils/treeHelpers';
 import { generateId } from '@/utils/idGenerator';
 import { normalizeComponentNode, normalizeComponentNodes } from '@/utils/normalizeComponent';
@@ -80,6 +80,7 @@ interface ComponentTreeContextType {
   deleteProject: (projectId: string) => void;
   renameProject: (projectId: string, name: string) => void;
   duplicateProject: (projectId: string) => void;
+  importProject: (project: Project) => void;
   resetExampleProject: () => void;
   updateProjectTheme: (theme: { primaryColor?: string; backgroundColor?: string }) => void;
   updateProjectLayout: (layout: { maxWidth?: number; padding?: number; spacing?: number }) => void;
@@ -107,6 +108,10 @@ interface ComponentTreeContextType {
   addInteraction: (nodeId: string, interaction: Omit<Interaction, 'id'>) => void;
   removeInteraction: (nodeId: string, interactionId: string) => void;
   updateInteraction: (nodeId: string, interactionId: string, interaction: Omit<Interaction, 'id'>) => void;
+
+  // Cloud save state
+  isDirty: boolean;
+  markSaved: () => void;
 }
 
 const ComponentTreeContext = createContext<ComponentTreeContextType | undefined>(undefined);
@@ -213,6 +218,7 @@ function initializeState(): ComponentTreeState {
     isPlayMode: false,
     isAgentExecuting: false,
     editingMode: 'selection',
+    isDirty: false,
     history: {
       past: [],
       present: {
@@ -240,7 +246,7 @@ function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNod
 }
 
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
-  const [state, dispatch] = useReducer(componentTreeReducer, undefined, initializeState);
+  const [state, dispatch] = useReducer(componentTreeReducerWithDirtyTracking, undefined, initializeState);
 
   // Get current project
   const currentProject = useMemo(
@@ -251,8 +257,13 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   // Get current tree for convenience
   const tree = useMemo(
     () => {
-      if (!currentProject) return [];
-      return getCurrentTree(currentProject.pages, currentProject.currentPageId);
+      if (!currentProject) {
+        console.log('[tree] No currentProject, returning []');
+        return [];
+      }
+      const result = getCurrentTree(currentProject.pages, currentProject.currentPageId);
+      console.log('[tree] projectId=' + currentProject.id + ' pageId=' + currentProject.currentPageId + ' treeLen=' + result.length + ' rootChildren=' + (result[0]?.children?.length || 0));
+      return result;
     },
     [currentProject]
   );
@@ -550,6 +561,16 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     return newProjectId;
   };
 
+  const importProject = useCallback((project: Project) => {
+    // Add project to projects array (replace if exists, add if new)
+    const existingIndex = state.projects.findIndex(p => p.id === project.id);
+    const newProjects = existingIndex >= 0
+      ? state.projects.map((p, i) => i === existingIndex ? project : p)
+      : [...state.projects, project];
+    dispatch({ type: 'SET_PROJECTS', payload: { projects: newProjects } });
+    dispatch({ type: 'SET_CURRENT_PROJECT', payload: { projectId: project.id } });
+  }, [state.projects, dispatch]);
+
   const resetExampleProject = () => {
     dispatch({ type: 'RESET_EXAMPLE_PROJECT' });
   };
@@ -616,6 +637,12 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'UPDATE_INTERACTION', payload: { nodeId, interactionId, interaction } });
   };
 
+  // ===== Cloud Save =====
+
+  const markSaved = useCallback(() => {
+    dispatch({ type: 'MARK_SAVED' });
+  }, [dispatch]);
+
   // ===== Context Value =====
 
   const value: ComponentTreeContextType = {
@@ -665,6 +692,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     deleteProject,
     renameProject,
     duplicateProject,
+    importProject,
     resetExampleProject,
     updateProjectTheme,
     updateProjectLayout,
@@ -682,6 +710,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     addInteraction,
     removeInteraction,
     updateInteraction,
+    isDirty: state.isDirty,
+    markSaved,
   };
 
   return (

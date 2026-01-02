@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
 import { ComponentNode, PatternNode } from "../types";
 import { componentRegistry } from "@/componentRegistry";
@@ -302,6 +302,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
   onCloseInserter,
 }) => {
   const router = useRouter();
+  const params = useParams();
+  const binId = params.binId as string; // Get binId from URL for navigation
   const {
     tree,
     addComponent,
@@ -317,6 +319,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     currentProjectId,
     setCurrentPage,
     addPage,
+    createPageWithId,
     deletePage,
     renamePage,
     duplicatePage,
@@ -840,7 +843,12 @@ export const TreePanel: React.FC<TreePanelProps> = ({
           Pages
         </span>
         <button
-          onClick={() => addPage()}
+          onClick={() => {
+            const newPageId = createPageWithId();
+            if (binId) {
+              router.push(`/editor/${binId}/${newPageId}`);
+            }
+          }}
           style={{
             background: "none",
             border: "none",
@@ -894,8 +902,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                   onPageClick={() => {
                     if (editingPageId !== page.id) {
                       setCurrentPage(page.id);
-                      if (currentProjectId) {
-                        router.push(`/editor/${currentProjectId}/${page.id}`);
+                      if (binId) {
+                        router.push(`/editor/${binId}/${page.id}`);
                       }
                     }
                   }}
@@ -909,8 +917,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                       // Select page on first click
                       if (editingPageId !== page.id) {
                         setCurrentPage(page.id);
-                        if (currentProjectId) {
-                          router.push(`/editor/${currentProjectId}/${page.id}`);
+                        if (binId) {
+                          router.push(`/editor/${binId}/${page.id}`);
                         }
                       }
                       pageClickTimeoutRef.current[page.id] = setTimeout(() => {

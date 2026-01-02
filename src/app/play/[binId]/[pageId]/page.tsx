@@ -9,7 +9,7 @@ const DynamicPlayModeContent = dynamic(() => import('@/components/PlayModeConten
   loading: () => null
 });
 
-export default function PlayModePage({ params }: { params: Promise<{ projectId: string; pageId: string }> }) {
-  const { projectId, pageId } = use(params);
-  return <DynamicPlayModeContent projectId={projectId} pageId={pageId} />;
+export default function PlayModePage({ params }: { params: Promise<{ binId: string; pageId: string }> }) {
+  const { binId, pageId } = use(params);
+  return <DynamicPlayModeContent binId={binId} pageId={pageId} />;
 }
