@@ -1816,7 +1816,7 @@ export const RenderNode: React.FC<{
       ].filter(Boolean).join(' ');
 
       return (
-        <div {...editorProps} className={`${editorProps.className || ''} ${visibilityClasses}`.trim()}>
+        <div {...editorProps} className={visibilityClasses || undefined}>
           <style>{`
             .dataviews-hide-search .dataviews-search { display: none !important; }
             .dataviews-hide-search [class*="dataviews"][class*="search"] { display: none !important; }

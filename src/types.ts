@@ -80,10 +80,11 @@ export interface ComponentDefinition {
 
 export interface PropDefinition {
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'select' | 'object' | 'color';
+  type: 'string' | 'number' | 'boolean' | 'select' | 'object' | 'color' | 'selectOptions';
   options?: string[];
   defaultValue?: any;
   description?: string;
+  disabledWhen?: { prop: string; value: any };
 }
 
 export interface HistoryState {
