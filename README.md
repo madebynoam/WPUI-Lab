@@ -112,8 +112,8 @@ npm run lint
 WP-Designer uses a tree-based architecture:
 
 - **Projects** contain **Pages** contain **ComponentNode Trees**
-- Every page has a root `VStack` component
-- State flows through `ComponentTreeContext` → Reducer → localStorage
+- Every page has a root 12-column `Grid` component
+- State flows through `ComponentTreeContext` → Reducer → Cloud Storage
 - AI Agent manipulates trees via registered tools
 
 For detailed architecture documentation, see:
@@ -157,13 +157,48 @@ The AI uses specialized tools to manipulate the component tree:
 
 ## Environment Variables
 
-Required for AI features:
+Copy `.env.example` to `.env.local` and configure:
 
 ```bash
 # .env.local
+
+# Storage Provider (required)
+# Choose one: local, jsonbin, supabase
+STORAGE_PROVIDER=local
+
+# AI Features (required for AI-powered design)
 ANTHROPIC_API_KEY=sk-ant-...  # For Claude Sonnet 4.5
 OPENAI_API_KEY=sk-proj-...    # For GPT-5-Mini
+
+# Team Authentication
+TEAM_PASSWORD=your_shared_password
+
+# JSONBin (if STORAGE_PROVIDER=jsonbin)
+JSONBIN_API_KEY=your_master_key
+JSONBIN_COLLECTION_ID=your_collection_id
+
+# Supabase (if STORAGE_PROVIDER=supabase)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your_service_key
 ```
+
+## Storage Providers
+
+Projects are stored in the cloud. Choose a provider based on your needs:
+
+| Provider | Setup | Best For |
+|----------|-------|----------|
+| `local` | None | Local dev/testing |
+| `jsonbin` | API key from jsonbin.io | Quick prototypes |
+| `supabase` | Project + run `supabase/schema.sql` | Production |
+
+### Local Storage
+No setup required. Data persists in browser localStorage.
+
+### Supabase Setup
+1. Create a project at [supabase.com](https://supabase.com)
+2. Run `supabase/schema.sql` in the SQL Editor
+3. Copy URL and service key to `.env.local`
 
 ## Contributing
 
