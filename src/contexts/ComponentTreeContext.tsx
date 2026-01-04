@@ -5,11 +5,12 @@ import { componentTreeReducerWithDirtyTracking, ComponentTreeState } from '@/Com
 import { ROOT_GRID_ID, getCurrentTree, findNodeById, findParent, calculateSmartGridSpan } from '@/utils/treeHelpers';
 import { generateId } from '@/utils/idGenerator';
 import { normalizeComponentNode, normalizeComponentNodes } from '@/utils/normalizeComponent';
-import { DEMO_PROJECT } from '@/demoProject';
+// Cloud-only: Demo project no longer needed for initialization
 
 // File version 3: Grid-first layout system
 // Changed storage key to not load old projects with VStack/HStack layout complexity
-const STORAGE_KEY = 'wp-designer-projects-v3';
+// Cloud-only mode: No localStorage for project data
+// Projects are loaded from cloud storage via useCloudProject hook
 
 interface ComponentTreeContextType {
   // Current page's tree
@@ -162,51 +163,12 @@ const createInitialProject = (id: string, name: string): Project => ({
   },
 });
 
-// Initialize state from localStorage
+// Initialize state for cloud-only mode
+// Projects are loaded from cloud storage, not localStorage
 function initializeState(): ComponentTreeState {
-  // Default to demo project for first-time users
-  let projects: Project[] = [DEMO_PROJECT];
-  let currentProjectId = DEMO_PROJECT.id;
-
-  // Only access localStorage on client
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    console.log('[ComponentTreeContext] Loading from localStorage:', saved ? `Found ${saved.length} chars` : 'No data');
-
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        console.log('[ComponentTreeContext] Parsed data:', {
-          hasProjects: !!data.projects,
-          projectsLength: data.projects?.length,
-          projectNames: data.projects?.map((p: Project) => p.name),
-        });
-
-        if (Array.isArray(data.projects) && data.projects.length > 0) {
-          // Filter out projects with version < 3 (silently ignore old format)
-          const validProjects = data.projects.filter((p: Project) => p.version >= 3);
-
-          if (validProjects.length > 0) {
-            console.log('[ComponentTreeContext] Loading projects from localStorage:', validProjects.length);
-            projects = validProjects;
-            currentProjectId = data.currentProjectId || validProjects[0].id;
-          } else {
-            // All projects are old version - use demo project
-            console.log('[ComponentTreeContext] All projects are old version, using demo project');
-          }
-        } else {
-          // Empty projects array in localStorage - use demo project
-          console.log('[ComponentTreeContext] Empty projects in localStorage, using demo project');
-        }
-      } catch (e) {
-        console.error('Failed to parse saved projects:', e);
-        // On parse error, use demo project
-      }
-    } else {
-      // No saved data - first time user, use demo project
-      console.log('[ComponentTreeContext] No saved data, using demo project for first-time user');
-    }
-  }
+  // Start with empty state - cloud project will be loaded via importProject
+  const projects: Project[] = [];
+  const currentProjectId = '';
 
   return {
     projects,
@@ -222,8 +184,8 @@ function initializeState(): ComponentTreeState {
     history: {
       past: [],
       present: {
-        projects: JSON.parse(JSON.stringify(projects)),
-        currentProjectId,
+        projects: [],
+        currentProjectId: '',
       },
       future: [],
     },
@@ -272,20 +234,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   const pages = currentProject?.pages || [];
   const currentPageId = currentProject?.currentPageId || '';
 
-  // Save to localStorage whenever state changes
-  useEffect(() => {
-    // Only access localStorage on client
-    if (typeof window !== 'undefined') {
-      const dataToSave = { projects: state.projects, currentProjectId: state.currentProjectId };
-      console.log('[ComponentTreeContext] Saving to localStorage:', {
-        projectCount: state.projects.length,
-        projectNames: state.projects.map(p => p.name),
-        currentProjectId: state.currentProjectId,
-      });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-      console.log('[ComponentTreeContext] Saved successfully');
-    }
-  }, [state.projects, state.currentProjectId]);
+  // Cloud-only mode: No localStorage save
+  // Projects are saved to cloud storage via useCloudProject hook
 
   // ===== Tree Operations =====
 
@@ -428,9 +378,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   const resetTree = () => {
     const defaultProject = createInitialProject('project-1', 'My First Project');
-    // Only access localStorage on client
+    // Clear agent messages from localStorage
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('wp-designer-agent-messages-v3');
     }
     dispatch({ type: 'RESET_TREE', payload: { defaultProject } });

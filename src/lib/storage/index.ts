@@ -1,5 +1,7 @@
 import type { StorageProvider } from './types';
 import { JSONBinProvider } from './jsonbin';
+import { SupabaseProvider } from './supabase';
+import { LocalStorageProvider } from './localstorage';
 
 export type { StorageProvider, ProjectSummary, ProjectData, CreateProjectResult, ProjectMeta } from './types';
 
@@ -18,16 +20,23 @@ export function getStorageProvider(): StorageProvider {
     return cachedProvider;
   }
 
-  const providerType = process.env.STORAGE_PROVIDER || 'jsonbin';
+  const providerType = process.env.STORAGE_PROVIDER;
+
+  if (!providerType) {
+    throw new Error('STORAGE_PROVIDER environment variable is required. Options: local, jsonbin, supabase');
+  }
 
   switch (providerType) {
     case 'jsonbin':
       cachedProvider = new JSONBinProvider();
       break;
+    case 'supabase':
+      cachedProvider = new SupabaseProvider();
+      break;
+    case 'local':
+      cachedProvider = new LocalStorageProvider();
+      break;
     // Future providers:
-    // case 'supabase':
-    //   cachedProvider = new SupabaseProvider();
-    //   break;
     // case 'firebase':
     //   cachedProvider = new FirebaseProvider();
     //   break;
