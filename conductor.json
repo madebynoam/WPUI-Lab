@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "setup": "cp $CONDUCTOR_ROOT_PATH/.env.local .env.local && npm install",
+    "run": "PORT=$CONDUCTOR_PORT npm run dev"
+  },
+  "runScriptMode": "nonconcurrent"
+}
