@@ -10,8 +10,7 @@ let cachedProvider: StorageProvider | null = null;
 /**
  * Get the configured storage provider.
  *
- * Uses STORAGE_PROVIDER env var to determine which provider to use.
- * Defaults to 'jsonbin' if not specified.
+ * Uses NEXT_PUBLIC_STORAGE_PROVIDER env var to determine which provider to use.
  *
  * Provider instances are cached for the lifetime of the process.
  */
@@ -20,10 +19,10 @@ export function getStorageProvider(): StorageProvider {
     return cachedProvider;
   }
 
-  const providerType = process.env.STORAGE_PROVIDER;
+  const providerType = process.env.NEXT_PUBLIC_STORAGE_PROVIDER;
 
   if (!providerType) {
-    throw new Error('STORAGE_PROVIDER environment variable is required. Options: local, jsonbin, supabase');
+    throw new Error('NEXT_PUBLIC_STORAGE_PROVIDER environment variable is required. Options: local, jsonbin, supabase');
   }
 
   switch (providerType) {
