@@ -15,8 +15,8 @@ if (typeof window !== 'undefined') {
   try {
     const icons = require('@wordpress/icons');
     ({ layout, box, pencil, tag, plus, table } = icons);
-  } catch (e) {
-    console.log('[availableComponents] Running in Node.js - icons unavailable');
+  } catch {
+    // Icons unavailable in Node.js environment - acceptable
   }
 }
 

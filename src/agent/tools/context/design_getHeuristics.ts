@@ -23,13 +23,10 @@ export const design_getHeuristics: AgentTool = {
       required: true,
     },
   },
-  execute: async (params: { context: string }, context: ToolContext): Promise<ToolResult> => {
-    console.log('[design_getHeuristics] Received params:', JSON.stringify(params));
+  execute: async (params: { context: string }, _context: ToolContext): Promise<ToolResult> => {
     const { context: designContext } = params;
-    console.log('[design_getHeuristics] Extracted designContext:', designContext);
 
     if (!designContext || typeof designContext !== 'string') {
-      console.log('[design_getHeuristics] Validation failed - designContext is:', designContext, 'type:', typeof designContext);
       return {
         success: false,
         message: 'Please provide a context description of what you\'re designing',

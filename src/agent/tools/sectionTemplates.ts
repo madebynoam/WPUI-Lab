@@ -138,19 +138,11 @@ PARAMETER EXAMPLES:
     },
     context: ToolContext
   ): Promise<ToolResult> => {
-    // DEBUG: Log section_create execution
-    console.log('\n[section_create] ========== EXECUTING ==========');
-    console.log('[section_create] Template:', params.template);
-    console.log('[section_create] Content:', JSON.stringify(params.content, null, 2));
-    console.log('[section_create] ParentId:', params.parentId);
-    console.log('[section_create] Placement:', params.placement);
-
     // Generate section based on template
     let markupContent: string;
     let componentCount = 0;
 
     try {
-      console.log(`[section_create] Routing to build${params.template.charAt(0).toUpperCase() + params.template.slice(1)}Section...`);
       switch (params.template) {
         case 'pricing':
           ({ markupContent, componentCount } = buildPricingSection(params.content));
@@ -188,8 +180,6 @@ PARAMETER EXAMPLES:
           };
       }
 
-      console.log(`[section_create] Successfully generated markup for ${params.template}, length:`, markupContent.length);
-
       // Parse markup with repair loop
       const result = await parseMarkupWithRepair(markupContent);
 
@@ -205,7 +195,6 @@ PARAMETER EXAMPLES:
       // Validate parentId - must be a component ID (starts with 'root-' or 'node-'), not a page ID
       let targetParentId = params.parentId;
       if (targetParentId && targetParentId.startsWith('page-')) {
-        console.warn(`[section_create] Invalid parentId "${targetParentId}" (page ID, not component ID). Defaulting to root-grid.`);
         targetParentId = 'root-grid';
       }
 
@@ -235,8 +224,6 @@ PARAMETER EXAMPLES:
         },
       };
     } catch (error: any) {
-      console.error('[section_create] ERROR:', error);
-      console.error('[section_create] Stack:', error.stack);
       return {
         success: false,
         message: `Failed to create ${params.template} section: ${error.message}`,
@@ -386,15 +373,10 @@ function buildTestimonialsSection(content: {
   title?: string;
   testimonials?: Testimonial[];
 }): { markupContent: string; componentCount: number } {
-  // DEBUG: Log testimonials section build
-  console.log('[buildTestimonialsSection] Called with content:', JSON.stringify(content, null, 2));
-
   // Provide default testimonials if none given, and filter out invalid entries
   const validTestimonials = content?.testimonials
     ? content.testimonials.filter(t => t && t.quote && t.author)
     : [];
-
-  console.log('[buildTestimonialsSection] Valid testimonials count:', validTestimonials.length);
 
   const testimonials = validTestimonials.length > 0
     ? validTestimonials
@@ -402,8 +384,6 @@ function buildTestimonialsSection(content: {
         { quote: 'Amazing product! It changed everything for us.', author: 'Jane Smith', role: 'CEO', company: 'Acme Corp' },
         { quote: 'Best decision we ever made. Highly recommended!', author: 'John Doe', role: 'CTO', company: 'Tech Inc' }
       ];
-
-  console.log('[buildTestimonialsSection] Using testimonials:', testimonials.length, 'testimonials');
 
   const header = content.title
     ? `  <Heading level={2} alignment="center">${content.title}</Heading>`

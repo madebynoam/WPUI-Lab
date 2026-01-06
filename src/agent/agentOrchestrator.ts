@@ -177,19 +177,14 @@ export class AgentOrchestrator {
         });
 
         // Execute agents sequentially with their specific instructions
-        console.log(`[Orchestrator] Starting multi-step workflow with ${agentSteps.length} steps`);
         for (let i = 0; i < agentSteps.length; i++) {
           const { agent: agentName, instruction } = agentSteps[i];
-          console.log(`[Orchestrator] ========== STEP ${i + 1}/${agentSteps.length} ==========`);
-          console.log(`[Orchestrator] Agent: ${agentName}`);
-          console.log(`[Orchestrator] Instruction: ${instruction}`);
 
           const agent = this.classifier.getAgent(agentName);
           if (!agent) {
             throw new Error(`Agent ${agentName} not found`);
           }
 
-          console.log(`[Orchestrator] Executing ${agentName}...`);
           const agentResult: AgentResult = await agent.execute(
             instruction,  // ← AGENT-SPECIFIC INSTRUCTION, NOT FULL MESSAGE!
             context,
@@ -200,13 +195,6 @@ export class AgentOrchestrator {
             },
             signal  // Pass abort signal for stop button
           );
-
-          console.log(`[Orchestrator] ${agentName} completed:`, {
-            success: agentResult.success,
-            message: agentResult.message,
-            tokensUsed: agentResult.tokensUsed,
-            memoryEntriesCreated: agentResult.memoryEntriesCreated,
-          });
 
           totalTokens += agentResult.tokensUsed;
           totalCost += agentResult.cost;
@@ -223,9 +211,7 @@ export class AgentOrchestrator {
               memoryEntriesCreated,
             };
           }
-          console.log(`[Orchestrator] Step ${i + 1} SUCCESS - continuing`);
         }
-        console.log(`[Orchestrator] All ${agentSteps.length} steps completed successfully`);
       } else {
         // Single-step workflow
         const agentName = await this.classifier.classify(userMessage, this.memory, signal);

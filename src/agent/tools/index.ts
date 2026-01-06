@@ -80,7 +80,5 @@ const allTools = [
 // Register all tools in the registry
 allTools.forEach(tool => registerTool(tool));
 
-console.log(`[ToolRegistry] Registered ${allTools.length} tools`);
-
 // Re-export registry functions for convenience
 export { registerTool, getTool, getAllTools, getToolsByCategory } from './registry';

@@ -8,5 +8,3 @@
 import { ComponentDefinition } from '../types';
 
 export const componentRegistry: Record<string, ComponentDefinition> = {};
-
-console.log('[componentRegistry] Using Node.js mock - componentRegistry empty');

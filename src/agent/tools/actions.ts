@@ -14,8 +14,8 @@ try {
     // Node.js environment - use mock registry
     componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
   }
-} catch (e) {
-  console.log('[actions] Failed to load componentRegistry:', e);
+} catch {
+  // Failed to load componentRegistry
 }
 
 // Import table templates for Table node processing
@@ -37,7 +37,6 @@ function processTableNode(node: ComponentNode): ComponentNode {
                           (Array.isArray(node.props.data) && node.props.data.length > 0);
 
     if (hasCustomData) {
-      console.log('[buildFromMarkup] DataViews has custom data, preserving it');
       // Normalize to new prop names
       const customData = node.props.customData || node.props.data;
       const fields = node.props.fields || node.props.columns;
@@ -56,7 +55,6 @@ function processTableNode(node: ComponentNode): ComponentNode {
 
     // Handle DataViews with template prop (LLM sometimes uses this instead of <Table>)
     if (node.props.template) {
-      console.log('[buildFromMarkup] Processing DataViews with template:', node.props.template);
       const template = node.props.template;
       const templateData = TABLE_TEMPLATES[template as keyof typeof TABLE_TEMPLATES];
 
@@ -79,8 +77,6 @@ function processTableNode(node: ComponentNode): ComponentNode {
 
   // If this is a Table node, replace it with Grid+DataViews
   if (node.type === 'Table') {
-    console.log('[buildFromMarkup] Processing Table node with props:', node.props);
-
     const template = node.props.template || 'users'; // Default to users if no template specified
     const viewType = node.props.viewType || 'table';
     const itemsPerPage = node.props.itemsPerPage || 10;
@@ -139,7 +135,6 @@ function processTableNode(node: ComponentNode): ComponentNode {
       interactions: [],
     };
 
-    console.log('[buildFromMarkup] Replaced Table with Grid+DataViews');
     return gridNode;
   }
 
@@ -707,9 +702,6 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
     },
   },
   execute: async (params: any, context: ToolContext): Promise<ToolResult> => {
-    console.log("[buildFromMarkup] Received markup:", params.markup);
-    console.log("[buildFromMarkup] Received parentId:", params.parentId);
-
     // Validate markup parameter
     if (!params.markup || typeof params.markup !== "string") {
       return {
@@ -723,10 +715,6 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
     // CRITICAL VALIDATION: Reject page IDs as parentId (common LLM mistake)
     // This prevents regression where LLM passes page ID instead of component ID
     if (params.parentId && params.parentId.startsWith('page-')) {
-      console.error("[buildFromMarkup] INVALID parentId - Page IDs are not valid parent IDs!");
-      console.error("[buildFromMarkup] Received:", params.parentId);
-      console.error("[buildFromMarkup] Auto-correcting to undefined (will use root-grid)");
-
       // Auto-correct instead of failing - this is more helpful
       params.parentId = undefined;
     }
@@ -734,15 +722,11 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
     // Resolve placeholder parentIds like "selected", "selected-card-body", etc.
     // LLM sometimes uses descriptive names instead of actual node IDs
     if (params.parentId && !params.parentId.startsWith('node-') && !params.parentId.startsWith('root-')) {
-      console.log("[buildFromMarkup] Resolving placeholder parentId:", params.parentId);
-
       // Use the first selected node if available
       if (context.selectedNodeIds && context.selectedNodeIds.length > 0) {
         const selectedId = context.selectedNodeIds[0];
-        console.log("[buildFromMarkup] Resolved to selected node:", selectedId);
         params.parentId = selectedId;
       } else {
-        console.log("[buildFromMarkup] No selection, using root-grid");
         params.parentId = undefined;
       }
     }
@@ -758,11 +742,6 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
           error: result.error || "Parse error",
         };
       }
-
-      console.log(
-        "[buildFromMarkup] Created component nodes:",
-        result.nodes.length
-      );
 
       // Process Table nodes - replace with Grid+DataViews structure
       const processedNodes = processTableNodes(result.nodes);
@@ -794,7 +773,6 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
         },
       };
     } catch (error) {
-      console.error("[buildFromMarkup] Error:", error);
       return {
         success: false,
         message: `Failed to parse markup: ${

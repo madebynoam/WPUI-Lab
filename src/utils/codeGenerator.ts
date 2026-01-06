@@ -8,8 +8,8 @@ try {
   } else {
     componentRegistry = require('../componentRegistry/index.node').componentRegistry;
   }
-} catch (e) {
-  console.log('[codeGenerator] Failed to load componentRegistry:', e);
+} catch {
+  // Component registry unavailable during SSR - acceptable
 }
 
 interface CodeGeneratorOptions {

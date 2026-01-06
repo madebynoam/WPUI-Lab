@@ -187,7 +187,6 @@ export const RenderNode: React.FC<{
 
           // Check if current node and last selected node share the same parent (siblings)
           if (currentParent && currentParent.id === lastSelectedParent.id) {
-            console.log('[Shift-Click] Found sibling:', current.id, 'of selected:', lastSelectedId, 'both children of:', currentParent.id);
             return current.id;
           }
 
@@ -279,7 +278,6 @@ export const RenderNode: React.FC<{
           }
         } else if (interaction.action === 'showModal') {
           // Find the target component (modal) and show it
-          console.log('Show modal:', interaction.targetId);
           // This would require a more complex state management for modal visibility
         }
       }
@@ -324,15 +322,6 @@ export const RenderNode: React.FC<{
       return;
     }
 
-    // DEBUG: Track selection state
-    console.log('[DEBUG Selection] handleMouseDown triggered:', {
-      clickedNodeId: node.id,
-      clickedNodeType: node.type,
-      selectedNodeIds: JSON.stringify(selectedNodeIds),
-      lastClickedId: lastClickedIdRef.current,
-      timeSinceLastMousedown,
-    });
-
     // Clicking root VStack clears selection
     if (node.id === ROOT_GRID_ID) {
       if (selectedNodeIds.length > 0) {
@@ -371,14 +360,6 @@ export const RenderNode: React.FC<{
     const isInsideSelection = selectedAncestor !== null;
     const effectiveSelectedNode = isSelected ? node : selectedAncestor;
 
-    console.log('[DEBUG Selection] Selection state checks:', {
-      isSelected,
-      selectedAncestor: selectedAncestor?.id,
-      isInsideSelection,
-      selectedNodeIds,
-      effectiveSelectedNode: effectiveSelectedNode?.id,
-    });
-
     // Find sibling by walking up from clicked node to find component at same nesting level as selected
     // Matches hover logic: checks for siblings AND parent's siblings (one level up)
     const findSiblingNode = (): ComponentNode | null => {
@@ -394,7 +375,6 @@ export const RenderNode: React.FC<{
       // First check: is the clicked node itself a sibling of selected?
       const clickedParent = findParent(tree, node.id);
       if (clickedParent && clickedParent.id === selectedParent.id && node.id !== selectedId) {
-        console.log('[DEBUG Sibling] Direct sibling:', node.id, 'of selected:', selectedId);
         return node;
       }
 
@@ -402,7 +382,6 @@ export const RenderNode: React.FC<{
       if (selectedParent.id !== ROOT_GRID_ID) {
         const selectedGrandparent = findParent(tree, selectedParent.id);
         if (selectedGrandparent && clickedParent && selectedGrandparent.id === clickedParent.id) {
-          console.log('[DEBUG Sibling] Parent sibling:', node.id, 'is sibling of selected parent:', selectedParent.id);
           return node;
         }
       }
@@ -416,7 +395,6 @@ export const RenderNode: React.FC<{
 
         // Check if current node and selected node share the same parent (direct siblings)
         if (currentParent && currentParent.id === selectedParent.id && current.id !== selectedId) {
-          console.log('[DEBUG Sibling] Found sibling:', current.id, 'of selected:', selectedId, 'both children of:', currentParent.id);
           return current;
         }
 
@@ -424,7 +402,6 @@ export const RenderNode: React.FC<{
         if (selectedParent.id !== ROOT_GRID_ID) {
           const selectedGrandparent = findParent(tree, selectedParent.id);
           if (selectedGrandparent && currentParent && selectedGrandparent.id === currentParent.id) {
-            console.log('[DEBUG Sibling] Found parent sibling:', current.id, 'is sibling of selected parent:', selectedParent.id);
             return current;
           }
         }
@@ -442,15 +419,11 @@ export const RenderNode: React.FC<{
     const siblingNode = findSiblingNode();
     const isSibling = siblingNode !== null;
 
-    console.log('[DEBUG Selection] isSelected:', isSelected, 'isInsideSelection:', isInsideSelection, 'isSibling:', isSibling, 'siblingNode:', siblingNode?.id, 'effectiveNode:', effectiveSelectedNode?.id);
-
     if (!isSelected && !isInsideSelection) {
       // NOT SELECTED - Select it immediately (Figma-style)
-      console.log('[Mousedown Selection] SINGLE MOUSEDOWN - selecting component');
 
       // If clicking on a sibling, select the sibling directly
       if (isSibling && siblingNode) {
-        console.log('[DEBUG Selection] Selecting sibling:', siblingNode.id, 'for clicked node:', node.id);
         toggleNodeSelection(siblingNode.id, false, false, tree);
         lastClickTimeRef.current = now;
         lastClickedIdRef.current = siblingNode.id; // Track the SELECTED node, not clicked node
@@ -464,19 +437,16 @@ export const RenderNode: React.FC<{
 
       if (parent && parent.id === ROOT_GRID_ID) {
         // Direct child of root - select it directly
-        console.log('[DEBUG Selection] Selecting direct child of root:', node.id);
         toggleNodeSelection(node.id, false, false, tree);
         selectedId = node.id;
       } else {
         // Nested component - select the top-most container
         const topContainer = findTopMostContainer(tree, node.id, componentRegistry);
         if (topContainer) {
-          console.log('[DEBUG Selection] Selecting top container:', topContainer.id, 'for clicked node:', node.id);
           toggleNodeSelection(topContainer.id, false, false, tree);
           selectedId = topContainer.id;
         } else {
           // Fallback: select the clicked node directly
-          console.log('[DEBUG Selection] No top container found, selecting clicked node:', node.id);
           toggleNodeSelection(node.id, false, false, tree);
           selectedId = node.id;
         }
@@ -488,21 +458,11 @@ export const RenderNode: React.FC<{
     }
 
     // ALREADY SELECTED or INSIDE SELECTION - Check for double-click (drill-in) or prepare for drag
-    console.log('[DEBUG Selection] ALREADY SELECTED or INSIDE SELECTION branch - checking for double-click');
 
     // Use the effective selected node for double-click detection
     const isDoubleClick = timeSinceLastMousedown < 300 && lastClickedIdRef.current === effectiveSelectedNode!.id;
 
-    console.log('[DEBUG Selection] Double-click check:', {
-      isDoubleClick,
-      timeSinceLastMousedown,
-      lastClickedId: lastClickedIdRef.current,
-      effectiveSelectedNodeId: effectiveSelectedNode!.id,
-      threshold: 300,
-    });
-
     if (isDoubleClick) {
-      console.log('[DEBUG Selection] DOUBLE-CLICK detected on:', node.id, 'type:', node.type);
 
       // SPECIAL CASE: If double-clicking a text component that's already selected,
       // skip drill-in logic and let onClick handle entering edit mode
@@ -515,12 +475,9 @@ export const RenderNode: React.FC<{
       );
 
       if (isTextComponent && selectedNodeIds.includes(node.id)) {
-        console.log('[DEBUG Selection] Text component double-click - skipping drill-in, letting onClick handle edit mode');
         // Don't update refs - let onClick handle the double-click
         return;
       }
-
-      console.log('[DEBUG Selection] Non-text or not-selected - proceeding with drill-in logic');
 
       // Find child component at click location using DOM
       const clickedElement = document.elementFromPoint(e.clientX, e.clientY);
@@ -549,13 +506,11 @@ export const RenderNode: React.FC<{
         }
 
         if (foundChildId) {
-          console.log('[DEBUG Selection] Drilling into child:', foundChildId);
           toggleNodeSelection(foundChildId, false, false, tree);
           lastClickTimeRef.current = now;
           lastClickedIdRef.current = effectiveSelectedNode!.id;
           return;
         } else {
-          console.log('[DEBUG Selection] No child found at click location, staying selected');
           // No child found - just stay selected, don't prepare for drag on double-click
           lastClickTimeRef.current = now;
           lastClickedIdRef.current = effectiveSelectedNode!.id;
@@ -567,8 +522,6 @@ export const RenderNode: React.FC<{
     // SINGLE CLICK on already selected - prepare for potential drag
     // Use the SELECTED component for drag, not the clicked nested component
     const dragTargetId = effectiveSelectedNode!.id;
-    console.log('[Mousedown Selection] SINGLE MOUSEDOWN - already selected, preparing for drag:', dragTargetId);
-    console.log('[DEBUG Selection] Setting up drag preparation for node:', dragTargetId);
 
     // Capture initial mouse position for drag threshold
     dragStartPosRef.current = { x: e.clientX, y: e.clientY };
@@ -576,7 +529,6 @@ export const RenderNode: React.FC<{
 
     // Store the drag target ID temporarily (will start drag after threshold)
     (window as any).__pendingDragTargetId = dragTargetId;
-    console.log('[DEBUG Selection] __pendingDragTargetId set to:', dragTargetId);
 
     // Update tracking
     lastClickTimeRef.current = now;
@@ -594,11 +546,8 @@ export const RenderNode: React.FC<{
         const dy = e.clientY - dragStartPosRef.current.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        console.log('[DEBUG Drag] Mouse moved, distance:', distance.toFixed(2), 'px, threshold: 5px');
-
         // Start drag if threshold exceeded (5px)
         if (distance > 5) {
-          console.log('[DEBUG Drag] Drag threshold exceeded! Starting drag for node:', pendingDragTargetId);
           dragThresholdMet.current = true;
 
           // Find the parent and store its ID for sibling validation
@@ -639,12 +588,10 @@ export const RenderNode: React.FC<{
 
               if (isHorizontalIntent) {
                 // Horizontal drag - column positioning mode
-                console.log('[DEBUG Drag] Column drag mode activated (dx:', absDx, 'dy:', absDy, ')');
                 setDragMode('column');
                 setContextParentGridColumns(parentColumns);
               } else {
                 // Vertical drag - reorder mode (clear vertical movement)
-                console.log('[DEBUG Drag] Reorder drag mode activated (dx:', absDx, 'dy:', absDy, ')');
                 setDragMode('reorder');
               }
             } else {
@@ -734,14 +681,12 @@ export const RenderNode: React.FC<{
               const shouldSwitchToReorder = absDy > 80 && absDy > absDx * 1.5;
               if (shouldSwitchToReorder) {
                 newMode = 'reorder';
-                console.log('[DEBUG Drag] Column → Reorder (strong vertical intent, dx:', absDx, 'dy:', absDy, ')');
               }
             } else {
               // In reorder mode (or initial) - use normal thresholds to enter column mode
               const isHorizontalIntent = absDy < 40 || absDx > absDy * 2.5;
               if (isHorizontalIntent) {
                 newMode = 'column';
-                console.log('[DEBUG Drag] Reorder → Column (horizontal intent, dx:', absDx, 'dy:', absDy, ')');
               } else {
                 newMode = 'reorder';
               }
@@ -784,8 +729,6 @@ export const RenderNode: React.FC<{
             targetColumn = Math.max(1, Math.min(maxStartColumn, targetColumn));
 
             setTargetGridColumnStart(targetColumn);
-
-            console.log('[DEBUG Drag] Column mode - Target column:', targetColumn, 'Max:', maxStartColumn);
           }
 
           // Continue to sibling hover detection (don't skip it)
@@ -899,7 +842,6 @@ export const RenderNode: React.FC<{
         const currentColumnStart = draggedNode?.props?.gridColumnStart || 1;
 
         if (currentTargetColumn !== currentColumnStart) {
-          console.log('[Drop] Updating column position from', currentColumnStart, 'to', currentTargetColumn);
           updateComponentProps(draggedNodeId, { gridColumnStart: currentTargetColumn });
         }
       }
@@ -1515,8 +1457,6 @@ export const RenderNode: React.FC<{
       const viewType = props.viewType || 'table';
       const itemsPerPage = props.itemsPerPage || 10;
 
-      console.log('[DataViews] Rendering with:', { dataPreset, viewType, nodeId: node.id, propsData: props.data });
-
       // Memoize mockData and fields to prevent infinite re-renders
       const { mockData, fields } = useMemo(() => {
         let data, fieldDefs;
@@ -1566,12 +1506,6 @@ export const RenderNode: React.FC<{
           // Fall back to mock data based on preset
           data = getMockData(dataPreset);
           fieldDefs = getFieldDefinitions(dataPreset);
-          console.log('[DataViews] Using mock data:', {
-            dataPreset,
-            mockDataLength: data?.length,
-            firstItem: data?.[0],
-            fieldsLength: fieldDefs?.length
-          });
         }
 
         return { mockData: data, fields: fieldDefs };
@@ -1778,27 +1712,6 @@ export const RenderNode: React.FC<{
           : () => {}, // Disabled in design mode
         getItemId: (item: any) => item?.id || `item-${Math.random()}`,
       };
-
-      // Debug logging
-      console.log('DataViews props:', {
-        dataCount: mergedProps.data.length,
-        fieldCount: mergedProps.fields.length,
-        fieldIds: mergedProps.fields.map(f => f.id),
-        fields: mergedProps.fields,
-        sampleData: mergedProps.data.slice(0, 1),
-        view: mergedProps.view,
-        paginationInfo: mergedProps.paginationInfo,
-        defaultLayouts: mergedProps.defaultLayouts,
-      });
-
-      // Test getValue functions on sample data
-      if (mergedProps.data.length > 0) {
-        const testItem = mergedProps.data[0];
-        console.log('Testing getValue on first item:', {
-          item: testItem,
-          titleValue: mergedProps.fields[0]?.getValue?.(testItem),
-        });
-      }
 
       // DataViews needs a wrapper to be selectable (doesn't accept ref/event handlers)
       const editorProps = getEditorProps({ minHeight: '400px', height: '100%' });

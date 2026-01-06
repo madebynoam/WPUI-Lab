@@ -316,8 +316,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
             {
               signal: controller.signal,  // Pass abort signal for stop button
               onProgress: (agentMsg) => {
-                console.log("[AgentPanel] Progress update:", agentMsg);
-
                 // Append new progress message to chat
                 const progressMessage: AgentMessage = {
                   id: `progress-${Date.now()}-${Math.random()}`,
@@ -372,7 +370,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
       } catch (err) {
         // Handle abort (user clicked stop) - don't show error
         if (err instanceof Error && err.name === "AbortError") {
-          console.log("Request aborted by user");
           return;
         }
 

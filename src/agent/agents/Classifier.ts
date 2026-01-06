@@ -75,14 +75,6 @@ export class Classifier extends BaseAgent {
       },
     ];
 
-    // DEBUG: Log LLM request
-    console.log('\n[Classifier] ========== LLM REQUEST ==========');
-    console.log('[Classifier] User Message:', userMessage);
-    console.log('[Classifier] Available Agents:', this.agents.map(a => a.name).join(', '));
-    if (memoryContext) {
-      console.log('[Classifier] Memory Context:', memoryContext);
-    }
-
     try {
       // Call LLM for routing decision
       const response = await this.callLLM({
@@ -92,37 +84,22 @@ export class Classifier extends BaseAgent {
         signal,  // Pass abort signal for stop button
       });
 
-      // DEBUG: Log LLM response
-      console.log('\n[Classifier] ========== LLM RESPONSE ==========');
-      console.log('[Classifier] Raw Response:', response.content);
-      console.log('[Classifier] Tokens - Input:', this.inputTokens, 'Output:', this.outputTokens);
-      console.log('[Classifier] Cost:', `$${this.calculateCost().toFixed(6)}`);
-
       const agentName = response.content?.trim();
 
       // Validate response
       if (!agentName || agentName === 'NO_MATCH') {
-        console.log('[Classifier] Result: NO_MATCH');
-        console.log('[Classifier] =======================================\n');
         return null;
       }
 
       // Verify agent exists
       const agentExists = this.agents.some(a => a.name === agentName);
       if (!agentExists) {
-        console.log(`[Classifier] WARNING: LLM returned unknown agent "${agentName}"`);
-        console.log('[Classifier] Result: NO_MATCH (invalid agent)');
-        console.log('[Classifier] =======================================\n');
         return null;
       }
 
-      console.log(`[Classifier] Result: ${agentName}`);
-      console.log('[Classifier] =======================================\n');
       return agentName;
 
-    } catch (error: any) {
-      console.error('[Classifier] ERROR:', error.message);
-      console.log('[Classifier] =======================================\n');
+    } catch {
       return null;
     }
   }
@@ -267,10 +244,6 @@ IMPORTANT:
       },
     ];
 
-    // DEBUG: Log LLM request
-    console.log('\n[Classifier] ========== MULTI-STEP DETECTION ==========');
-    console.log('[Classifier] User Message:', userMessage);
-
     try {
       const response = await this.callLLM({
         messages: messages as any,
@@ -278,13 +251,6 @@ IMPORTANT:
         max_tokens: 300,  // Increased for JSON response with instructions
         signal,  // Pass abort signal for stop button
       });
-
-      // DEBUG: Log LLM response
-      console.log('[Classifier] Multi-Step Response:', response.content);
-      console.log('[Classifier] Finish Reason:', response.finish_reason);
-      console.log('[Classifier] Tokens - Input:', this.inputTokens, 'Output:', this.outputTokens);
-      console.log('[Classifier] Full Response Object:', JSON.stringify(response, null, 2));
-      console.log('[Classifier] =======================================\n');
 
       const content = response.content?.trim();
 
@@ -304,20 +270,17 @@ IMPORTANT:
           );
 
           if (validSteps.length > 1) {
-            console.log('[Classifier] Parsed multi-step with instructions:', validSteps);
             return validSteps;
           }
         }
-      } catch (error) {
-        console.error('[Classifier] Failed to parse multi-step JSON:', error);
+      } catch {
+        // Failed to parse multi-step JSON
       }
 
       // If parsing failed or not enough valid steps, treat as single-step
       return null;
 
-    } catch (error: any) {
-      console.error('[Classifier] Multi-step detection ERROR:', error.message);
-      console.log('[Classifier] =======================================\n');
+    } catch {
       return null;
     }
   }

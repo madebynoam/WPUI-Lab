@@ -13,11 +13,6 @@ export const SelectionProvider: React.FC<{ children: ReactNode }> = ({ children 
   const lastClickTimeRef = useRef<number>(0);
   const lastClickedIdRef = useRef<string | null>(ROOT_GRID_ID);
 
-  console.log('[SelectionContext] Initialized with:', {
-    lastClickTime: lastClickTimeRef.current,
-    lastClickedId: lastClickedIdRef.current,
-  });
-
   return (
     <SelectionContext.Provider value={{ lastClickTimeRef, lastClickedIdRef }}>
       {children}

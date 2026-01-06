@@ -83,8 +83,6 @@ export async function parseMarkupWithRepair(
   while (attempts < maxAttempts && !result.success && result.error) {
     attempts++;
 
-    console.log(`[RepairMarkup] Attempt ${attempts}/${maxAttempts} - Error: ${result.error.message}`);
-
     // Extract minimal context
     const errorContext = extractErrorContext(currentMarkup, result.error);
 
@@ -128,8 +126,6 @@ export async function parseMarkupWithRepair(
       const attemptCost = (inputTokens / 1000) * 0.00025 + (outputTokens / 1000) * 0.002; // GPT-5-Mini rates
       totalCost += attemptCost;
 
-      console.log(`[RepairMarkup] Received fix, re-parsing... (cost: $${attemptCost.toFixed(6)})`);
-
       // Splice fix into original markup
       currentMarkup = spliceFix(currentMarkup, result.error, fixedMarkup);
 
@@ -137,7 +133,6 @@ export async function parseMarkupWithRepair(
       result = parseMarkup(currentMarkup);
 
       if (result.success) {
-        console.log(`[RepairMarkup] ✅ Successfully repaired after ${attempts} attempts (total cost: $${totalCost.toFixed(6)})`);
         return {
           success: true,
           nodes: result.nodes,
