@@ -220,12 +220,9 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   const tree = useMemo(
     () => {
       if (!currentProject) {
-        console.log('[tree] No currentProject, returning []');
         return [];
       }
-      const result = getCurrentTree(currentProject.pages, currentProject.currentPageId);
-      console.log('[tree] projectId=' + currentProject.id + ' pageId=' + currentProject.currentPageId + ' treeLen=' + result.length + ' rootChildren=' + (result[0]?.children?.length || 0));
-      return result;
+      return getCurrentTree(currentProject.pages, currentProject.currentPageId);
     },
     [currentProject]
   );
@@ -245,10 +242,6 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   const setSelectedNodeIds = (ids: string[] | ((prev: string[]) => string[])) => {
     const newIds = typeof ids === 'function' ? ids(state.selectedNodeIds) : ids;
-    console.log('[ComponentTreeContext] setSelectedNodeIds called:', {
-      from: state.selectedNodeIds,
-      to: newIds,
-    });
     dispatch({ type: 'SET_SELECTED_NODE_IDS', payload: { ids: newIds } });
   };
 
@@ -317,19 +310,13 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const insertComponent = (node: ComponentNode, parentId?: string, index?: number) => {
-    console.log('[insertComponent] Received node:', JSON.stringify(node, null, 2));
-    console.log('[insertComponent] Parent ID:', parentId, 'Index:', index);
-
     // Normalize before dispatching to ensure consistent data structure
     const normalizedNode = normalizeComponentNode(node);
-    console.log('[insertComponent] Normalized node:', JSON.stringify(normalizedNode, null, 2));
 
     dispatch({
       type: 'INSERT_COMPONENT',
       payload: { node: normalizedNode, parentId, index },
     });
-
-    console.log('[insertComponent] Dispatched INSERT_COMPONENT action');
   };
 
   const removeComponent = (id: string) => {
@@ -411,13 +398,9 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const cutComponent = (id: string) => {
-    console.log('[ComponentTreeContext] cutComponent called with id:', id);
     const node = getNodeById(id);
     if (node && id !== ROOT_GRID_ID) { // Don't allow cutting root
-      console.log('[ComponentTreeContext] Dispatching CUT_COMPONENT for node:', node.type);
       dispatch({ type: 'CUT_COMPONENT', payload: { node, nodeId: id } });
-    } else {
-      console.log('[ComponentTreeContext] Cannot cut - node not found or is root');
     }
   };
 
@@ -437,13 +420,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       `page-${Date.now()}`,
       name || `Page ${newPageNumber}`
     );
-    console.log('[ComponentTreeContext] addPage called:', {
-      newPageName: newPage.name,
-      newPageId: newPage.id,
-      currentPagesCount: pages.length,
-    });
     dispatch({ type: 'ADD_PAGE', payload: { page: newPage } });
-    console.log('[ComponentTreeContext] addPage completed');
   };
 
   const createPageWithId = (name?: string): string => {
@@ -483,12 +460,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
 
   const createProject = (name: string): string => {
     const newProject = createInitialProject(`project-${Date.now()}`, name);
-    console.log('[ComponentTreeContext] createProject called:', {
-      newProjectName: newProject.name,
-      newProjectId: newProject.id,
-    });
     dispatch({ type: 'CREATE_PROJECT', payload: { project: newProject } });
-    console.log('[ComponentTreeContext] createProject completed');
     return newProject.id;
   };
 

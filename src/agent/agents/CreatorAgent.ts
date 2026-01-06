@@ -71,12 +71,6 @@ export class CreatorAgent extends BaseAgent {
    * @returns Array of sub-requests (single-item array if request is simple)
    */
   private async decompose(userMessage: string, signal?: AbortSignal, originalContext?: string): Promise<string[]> {
-    console.log('\n[CreatorAgent] ========== DECOMPOSITION ==========');
-    console.log('[CreatorAgent] Analyzing:', userMessage);
-    if (originalContext) {
-      console.log('[CreatorAgent] Original context:', originalContext);
-    }
-
     try {
       // Build user message with optional context for domain-aware decomposition
       const contextNote = originalContext
@@ -100,12 +94,8 @@ export class CreatorAgent extends BaseAgent {
       });
 
       const content = response.content?.trim();
-      console.log('[CreatorAgent] Decomposition response:', content);
-      console.log('[CreatorAgent] Decomposition finish_reason:', response.finish_reason);
-      console.log('[CreatorAgent] Decomposition full response:', JSON.stringify(response, null, 2));
 
       if (!content) {
-        console.log('[CreatorAgent] No decomposition - using original request');
         return [userMessage];
       }
 
@@ -114,19 +104,17 @@ export class CreatorAgent extends BaseAgent {
         const subRequests = JSON.parse(content);
 
         if (Array.isArray(subRequests) && subRequests.length > 0) {
-          console.log('[CreatorAgent] Decomposed into', subRequests.length, 'sub-requests:', subRequests);
           return subRequests;
         }
       } catch {
-        console.log('[CreatorAgent] Failed to parse decomposition JSON - using original request');
+        // Failed to parse decomposition JSON - using original request
       }
 
       // Fallback: return original request
       return [userMessage];
 
-    } catch (error) {
-      console.error('[CreatorAgent] Decomposition error:', error instanceof Error ? error.message : String(error));
-      console.log('[CreatorAgent] Falling back to original request');
+    } catch {
+      // Decomposition error - falling back to original request
       return [userMessage];
     }
   }
@@ -242,12 +230,6 @@ When user says "selected", "the selected", or "this" - use parentId: "${selected
           },
         }));
 
-        // DEBUG: Log LLM request
-        console.log(`\n[CreatorAgent] ========== LLM REQUEST ${i + 1}/${subRequests.length} ==========`);
-        console.log('[CreatorAgent] Sub-request:', subRequest);
-        console.log('[CreatorAgent] System Prompt (first 300 chars):', messages[0].content.substring(0, 300) + '...');
-        console.log('[CreatorAgent] Available Tools:', toolSchemas.map(t => t.function.name).join(', '));
-
         const response = await this.callLLM({
           messages: messages as never[],
           tools: toolSchemas,
@@ -255,21 +237,6 @@ When user says "selected", "the selected", or "this" - use parentId: "${selected
           max_tokens: 1500,  // Smaller per sub-request (not generating everything at once)
           signal,
         });
-
-        // DEBUG: Log LLM response
-        console.log(`\n[CreatorAgent] ========== LLM RESPONSE ${i + 1}/${subRequests.length} ==========`);
-        console.log('[CreatorAgent] Content:', response.content);
-        console.log('[CreatorAgent] Finish Reason:', response.finish_reason);
-        if (response.tool_calls && response.tool_calls.length > 0) {
-          console.log('[CreatorAgent] Tool Calls:');
-          response.tool_calls.forEach((tc, idx) => {
-            console.log(`  [${idx + 1}] Tool: ${tc.function.name}`);
-            console.log(`      Arguments (length):`, tc.function.arguments.length, 'chars');
-          });
-        } else {
-          console.log('[CreatorAgent] No tool calls');
-        }
-        console.log('[CreatorAgent] =======================================\n');
 
         if (response.tool_calls && response.tool_calls.length > 0) {
           // Two-phase pattern for design_getHeuristics
@@ -299,7 +266,6 @@ When user says "selected", "the selected", or "this" - use parentId: "${selected
             if (toolCall.function.name === 'design_getHeuristics') {
               designHeuristics = result.message;
               this.emit('progress', 'Design heuristics retrieved');
-              console.log('[CreatorAgent] Design heuristics stored for potential second LLM call');
             } else {
               // This is an action tool (buildFromMarkup, table_create, etc.)
               actionToolExecuted = true;
@@ -327,7 +293,6 @@ When user says "selected", "the selected", or "this" - use parentId: "${selected
 
           // If agent ONLY called design_getHeuristics, make a second LLM call
           if (designHeuristics && !actionToolExecuted) {
-            console.log('[CreatorAgent] Agent only called design_getHeuristics, making follow-up LLM call with heuristics');
             this.emit('progress', 'Generating markup with design heuristics...');
 
             // Format tools for OpenAI (same as initial call)
@@ -379,8 +344,6 @@ When user says "selected", "the selected", or "this" - use parentId: "${selected
               max_tokens: 2000,
               signal,
             });
-
-            console.log('[CreatorAgent] Follow-up response:', JSON.stringify(followUpResponse, null, 2));
 
             // Execute tools from follow-up response
             if (followUpResponse.tool_calls && followUpResponse.tool_calls.length > 0) {

@@ -59,18 +59,6 @@ export const KeyboardHandler: React.FC<{
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Debug logging for 'g' key
-      if (e.key === 'g') {
-        console.log('[KeyboardHandler] G key pressed:', {
-          key: e.key,
-          ctrlKey: e.ctrlKey,
-          metaKey: e.metaKey,
-          shiftKey: e.shiftKey,
-          isInEditMode: isInEditMode(),
-          isAgentExecuting,
-        });
-      }
-
       // Disable all keyboard shortcuts when agent is executing
       if (isAgentExecuting) {
         return;
@@ -148,7 +136,6 @@ export const KeyboardHandler: React.FC<{
         !isInEditMode() &&
         !hasTextSelection
       ) {
-        console.log('[KeyboardHandler] Cmd/Ctrl+X pressed, cutting component:', selectedNodeIds[0]);
         e.preventDefault();
         e.stopPropagation();
         cutComponent(selectedNodeIds[0]);
@@ -190,7 +177,6 @@ export const KeyboardHandler: React.FC<{
         e.code === "KeyJ" &&
         !isInEditMode()
       ) {
-        console.log('[KeyboardHandler] Copy page JSON shortcut triggered!');
         e.preventDefault();
         e.stopPropagation();
 
@@ -200,15 +186,11 @@ export const KeyboardHandler: React.FC<{
           // Copy page JSON to clipboard
           const pageJson = JSON.stringify(currentPage, null, 2);
           navigator.clipboard.writeText(pageJson).then(() => {
-            console.log('[KeyboardHandler] Page JSON copied to clipboard');
             // Optional: Show a toast notification
             alert('Page JSON copied to clipboard!');
-          }).catch((err) => {
-            console.error('[KeyboardHandler] Failed to copy page JSON:', err);
+          }).catch(() => {
             alert('Failed to copy page JSON to clipboard');
           });
-        } else {
-          console.error('[KeyboardHandler] Current page not found:', currentPageId);
         }
         return;
       }
@@ -235,12 +217,6 @@ export const KeyboardHandler: React.FC<{
         e.preventDefault();
         e.stopPropagation();
 
-        console.log('[KeyboardHandler] Escape pressed. Before reset:', {
-          selectedNodeIds: selectedNodeIds,
-          lastClickTime: lastClickTimeRef.current,
-          lastClickedId: lastClickedIdRef.current,
-        });
-
         // Check if we're inside an interactive component
         const ancestor = findInteractiveAncestor(selectedNodeIds[0]);
         if (ancestor) {
@@ -252,11 +228,6 @@ export const KeyboardHandler: React.FC<{
           // Reset to default state: no selection means root VStack context
           lastClickTimeRef.current = 0;
           lastClickedIdRef.current = ROOT_GRID_ID;
-
-          console.log('[KeyboardHandler] Escape - After reset:', {
-            lastClickTime: lastClickTimeRef.current,
-            lastClickedId: lastClickedIdRef.current,
-          });
         }
       }
 
@@ -305,7 +276,6 @@ export const KeyboardHandler: React.FC<{
         e.key === "g" &&
         !isInEditMode()
       ) {
-        console.log('[KeyboardHandler] Ctrl+G pressed - toggling all grid lines');
         e.preventDefault();
         e.stopPropagation();
         toggleAllGridLines();

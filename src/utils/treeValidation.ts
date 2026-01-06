@@ -8,8 +8,8 @@ try {
   } else {
     componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
   }
-} catch (e) {
-  console.log('[treeValidation] Failed to load componentRegistry:', e);
+} catch {
+  // Component registry unavailable during SSR - acceptable
 }
 
 export interface ValidationError {

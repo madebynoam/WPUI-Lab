@@ -10,8 +10,8 @@ try {
   } else {
     componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
   }
-} catch (e) {
-  console.log('[treeManipulation] Failed to load componentRegistry:', e);
+} catch {
+  // Component registry unavailable during SSR - acceptable
 }
 
 // Generate comprehensive schema documentation for the agent

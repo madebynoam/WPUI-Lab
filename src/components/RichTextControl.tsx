@@ -56,13 +56,9 @@ function SyncValuePlugin({ html }: { html: string }) {
             if (!cleanHtml) cleanHtml = `<p>${html}</p>`; // Fallback if all parts were empty
           }
 
-          console.log('[RichTextControl] Parsing HTML:', cleanHtml);
-
           const parser = new DOMParser();
           const dom = parser.parseFromString(cleanHtml, 'text/html');
           const nodes = $generateNodesFromDOM(editor, dom);
-
-          console.log('[RichTextControl] Generated nodes:', nodes.length);
 
           // Filter to only valid block nodes (paragraphs)
           const validNodes = nodes.filter((node) => {

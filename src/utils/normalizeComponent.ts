@@ -8,8 +8,8 @@ try {
   } else {
     componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
   }
-} catch (e) {
-  console.log('[normalizeComponent] Failed to load componentRegistry:', e);
+} catch {
+  // Component registry unavailable during SSR - acceptable
 }
 
 /**

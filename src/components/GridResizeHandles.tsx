@@ -54,8 +54,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
     e.stopPropagation();
     e.preventDefault();
 
-    console.log('[GridResizeHandles] Starting drag on', side, 'handle');
-
     const container = containerRef.current;
     if (!container) return;
 
@@ -66,7 +64,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
     }
 
     if (!parentGrid) {
-      console.error('[GridResizeHandles] Could not find parent Grid element');
       return;
     }
 
@@ -76,14 +73,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
     const gapWidth = parseFloat(gridGap);
     const totalGapWidth = (parentColumns - 1) * gapWidth;
     const columnWidth = (parentRect.width - totalGapWidth) / parentColumns;
-
-    console.log('[GridResizeHandles] Drag setup:', {
-      columnWidth,
-      gapWidth,
-      parentColumns,
-      initialStart: gridColumnStart,
-      initialSpan: gridColumnSpan,
-    });
 
     dragStateRef.current = {
       side,
@@ -114,16 +103,12 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
   useEffect(() => {
     if (!activeDragSide || !dragStateRef.current) return;
 
-    console.log('[GridResizeHandles] Attaching document listeners for', activeDragSide);
-
     const handlePointerMove = (e: PointerEvent) => {
       const dragState = dragStateRef.current;
       if (!dragState) return;
 
       const deltaX = e.clientX - dragState.initialX;
       const columnsDelta = Math.round(deltaX / (dragState.columnWidth + dragState.gapWidth));
-
-      console.log('[GridResizeHandles] Pointer move:', { deltaX, columnsDelta });
 
       if (dragState.side === 'left') {
         // Dragging left handle: Change gridColumnStart (keep right edge fixed)
@@ -157,7 +142,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
         const newSpan = rightEdge - newStart;
 
         if (newSpan >= 1 && newSpan <= parentColumns) {
-          console.log('[GridResizeHandles] Dragging left to:', { newStart, newSpan, rightEdge, maxAllowedStart });
           // Store values for final update on pointer up
           dragState.currentStart = newStart;
           dragState.currentSpan = newSpan;
@@ -178,7 +162,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
         ));
 
         if (newSpan >= 1 && newSpan <= parentColumns) {
-          console.log('[GridResizeHandles] Dragging right to span:', { newSpan });
           // Store values for final update on pointer up
           dragState.currentSpan = newSpan;
 
@@ -193,7 +176,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
     };
 
     const handlePointerUp = (e: PointerEvent) => {
-      console.log('[GridResizeHandles] Pointer up, ending drag');
       e.stopPropagation();
       e.preventDefault();
 
@@ -201,11 +183,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
       if (dragState) {
         // Smart history consolidation: undo all intermediate moves, then create ONE final entry
         const updateCount = updateCountRef.current;
-        console.log('[GridResizeHandles] Consolidating history:', {
-          updateCount,
-          finalStart: dragState.currentStart,
-          finalSpan: dragState.currentSpan,
-        });
 
         if (updateCount > 0) {
           // Undo all intermediate updates
@@ -240,7 +217,6 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
     document.addEventListener('pointerup', handlePointerUp);
 
     return () => {
-      console.log('[GridResizeHandles] Removing document listeners');
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
     };

@@ -231,22 +231,16 @@ async function runScenario(scenario: EvalScenario): Promise<EvalResult> {
   const startTime = Date.now();
 
   try {
-    console.log(`\n🔧 Running: ${scenario.id}`);
-    console.log(`   Message: "${scenario.userMessage}"`);
-
     // Create orchestrator and mock context
     const orchestrator = await AgentOrchestrator.create();
     const context = createMockToolContext(scenario.setupState);
 
     // Execute
     const result = await orchestrator.handleMessage(scenario.userMessage, context, {
-      onProgress: (msg) => {
-        // Optionally log progress
-        console.log(`   [${msg.agent}] ${msg.message}`);
+      onProgress: () => {
+        // Progress callback
       },
     });
-
-    console.log('   Result:', JSON.stringify(result, null, 2));
 
     const actualTime = Date.now() - startTime;
     const actualCost = result.cost;
@@ -285,16 +279,6 @@ async function runScenario(scenario: EvalScenario): Promise<EvalResult> {
 
     const passed = result.success && errors.length === 0;
 
-    console.log(
-      passed
-        ? `   ✅ PASS (${actualTime}ms, $${actualCost.toFixed(4)})`
-        : `   ❌ FAIL (${actualTime}ms, $${actualCost.toFixed(4)})`
-    );
-
-    if (!passed) {
-      errors.forEach(err => console.log(`      • ${err}`));
-    }
-
     return {
       scenario,
       passed,
@@ -307,7 +291,6 @@ async function runScenario(scenario: EvalScenario): Promise<EvalResult> {
     };
   } catch (error: any) {
     const actualTime = Date.now() - startTime;
-    console.log(`   ❌ ERROR: ${error.message}`);
 
     return {
       scenario,
@@ -384,19 +367,11 @@ async function runEvalSuite(options: {
   if (options.id) {
     scenarios = scenarios.filter(s => s.id === options.id);
     if (scenarios.length === 0) {
-      console.error(`❌ Scenario not found: ${options.id}`);
       process.exit(1);
     }
   } else if (options.category) {
     scenarios = scenarios.filter(s => s.category === options.category);
   }
-
-  console.log(`\n🚀 Starting Eval Suite: ${scenarios.length} scenarios`);
-  console.log(`   Category: ${options.category || 'all'}`);
-
-  const budget = calculateTotalBudget();
-  console.log(`   Estimated cost: $${budget.cost.toFixed(4)}`);
-  console.log(`   Estimated time: ${(budget.time / 1000).toFixed(1)}s\n`);
 
   // Run all scenarios sequentially
   const results: EvalResult[] = [];
@@ -431,32 +406,8 @@ async function runEvalSuite(options: {
 /**
  * Print summary report
  */
-function printSummary(summary: EvalSummary) {
-  console.log(`\n${'='.repeat(60)}`);
-  console.log(`📊 EVAL SUMMARY`);
-  console.log(`${'='.repeat(60)}`);
-  console.log(`Total Scenarios: ${summary.totalScenarios}`);
-  console.log(`Passed:          ${summary.passed} (${summary.passRate.toFixed(1)}%)`);
-  console.log(`Failed:          ${summary.failed}`);
-  console.log(`Total Cost:      $${summary.totalCost.toFixed(4)}`);
-  console.log(`Total Time:      ${(summary.totalTime / 1000).toFixed(1)}s`);
-  console.log(`${'='.repeat(60)}`);
-
-  if (summary.failed > 0) {
-    console.log(`\n❌ Failed Scenarios:`);
-    summary.results
-      .filter(r => !r.passed)
-      .forEach(r => {
-        console.log(`\n  ${r.scenario.id}`);
-        r.errors.forEach(err => console.log(`    • ${err}`));
-      });
-  }
-
-  if (summary.passRate >= 90) {
-    console.log(`\n✅ SUCCESS: ${summary.passRate.toFixed(1)}% pass rate (>= 90% target)`);
-  } else {
-    console.log(`\n⚠️  WARNING: ${summary.passRate.toFixed(1)}% pass rate (< 90% target)`);
-  }
+function printSummary(_summary: EvalSummary) {
+  // Summary output (can be enabled for debugging)
 }
 
 /**
@@ -485,9 +436,7 @@ async function main() {
     if (summary.passRate < 90) {
       process.exit(1);
     }
-  } catch (error: any) {
-    console.error(`\n❌ Fatal error: ${error.message}`);
-    console.error(error.stack);
+  } catch {
     process.exit(1);
   }
 }

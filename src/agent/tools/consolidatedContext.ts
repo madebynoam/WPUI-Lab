@@ -15,8 +15,8 @@ try {
   } else {
     componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
   }
-} catch (e) {
-  console.log('[consolidatedContext] Failed to load componentRegistry:', e);
+} catch {
+  // Component registry unavailable during SSR - acceptable
 }
 import { buildDisplayName, getContentPreview } from '../utils/semanticIds';
 

@@ -395,13 +395,11 @@ export const findTopMostContainer = (
   componentRegistry: Record<string, { acceptsChildren?: boolean }>
 ): ComponentNode | null => {
   const node = findNodeById(tree, nodeId);
-  console.log('[findTopMostContainer] Starting from node:', node ? { id: node.id, type: node.type } : null);
 
   if (!node) return null;
 
   // If clicking root, select it
   if (node.id === ROOT_GRID_ID) {
-    console.log('[findTopMostContainer] Node is root, returning root');
     return node;
   }
 
@@ -420,26 +418,16 @@ export const findTopMostContainer = (
       'PanelRow',
     ].includes(current.type);
 
-    console.log('[findTopMostContainer] Checking node:', {
-      id: current.id,
-      type: current.type,
-      acceptsChildren: definition?.acceptsChildren,
-      isStructureContainer,
-    });
-
     // If this is a container and not a structure container, it's a candidate
     // Keep updating topContainer as we walk up (last one wins)
     if (definition?.acceptsChildren && !isStructureContainer) {
-      console.log('[findTopMostContainer] Found container:', { id: current.id, type: current.type });
       topContainer = current;
     }
 
     // Stop at root boundary
     const parent = findParent(tree, current.id);
-    console.log('[findTopMostContainer] Parent:', parent ? { id: parent.id, type: parent.type } : null);
 
     if (!parent || parent.id === ROOT_GRID_ID) {
-      console.log('[findTopMostContainer] Reached root boundary');
       break;
     }
 
@@ -448,7 +436,6 @@ export const findTopMostContainer = (
 
   // Return the topmost container found, or the node itself if none found
   const result = topContainer || node;
-  console.log('[findTopMostContainer] Returning topmost container:', { id: result.id, type: result.type });
   return result;
 };
 

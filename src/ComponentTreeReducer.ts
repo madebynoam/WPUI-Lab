@@ -20,9 +20,6 @@ import { generateId } from './utils/idGenerator';
 import { validateTree, formatValidationErrors } from './utils/treeValidation';
 import { normalizeComponentNode } from './utils/normalizeComponent';
 
-// Debug flag - set to true to enable console logging
-const DEBUG = false;
-
 // State managed by the reducer
 export interface ComponentTreeState {
   // Core data
@@ -244,23 +241,13 @@ export function componentTreeReducer(
 
     case 'INSERT_COMPONENT': {
       const { node, parentId, index } = action.payload;
-      if (DEBUG) {
-        console.log('[Reducer] INSERT_COMPONENT - Received node:', JSON.stringify(node, null, 2));
-        console.log('[Reducer] INSERT_COMPONENT - Parent ID:', parentId, 'Index:', index);
-      }
 
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       // Normalize node before insertion to ensure defaultProps are applied
       const normalizedNode = normalizeComponentNode(node);
-      if (DEBUG) {
-        console.log('[Reducer] INSERT_COMPONENT - Normalized node:', JSON.stringify(normalizedNode, null, 2));
-      }
 
       const newTree = insertNodeInTree(currentTree, normalizedNode, parentId, index);
-      if (DEBUG) {
-        console.log('[Reducer] INSERT_COMPONENT - New tree after insertion:', JSON.stringify(newTree, null, 2));
-      }
 
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);
@@ -855,12 +842,6 @@ export function componentTreeReducer(
       let { parentId } = action.payload;
       if (!state.clipboard) return state;
 
-      console.log('[PASTE_COMPONENT] Initial:', {
-        hasParentId: !!parentId,
-        selectedNodeIds: state.selectedNodeIds,
-        clipboardType: state.clipboard.type,
-      });
-
       // If no parentId specified, use smart paste logic
       if (!parentId && state.selectedNodeIds.length > 0) {
         const selectedId = state.selectedNodeIds[0];
@@ -890,28 +871,17 @@ export function componentTreeReducer(
           // Check if node accepts children
           const definition = componentRegistry[node.type];
 
-          console.log('[PASTE_COMPONENT] Smart paste logic:', {
-            selectedNodeType: node.type,
-            selectedNodeId: node.id,
-            acceptsChildren: definition?.acceptsChildren,
-            nodeParentId,
-          });
-
           // If selected node is a container, paste inside it
           // Exception: Card should paste as sibling, not inside
           if (definition?.acceptsChildren && node.type !== 'Card') {
             parentId = node.id;
-            console.log('[PASTE_COMPONENT] Pasting inside selected container:', parentId);
           } else if (nodeParentId) {
             // Otherwise, paste into the parent of the selected node
             parentId = nodeParentId;
-            console.log('[PASTE_COMPONENT] Pasting into parent:', parentId);
           }
           // If nodeParentId is undefined, it means selected node is at root, so paste at root (parentId stays undefined)
         }
       }
-
-      console.log('[PASTE_COMPONENT] Final parentId:', parentId);
 
       // Create a new node with new ID
       const deepCloneWithNewIds = (node: ComponentNode): ComponentNode => ({
@@ -954,23 +924,18 @@ export function componentTreeReducer(
     }
 
     case 'TOGGLE_ALL_GRID_LINES': {
-      console.log('[Reducer] TOGGLE_ALL_GRID_LINES action received');
-
       // Find current project and page
       if (!state.projects || state.projects.length === 0) {
-        console.log('[Reducer] No projects found, returning state');
         return state;
       }
 
       const currentProject = state.projects.find((p) => p.id === state.currentProjectId);
       if (!currentProject || !currentProject.pages) {
-        console.log('[Reducer] Current project or pages not found, returning state');
         return state;
       }
 
       const currentPage = currentProject.pages.find((p) => p.id === currentProject.currentPageId);
       if (!currentPage) {
-        console.log('[Reducer] Current page not found, returning state');
         return state;
       }
 
@@ -988,25 +953,19 @@ export function componentTreeReducer(
       };
 
       const allGridIds = findAllGridIds(currentPage.tree);
-      console.log('[Reducer] Found Grid IDs:', allGridIds);
 
       // Check if all grids are currently visible
       const allVisible = allGridIds.every((id) => state.gridLinesVisible.has(id));
-      console.log('[Reducer] All visible?', allVisible, 'Current visible:', Array.from(state.gridLinesVisible));
 
       const newGridLines = new Set(state.gridLinesVisible);
 
       if (allVisible) {
         // Hide all grids
-        console.log('[Reducer] Hiding all grids');
         allGridIds.forEach((id) => newGridLines.delete(id));
       } else {
         // Show all grids
-        console.log('[Reducer] Showing all grids');
         allGridIds.forEach((id) => newGridLines.add(id));
       }
-
-      console.log('[Reducer] New grid lines visible:', Array.from(newGridLines));
 
       return { ...state, gridLinesVisible: newGridLines };
     }

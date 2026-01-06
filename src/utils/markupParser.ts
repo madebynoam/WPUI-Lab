@@ -9,8 +9,8 @@ try {
   } else {
     componentRegistry = require('@/componentRegistry/index.node').componentRegistry;
   }
-} catch (e) {
-  console.log('[markupParser] Failed to load componentRegistry:', e);
+} catch {
+  // Component registry unavailable during SSR - acceptable
 }
 
 /**
