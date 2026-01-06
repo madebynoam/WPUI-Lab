@@ -1,15 +1,16 @@
 import { useState, useCallback } from 'react';
+import { storageService } from '@/lib/storage/client';
 
 export function useCloudProject() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const listProjects = useCallback(async () => {
+  const listProjects = useCallback(async (userId?: string) => {
     setIsLoading(true);
+    setError(null);
     try {
-      const res = await fetch('/api/projects');
-      return await res.json();
+      return await storageService.list(userId || '');
     } catch {
       setError('Failed to list projects');
       return [];
@@ -18,15 +19,11 @@ export function useCloudProject() {
     }
   }, []);
 
-  const createProject = useCallback(async (name: string) => {
+  const createProject = useCallback(async (name: string, userId?: string) => {
     setIsLoading(true);
+    setError(null);
     try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
-      return await res.json();
+      return await storageService.create(userId || '', name);
     } catch {
       setError('Failed to create project');
       return null;
@@ -35,11 +32,11 @@ export function useCloudProject() {
     }
   }, []);
 
-  const loadProject = useCallback(async (binId: string) => {
+  const loadProject = useCallback(async (projectId: string) => {
     setIsLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/projects/${binId}`);
-      return await res.json();
+      return await storageService.get(projectId);
     } catch {
       setError('Failed to load project');
       return null;
@@ -48,15 +45,11 @@ export function useCloudProject() {
     }
   }, []);
 
-  const saveProject = useCallback(async (binId: string, project: any, meta: any) => {
+  const saveProject = useCallback(async (projectId: string, project: any, meta: any) => {
     setIsSaving(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/projects/${binId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project, meta }),
-      });
-      return await res.json();
+      return await storageService.update(projectId, project, meta);
     } catch {
       setError('Failed to save');
       return null;
@@ -65,9 +58,10 @@ export function useCloudProject() {
     }
   }, []);
 
-  const deleteProject = useCallback(async (binId: string) => {
+  const deleteProject = useCallback(async (projectId: string) => {
+    setError(null);
     try {
-      await fetch(`/api/projects/${binId}`, { method: 'DELETE' });
+      await storageService.delete(projectId);
       return true;
     } catch {
       setError('Failed to delete');

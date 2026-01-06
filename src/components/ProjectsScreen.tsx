@@ -19,6 +19,7 @@ import {
 } from '@wordpress/components';
 import { moreVertical, trash, pages, plus } from '@wordpress/icons';
 import { useCloudProject } from '@/hooks/useCloudProject';
+import { useAuth } from '@/hooks/useAuth';
 import { NewProjectModal } from './NewProjectModal';
 
 interface CloudProject {
@@ -31,13 +32,14 @@ interface CloudProject {
 
 export const ProjectsScreen: React.FC = () => {
   const router = useRouter();
+  const { email } = useAuth();
   const { listProjects, createProject, deleteProject, isLoading } = useCloudProject();
   const [projects, setProjects] = useState<CloudProject[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   useEffect(() => {
-    listProjects().then(data => {
+    listProjects(email || undefined).then(data => {
       const mapped = (Array.isArray(data) ? data : []).map((b: any) => ({
         binId: b.metadata?.id || b.binId,
         projectId: b.record?.project?.id || b.metadata?.id || b.binId,
@@ -48,10 +50,10 @@ export const ProjectsScreen: React.FC = () => {
       setProjects(mapped);
       setInitialLoadDone(true);
     });
-  }, [listProjects]);
+  }, [listProjects, email]);
 
   const handleCreate = async (name: string) => {
-    const result = await createProject(name);
+    const result = await createProject(name, email || undefined);
     if (result?.binId && result?.project) {
       const pageId = result.project.pages[0]?.id || 'page-1';
       router.push(`/editor/${result.binId}/${pageId}`);
