@@ -8,6 +8,7 @@ import { UpdateAgent } from './UpdateAgent';
 import { MockLLMProvider, createToolCallResponse, createTextResponse } from '../__mocks__/MockLLMProvider';
 import { MemoryStore } from '../memory/MemoryStore';
 import { ToolContext } from '../types';
+import { AgentProgressMessage } from './types';
 import { getTool } from '../tools'; // Imports and registers all tools
 
 describe('UpdateAgent', () => {
@@ -15,10 +16,12 @@ describe('UpdateAgent', () => {
   let mockLLM: MockLLMProvider;
   let memory: MemoryStore;
   let mockContext: ToolContext;
+  let messages: AgentProgressMessage[];
 
   beforeEach(() => {
     mockLLM = new MockLLMProvider();
     memory = new MemoryStore();
+    messages = [];
 
     mockContext = {
       tree: [
@@ -38,6 +41,7 @@ describe('UpdateAgent', () => {
       getNodeById: jest.fn((id) => {
         if (id === 'btn-submit') return { id: 'btn-submit', type: 'Button', props: { text: 'Submit', variant: 'secondary' } };
         if (id === 'card-1') return { id: 'card-1', type: 'Card', props: {}, children: [] };
+        if (id === 'root-vstack') return mockContext.tree[0];
         return null;
       }),
       setTree: jest.fn(),
@@ -111,18 +115,19 @@ describe('UpdateAgent', () => {
 
   describe('execute - component_update', () => {
     it('updates component by ID', async () => {
+      // component_update uses componentId and props (not selector/updates)
       mockLLM.setResponses([
         createToolCallResponse('component_update', {
-          selector: { id: 'btn-submit' },
-          updates: { variant: 'primary' },
+          componentId: 'btn-submit',
+          props: { variant: 'primary' },
         }),
-        createTextResponse('Updated button'),
       ]);
 
       const result = await agent.execute(
         'Change submit button to primary',
         mockContext,
-        memory
+        memory,
+        (msg) => messages.push(msg)
       );
 
       expect(result.success).toBe(true);
@@ -133,29 +138,58 @@ describe('UpdateAgent', () => {
       expect(memoryEntries[0].entityId).toBe('btn-submit');
     });
 
+    it('updates component text', async () => {
+      mockLLM.setResponses([
+        createToolCallResponse('component_update', {
+          componentId: 'btn-submit',
+          text: 'Send',
+        }),
+      ]);
+
+      const result = await agent.execute(
+        'Change button text to Send',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
+
+      expect(result.success).toBe(true);
+      // Button uses 'text' prop
+      expect(mockContext.updateComponentProps).toHaveBeenCalledWith('btn-submit', { text: 'Send' });
+    });
+
     it('updates component by selector', async () => {
       mockLLM.setResponses([
         createToolCallResponse('component_update', {
-          selector: { type: 'Button', text: 'Submit' },
-          updates: { variant: 'primary' },
+          selector: { type: 'Button' },
+          props: { variant: 'primary' },
         }),
-        createTextResponse('Updated'),
       ]);
 
-      await agent.execute('Make submit button primary', mockContext, memory);
+      const result = await agent.execute(
+        'Make submit button primary',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
 
+      expect(result.success).toBe(true);
       expect(mockContext.updateComponentProps).toHaveBeenCalled();
     });
   });
 
   describe('execute - component_delete', () => {
-    it('deletes component', async () => {
+    it('deletes component by ID', async () => {
       mockLLM.setResponses([
         createToolCallResponse('component_delete', { componentId: 'card-1' }),
-        createTextResponse('Deleted card'),
       ]);
 
-      const result = await agent.execute('Delete the card', mockContext, memory);
+      const result = await agent.execute(
+        'Delete the card',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
 
       expect(result.success).toBe(true);
       expect(mockContext.removeComponent).toHaveBeenCalledWith('card-1');
@@ -171,15 +205,20 @@ describe('UpdateAgent', () => {
       mockLLM.setResponses([
         createToolCallResponse('component_move', {
           componentId: 'btn-submit',
-          newParentId: 'card-1',
-          position: 0,
+          to: { parentId: 'card-1', position: 0 },
         }),
-        createTextResponse('Moved button'),
       ]);
 
-      const result = await agent.execute('Move button into card', mockContext, memory);
+      const result = await agent.execute(
+        'Move button into card',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
 
       expect(result.success).toBe(true);
+      expect(mockContext.removeComponent).toHaveBeenCalledWith('btn-submit');
+      expect(mockContext.addComponent).toHaveBeenCalled();
 
       const memoryEntries = memory.search({ action: 'component_moved' });
       expect(memoryEntries).toHaveLength(1);
@@ -208,13 +247,17 @@ describe('UpdateAgent', () => {
 
       mockLLM.setResponses([
         createToolCallResponse('component_update', {
-          selector: { id: 'btn-new' },
-          updates: { variant: 'primary' },
+          componentId: 'btn-new',
+          props: { variant: 'primary' },
         }),
-        createTextResponse('Updated'),
       ]);
 
-      await agent.execute('Update the new button', mockContext, memory);
+      await agent.execute(
+        'Update the new button',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
 
       // Should use memory to find the recently created button
       const entries = memory.search({ action: 'component_updated' });
@@ -224,16 +267,37 @@ describe('UpdateAgent', () => {
 
   describe('error handling', () => {
     it('handles component not found', async () => {
-      (mockContext.getNodeById as jest.Mock).mockReturnValue(null);
-
       mockLLM.setResponses([
         createToolCallResponse('component_update', {
-          selector: { id: 'nonexistent' },
-          updates: { variant: 'primary' },
+          componentId: 'nonexistent',
+          props: { variant: 'primary' },
         }),
       ]);
 
-      const result = await agent.execute('Update nonexistent component', mockContext, memory);
+      const result = await agent.execute(
+        'Update nonexistent component',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
+
+      expect(result.success).toBe(false);
+    });
+
+    it('handles missing updates', async () => {
+      mockLLM.setResponses([
+        createToolCallResponse('component_update', {
+          componentId: 'btn-submit',
+          // No text or props - should fail
+        }),
+      ]);
+
+      const result = await agent.execute(
+        'Update button with nothing',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
 
       expect(result.success).toBe(false);
     });
@@ -243,17 +307,42 @@ describe('UpdateAgent', () => {
     it('tracks tokens and cost', async () => {
       mockLLM.setResponses([
         createToolCallResponse('component_update', {
-          selector: { id: 'btn-submit' },
-          updates: { variant: 'primary' },
+          componentId: 'btn-submit',
+          props: { variant: 'primary' },
         }),
-        createTextResponse('Done'),
       ]);
 
-      const result = await agent.execute('Update button', mockContext, memory);
+      const result = await agent.execute(
+        'Update button',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
 
       expect(result.tokensUsed).toBeGreaterThan(0);
       expect(result.cost).toBeGreaterThan(0);
       expect(result.cost).toBeLessThan(0.01);
+    });
+  });
+
+  describe('message emission', () => {
+    it('emits progress messages', async () => {
+      mockLLM.setResponses([
+        createToolCallResponse('component_update', {
+          componentId: 'btn-submit',
+          props: { variant: 'primary' },
+        }),
+      ]);
+
+      await agent.execute(
+        'Update button',
+        mockContext,
+        memory,
+        (msg) => messages.push(msg)
+      );
+
+      expect(messages.filter(m => m.type === 'progress').length).toBeGreaterThan(0);
+      expect(messages.filter(m => m.type === 'success').length).toBeGreaterThan(0);
     });
   });
 });

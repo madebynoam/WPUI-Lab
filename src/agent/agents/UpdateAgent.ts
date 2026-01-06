@@ -135,9 +135,9 @@ export class UpdateAgent extends BaseAgent {
             if (toolCall.function.name === 'component_update') {
               this.writeMemory({
                 action: 'component_updated',
-                entityId: result.data?.componentId || args.selector?.id || 'unknown',
+                entityId: args.componentId || args.selector?.id || result.data?.componentId || 'unknown',
                 entityType: result.data?.type || 'Component',
-                details: { changes: args.updates },
+                details: { changes: args.props || args.text },
               });
               memoryEntriesCreated++;
             } else if (toolCall.function.name === 'component_move') {
@@ -146,8 +146,8 @@ export class UpdateAgent extends BaseAgent {
                 entityId: args.componentId,
                 details: {
                   from: result.data?.previousParentId,
-                  to: args.newParentId,
-                  position: args.position,
+                  to: args.to?.parentId,
+                  position: args.to?.position,
                 },
               });
               memoryEntriesCreated++;

@@ -112,6 +112,35 @@ export class AgentOrchestrator {
   }
 
   /**
+   * Create an AgentOrchestrator for testing with pre-configured dependencies
+   * This allows tests to inject mock agents and memory without real LLM initialization
+   */
+  static createForTesting(config: {
+    memory: MemoryStore;
+    classifier: Classifier;
+    pageAgent: PageAgent;
+    creatorAgent: CreatorAgent;
+    updateAgent: UpdateAgent;
+    validatorAgent: ValidatorAgent;
+  }): AgentOrchestrator {
+    const orchestrator = new AgentOrchestrator(
+      config.memory,
+      config.pageAgent,
+      config.creatorAgent,
+      config.updateAgent,
+      config.validatorAgent,
+      config.classifier
+    );
+
+    // Inject tools from registry into each agent
+    orchestrator.injectTools(config.pageAgent);
+    orchestrator.injectTools(config.creatorAgent);
+    orchestrator.injectTools(config.updateAgent);
+
+    return orchestrator;
+  }
+
+  /**
    * Inject real tools from registry into an agent
    */
   private injectTools(agent: PageAgent | CreatorAgent | UpdateAgent) {

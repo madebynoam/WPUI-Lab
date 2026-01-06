@@ -152,10 +152,11 @@ export function parseMarkup(markup: string): ParseResult {
       nodes,
     };
   } catch (error) {
-    if (error instanceof Error && 'line' in error && 'column' in error && 'context' in error) {
+    // Check if error is a ParseError object (thrown by createError)
+    if (error && typeof error === 'object' && 'line' in error && 'column' in error && 'context' in error) {
       return {
         success: false,
-        error: error as unknown as ParseError,
+        error: error as ParseError,
       };
     }
 
