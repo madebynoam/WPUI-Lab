@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { AgentUI } from "@automattic/agenttic-ui";
 import "@automattic/agenttic-ui/index.css";
 import { Button, Dropdown, MenuGroup, MenuItem } from "@wordpress/components";
@@ -43,6 +44,9 @@ const generateSuggestions = (...args: any[]) => [];
 
 export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   const PANEL_WIDTH = 280;
+  const router = useRouter();
+  const params = useParams();
+  const binId = params.binId as string;
   const componentTreeContext = useComponentTree();
 
   // Progress state
@@ -148,20 +152,27 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
     }
   }, [abortController, componentTreeContext]);
 
-  // Create tool context from component tree context - simple pass-through to use same code paths as UI
-  // With useReducer, the reducer always receives current state, so no refs needed!
+  // Create tool context from component tree context
+  // IMPORTANT: We track currentPageId internally because React memoized values
+  // don't update until re-render, but agents run synchronously between dispatches.
+  // ALSO: We must update the URL when switching pages to prevent the Editor's
+  // useEffect from fighting against us (it syncs currentPageId to URL's pageId).
   const createToolContext = useCallback((): ToolContext => {
+    // Track currentPageId internally so it updates immediately when setCurrentPage is called
+    let trackedPageId = componentTreeContext.currentPageId;
+
     return {
       // Use getters to always return current state (not snapshots!)
-      // This ensures that when createPage switches pages, subsequent tool calls see the new page
       get tree() {
-        return componentTreeContext.tree;
+        // Get tree for the TRACKED page, not the memoized currentPageId
+        const page = componentTreeContext.pages.find(p => p.id === trackedPageId);
+        return page?.tree || componentTreeContext.tree;
       },
       get pages() {
         return componentTreeContext.pages;
       },
       get currentPageId() {
-        return componentTreeContext.currentPageId;
+        return trackedPageId;
       },
       get selectedNodeIds() {
         return componentTreeContext.selectedNodeIds;
@@ -169,7 +180,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
 
       // Direct pass-through - agent uses exact same code paths as UI
       getNodeById: componentTreeContext.getNodeById,
-      setTree: componentTreeContext.setTree, // PRIMARY: Direct tree manipulation for data structure approach
+      setTree: componentTreeContext.setTree,
       updateComponentProps: componentTreeContext.updateComponentProps,
       updateMultipleComponentProps:
         componentTreeContext.updateMultipleComponentProps,
@@ -183,13 +194,28 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
       removeInteraction: componentTreeContext.removeInteraction,
       updateInteraction: componentTreeContext.updateInteraction,
       createPage: (name: string, _route: string) => {
-        return componentTreeContext.createPageWithId(name);
+        const newPageId = componentTreeContext.createPageWithId(name);
+        // Update tracked page ID immediately so subsequent calls see the new page
+        trackedPageId = newPageId;
+        // Navigate to new page URL to prevent Editor's useEffect from fighting
+        if (binId) {
+          router.push(`/editor/${binId}/${newPageId}`);
+        }
+        return newPageId;
       },
-      setCurrentPage: componentTreeContext.setCurrentPage,
+      setCurrentPage: (pageId: string) => {
+        // Update tracked page ID immediately
+        trackedPageId = pageId;
+        componentTreeContext.setCurrentPage(pageId);
+        // Navigate to page URL to prevent Editor's useEffect from fighting
+        if (binId) {
+          router.push(`/editor/${binId}/${pageId}`);
+        }
+      },
       updatePageTheme: componentTreeContext.updatePageTheme,
       toggleNodeSelection: componentTreeContext.toggleNodeSelection,
     };
-  }, [componentTreeContext]);
+  }, [componentTreeContext, router, binId]);
 
   // Handle user message submission
   const handleSubmit = useCallback(
