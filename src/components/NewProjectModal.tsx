@@ -5,25 +5,28 @@ import {
   Modal,
   Button,
   TextControl,
+  TextareaControl,
   __experimentalVStack as VStack,
 } from '@wordpress/components';
 
 interface NewProjectModalProps {
   onClose: () => void;
-  onCreate: (name: string) => void;
+  onCreate: (name: string, description?: string) => void;
 }
 
 export const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onCreate }) => {
   const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
 
   const handleCreate = () => {
     if (projectName.trim()) {
-      onCreate(projectName.trim());
+      onCreate(projectName.trim(), projectDescription.trim() || undefined);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    // Only submit on Enter if we're in the name field (not textarea)
+    if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
       handleCreate();
     }
   };
@@ -42,6 +45,14 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onCre
           onKeyDown={handleKeyDown}
           placeholder="My Awesome Project"
           autoFocus
+        />
+
+        <TextareaControl
+          label="Description (optional)"
+          value={projectDescription}
+          onChange={setProjectDescription}
+          placeholder="What is this project about?"
+          rows={3}
         />
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>

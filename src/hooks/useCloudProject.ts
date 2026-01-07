@@ -19,11 +19,11 @@ export function useCloudProject() {
     }
   }, []);
 
-  const createProject = useCallback(async (name: string, userId?: string) => {
+  const createProject = useCallback(async (name: string, userId?: string, description?: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      return await storageService.create(userId || '', name);
+      return await storageService.create(userId || '', name, description);
     } catch {
       setError('Failed to create project');
       return null;

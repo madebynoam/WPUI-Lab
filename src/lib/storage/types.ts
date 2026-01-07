@@ -55,7 +55,7 @@ export interface StorageProvider {
   /**
    * Create a new project.
    */
-  create(userId: string, name: string): Promise<CreateProjectResult>;
+  create(userId: string, name: string, description?: string): Promise<CreateProjectResult>;
 
   /**
    * Update an existing project.

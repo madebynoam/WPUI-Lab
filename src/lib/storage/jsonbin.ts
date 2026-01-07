@@ -63,7 +63,7 @@ export class JSONBinProvider implements StorageProvider {
     return data.record as ProjectData;
   }
 
-  async create(userId: string, name: string): Promise<CreateProjectResult> {
+  async create(userId: string, name: string, description?: string): Promise<CreateProjectResult> {
     // Create root Grid for the page (required for canvas to work)
     const rootGrid = {
       id: 'root-grid',
@@ -80,6 +80,7 @@ export class JSONBinProvider implements StorageProvider {
     const project: Project = {
       id: `project-${Date.now()}`,
       name,
+      description,
       version: 3,
       pages: [{
         id: 'page-1',

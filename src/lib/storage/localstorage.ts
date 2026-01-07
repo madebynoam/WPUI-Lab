@@ -56,7 +56,7 @@ export class LocalStorageProvider implements StorageProvider {
     return item.data;
   }
 
-  async create(userId: string, name: string): Promise<CreateProjectResult> {
+  async create(userId: string, name: string, description?: string): Promise<CreateProjectResult> {
     const projectId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     // Create root Grid for the page (required for canvas to work)
@@ -75,6 +75,7 @@ export class LocalStorageProvider implements StorageProvider {
     const project: Project = {
       id: `project-${Date.now()}`,
       name,
+      description,
       version: 3,
       pages: [{
         id: 'page-1',

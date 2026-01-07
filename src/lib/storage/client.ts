@@ -81,7 +81,7 @@ class StorageService {
     return res.json();
   }
 
-  async create(userId: string, name: string): Promise<{ binId: string; project: Project; meta: ProjectMeta }> {
+  async create(userId: string, name: string, description?: string): Promise<{ binId: string; project: Project; meta: ProjectMeta }> {
     if (this.isLocal) {
       const projectId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -100,6 +100,7 @@ class StorageService {
       const project: Project = {
         id: `project-${Date.now()}`,
         name,
+        description,
         version: 3,
         pages: [{
           id: 'page-1',
@@ -134,7 +135,7 @@ class StorageService {
     const res = await fetch('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, description }),
     });
     if (!res.ok) throw new Error('Failed to create project');
     return res.json();
