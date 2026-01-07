@@ -72,6 +72,8 @@ interface ComponentTreeContextType {
   duplicatePage: (pageId: string) => void;
   reorderPages: (fromIndex: number, toIndex: number) => void;
   updatePageTheme: (pageId: string, theme: { primaryColor?: string; backgroundColor?: string }) => void;
+  updatePageCanvasPosition: (pageId: string, position: { x: number; y: number }) => void;
+  updateAllPageCanvasPositions: (positions: Record<string, { x: number; y: number }>) => void;
 
   // Projects management
   projects: Project[];
@@ -457,6 +459,14 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'UPDATE_PAGE_THEME', payload: { pageId, theme } });
   };
 
+  const updatePageCanvasPosition = (pageId: string, position: { x: number; y: number }) => {
+    dispatch({ type: 'UPDATE_PAGE_CANVAS_POSITION', payload: { pageId, position } });
+  };
+
+  const updateAllPageCanvasPositions = (positions: Record<string, { x: number; y: number }>) => {
+    dispatch({ type: 'UPDATE_ALL_PAGE_CANVAS_POSITIONS', payload: { positions } });
+  };
+
   // ===== Projects Management =====
 
   const createProject = (name: string): string => {
@@ -611,6 +621,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     duplicatePage,
     reorderPages,
     updatePageTheme,
+    updatePageCanvasPosition,
+    updateAllPageCanvasPositions,
     projects: state.projects,
     currentProjectId: state.currentProjectId,
     createProject,
