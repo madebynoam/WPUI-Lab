@@ -36,19 +36,22 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           height: 40,
           borderRadius: 8,
           border: 'none',
-          backgroundColor: 'rgba(255,255,255,0.1)',
-          color: '#fff',
+          backgroundColor: '#fff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          color: '#1e1e1e',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'background-color 0.15s ease',
+          transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+          e.currentTarget.style.backgroundColor = '#f5f5f5';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+          e.currentTarget.style.backgroundColor = '#fff';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
         }}
         title="Close canvas view (Esc)"
       >
@@ -64,8 +67,9 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           top: 16,
           left: '50%',
           transform: 'translateX(-50%)',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          color: '#fff',
+          backgroundColor: '#fff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          color: '#1e1e1e',
           padding: '8px 20px',
           borderRadius: 8,
           fontSize: 14,
@@ -94,21 +98,24 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
             padding: '0 14px',
             borderRadius: 8,
             border: 'none',
-            backgroundColor: 'rgba(255,255,255,0.1)',
-            color: '#fff',
+            backgroundColor: '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            color: '#1e1e1e',
             cursor: 'pointer',
             fontSize: 13,
             fontWeight: 500,
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            transition: 'background-color 0.15s ease',
+            transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            e.currentTarget.style.backgroundColor = '#f5f5f5';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+            e.currentTarget.style.backgroundColor = '#fff';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
           }}
           title="Auto-arrange pages"
         >
@@ -122,14 +129,15 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
         </button>
 
         {/* Divider */}
-        <div style={{ width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+        <div style={{ width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' }} />
 
         {/* Zoom controls */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: 'rgba(255,255,255,0.1)',
+            backgroundColor: '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             borderRadius: 8,
             padding: '4px',
           }}
@@ -142,7 +150,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               borderRadius: 4,
               border: 'none',
               backgroundColor: 'transparent',
-              color: '#fff',
+              color: '#1e1e1e',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -150,7 +158,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               transition: 'background-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.backgroundColor = '#f0f0f0';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -171,14 +179,14 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               borderRadius: 4,
               border: 'none',
               backgroundColor: 'transparent',
-              color: '#fff',
+              color: '#1e1e1e',
               cursor: 'pointer',
               fontSize: 12,
               fontWeight: 500,
               transition: 'background-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.backgroundColor = '#f0f0f0';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -196,7 +204,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               borderRadius: 4,
               border: 'none',
               backgroundColor: 'transparent',
-              color: '#fff',
+              color: '#1e1e1e',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -204,7 +212,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               transition: 'background-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.backgroundColor = '#f0f0f0';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -225,19 +233,22 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
             height: 36,
             borderRadius: 8,
             border: 'none',
-            backgroundColor: 'rgba(255,255,255,0.1)',
-            color: '#fff',
+            backgroundColor: '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            color: '#1e1e1e',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'background-color 0.15s ease',
+            transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            e.currentTarget.style.backgroundColor = '#f5f5f5';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+            e.currentTarget.style.backgroundColor = '#fff';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
           }}
           title="Fit all pages in view (⌘0)"
         >

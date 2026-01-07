@@ -76,6 +76,7 @@ const PageThumbnail = React.memo(function PageThumbnail({
   isSelected,
   isDragging,
   dragOffset,
+  zoom,
   onPointerDown,
   onClick,
   onDoubleClick,
@@ -86,6 +87,7 @@ const PageThumbnail = React.memo(function PageThumbnail({
   isSelected: boolean;
   isDragging: boolean;
   dragOffset: { x: number; y: number };
+  zoom: number;
   onPointerDown: (e: React.PointerEvent, pageId: string) => void;
   onClick: (pageId: string) => void;
   onDoubleClick: (pageId: string) => void;
@@ -133,7 +135,7 @@ const PageThumbnail = React.memo(function PageThumbnail({
           borderRadius: 8,
           overflow: 'hidden',
           boxShadow: isSelected
-            ? '0 0 0 3px #3858e9, 0 8px 32px rgba(0,0,0,0.15)'
+            ? `0 0 0 ${3 / zoom}px #3858e9, 0 8px 32px rgba(0,0,0,0.15)`
             : isDragging
             ? '0 16px 48px rgba(0,0,0,0.2)'
             : '0 2px 8px rgba(0,0,0,0.1)',
@@ -191,17 +193,18 @@ const PageThumbnail = React.memo(function PageThumbnail({
         </div>
       </div>
       
-      {/* Page label */}
+      {/* Page label - counter-scaled to appear constant size regardless of zoom */}
       <div
         style={{
-          marginTop: 8,
-          fontSize: 13,
+          marginTop: 8 / zoom,
+          fontSize: 15 / zoom, // Target 15px visual size
           fontWeight: 500,
           color: isSelected ? '#3858e9' : '#1e1e1e',
           textAlign: 'center',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
+          transformOrigin: 'center top',
         }}
       >
         {page.name}
@@ -552,7 +555,7 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
         flex: 1,
         overflow: 'hidden',
         position: 'relative',
-        backgroundColor: '#1a1a2e',
+        backgroundColor: '#e5e5e5',
         cursor: isPanning ? 'grabbing' : 'default',
         userSelect: 'none',
       }}
@@ -582,6 +585,7 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
             isSelected={page.id === selectedPageId}
             isDragging={page.id === draggingPageId}
             dragOffset={page.id === draggingPageId ? dragOffset : { x: 0, y: 0 }}
+            zoom={zoom}
             onPointerDown={handlePagePointerDown}
             onClick={handlePageClick}
             onDoubleClick={handlePageDoubleClick}
@@ -615,12 +619,12 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
           bottom: 24,
           left: '50%',
           transform: 'translateX(-50%)',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          color: '#fff',
+          backgroundColor: '#fff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          color: '#757575',
           padding: '8px 16px',
           borderRadius: 6,
           fontSize: 12,
-          opacity: 0.8,
           pointerEvents: 'none',
         }}
       >
