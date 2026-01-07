@@ -85,6 +85,7 @@ interface ComponentTreeContextType {
   resetExampleProject: () => void;
   updateProjectTheme: (theme: { primaryColor?: string; backgroundColor?: string }) => void;
   updateProjectLayout: (layout: { maxWidth?: number; padding?: number; spacing?: number }) => void;
+  updateProjectDescription: (description: string) => void;
 
   // History management
   canUndo: boolean;
@@ -504,6 +505,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'UPDATE_PROJECT_LAYOUT', payload: { layout } });
   };
 
+  const updateProjectDescription = (description: string) => {
+    dispatch({ type: 'UPDATE_PROJECT_DESCRIPTION', payload: { description } });
+  };
+
   // ===== History =====
 
   const undo = () => {
@@ -617,6 +622,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     resetExampleProject,
     updateProjectTheme,
     updateProjectLayout,
+    updateProjectDescription,
     canUndo: state.history.past.length > 0,
     canRedo: state.history.future.length > 0,
     undo,

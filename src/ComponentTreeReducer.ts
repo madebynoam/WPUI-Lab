@@ -68,6 +68,7 @@ const HISTORY_ACTIONS = new Set([
   'UPDATE_PAGE_THEME',
   'UPDATE_PROJECT_THEME',
   'UPDATE_PROJECT_LAYOUT',
+  'UPDATE_PROJECT_DESCRIPTION',
   'CUT_COMPONENT',
   'PASTE_COMPONENT',
   'RESET_TREE',
@@ -86,6 +87,7 @@ const DEBOUNCED_ACTIONS = new Set([
   'UPDATE_COMPONENT_NAME',
   'UPDATE_PROJECT_THEME',
   'UPDATE_PROJECT_LAYOUT',
+  'UPDATE_PROJECT_DESCRIPTION',
   'RENAME_PAGE',
   'RENAME_PROJECT',
 ]);
@@ -798,6 +800,18 @@ export function componentTreeReducer(
       const updatedProject = {
         ...currentProject,
         layout: { ...currentProject.layout, ...layout },
+        lastModified: Date.now(),
+      };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    case 'UPDATE_PROJECT_DESCRIPTION': {
+      const { description } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = {
+        ...currentProject,
+        description: description || undefined,
         lastModified: Date.now(),
       };
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);

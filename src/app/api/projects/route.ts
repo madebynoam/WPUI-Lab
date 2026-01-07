@@ -43,11 +43,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { name } = await request.json();
+  const { name, description } = await request.json();
 
   try {
     const storage = getStorageProvider();
-    const result = await storage.create(email, name);
+    const result = await storage.create(email, name, description);
 
     return NextResponse.json({
       binId: result.projectId,

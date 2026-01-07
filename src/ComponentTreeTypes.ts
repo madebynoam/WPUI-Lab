@@ -39,6 +39,7 @@ export type ComponentTreeAction =
   | { type: 'RESET_EXAMPLE_PROJECT' }
   | { type: 'UPDATE_PROJECT_THEME'; payload: { theme: { primaryColor?: string; backgroundColor?: string } } }
   | { type: 'UPDATE_PROJECT_LAYOUT'; payload: { layout: { maxWidth?: number; padding?: number; spacing?: number } } }
+  | { type: 'UPDATE_PROJECT_DESCRIPTION'; payload: { description: string } }
   | { type: 'SET_PROJECTS'; payload: { projects: Project[] } }
 
   // Clipboard actions

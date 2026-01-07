@@ -6,6 +6,7 @@ import { componentRegistry } from "@/componentRegistry";
 import { findParent } from "../utils/treeHelpers";
 import {
   TextControl,
+  TextareaControl,
   SelectControl,
   ToggleControl,
   __experimentalNumberControl as NumberControl,
@@ -40,6 +41,32 @@ import { ColorVariantPicker } from "./ColorVariantPicker";
 import { TabContainer } from "./TabContainer";
 import { componentIconMap } from "./ComponentInserter";
 import { RichTextControl } from "./RichTextControl";
+
+// Helper function to format dates
+const formatDate = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+// Helper function to format relative time
+const formatRelativeTime = (timestamp: number): string => {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (minutes > 0) return `${minutes} min${minutes > 1 ? 's' : ''} ago`;
+  return 'Just now';
+};
+
 import {
   WidthPresetControl,
   AlignmentControl,
@@ -158,6 +185,8 @@ export const PropertiesPanel: React.FC = () => {
     currentProjectId,
     updateProjectTheme,
     updateProjectLayout,
+    updateProjectDescription,
+    renameProject,
     isAgentExecuting,
   } = useComponentTree();
 
@@ -237,6 +266,56 @@ export const PropertiesPanel: React.FC = () => {
         </div>
 
         <div style={{ flex: 1, overflow: "auto" }}>
+          {/* Project Details Section */}
+          <PanelBody
+            title="Project Details"
+            initialOpen={openPanels["details"] !== false}
+            onToggle={() =>
+              setOpenPanels({ ...openPanels, details: !openPanels["details"] })
+            }
+          >
+            <TextControl
+              label="NAME"
+              value={currentProject?.name || ''}
+              onChange={(value) => {
+                if (currentProject) {
+                  renameProject(currentProject.id, value);
+                }
+              }}
+              placeholder="Project name"
+            />
+
+            <TextareaControl
+              label="DESCRIPTION"
+              value={currentProject?.description || ''}
+              onChange={(value) => updateProjectDescription(value)}
+              placeholder="Add a description..."
+              rows={3}
+            />
+
+            <div style={{ 
+              marginTop: '16px',
+              padding: '12px',
+              backgroundColor: '#f6f7f7',
+              borderRadius: '4px',
+              fontSize: '12px',
+              color: '#757575',
+            }}>
+              <div style={{ marginBottom: '8px' }}>
+                <span style={{ fontWeight: 500, color: '#1e1e1e' }}>Created:</span>{' '}
+                {currentProject?.createdAt ? formatDate(currentProject.createdAt) : 'Unknown'}
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                <span style={{ fontWeight: 500, color: '#1e1e1e' }}>Modified:</span>{' '}
+                {currentProject?.lastModified ? formatRelativeTime(currentProject.lastModified) : 'Unknown'}
+              </div>
+              <div>
+                <span style={{ fontWeight: 500, color: '#1e1e1e' }}>Pages:</span>{' '}
+                {currentProject?.pages?.length || 0}
+              </div>
+            </div>
+          </PanelBody>
+
           {/* Project Theme Section */}
           <PanelBody
             title="Project Theme"

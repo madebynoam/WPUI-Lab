@@ -52,8 +52,8 @@ export const ProjectsScreen: React.FC = () => {
     });
   }, [listProjects, email]);
 
-  const handleCreate = async (name: string) => {
-    const result = await createProject(name, email || undefined);
+  const handleCreate = async (name: string, description?: string) => {
+    const result = await createProject(name, email || undefined, description);
     if (result?.binId && result?.project) {
       const pageId = result.project.pages[0]?.id || 'page-1';
       router.push(`/editor/${result.binId}/${pageId}`);
