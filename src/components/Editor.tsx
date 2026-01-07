@@ -303,9 +303,11 @@ function EditorContent({ binId, pageId }: EditorProps) {
             {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
             {isCanvasView ? (
               <ProjectCanvas
-                onPageClick={(pageId) => {
+                onPageClick={(newPageId) => {
                   setIsCanvasView(false);
-                  setCurrentPage(pageId);
+                  // Navigate to the new page URL - this ensures the URL sync effect
+                  // in Editor will correctly update currentPageId
+                  router.push(`/editor/${binId}/${newPageId}`);
                 }}
                 onClose={() => setIsCanvasView(false)}
               />
