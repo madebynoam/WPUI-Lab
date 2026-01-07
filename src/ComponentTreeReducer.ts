@@ -780,6 +780,34 @@ export function componentTreeReducer(
       return updateHistory(state, newProjects, state.currentProjectId);
     }
 
+    case 'UPDATE_PAGE_CANVAS_POSITION': {
+      const { pageId, position } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const newPages = currentProject.pages.map(page =>
+        page.id === pageId
+          ? { ...page, canvasPosition: position }
+          : page
+      );
+      const updatedProject = { ...currentProject, pages: newPages, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      // Don't use updateHistory - canvas positions shouldn't add to undo stack
+      return { ...state, projects: newProjects };
+    }
+
+    case 'UPDATE_ALL_PAGE_CANVAS_POSITIONS': {
+      const { positions } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const newPages = currentProject.pages.map(page =>
+        positions[page.id]
+          ? { ...page, canvasPosition: positions[page.id] }
+          : page
+      );
+      const updatedProject = { ...currentProject, pages: newPages, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+      // Don't use updateHistory - canvas positions shouldn't add to undo stack
+      return { ...state, projects: newProjects };
+    }
+
     case 'UPDATE_PROJECT_THEME': {
       const { theme } = action.payload;
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);

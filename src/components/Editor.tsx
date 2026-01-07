@@ -7,6 +7,7 @@ import { AgentDebugProvider } from '@/contexts/AgentDebugContext';
 import { TopBar } from './TopBar';
 import { TreePanel } from './TreePanel';
 import { Canvas } from './Canvas';
+import { ProjectCanvas } from './ProjectCanvas';
 import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { AgentPanel } from './AgentPanel';
@@ -126,6 +127,9 @@ function EditorContent({ binId, pageId }: EditorProps) {
     const saved = localStorage.getItem('wp-designer-show-agent-panel');
     return saved === 'true';
   });
+  
+  // Canvas view state (multi-page overview)
+  const [isCanvasView, setIsCanvasView] = useState(false);
 
   // Save right panel selection to localStorage whenever it changes
   useEffect(() => {
@@ -207,8 +211,8 @@ function EditorContent({ binId, pageId }: EditorProps) {
     };
   }, [isResizing]);
 
-  // Hide panels when in play mode, even if showPanels is true
-  const shouldShowPanels = showPanels && !isPlayMode;
+  // Hide panels when in play mode or canvas view
+  const shouldShowPanels = showPanels && !isPlayMode && !isCanvasView;
 
   const handleNavigateToProjects = useCallback(() => {
     if (isDirty) {
@@ -284,6 +288,8 @@ function EditorContent({ binId, pageId }: EditorProps) {
                 rightPanel={rightPanel}
                 onToggleRightPanel={setRightPanel}
                 onNavigateToProjects={handleNavigateToProjects}
+                isCanvasView={isCanvasView}
+                onToggleCanvasView={() => setIsCanvasView(prev => !prev)}
                 binId={binId}
                 pageId={pageId}
                 // Cloud save props
@@ -295,7 +301,17 @@ function EditorContent({ binId, pageId }: EditorProps) {
           )}
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
-            <Canvas showBreadcrumb={showHeader && !isPlayMode} />
+            {isCanvasView ? (
+              <ProjectCanvas
+                onPageClick={(pageId) => {
+                  setIsCanvasView(false);
+                  setCurrentPage(pageId);
+                }}
+                onClose={() => setIsCanvasView(false)}
+              />
+            ) : (
+              <Canvas showBreadcrumb={showHeader && !isPlayMode} />
+            )}
             {shouldShowPanels && rightPanel === 'props' && (
               <PropertiesPanel />
             )}

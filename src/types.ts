@@ -34,6 +34,10 @@ export interface Page {
     primaryColor?: string;
     backgroundColor?: string;
   };
+  canvasPosition?: {
+    x: number;
+    y: number;
+  };
 }
 
 export interface Project {

@@ -28,6 +28,8 @@ export type ComponentTreeAction =
   | { type: 'DUPLICATE_PAGE'; payload: { pageId: string } }
   | { type: 'REORDER_PAGES'; payload: { fromIndex: number; toIndex: number } }
   | { type: 'UPDATE_PAGE_THEME'; payload: { pageId: string; theme: { primaryColor?: string; backgroundColor?: string } } }
+  | { type: 'UPDATE_PAGE_CANVAS_POSITION'; payload: { pageId: string; position: { x: number; y: number } } }
+  | { type: 'UPDATE_ALL_PAGE_CANVAS_POSITIONS'; payload: { positions: Record<string, { x: number; y: number }> } }
   | { type: 'SET_PAGES'; payload: { pages: Page[] } }
 
   // Project actions
