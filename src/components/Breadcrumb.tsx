@@ -4,7 +4,14 @@ import { ComponentNode } from '../types';
 import { ROOT_GRID_ID } from '../utils/treeHelpers';
 
 export const Breadcrumb: React.FC = () => {
-  const { selectedNodeIds, toggleNodeSelection, tree } = useComponentTree();
+  const {
+    selectedNodeIds,
+    toggleNodeSelection,
+    tree,
+    editingGlobalComponentId,
+    globalComponents,
+    setEditingGlobalComponent,
+  } = useComponentTree();
 
   const getNodePath = (targetId: string | null): ComponentNode[] => {
     if (!targetId) return [];
@@ -30,9 +37,16 @@ export const Breadcrumb: React.FC = () => {
     return path;
   };
 
-  const path = getNodePath(selectedNodeIds.length > 0 ? selectedNodeIds[0] : ROOT_GRID_ID);
+  // If editing a global component, show that in breadcrumb
+  const editingGlobalComponent = editingGlobalComponentId
+    ? globalComponents.find((gc) => gc.id === editingGlobalComponentId)
+    : null;
 
-  if (path.length === 0) {
+  const path = editingGlobalComponent
+    ? [] // Don't show path when editing global component
+    : getNodePath(selectedNodeIds.length > 0 ? selectedNodeIds[0] : ROOT_GRID_ID);
+
+  if (path.length === 0 && !editingGlobalComponent) {
     return null;
   }
 
@@ -50,7 +64,29 @@ export const Breadcrumb: React.FC = () => {
         flexShrink: 0,
       }}
     >
-      {path.map((node, index) => (
+      {editingGlobalComponent ? (
+        <>
+          <span style={{ color: '#8b5cf6', fontWeight: 500 }}>
+            Global Component: {editingGlobalComponent.name || editingGlobalComponent.type}
+          </span>
+          <button
+            onClick={() => setEditingGlobalComponent(null)}
+            style={{
+              marginLeft: '12px',
+              background: 'transparent',
+              border: '1px solid #8b5cf6',
+              borderRadius: '3px',
+              padding: '2px 8px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              color: '#8b5cf6',
+            }}
+          >
+            Exit
+          </button>
+        </>
+      ) : (
+        path.map((node, index) => (
         <React.Fragment key={node.id}>
           {index > 0 && (
             <span style={{ color: '#8c8f94', margin: '0 6px', fontSize: '12px' }}>›</span>
@@ -83,7 +119,8 @@ export const Breadcrumb: React.FC = () => {
             {node.id === ROOT_GRID_ID ? 'Page' : node.type}
           </button>
         </React.Fragment>
-      ))}
+        ))
+      )}
     </div>
   );
 };

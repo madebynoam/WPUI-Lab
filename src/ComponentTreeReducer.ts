@@ -34,6 +34,7 @@ export interface ComponentTreeState {
   isPlayMode: boolean;
   isAgentExecuting: boolean; // Disable UI interactions while AI agent is working
   editingMode: 'selection' | 'text';
+  editingGlobalComponentId: string | null; // ID of global component being edited in isolation mode
 
   // Cloud save state
   isDirty: boolean; // True when there are unsaved changes
@@ -60,6 +61,11 @@ const HISTORY_ACTIONS = new Set([
   'GROUP_COMPONENTS',
   'UNGROUP_COMPONENTS',
   'SWAP_LAYOUT_TYPE',
+  'MAKE_GLOBAL_COMPONENT',
+  'INSERT_GLOBAL_COMPONENT_INSTANCE',
+  'UPDATE_GLOBAL_COMPONENT',
+  'DELETE_GLOBAL_COMPONENT',
+  'DETACH_GLOBAL_COMPONENT_INSTANCE',
   'ADD_PAGE',
   'DELETE_PAGE',
   'RENAME_PAGE',
@@ -619,6 +625,233 @@ export function componentTreeReducer(
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    // ===== Global Component Actions =====
+
+    case 'MAKE_GLOBAL_COMPONENT': {
+      const { nodeId, name } = action.payload;
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // Find the node to make global
+      const node = findNodeById(currentTree, nodeId);
+      if (!node || node.id === ROOT_GRID_ID) {
+        console.warn('[Reducer] MAKE_GLOBAL_COMPONENT: Cannot make root or non-existent node global');
+        return state;
+      }
+
+      // Don't allow making instances global (must detach first)
+      if (node.isGlobalInstance) {
+        console.warn('[Reducer] MAKE_GLOBAL_COMPONENT: Cannot make an instance global');
+        return state;
+      }
+
+      // Remove node from tree
+      const newTree = removeNodeFromTree(currentTree, nodeId);
+
+      // Add to global components with a clean clone and name
+      const globalComponent: ComponentNode = {
+        ...node,
+        name: name || node.name || node.type,
+        isGlobalInstance: undefined,
+        globalComponentId: undefined,
+      };
+
+      const updatedProject = {
+        ...currentProject,
+        tree: newTree,
+        globalComponents: [...(currentProject.globalComponents || []), globalComponent],
+      };
+
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return {
+        ...updateHistory(state, newProjects, state.currentProjectId),
+        selectedNodeIds: [ROOT_GRID_ID],
+      };
+    }
+
+    case 'INSERT_GLOBAL_COMPONENT_INSTANCE': {
+      const { globalComponentId, parentId, index } = action.payload;
+      console.log('[Reducer] INSERT_GLOBAL_COMPONENT_INSTANCE:', { globalComponentId, parentId, index });
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      console.log('[Reducer] Current project globalComponents:', currentProject.globalComponents);
+      // Find the global component definition
+      const globalComponent = (currentProject.globalComponents || []).find(gc => gc.id === globalComponentId);
+      if (!globalComponent) {
+        console.warn('[Reducer] INSERT_GLOBAL_COMPONENT_INSTANCE: Global component not found');
+        return state;
+      }
+
+      console.log('[Reducer] Found global component:', globalComponent);
+
+      // Create a deep clone with new IDs and add instance metadata
+      const cloneWithMetadata = (node: ComponentNode): ComponentNode => {
+        return {
+          ...node,
+          id: generateId(),
+          isGlobalInstance: true,
+          globalComponentId: globalComponentId,
+          props: { ...node.props },
+          children: node.children?.map(cloneWithMetadata),
+        };
+      };
+
+      const instance = cloneWithMetadata(globalComponent);
+      console.log('[Reducer] Created instance:', instance);
+      const newTree = insertNodeInTree(currentTree, instance, parentId, index);
+      console.log('[Reducer] New tree after insert:', newTree);
+
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return {
+        ...updateHistory(state, newProjects, state.currentProjectId),
+        selectedNodeIds: [instance.id],
+      };
+    }
+
+    case 'UPDATE_GLOBAL_COMPONENT': {
+      const { globalComponentId, node: updatedNode } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // Update the global component definition
+      const globalComponents = currentProject.globalComponents || [];
+      const globalIndex = globalComponents.findIndex(gc => gc.id === globalComponentId);
+
+      if (globalIndex === -1) {
+        console.warn('[Reducer] UPDATE_GLOBAL_COMPONENT: Global component not found');
+        return state;
+      }
+
+      const newGlobalComponents = [...globalComponents];
+      newGlobalComponents[globalIndex] = updatedNode;
+
+      // Update all instances across all pages
+      const updateInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+        return tree.map(node => {
+          if (node.isGlobalInstance && node.globalComponentId === globalComponentId) {
+            // Clone the updated definition with the instance's ID and metadata
+            const cloneWithMetadata = (sourceNode: ComponentNode, targetId: string): ComponentNode => {
+              return {
+                ...sourceNode,
+                id: targetId,
+                isGlobalInstance: true,
+                globalComponentId: globalComponentId,
+                props: { ...sourceNode.props },
+                children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
+              };
+            };
+            return cloneWithMetadata(updatedNode, node.id);
+          }
+          if (node.children) {
+            return { ...node, children: updateInstancesInTree(node.children) };
+          }
+          return node;
+        });
+      };
+
+      const newPages = currentProject.pages.map(page => ({
+        ...page,
+        tree: updateInstancesInTree(page.tree),
+      }));
+
+      const updatedProject = {
+        ...currentProject,
+        globalComponents: newGlobalComponents,
+        pages: newPages,
+      };
+
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    case 'DELETE_GLOBAL_COMPONENT': {
+      const { globalComponentId } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // Remove from global components
+      const globalComponents = currentProject.globalComponents || [];
+      const newGlobalComponents = globalComponents.filter(gc => gc.id !== globalComponentId);
+
+      // Detach all instances across all pages (convert to normal components)
+      const detachInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+        return tree.map(node => {
+          if (node.isGlobalInstance && node.globalComponentId === globalComponentId) {
+            // Remove instance metadata, converting to normal component
+            const { isGlobalInstance, globalComponentId: _, ...normalNode } = node;
+            return {
+              ...normalNode,
+              children: node.children ? detachInstancesInTree(node.children) : undefined,
+            };
+          }
+          if (node.children) {
+            return { ...node, children: detachInstancesInTree(node.children) };
+          }
+          return node;
+        });
+      };
+
+      const newPages = currentProject.pages.map(page => ({
+        ...page,
+        tree: detachInstancesInTree(page.tree),
+      }));
+
+      const updatedProject = {
+        ...currentProject,
+        globalComponents: newGlobalComponents,
+        pages: newPages,
+      };
+
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return {
+        ...updateHistory(state, newProjects, state.currentProjectId),
+        editingGlobalComponentId: null, // Exit isolation mode if we were editing this component
+      };
+    }
+
+    case 'DETACH_GLOBAL_COMPONENT_INSTANCE': {
+      const { nodeId } = action.payload;
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
+
+      // Find the node and remove instance metadata
+      const node = findNodeById(currentTree, nodeId);
+      if (!node || !node.isGlobalInstance) {
+        console.warn('[Reducer] DETACH_GLOBAL_COMPONENT_INSTANCE: Node is not a global instance');
+        return state;
+      }
+
+      const detachNode = (tree: ComponentNode[]): ComponentNode[] => {
+        return tree.map(n => {
+          if (n.id === nodeId) {
+            // Remove instance metadata
+            const { isGlobalInstance, globalComponentId, ...normalNode } = n;
+            return normalNode;
+          }
+          if (n.children) {
+            return { ...n, children: detachNode(n.children) };
+          }
+          return n;
+        });
+      };
+
+      const newTree = detachNode(currentTree);
+
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = updateTreeInProject(currentProject, newTree);
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    case 'SET_EDITING_GLOBAL_COMPONENT': {
+      const { globalComponentId } = action.payload;
+      return { ...state, editingGlobalComponentId: globalComponentId };
     }
 
     // ===== Selection Actions =====

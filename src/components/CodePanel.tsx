@@ -13,20 +13,20 @@ interface CodePanelProps {
 }
 
 export const CodePanel: React.FC<CodePanelProps> = ({ width = 280, onResizeStart }) => {
-  const { selectedNodeIds, getNodeById, tree } = useComponentTree();
+  const { selectedNodeIds, getNodeById, tree, globalComponents } = useComponentTree();
   const [copied, setCopied] = useState(false);
 
   const code = useMemo(() => {
     // If no selection or root page selected, show entire page code
     if (selectedNodeIds.length === 0 || selectedNodeIds[0] === ROOT_GRID_ID) {
-      return generatePageCode(tree);
+      return generatePageCode(tree, globalComponents);
     }
 
     // Get the selected node
     const node = getNodeById(selectedNodeIds[0]);
     // If node doesn't exist (e.g., deleted), fall back to page code
     if (!node) {
-      return generatePageCode(tree);
+      return generatePageCode(tree, globalComponents);
     }
 
     // Generate code with interactions if available
@@ -35,7 +35,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ width = 280, onResizeStart
     }
 
     return generateComponentCode(node, { indent: 0 });
-  }, [selectedNodeIds, getNodeById, tree]);
+  }, [selectedNodeIds, getNodeById, tree, globalComponents]);
 
   const handleCopy = async () => {
     try {

@@ -99,10 +99,12 @@ interface ComponentInserterProps {
   onCloseInserter: () => void;
   onAddComponent: (componentType: string) => void;
   onAddPattern: (patternId: string) => void;
+  onAddGlobalComponent?: (globalComponentId: string) => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
-  inserterTab: "blocks" | "patterns";
-  onTabChange: (tab: "blocks" | "patterns") => void;
+  inserterTab: "blocks" | "patterns" | "components";
+  onTabChange: (tab: "blocks" | "patterns" | "components") => void;
+  globalComponents?: Array<{ id: string; type: string; name?: string }>;
 }
 
 export const ComponentInserter: React.FC<ComponentInserterProps> = ({
@@ -110,10 +112,12 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
   onCloseInserter,
   onAddComponent,
   onAddPattern,
+  onAddGlobalComponent,
   searchTerm,
   onSearchChange,
   inserterTab,
   onTabChange,
+  globalComponents = [],
 }) => {
   if (!showInserter) {
     return null;
@@ -295,6 +299,112 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
     </>
   );
 
+  const renderComponentsContent = () => {
+    const filteredComponents = globalComponents.filter((comp) =>
+      (comp.name || comp.type).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+      <>
+        {/* Search */}
+        <div
+          style={{
+            padding: "16px",
+            borderBottom: "1px solid #e0e0e0",
+            flexShrink: 0,
+          }}
+        >
+          <SearchControl
+            value={searchTerm}
+            onChange={onSearchChange}
+            placeholder="Search components..."
+            __nextHasNoMarginBottom
+          />
+        </div>
+
+        {/* Scrollable components */}
+        <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "16px" }}>
+          {filteredComponents.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "24px",
+                color: "#757575",
+                fontSize: "13px",
+              }}
+            >
+              {globalComponents.length === 0
+                ? "No global components yet. Create one using the context menu in the Layers panel."
+                : "No components found"}
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "8px",
+              }}
+            >
+              {filteredComponents.map((comp) => (
+                <button
+                  key={comp.id}
+                  onClick={() => {
+                    console.log('[ComponentInserter] Button clicked for global component:', comp.id);
+                    onAddGlobalComponent?.(comp.id);
+                  }}
+                  style={{
+                    padding: "8px 4px",
+                    border: "none",
+                    backgroundColor: "#fff",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    textAlign: "center",
+                    transition: "all 0.05s ease-in-out",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "4px",
+                    minHeight: "64px",
+                    justifyContent: "center",
+                    color: "#8b5cf6",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(139, 92, 246, 0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#fff";
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.boxShadow = "inset 0 0 0 2px #8b5cf6";
+                    e.currentTarget.style.outline = "none";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" />
+                  </svg>
+                  <span
+                    style={{
+                      whiteSpace: "normal",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                    }}
+                  >
+                    {comp.name || comp.type}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
   const renderPatternsContent = () => (
     <>
       {/* Search */}
@@ -426,6 +536,17 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
           {renderPatternsContent()}
+        </div>
+      ),
+    },
+    {
+      name: "components",
+      title: "Components",
+      panel: (
+        <div
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
+          {renderComponentsContent()}
         </div>
       ),
     },

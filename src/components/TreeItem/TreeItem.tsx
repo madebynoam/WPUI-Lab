@@ -40,10 +40,13 @@ export interface TreeItemProps extends Omit<HTMLAttributes<HTMLLIElement>, 'id'>
   onPaste?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  onMakeGlobal?: () => void;
+  onDetachGlobal?: () => void;
   canPaste?: boolean;
   wrapperRef?: (node: HTMLLIElement) => void;
   isSelected?: boolean;
   isRootVStack?: boolean;
+  isGlobalInstance?: boolean;
   currentPage?: Page;
   onDoubleClick?: () => void;
   editingNodeId?: string | null;
@@ -74,6 +77,8 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
       onPaste,
       onMoveUp,
       onMoveDown,
+      onMakeGlobal,
+      onDetachGlobal,
       canPaste = false,
       style,
       value,
@@ -82,6 +87,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
       wrapperRef,
       isSelected = false,
       isRootVStack = false,
+      isGlobalInstance = false,
       currentPage,
       onDoubleClick,
       editingNodeId,
@@ -199,7 +205,11 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
               {itemName ? `${itemName} (${getDisplayLabel(itemType)})` : getDisplayLabel(itemType)}
             </div>
           ) : (
-            <span className={styles.Text} onClick={handleNameClick}>
+            <span
+              className={styles.Text}
+              onClick={handleNameClick}
+              style={isGlobalInstance ? { color: '#8b5cf6', fontWeight: 500 } : undefined}
+            >
               {isRootVStack ? (
                 <>
                   <Icon icon={page} size={16} style={{ marginRight: '4px' }} />
@@ -234,6 +244,15 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                     <MenuItem onClick={onPaste} disabled={!canPaste}>
                       Paste
                     </MenuItem>
+                    {isGlobalInstance ? (
+                      <MenuItem onClick={onDetachGlobal}>
+                        Detach from Global Component
+                      </MenuItem>
+                    ) : onMakeGlobal ? (
+                      <MenuItem onClick={onMakeGlobal}>
+                        Make Global Component
+                      </MenuItem>
+                    ) : null}
                     <MenuItem onClick={onRemove} isDestructive>
                       Remove
                     </MenuItem>

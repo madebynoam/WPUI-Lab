@@ -77,9 +77,31 @@ function generateNodeCode(
   indent: number,
   includeInteractions: boolean,
   handlerMap?: Record<string, string>,
-  nameCount?: Map<string, number>
+  nameCount?: Map<string, number>,
+  globalComponentMap?: Map<string, ComponentNode>
 ): string {
   const indentStr = '  '.repeat(indent);
+
+  // Handle global component instances - render as component call
+  if (node.isGlobalInstance && node.globalComponentId && globalComponentMap) {
+    const globalComp = globalComponentMap.get(node.globalComponentId);
+    if (globalComp) {
+      const functionName = (globalComp.name || globalComp.type).replace(/[^a-zA-Z0-9]/g, '');
+      const props: string[] = [];
+
+      // Pass through grid props
+      if (node.props.gridColumnSpan) {
+        props.push(`gridColumnSpan={${node.props.gridColumnSpan}}`);
+      }
+      if (node.props.gridRowSpan) {
+        props.push(`gridRowSpan={${node.props.gridRowSpan}}`);
+      }
+
+      const propsStr = props.length > 0 ? ' ' + props.join(' ') : '';
+      return `${indentStr}<${functionName}${propsStr} />`;
+    }
+  }
+
   const componentName = node.type;
 
   // Check if component has custom code generation
@@ -89,7 +111,7 @@ function generateNodeCode(
     const generateChildrenFunc = () => {
       if (!node.children || node.children.length === 0) return '';
       return node.children
-        .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap, nameCount))
+        .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap, nameCount, globalComponentMap))
         .join('\n');
     };
 
@@ -341,7 +363,7 @@ function generateNodeCode(
   // Handle components with children
   if (node.children && node.children.length > 0) {
     const childrenCode = node.children
-      .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap, nameCount))
+      .map((child) => generateNodeCode(child, indent + 1, includeInteractions, handlerMap, nameCount, globalComponentMap))
       .join('\n');
 
     return `${comment}${indentStr}<${componentName}${propsStr}>\n${childrenCode}\n${indentStr}</${componentName}>`;
@@ -404,11 +426,20 @@ function generatePropsString(entries: [string, any][]): string {
 /**
  * Generate full page component code with imports and handlers
  */
-export const generatePageCode = (nodes: ComponentNode[]): string => {
+export const generatePageCode = (
+  nodes: ComponentNode[],
+  globalComponents?: Array<{ id: string; type: string; name?: string } & ComponentNode>
+): string => {
   // Collect all unique component types used
   const componentTypes = new Set<string>();
+  const globalComponentIds = new Set<string>();
   const collectComponents = (node: ComponentNode) => {
-    componentTypes.add(node.type);
+    // Track global component instances
+    if (node.isGlobalInstance && node.globalComponentId) {
+      globalComponentIds.add(node.globalComponentId);
+    } else {
+      componentTypes.add(node.type);
+    }
     if (node.children) {
       node.children.forEach(collectComponents);
     }
@@ -505,17 +536,67 @@ export const generatePageCode = (nodes: ComponentNode[]): string => {
   // Collect component names to detect duplicates
   const nameCount = collectComponentNames(nodes);
 
-  // Generate component code with handlers
+  // Generate global component function definitions
+  const globalComponentFunctions: string[] = [];
+  const globalComponentMap = new Map<string, ComponentNode>();
+
+  if (globalComponents && globalComponentIds.size > 0) {
+    globalComponentIds.forEach((gcId) => {
+      const globalComp = globalComponents.find((gc) => gc.id === gcId);
+      if (globalComp) {
+        globalComponentMap.set(gcId, globalComp);
+
+        // Collect component types used in this global component
+        const gcComponentTypes = new Set<string>();
+        const collectGCComponents = (node: ComponentNode) => {
+          gcComponentTypes.add(node.type);
+          if (node.children) {
+            node.children.forEach(collectGCComponents);
+          }
+        };
+        collectGCComponents(globalComp);
+
+        // Add these types to the main componentTypes set for imports
+        gcComponentTypes.forEach((type) => componentTypes.add(type));
+
+        // Generate function name from component name
+        const functionName = (globalComp.name || globalComp.type).replace(/[^a-zA-Z0-9]/g, '');
+
+        // Generate the component body
+        const gcCode = generateNodeCode(globalComp, 1, true, {}, new Map());
+
+        globalComponentFunctions.push(`function ${functionName}({ gridColumnSpan, gridRowSpan }: any = {}) {
+  const gridStyles = {
+    ...(gridColumnSpan ? { gridColumn: \`span \${gridColumnSpan}\` } : {}),
+    ...(gridRowSpan ? { gridRow: \`span \${gridRowSpan}\` } : {}),
+  };
+
+  return (
+    <div style={gridStyles}>
+${gcCode.split('\n').map((line) => '      ' + line).join('\n')}
+    </div>
+  );
+}`);
+      }
+    });
+  }
+
+  // Generate component code with handlers (pass globalComponentMap for instance replacement)
   const componentCode = nodes
-    .map((n) => generateNodeCode(n, 0, true, handlerMap, nameCount))
+    .map((n) => generateNodeCode(n, 0, true, handlerMap, nameCount, globalComponentMap))
     .join('\n');
 
   // Build handler section
   const handlersSection = handlers.length > 0 ? `${handlers.join('\n\n')}\n\n` : '';
 
+  // Build global components section
+  const globalComponentsSection = globalComponentFunctions.length > 0
+    ? `// Global component definitions\n${globalComponentFunctions.join('\n\n')}\n\n`
+    : '';
+
   // Wrap in a component
   const fullCode = `${imports.join('\n')}
-export default function Page() {
+${globalComponentsSection}export default function Page() {
 ${handlersSection}  return (
     <>
 ${componentCode

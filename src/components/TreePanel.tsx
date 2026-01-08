@@ -331,9 +331,16 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     pasteComponent,
     canPaste,
     isAgentExecuting,
+    globalComponents,
+    editingGlobalComponentId,
+    setEditingGlobalComponent,
+    deleteGlobalComponent,
+    makeGlobalComponent,
+    detachGlobalComponentInstance,
+    insertGlobalComponentInstance,
   } = useComponentTree();
 
-  const [inserterTab, setInserterTab] = useState<"blocks" | "patterns">(
+  const [inserterTab, setInserterTab] = useState<"blocks" | "patterns" | "components">(
     "blocks"
   );
   const [searchTerm, setSearchTerm] = useState("");
@@ -954,6 +961,117 @@ export const TreePanel: React.FC<TreePanelProps> = ({
         </DndContext>
       </div>
 
+      {/* Global Components Section */}
+      {globalComponents.length > 0 && (
+        <>
+          <div
+            style={{
+              padding: "12px 8px 12px 8px",
+              borderTop: "1px solid #e0e0e0",
+              borderBottom: "1px solid #e0e0e0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "#666",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Components
+            </span>
+          </div>
+          <div style={{ padding: "12px 4px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              {globalComponents.map((component) => {
+                const isEditing = editingGlobalComponentId === component.id;
+                return (
+                  <div
+                    key={component.id}
+                    style={{
+                      padding: "6px 8px",
+                      borderRadius: "4px",
+                      backgroundColor: isEditing ? "#e7f3ff" : "transparent",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                    onClick={() => setEditingGlobalComponent(component.id)}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#666", flexShrink: 0 }}>
+                        <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" />
+                      </svg>
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          color: "#1e1e1e",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {component.name || component.type}
+                      </span>
+                    </div>
+                    <DropdownMenu
+                      icon={moreVertical}
+                      label="More options"
+                      popoverProps={{
+                        position: "bottom right",
+                      }}
+                    >
+                      {() => (
+                        <MenuGroup>
+                          <MenuItem
+                            onClick={(e: any) => {
+                              e.stopPropagation();
+                              // Count instances across all pages
+                              let instanceCount = 0;
+                              pages.forEach((page) => {
+                                const countInTree = (nodes: ComponentNode[]): number => {
+                                  let count = 0;
+                                  nodes.forEach((node) => {
+                                    if (node.isGlobalInstance && node.globalComponentId === component.id) {
+                                      count++;
+                                    }
+                                    if (node.children) {
+                                      count += countInTree(node.children);
+                                    }
+                                  });
+                                  return count;
+                                };
+                                instanceCount += countInTree(page.tree);
+                              });
+
+                              const message = instanceCount > 0
+                                ? `Delete "${component.name || component.type}"? This will detach all ${instanceCount} instance${instanceCount !== 1 ? 's' : ''} across your pages and convert them to normal components.`
+                                : `Delete "${component.name || component.type}"?`;
+
+                              if (confirm(message)) {
+                                deleteGlobalComponent(component.id);
+                              }
+                            }}
+                          >
+                            Delete Component
+                          </MenuItem>
+                        </MenuGroup>
+                      )}
+                    </DropdownMenu>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Layers Label */}
       <div
         style={{
@@ -981,10 +1099,33 @@ export const TreePanel: React.FC<TreePanelProps> = ({
         onCloseInserter={onCloseInserter}
         onAddComponent={handleAddComponent}
         onAddPattern={handleAddPattern}
+        onAddGlobalComponent={(globalComponentId) => {
+          // Exit global component editing mode if active
+          if (editingGlobalComponentId) {
+            setEditingGlobalComponent(null);
+          }
+
+          // Find the selected parent for insertion
+          // If the selected node is a global component definition (not in the tree), use ROOT_GRID_ID
+          let parentId = ROOT_GRID_ID;
+          if (selectedNodeIds.length > 0) {
+            const selectedId = selectedNodeIds[0];
+            // Don't use the global component itself as parent, and check if it exists in the tree
+            const isInTree = getNodeById(selectedId) !== null;
+            if (selectedId !== globalComponentId && isInTree) {
+              parentId = selectedId;
+            }
+          }
+
+          console.log('[TreePanel] Inserting global component instance:', { globalComponentId, parentId });
+          insertGlobalComponentInstance(globalComponentId, parentId);
+          setSearchTerm("");
+        }}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         inserterTab={inserterTab}
         onTabChange={setInserterTab}
+        globalComponents={globalComponents}
       />
 
       {/* Tree */}
@@ -1024,6 +1165,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                     childCount={item.children?.length || 0}
                     isSelected={isSelected}
                     isRootVStack={isRootVStack}
+                    isGlobalInstance={item.isGlobalInstance}
                     currentPage={currentPage}
                     canPaste={canPaste}
                     indicator={isOverItem}
@@ -1047,6 +1189,17 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                     onDuplicate={() => duplicateComponent(item.id)}
                     onCopy={() => copyComponent(item.id)}
                     onPaste={() => pasteComponent(item.id)}
+                    onMakeGlobal={() => {
+                      const componentName = prompt('Enter a name for this global component:', item.name || item.type);
+                      if (componentName) {
+                        makeGlobalComponent(item.id, componentName);
+                      }
+                    }}
+                    onDetachGlobal={() => {
+                      if (confirm('Detach this instance from its global component? It will become a normal component.')) {
+                        detachGlobalComponentInstance(item.id);
+                      }
+                    }}
                     onMoveUp={() => moveComponent(item.id, "up")}
                     onMoveDown={() => moveComponent(item.id, "down")}
                     editingNodeId={editingNodeId}

@@ -16,6 +16,14 @@ export type ComponentTreeAction =
   | { type: 'UNGROUP_COMPONENTS'; payload: { id: string } }
   | { type: 'SWAP_LAYOUT_TYPE'; payload: { id: string; newType: 'VStack' | 'HStack' } }
 
+  // Global component actions
+  | { type: 'MAKE_GLOBAL_COMPONENT'; payload: { nodeId: string; name: string } }
+  | { type: 'INSERT_GLOBAL_COMPONENT_INSTANCE'; payload: { globalComponentId: string; parentId?: string; index?: number } }
+  | { type: 'UPDATE_GLOBAL_COMPONENT'; payload: { globalComponentId: string; node: ComponentNode } }
+  | { type: 'DELETE_GLOBAL_COMPONENT'; payload: { globalComponentId: string } }
+  | { type: 'DETACH_GLOBAL_COMPONENT_INSTANCE'; payload: { nodeId: string } }
+  | { type: 'SET_EDITING_GLOBAL_COMPONENT'; payload: { globalComponentId: string | null } }
+
   // Selection actions
   | { type: 'SET_SELECTED_NODE_IDS'; payload: { ids: string[] } }
   | { type: 'TOGGLE_NODE_SELECTION'; payload: { id: string; multiSelect?: boolean; rangeSelect?: boolean; allNodes?: ComponentNode[] } }

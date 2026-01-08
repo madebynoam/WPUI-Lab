@@ -47,6 +47,9 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     currentProjectId,
     editingMode,
     setEditingMode,
+    globalComponents,
+    editingGlobalComponentId,
+    updateGlobalComponent,
   } = useComponentTree();
 
   const { setIsDebugMode } = useAgentDebug();
@@ -152,6 +155,14 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
       ? selectedNode
       : null;
 
+  // Find the global component being edited
+  const editingGlobalComponent = editingGlobalComponentId
+    ? globalComponents.find((gc) => gc.id === editingGlobalComponentId)
+    : null;
+
+  // Wrap the global component in an array to render it like a tree
+  const globalComponentTree = editingGlobalComponent ? [editingGlobalComponent] : null;
+
   return (
     <SelectionProvider>
       <SimpleDragProvider>
@@ -209,7 +220,30 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
               }}
             >
               <div style={{ width: "100%", height: "100%", alignSelf: "stretch" }}>
-                {isInteractiveSelected && interactiveAncestor ? (
+                {editingGlobalComponent && globalComponentTree ? (
+                  // Render global component in isolation mode
+                  <div
+                    style={{
+                      padding: "20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "100%",
+                    }}
+                  >
+                    {globalComponentTree.map((node) => (
+                      <RenderNode
+                        key={node.id}
+                        node={node}
+                        renderInteractive={false}
+                        onNodeUpdate={(updatedNode) => {
+                          // Update the global component definition
+                          updateGlobalComponent(editingGlobalComponentId!, updatedNode);
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : isInteractiveSelected && interactiveAncestor ? (
                   // Render only the interactive component in isolation
                   <div
                     style={{

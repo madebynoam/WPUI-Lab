@@ -5,6 +5,7 @@ import { componentTreeReducerWithDirtyTracking, ComponentTreeState } from '@/Com
 import { ROOT_GRID_ID, getCurrentTree, findNodeById, findParent, calculateSmartGridSpan } from '@/utils/treeHelpers';
 import { generateId } from '@/utils/idGenerator';
 import { normalizeComponentNode, normalizeComponentNodes } from '@/utils/normalizeComponent';
+import { migrateProject } from '@/utils/migrations';
 // Cloud-only: Demo project no longer needed for initialization
 
 // File version 3: Grid-first layout system
@@ -113,6 +114,16 @@ interface ComponentTreeContextType {
   removeInteraction: (nodeId: string, interactionId: string) => void;
   updateInteraction: (nodeId: string, interactionId: string, interaction: Omit<Interaction, 'id'>) => void;
 
+  // Global components
+  globalComponents: ComponentNode[];
+  editingGlobalComponentId: string | null;
+  makeGlobalComponent: (nodeId: string, name: string) => void;
+  insertGlobalComponentInstance: (globalComponentId: string, parentId?: string, index?: number) => void;
+  updateGlobalComponent: (globalComponentId: string, node: ComponentNode) => void;
+  deleteGlobalComponent: (globalComponentId: string) => void;
+  detachGlobalComponentInstance: (nodeId: string) => void;
+  setEditingGlobalComponent: (globalComponentId: string | null) => void;
+
   // Cloud save state
   isDirty: boolean;
   markSaved: () => void;
@@ -153,6 +164,7 @@ const createInitialProject = (id: string, name: string): Project => ({
   version: 3, // Tree structure version
   pages: [createInitialPage('page-1', 'Page 1')],
   currentPageId: 'page-1',
+  globalComponents: [], // Reusable components
   createdAt: Date.now(),
   lastModified: Date.now(),
   theme: {
@@ -183,6 +195,7 @@ function initializeState(): ComponentTreeState {
     isPlayMode: false,
     isAgentExecuting: false,
     editingMode: 'selection',
+    editingGlobalComponentId: null,
     isDirty: false,
     history: {
       past: [],
@@ -494,13 +507,16 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   const importProject = useCallback((project: Project) => {
+    // Migrate project to current schema (ensures backward compatibility)
+    const migratedProject = migrateProject(project);
+
     // Add project to projects array (replace if exists, add if new)
-    const existingIndex = state.projects.findIndex(p => p.id === project.id);
+    const existingIndex = state.projects.findIndex(p => p.id === migratedProject.id);
     const newProjects = existingIndex >= 0
-      ? state.projects.map((p, i) => i === existingIndex ? project : p)
-      : [...state.projects, project];
+      ? state.projects.map((p, i) => i === existingIndex ? migratedProject : p)
+      : [...state.projects, migratedProject];
     dispatch({ type: 'SET_PROJECTS', payload: { projects: newProjects } });
-    dispatch({ type: 'SET_CURRENT_PROJECT', payload: { projectId: project.id } });
+    dispatch({ type: 'SET_CURRENT_PROJECT', payload: { projectId: migratedProject.id } });
   }, [state.projects, dispatch]);
 
   const resetExampleProject = () => {
@@ -571,6 +587,32 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     interaction: Omit<Interaction, 'id'>
   ) => {
     dispatch({ type: 'UPDATE_INTERACTION', payload: { nodeId, interactionId, interaction } });
+  };
+
+  // ===== Global Components =====
+
+  const makeGlobalComponent = (nodeId: string, name: string) => {
+    dispatch({ type: 'MAKE_GLOBAL_COMPONENT', payload: { nodeId, name } });
+  };
+
+  const insertGlobalComponentInstance = (globalComponentId: string, parentId?: string, index?: number) => {
+    dispatch({ type: 'INSERT_GLOBAL_COMPONENT_INSTANCE', payload: { globalComponentId, parentId, index } });
+  };
+
+  const updateGlobalComponent = (globalComponentId: string, node: ComponentNode) => {
+    dispatch({ type: 'UPDATE_GLOBAL_COMPONENT', payload: { globalComponentId, node } });
+  };
+
+  const deleteGlobalComponent = (globalComponentId: string) => {
+    dispatch({ type: 'DELETE_GLOBAL_COMPONENT', payload: { globalComponentId } });
+  };
+
+  const detachGlobalComponentInstance = (nodeId: string) => {
+    dispatch({ type: 'DETACH_GLOBAL_COMPONENT_INSTANCE', payload: { nodeId } });
+  };
+
+  const setEditingGlobalComponent = (globalComponentId: string | null) => {
+    dispatch({ type: 'SET_EDITING_GLOBAL_COMPONENT', payload: { globalComponentId } });
   };
 
   // ===== Cloud Save =====
@@ -649,6 +691,14 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     addInteraction,
     removeInteraction,
     updateInteraction,
+    globalComponents: currentProject?.globalComponents || [],
+    editingGlobalComponentId: state.editingGlobalComponentId,
+    makeGlobalComponent,
+    insertGlobalComponentInstance,
+    updateGlobalComponent,
+    deleteGlobalComponent,
+    detachGlobalComponentInstance,
+    setEditingGlobalComponent,
     isDirty: state.isDirty,
     markSaved,
   };

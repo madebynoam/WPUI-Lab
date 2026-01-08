@@ -16,6 +16,9 @@ export interface ComponentNode {
   children?: ComponentNode[];
   collapsed?: boolean;
   width?: 'content' | 'full'; // Optional width override for layout containers
+  // Global component metadata
+  isGlobalInstance?: boolean; // True if this is an instance of a global component
+  globalComponentId?: string; // ID of the global component definition this instance references
 }
 
 // Pattern node - same as ComponentNode but without id (assigned on insert)
@@ -47,6 +50,7 @@ export interface Project {
   version: number; // Tree structure version (current: 3)
   pages: Page[];
   currentPageId: string;
+  globalComponents?: ComponentNode[]; // Reusable components that can be instantiated across pages
   createdAt: number;
   lastModified: number;
   isExampleProject?: boolean; // If true, this project cannot be deleted
