@@ -832,25 +832,39 @@ export const PageConnectors: React.FC<PageConnectorsProps> = ({
       <defs>
         <marker
           id="arrowhead"
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
+          markerWidth="6"
+          markerHeight="6"
+          refX="5"
+          refY="3"
           orient="auto"
           markerUnits="strokeWidth"
         >
-          <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1" />
+          <path
+            d="M 0 0 L 5 3 L 0 6"
+            fill="none"
+            stroke="#6366f1"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </marker>
         <marker
           id="arrowhead-hover"
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
+          markerWidth="6"
+          markerHeight="6"
+          refX="5"
+          refY="3"
           orient="auto"
           markerUnits="strokeWidth"
         >
-          <polygon points="0 0, 10 3.5, 0 7" fill="#818cf8" />
+          <path
+            d="M 0 0 L 5 3 L 0 6"
+            fill="none"
+            stroke="#818cf8"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </marker>
       </defs>
       
