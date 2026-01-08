@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { ViewportPreset, VIEWPORT_PRESETS } from './ProjectCanvas';
 
 interface CanvasControlsProps {
   zoom: number;
@@ -10,7 +11,37 @@ interface CanvasControlsProps {
   onFitToView: () => void;
   onAutoArrange: () => void;
   onClose: () => void;
+  viewportPreset: ViewportPreset;
+  onViewportChange: (preset: ViewportPreset) => void;
 }
+
+// Device icons for viewport presets
+const ViewportIcon: React.FC<{ preset: ViewportPreset; size?: number }> = ({ preset, size = 18 }) => {
+  switch (preset) {
+    case 'mobile':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <rect x="7" y="2" width="10" height="20" rx="2" />
+          <line x1="12" y1="18" x2="12" y2="18.01" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'tablet':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <rect x="4" y="3" width="16" height="18" rx="2" />
+          <line x1="12" y1="17" x2="12" y2="17.01" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'desktop':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <path d="M8 21h8" />
+          <path d="M12 17v4" />
+        </svg>
+      );
+  }
+};
 
 export const CanvasControls: React.FC<CanvasControlsProps> = ({
   zoom,
@@ -20,8 +51,11 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   onFitToView,
   onAutoArrange,
   onClose,
+  viewportPreset,
+  onViewportChange,
 }) => {
   const zoomPercentage = Math.round(zoom * 100);
+  const viewportPresets: ViewportPreset[] = ['mobile', 'tablet', 'desktop'];
 
   return (
     <>
@@ -71,6 +105,54 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           alignItems: 'center',
         }}
       >
+        {/* Viewport selector */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            borderRadius: 8,
+            padding: '4px',
+          }}
+        >
+          {viewportPresets.map((preset) => (
+            <button
+              key={preset}
+              onClick={() => onViewportChange(preset)}
+              style={{
+                width: 32,
+                height: 28,
+                borderRadius: 4,
+                border: 'none',
+                backgroundColor: viewportPreset === preset ? '#3858e9' : 'transparent',
+                color: viewportPreset === preset ? '#fff' : '#1e1e1e',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background-color 0.15s ease, color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (viewportPreset !== preset) {
+                  e.currentTarget.style.backgroundColor = '#f0f0f0';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (viewportPreset !== preset) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+              title={`${VIEWPORT_PRESETS[preset].label} (${VIEWPORT_PRESETS[preset].width}×${VIEWPORT_PRESETS[preset].height})`}
+            >
+              <ViewportIcon preset={preset} size={16} />
+            </button>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' }} />
+
         {/* Auto-arrange button */}
         <button
           onClick={onAutoArrange}

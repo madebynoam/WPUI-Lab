@@ -13,10 +13,16 @@ import { unlock } from '@/utils/wordpressPrivateApis';
 
 const { ThemeProvider } = unlock(themePrivateApis);
 
-// Constants for page thumbnail sizing
-const THUMB_WIDTH = 400;  // Canvas units
-const THUMB_HEIGHT = 300; // Canvas units
-const CONTENT_SCALE = 0.25; // Page content scaled to 25%
+// Viewport presets for different device sizes
+export type ViewportPreset = 'mobile' | 'tablet' | 'desktop';
+
+export const VIEWPORT_PRESETS: Record<ViewportPreset, { width: number; height: number; label: string; scale: number }> = {
+  mobile: { width: 375, height: 667, label: 'Mobile', scale: 0.5 },
+  tablet: { width: 768, height: 1024, label: 'Tablet', scale: 0.35 },
+  desktop: { width: 1440, height: 900, label: 'Desktop', scale: 0.25 },
+};
+
+// Constants for page layout
 const PAGE_GAP = 100; // Gap between pages in grid layout
 const GRID_COLUMNS = 3; // Number of columns in auto-layout
 
@@ -30,15 +36,15 @@ interface PageWithVisibility extends Page {
 }
 
 // Calculate auto-layout positions for pages
-function calculateAutoLayout(pages: Page[]): Record<string, { x: number; y: number }> {
+function calculateAutoLayout(pages: Page[], thumbWidth: number, thumbHeight: number): Record<string, { x: number; y: number }> {
   const positions: Record<string, { x: number; y: number }> = {};
   
   pages.forEach((page, index) => {
     const col = index % GRID_COLUMNS;
     const row = Math.floor(index / GRID_COLUMNS);
     positions[page.id] = {
-      x: col * (THUMB_WIDTH + PAGE_GAP),
-      y: row * (THUMB_HEIGHT + PAGE_GAP + 40), // Extra space for label
+      x: col * (thumbWidth + PAGE_GAP),
+      y: row * (thumbHeight + PAGE_GAP + 40), // Extra space for label
     };
   });
   
@@ -54,12 +60,12 @@ function rectsIntersect(
 }
 
 // Get page bounds in canvas coordinates
-function getPageBounds(position: { x: number; y: number }): { left: number; top: number; right: number; bottom: number } {
+function getPageBounds(position: { x: number; y: number }, thumbWidth: number, thumbHeight: number): { left: number; top: number; right: number; bottom: number } {
   return {
     left: position.x,
     top: position.y,
-    right: position.x + THUMB_WIDTH,
-    bottom: position.y + THUMB_HEIGHT + 40, // Include label space
+    right: position.x + thumbWidth,
+    bottom: position.y + thumbHeight + 40, // Include label space
   };
 }
 
@@ -77,6 +83,9 @@ const PageThumbnail = React.memo(function PageThumbnail({
   isDragging,
   dragOffset,
   zoom,
+  thumbWidth,
+  thumbHeight,
+  contentScale,
   onPointerDown,
   onClick,
   onDoubleClick,
@@ -88,6 +97,9 @@ const PageThumbnail = React.memo(function PageThumbnail({
   isDragging: boolean;
   dragOffset: { x: number; y: number };
   zoom: number;
+  thumbWidth: number;
+  thumbHeight: number;
+  contentScale: number;
   onPointerDown: (e: React.PointerEvent, pageId: string) => void;
   onClick: (pageId: string) => void;
   onDoubleClick: (pageId: string) => void;
@@ -112,7 +124,7 @@ const PageThumbnail = React.memo(function PageThumbnail({
         position: 'absolute',
         left: actualPosition.x,
         top: actualPosition.y,
-        width: THUMB_WIDTH,
+        width: thumbWidth,
         cursor: isDragging ? 'grabbing' : 'grab',
         zIndex: isDragging ? 1000 : 1,
         transition: isDragging ? 'none' : 'box-shadow 0.2s ease',
@@ -130,8 +142,8 @@ const PageThumbnail = React.memo(function PageThumbnail({
       {/* Page content container */}
       <div
         style={{
-          width: THUMB_WIDTH,
-          height: THUMB_HEIGHT,
+          width: thumbWidth,
+          height: thumbHeight,
           borderRadius: 8,
           overflow: 'hidden',
           boxShadow: isSelected
@@ -146,9 +158,9 @@ const PageThumbnail = React.memo(function PageThumbnail({
         {/* Scaled content wrapper */}
         <div
           style={{
-            width: THUMB_WIDTH / CONTENT_SCALE,
-            height: THUMB_HEIGHT / CONTENT_SCALE,
-            transform: `scale(${CONTENT_SCALE})`,
+            width: thumbWidth / contentScale,
+            height: thumbHeight / contentScale,
+            transform: `scale(${contentScale})`,
             transformOrigin: '0 0',
             pointerEvents: 'none',
             overflow: 'hidden',
@@ -225,6 +237,15 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
   // This avoids conflicts with Editor's URL sync effect
   const [selectedPageId, setSelectedPageId] = useState<string>(currentPageId);
 
+  // Viewport preset state
+  const [viewportPreset, setViewportPreset] = useState<ViewportPreset>('desktop');
+  
+  // Calculate thumbnail dimensions from viewport preset
+  const viewport = VIEWPORT_PRESETS[viewportPreset];
+  const thumbWidth = viewport.width * viewport.scale;
+  const thumbHeight = viewport.height * viewport.scale;
+  const contentScale = viewport.scale;
+
   // Pan and zoom state
   const [pan, setPan] = useState({ x: 100, y: 100 });
   const [zoom, setZoom] = useState(1);
@@ -247,10 +268,10 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
   useEffect(() => {
     const hasPositions = pages.some(p => p.canvasPosition);
     if (!hasPositions && pages.length > 0) {
-      const positions = calculateAutoLayout(pages);
+      const positions = calculateAutoLayout(pages, thumbWidth, thumbHeight);
       updateAllPageCanvasPositions(positions);
     }
-  }, [pages, updateAllPageCanvasPositions]);
+  }, [pages, updateAllPageCanvasPositions, thumbWidth, thumbHeight]);
 
   // Track viewport size
   useEffect(() => {
@@ -271,14 +292,14 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
   // Get page positions (use stored or calculate default)
   const pagePositions = useMemo(() => {
     const positions: Record<string, { x: number; y: number }> = {};
-    const defaultPositions = calculateAutoLayout(pages);
+    const defaultPositions = calculateAutoLayout(pages, thumbWidth, thumbHeight);
     
     pages.forEach((page) => {
       positions[page.id] = page.canvasPosition || defaultPositions[page.id] || { x: 0, y: 0 };
     });
     
     return positions;
-  }, [pages]);
+  }, [pages, thumbWidth, thumbHeight]);
 
   // Live page positions that include drag offset for real-time arrow updates
   const livePagePositions = useMemo(() => {
@@ -321,10 +342,10 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
       const position = pagePositions[page.id] || { x: 0, y: 0 };
       return {
         ...page,
-        isVisible: rectsIntersect(getPageBounds(position), expandedRect),
+        isVisible: rectsIntersect(getPageBounds(position, thumbWidth, thumbHeight), expandedRect),
       };
     });
-  }, [pages, pan, zoom, viewportSize, pagePositions]);
+  }, [pages, pan, zoom, viewportSize, pagePositions, thumbWidth, thumbHeight]);
 
   // Handle wheel for zoom - using refs to avoid stale closures
   const panRef = useRef(pan);
@@ -481,8 +502,8 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
       const pos = pagePositions[page.id] || { x: 0, y: 0 };
       minX = Math.min(minX, pos.x);
       minY = Math.min(minY, pos.y);
-      maxX = Math.max(maxX, pos.x + THUMB_WIDTH);
-      maxY = Math.max(maxY, pos.y + THUMB_HEIGHT + 40);
+      maxX = Math.max(maxX, pos.x + thumbWidth);
+      maxY = Math.max(maxY, pos.y + thumbHeight + 40);
     });
     
     const contentWidth = maxX - minX;
@@ -508,16 +529,16 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
       y: (viewportSize.height - scaledHeight) / 2 - minY * newZoom,
     });
     setZoom(newZoom);
-  }, [pages, pagePositions, viewportSize]);
+  }, [pages, pagePositions, viewportSize, thumbWidth, thumbHeight]);
 
   // Auto-arrange pages
   const handleAutoArrange = useCallback(() => {
-    const positions = calculateAutoLayout(pages);
+    const positions = calculateAutoLayout(pages, thumbWidth, thumbHeight);
     updateAllPageCanvasPositions(positions);
     
     // Fit to view after arranging
     setTimeout(handleFitToView, 50);
-  }, [pages, updateAllPageCanvasPositions, handleFitToView]);
+  }, [pages, updateAllPageCanvasPositions, handleFitToView, thumbWidth, thumbHeight]);
 
   // Reset zoom to 100%
   const handleResetZoom = useCallback(() => {
@@ -599,6 +620,9 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
             isDragging={page.id === draggingPageId}
             dragOffset={page.id === draggingPageId ? dragOffset : { x: 0, y: 0 }}
             zoom={zoom}
+            thumbWidth={thumbWidth}
+            thumbHeight={thumbHeight}
+            contentScale={contentScale}
             onPointerDown={handlePagePointerDown}
             onClick={handlePageClick}
             onDoubleClick={handlePageDoubleClick}
@@ -609,8 +633,8 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
         <PageConnectors
           pages={pages}
           pagePositions={livePagePositions}
-          thumbWidth={THUMB_WIDTH}
-          thumbHeight={THUMB_HEIGHT}
+          thumbWidth={thumbWidth}
+          thumbHeight={thumbHeight}
           zoom={zoom}
         />
       </div>
@@ -624,6 +648,8 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
         onFitToView={handleFitToView}
         onAutoArrange={handleAutoArrange}
         onClose={onClose}
+        viewportPreset={viewportPreset}
+        onViewportChange={setViewportPreset}
       />
     </div>
   );
