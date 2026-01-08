@@ -60,25 +60,6 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
         </svg>
       </button>
 
-      {/* Title - top center */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: '#fff',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          color: '#1e1e1e',
-          padding: '8px 20px',
-          borderRadius: 8,
-          fontSize: 14,
-          fontWeight: 500,
-        }}
-      >
-        All Pages
-      </div>
-
       {/* Controls bar - bottom right */}
       <div
         style={{

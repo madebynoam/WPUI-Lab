@@ -292,6 +292,7 @@ function EditorContent({ binId, pageId }: EditorProps) {
                 onToggleCanvasView={() => setIsCanvasView(prev => !prev)}
                 binId={binId}
                 pageId={pageId}
+                projectName={currentProject?.name}
                 // Cloud save props
                 isDirty={isDirty}
                 isSaving={isSaving}
