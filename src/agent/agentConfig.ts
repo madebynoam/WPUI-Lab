@@ -65,14 +65,14 @@ export const AGENT_MODELS = {
   Classifier: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_5 },
 
   // Specialist agents
-  PageAgent: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_4O_MINI },
+  PageAgent: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_5 },
   CreatorAgent: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_5 },
-  UpdateAgent: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_4O_MINI },
+  UpdateAgent: { provider: Providers.OPENAI, model: Models.OpenAI.GPT_5 },
 
   // Validation agent
   ValidatorAgent: {
     provider: Providers.OPENAI,
-    model: Models.OpenAI.GPT_4O_MINI,
+    model: Models.OpenAI.GPT_5,
   },
 } as const;
 

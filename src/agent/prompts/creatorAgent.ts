@@ -163,10 +163,10 @@ JSX SYNTAX AND COMPONENTS (buildFromMarkup only):
 **When to wrap in Grid:**
 - Creating the FIRST components on an EMPTY page
 - Creating a complete dashboard/page layout from scratch
+- **Adding MULTIPLE related components (2+) to an existing page** - wrap in Grid with gridColumnSpan={12} so they can be manipulated as a group
 
 **When NOT to wrap in Grid (just add components directly):**
-- Adding components to an existing page that already has content
-- Creating components that will be siblings to existing components
+- Adding a SINGLE component to an existing page
 - When you see the request is part of a multi-step workflow (multiple buildFromMarkup calls)
 
 **Grid Layout (when wrapping):**
@@ -174,14 +174,20 @@ JSX SYNTAX AND COMPONENTS (buildFromMarkup only):
 - Children use gridColumnSpan to control width (spans must add up to 12)
 - VStack/HStack are ONLY allowed INSIDE Card parts or as Grid children with gridColumnSpan={12}
 
-Examples WITH Grid wrapper (empty page):
+Examples WITH Grid wrapper (empty page OR multiple components):
 - Single item (full width): <Grid columns={12}><Card gridColumnSpan={12}>...</Card></Grid>
 - Two items (half width each): <Grid columns={12}><Card gridColumnSpan={6}>...</Card><Card gridColumnSpan={6}>...</Card></Grid>
 - Three items (third width each): <Grid columns={12}><Card gridColumnSpan={4}>...</Card><Card gridColumnSpan={4}>...</Card><Card gridColumnSpan={4}>...</Card></Grid>
 
-Examples WITHOUT Grid wrapper (adding to existing page):
+Examples WITHOUT Grid wrapper (adding single component to existing page):
 - Single card: <Card gridColumnSpan={4}>...</Card>
-- Multiple cards: <Card gridColumnSpan={4}>...</Card><Card gridColumnSpan={4}>...</Card><Card gridColumnSpan={4}>...</Card>
+
+**IMPORTANT: When adding multiple cards, wrap in full-width Grid for easy manipulation:**
+<Grid columns={12} gridColumnSpan={12}>
+  <Card gridColumnSpan={4}>...</Card>
+  <Card gridColumnSpan={4}>...</Card>
+  <Card gridColumnSpan={4}>...</Card>
+</Grid>
 
 **CRITICAL: COMPONENT HIERARCHY RULES**
 
@@ -259,23 +265,25 @@ Testimonials (3 cards):
   <Card gridColumnSpan={4}>...</Card>
 </Grid>
 
-**SCENARIO 2: Adding to EXISTING page (multi-step workflow)**
-NO Grid wrapper - just add components:
+**SCENARIO 2: Adding MULTIPLE components to EXISTING page**
+Wrap in Grid with gridColumnSpan={12} for easy group manipulation:
 
 Adding pricing cards (after page already created):
-<Card gridColumnSpan={4}>
-  <CardHeader><Heading level={3}>Free</Heading></CardHeader>
-  <CardBody>
-    <VStack spacing={4}>
-      <Heading level={2}>$0</Heading>
-      <Text>✓ Feature 1</Text>
-      <Text>✓ Feature 2</Text>
-      <Button variant="primary">Select</Button>
-    </VStack>
-  </CardBody>
-</Card>
-<Card gridColumnSpan={4}>...</Card>
-<Card gridColumnSpan={4}>...</Card>
+<Grid columns={12} gridColumnSpan={12}>
+  <Card gridColumnSpan={4}>
+    <CardHeader><Heading level={3}>Free</Heading></CardHeader>
+    <CardBody>
+      <VStack spacing={4}>
+        <Heading level={2}>$0</Heading>
+        <Text>✓ Feature 1</Text>
+        <Text>✓ Feature 2</Text>
+        <Button variant="primary">Select</Button>
+      </VStack>
+    </CardBody>
+  </Card>
+  <Card gridColumnSpan={4}>...</Card>
+  <Card gridColumnSpan={4}>...</Card>
+</Grid>
 
 **SCENARIO 3: Dashboard with sidebar (EMPTY page)**
 Use Grid wrapper for complete layout:

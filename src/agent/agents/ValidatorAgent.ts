@@ -98,17 +98,25 @@ CRITICAL: ONLY use the MEMORY ENTRIES below to determine what was completed. If 
 
 Break down the user request into individual tasks and check if each was completed by looking for corresponding memory entries.
 
-RULES:
-1. Count each distinct item requested as a separate task
+RULES FOR COUNTING TASKS:
+1. ONLY count distinct items from the USER REQUEST, not internal operations
    - "Create a page with pricing cards and testimonials" = 3 tasks (page, pricing cards, testimonials)
-   - "Add 3 pricing cards" = 1 task (the cards are a single request)
-2. For EACH task in the user request, check if there's a corresponding memory entry
+   - "Add 3 pricing cards" = 1 task (multiple similar items count as one request)
+   - "Add 4 pricing cards and 2 description cards" = 2 tasks (two different types of content)
+
+2. IGNORE duplicate/repeated memory entries - only count if it matches a user task
+   - If user asked for pricing cards (1 task) and you see 2 memory entries for cards, it's still 1 completed task
+
+3. Match user tasks to memory entries:
    - "Create a page X" → Look for "page created: Page" memory entry
-   - "Add cards" → Look for "component created: Card" memory entry
+   - "Add pricing cards" → Look for ANY "component created" memory entry mentioning cards
    - "Add table" → Look for "component created: DataViews" or "component created: Grid" memory entry
-3. If a memory entry exists for a requested action, that task IS completed
-4. If everything requested was done: respond with "X/X" format
-5. If only some tasks completed: respond with "X out of Y" format
+
+4. Completion format:
+   - If everything requested was done: respond with "X/X" format
+   - If only some tasks completed: respond with "X out of Y" format
+
+5. CRITICAL: Never return more completed tasks than total tasks (e.g., "3/2" is wrong!)
 
 MEMORY ENTRIES (what was actually done):
 ${memoryContext}

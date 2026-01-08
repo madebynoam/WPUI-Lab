@@ -736,6 +736,13 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
       const result = await parseMarkupWithRepair(params.markup);
 
       if (!result.success || !result.nodes) {
+        // Log the actual markup for debugging (only on failure)
+        console.error('[buildFromMarkup] Parse failed. Generated markup:');
+        console.error('--- MARKUP START ---');
+        console.error(params.markup);
+        console.error('--- MARKUP END ---');
+        console.error('[buildFromMarkup] Error:', result.error);
+
         return {
           success: false,
           message: `Failed to parse markup: ${result.error}`,
@@ -773,6 +780,13 @@ IMPORTANT: Types like "Container", "Section", "Div" do NOT exist. Only use the c
         },
       };
     } catch (error) {
+      // Log the actual markup for debugging (only on failure)
+      console.error('[buildFromMarkup] Unexpected error. Generated markup:');
+      console.error('--- MARKUP START ---');
+      console.error(params.markup);
+      console.error('--- MARKUP END ---');
+      console.error('[buildFromMarkup] Error:', error);
+
       return {
         success: false,
         message: `Failed to parse markup: ${

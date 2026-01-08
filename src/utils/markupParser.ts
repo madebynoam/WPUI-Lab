@@ -943,7 +943,8 @@ function parseExpressionValue(state: ParseState): any {
     try {
       const jsonExpr = expr
         .replace(/'/g, '"')  // Convert single quotes to double quotes
-        .replace(/(\w+):/g, '"$1":');  // Quote unquoted keys
+        .replace(/(\w+):/g, '"$1":')  // Quote unquoted keys
+        .replace(/,(\s*[}\]])/g, '$1');  // Remove trailing commas in arrays/objects
       return JSON.parse(jsonExpr);
     } catch {
       throw createError(state, `Invalid expression: ${expr}`);
