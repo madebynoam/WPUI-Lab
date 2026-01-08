@@ -12,6 +12,7 @@ interface PageConnectorsProps {
   pagePositions: Record<string, { x: number; y: number }>;
   thumbWidth: number;
   thumbHeight: number;
+  zoom: number;
 }
 
 // Which edge of a page rectangle
@@ -767,11 +768,51 @@ function useRoutedConnections(
 // COMPONENT
 // =============================================================================
 
+/**
+ * Calculate arrowhead points at the end of a path
+ */
+function calculateArrowhead(
+  endX: number,
+  endY: number,
+  controlX: number,
+  controlY: number,
+  size: number
+): { x1: number; y1: number; x2: number; y2: number } {
+  // Direction from control point to end point
+  const dx = endX - controlX;
+  const dy = endY - controlY;
+  const len = Math.hypot(dx, dy);
+  
+  if (len === 0) {
+    return { x1: endX, y1: endY - size, x2: endX, y2: endY + size };
+  }
+  
+  // Normalized direction
+  const nx = dx / len;
+  const ny = dy / len;
+  
+  // Perpendicular
+  const px = -ny;
+  const py = nx;
+  
+  // Arrowhead points (two lines forming a chevron)
+  const arrowLen = size;
+  const arrowWidth = size * 0.6;
+  
+  return {
+    x1: endX - nx * arrowLen + px * arrowWidth,
+    y1: endY - ny * arrowLen + py * arrowWidth,
+    x2: endX - nx * arrowLen - px * arrowWidth,
+    y2: endY - ny * arrowLen - py * arrowWidth,
+  };
+}
+
 export const PageConnectors: React.FC<PageConnectorsProps> = ({
   pages,
   pagePositions,
   thumbWidth,
   thumbHeight,
+  zoom,
 }) => {
   const [hoveredConnection, setHoveredConnection] = useState<string | null>(null);
   
@@ -828,51 +869,27 @@ export const PageConnectors: React.FC<PageConnectorsProps> = ({
       }}
       viewBox={`${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`}
     >
-      {/* Arrow marker definitions */}
-      <defs>
-        <marker
-          id="arrowhead"
-          markerWidth="6"
-          markerHeight="6"
-          refX="5"
-          refY="3"
-          orient="auto"
-          markerUnits="strokeWidth"
-        >
-          <path
-            d="M 0 0 L 5 3 L 0 6"
-            fill="none"
-            stroke="#6366f1"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </marker>
-        <marker
-          id="arrowhead-hover"
-          markerWidth="6"
-          markerHeight="6"
-          refX="5"
-          refY="3"
-          orient="auto"
-          markerUnits="strokeWidth"
-        >
-          <path
-            d="M 0 0 L 5 3 L 0 6"
-            fill="none"
-            stroke="#818cf8"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </marker>
-      </defs>
-      
       {routedConnections.map((connection) => {
         if (!connection.path) return null;
 
         const isHovered = hoveredConnection === connection.id;
         
+        // Counter-scale sizes to appear constant regardless of zoom
+        const strokeWidth = (isHovered ? 2 : 1.5) / zoom;
+        const dotRadius = (isHovered ? 4 : 3) / zoom;
+        const arrowSize = 8 / zoom;
+        const dashArray = `${6 / zoom} ${3 / zoom}`;
+        
+        // Calculate arrowhead at target
+        const arrow = calculateArrowhead(
+          connection.targetPort.x,
+          connection.targetPort.y,
+          // Use the second control point direction (from bezier)
+          connection.targetPort.x + getEdgeDirection(connection.targetPort.edge).x * 50,
+          connection.targetPort.y + getEdgeDirection(connection.targetPort.edge).y * 50,
+          arrowSize
+        );
+
         return (
           <g key={connection.id}>
             {/* Invisible wider path for easier clicking */}
@@ -880,34 +897,44 @@ export const PageConnectors: React.FC<PageConnectorsProps> = ({
               d={connection.path}
               fill="none"
               stroke="transparent"
-              strokeWidth={20}
+              strokeWidth={20 / zoom}
               style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
               onMouseEnter={() => setHoveredConnection(connection.id)}
               onMouseLeave={() => setHoveredConnection(null)}
               onClick={() => handleConnectionClick(connection)}
             />
-            
+
             {/* Visible path */}
             <path
               d={connection.path}
               fill="none"
               stroke={isHovered ? '#818cf8' : '#6366f1'}
-              strokeWidth={isHovered ? 3 : 2}
-              strokeDasharray={isHovered ? 'none' : '8 4'}
-              markerEnd={isHovered ? 'url(#arrowhead-hover)' : 'url(#arrowhead)'}
+              strokeWidth={strokeWidth}
+              strokeDasharray={isHovered ? 'none' : dashArray}
               style={{
-                transition: 'stroke 0.15s ease, stroke-width 0.15s ease',
+                transition: 'stroke 0.15s ease',
                 pointerEvents: 'none',
               }}
             />
             
+            {/* Arrowhead (two lines) */}
+            <path
+              d={`M ${arrow.x1} ${arrow.y1} L ${connection.targetPort.x} ${connection.targetPort.y} L ${arrow.x2} ${arrow.y2}`}
+              fill="none"
+              stroke={isHovered ? '#818cf8' : '#6366f1'}
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ pointerEvents: 'none' }}
+            />
+
             {/* Connection dot at source */}
             <circle
               cx={connection.sourcePort.x}
               cy={connection.sourcePort.y}
-              r={isHovered ? 5 : 4}
+              r={dotRadius}
               fill={isHovered ? '#818cf8' : '#6366f1'}
-              style={{ transition: 'r 0.15s ease, fill 0.15s ease' }}
+              style={{ transition: 'fill 0.15s ease' }}
             />
           </g>
         );

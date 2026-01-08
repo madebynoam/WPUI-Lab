@@ -358,7 +358,7 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
         
         // Calculate new zoom
         const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = clamp(currentZoom * zoomFactor, 0.1, 2);
+        const newZoom = clamp(currentZoom * zoomFactor, 0.1, 5);
         
         // Adjust pan so mouse stays over same canvas point
         setPan({
@@ -526,11 +526,11 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
 
   // Zoom in/out handlers
   const handleZoomIn = useCallback(() => {
-    setZoom(prev => clamp(prev * 1.2, 0.1, 2));
+    setZoom(prev => clamp(prev * 1.2, 0.1, 5));
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setZoom(prev => clamp(prev / 1.2, 0.1, 2));
+    setZoom(prev => clamp(prev / 1.2, 0.1, 5));
   }, []);
 
   // Keyboard shortcuts
@@ -611,6 +611,7 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
           pagePositions={livePagePositions}
           thumbWidth={THUMB_WIDTH}
           thumbHeight={THUMB_HEIGHT}
+          zoom={zoom}
         />
       </div>
       
