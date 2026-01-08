@@ -446,10 +446,15 @@ export const generatePageCode = (
   };
   nodes.forEach(collectComponents);
 
-  // Collect all interactions and create handler map
+  // Collect all interactions and create handler map (skip global component instances)
   const handlerMap: Record<string, string> = {};
   const handlers: string[] = [];
-  const collectInteractions = (node: ComponentNode) => {
+  const collectInteractions = (node: ComponentNode, skipGlobalInstances = true) => {
+    // Skip global component instances - their interactions are handled in the global component function
+    if (skipGlobalInstances && node.isGlobalInstance && node.globalComponentId) {
+      return;
+    }
+
     if (node.interactions && node.interactions.length > 0) {
       node.interactions.forEach((interaction) => {
         // Generate semantic handler name from trigger type
@@ -469,10 +474,10 @@ export const generatePageCode = (
       });
     }
     if (node.children) {
-      node.children.forEach(collectInteractions);
+      node.children.forEach((child) => collectInteractions(child, skipGlobalInstances));
     }
   };
-  nodes.forEach(collectInteractions);
+  nodes.forEach((node) => collectInteractions(node, true));
 
   // Generate imports
   const imports: string[] = [];
@@ -562,8 +567,37 @@ export const generatePageCode = (
         // Generate function name from component name
         const functionName = (globalComp.name || globalComp.type).replace(/[^a-zA-Z0-9]/g, '');
 
-        // Generate the component body
-        const gcCode = generateNodeCode(globalComp, 1, true, {}, new Map());
+        // Collect interactions from this global component
+        const gcHandlerMap: Record<string, string> = {};
+        const gcHandlers: string[] = [];
+
+        // Create handler map and handlers for this global component
+        const collectGCInteractions = (node: ComponentNode) => {
+          if (node.interactions && node.interactions.length > 0) {
+            node.interactions.forEach((interaction) => {
+              const triggerBase = interaction.trigger.replace('on', '');
+              const uniqueSuffix = interaction.id.replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+              const handlerName = `handle${triggerBase}_${uniqueSuffix}`;
+
+              gcHandlerMap[node.id] = handlerName;
+
+              if (interaction.trigger === 'onClick' && interaction.action === 'navigate') {
+                gcHandlers.push(
+                  `    const ${handlerName} = (e) => {\n      e?.stopPropagation();\n      window.location.pathname = window.location.pathname.replace(/\\/[^\\/]+$/, '/${interaction.targetId}');\n    };`
+                );
+              }
+            });
+          }
+          if (node.children) {
+            node.children.forEach(collectGCInteractions);
+          }
+        };
+        collectGCInteractions(globalComp);
+
+        // Generate the component body with handlers
+        const gcCode = generateNodeCode(globalComp, 1, true, gcHandlerMap, new Map());
+
+        const gcHandlersSection = gcHandlers.length > 0 ? `${gcHandlers.join('\n\n')}\n\n` : '';
 
         globalComponentFunctions.push(`function ${functionName}({ gridColumnSpan, gridRowSpan }: any = {}) {
   const gridStyles = {
@@ -571,7 +605,7 @@ export const generatePageCode = (
     ...(gridRowSpan ? { gridRow: \`span \${gridRowSpan}\` } : {}),
   };
 
-  return (
+${gcHandlersSection}  return (
     <div style={gridStyles}>
 ${gcCode.split('\n').map((line) => '      ' + line).join('\n')}
     </div>
