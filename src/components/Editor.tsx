@@ -40,13 +40,15 @@ function EditorContent({ binId, pageId }: EditorProps) {
   // Cloud save state - binId from route IS the cloud identifier
   const { loadProject, saveProject, isSaving } = useCloudProject();
   const [cloudMeta, setCloudMeta] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Check if project is already loaded in context (survives route changes)
-  const isProjectLoaded = currentProject && currentProject.pages?.some((p: any) => p.id === pageId || currentPageId);
+  // Check if the CORRECT project is already loaded (binId stored in project matches URL)
+  const isCorrectProjectLoaded = currentProject?.binId === binId;
 
-  // Load from cloud on mount (only if project not already in context)
+  // Load from cloud on mount (only if correct project not already in context)
   useEffect(() => {
-    if (binId && !isProjectLoaded) {
+    if (binId && !isCorrectProjectLoaded && !isLoading) {
+      setIsLoading(true);
       loadProject(binId).then(data => {
         if (data?.project) {
           // Ensure each page has a root grid (fix for old projects)
@@ -59,6 +61,7 @@ function EditorContent({ binId, pageId }: EditorProps) {
           };
           const fixedProject = {
             ...data.project,
+            binId, // Store the cloud binId in the project
             pages: data.project.pages.map((page: any) => ({
               ...page,
               tree: page.tree?.length > 0 ? page.tree : [rootGrid],
@@ -78,12 +81,14 @@ function EditorContent({ binId, pageId }: EditorProps) {
           // Mark as saved since we just loaded from cloud
           markSaved();
         }
+      }).finally(() => {
+        setIsLoading(false);
       });
-    } else if (isProjectLoaded && currentPageId !== pageId) {
-      // Project already loaded, just switch page
+    } else if (isCorrectProjectLoaded && currentPageId !== pageId) {
+      // Correct project already loaded, just switch page
       setCurrentPage(pageId);
     }
-  }, [binId, loadProject, importProject, pageId, setCurrentPage, isProjectLoaded, currentPageId, markSaved]);
+  }, [binId, loadProject, importProject, pageId, setCurrentPage, isCorrectProjectLoaded, currentPageId, markSaved]);
 
   // Warn before close if unsaved changes
   useEffect(() => {
@@ -222,8 +227,8 @@ function EditorContent({ binId, pageId }: EditorProps) {
     router.push('/');
   }, [isDirty, router]);
 
-  // Show loading state while loading from cloud
-  if (binId && !isProjectLoaded) {
+  // Show loading state only while actively loading from cloud
+  if (isLoading) {
     return (
       <div style={{
         display: 'flex',

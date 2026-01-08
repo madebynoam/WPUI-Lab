@@ -54,6 +54,7 @@ export interface Project {
   createdAt: number;
   lastModified: number;
   isExampleProject?: boolean; // If true, this project cannot be deleted
+  binId?: string; // Cloud storage ID (JSONBin/Supabase/localStorage key)
   theme?: {
     primaryColor?: string;
     backgroundColor?: string;
