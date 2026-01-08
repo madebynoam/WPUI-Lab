@@ -280,6 +280,19 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
     return positions;
   }, [pages]);
 
+  // Live page positions that include drag offset for real-time arrow updates
+  const livePagePositions = useMemo(() => {
+    if (!draggingPageId) return pagePositions;
+    
+    return {
+      ...pagePositions,
+      [draggingPageId]: {
+        x: (pagePositions[draggingPageId]?.x || 0) + dragOffset.x,
+        y: (pagePositions[draggingPageId]?.y || 0) + dragOffset.y,
+      },
+    };
+  }, [pagePositions, draggingPageId, dragOffset]);
+
   // Calculate visible pages based on viewport
   const visiblePages = useMemo((): PageWithVisibility[] => {
     if (viewportSize.width === 0) {
@@ -345,7 +358,7 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
         
         // Calculate new zoom
         const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = clamp(currentZoom * zoomFactor, 0.1, 2);
+        const newZoom = clamp(currentZoom * zoomFactor, 0.1, 5);
         
         // Adjust pan so mouse stays over same canvas point
         setPan({
@@ -513,11 +526,11 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
 
   // Zoom in/out handlers
   const handleZoomIn = useCallback(() => {
-    setZoom(prev => clamp(prev * 1.2, 0.1, 2));
+    setZoom(prev => clamp(prev * 1.2, 0.1, 5));
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setZoom(prev => clamp(prev / 1.2, 0.1, 2));
+    setZoom(prev => clamp(prev / 1.2, 0.1, 5));
   }, []);
 
   // Keyboard shortcuts
@@ -595,9 +608,10 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
         {/* Connector lines */}
         <PageConnectors
           pages={pages}
-          pagePositions={pagePositions}
+          pagePositions={livePagePositions}
           thumbWidth={THUMB_WIDTH}
           thumbHeight={THUMB_HEIGHT}
+          zoom={zoom}
         />
       </div>
       
