@@ -698,10 +698,10 @@ function useRoutedConnections(
       });
     });
 
-    // Filter out connections where target page doesn't exist
+    // Filter out connections where target page doesn't exist or is the same as source page
     const pageIds = new Set(pages.map((p) => p.id));
     const validConnections = connections.filter((conn) =>
-      pageIds.has(conn.targetPageId)
+      pageIds.has(conn.targetPageId) && conn.sourcePageId !== conn.targetPageId
     );
 
     if (validConnections.length === 0) {
