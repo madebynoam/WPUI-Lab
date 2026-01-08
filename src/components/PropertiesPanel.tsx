@@ -188,6 +188,8 @@ export const PropertiesPanel: React.FC = () => {
     updateProjectDescription,
     renameProject,
     isAgentExecuting,
+    globalComponents,
+    setEditingGlobalComponent,
   } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
@@ -442,6 +444,12 @@ export const PropertiesPanel: React.FC = () => {
 
   const definition = componentRegistry[firstNode.type];
   if (!definition) return null;
+
+  // Check if editing a global component instance
+  const isGlobalInstance = !isMultiSelect && firstNode.isGlobalInstance;
+  const globalComponent = isGlobalInstance
+    ? globalComponents.find(gc => gc.id === firstNode.globalComponentId)
+    : null;
 
   // Find parent to check if it's a Grid (only for single select)
   const parent = !isMultiSelect ? findParent(tree, selectedNodeIds[0]) : null;
@@ -853,8 +861,9 @@ export const PropertiesPanel: React.FC = () => {
                       onChange={(value) =>
                         handlePropChange(propDef.name, value)
                       }
-                      help={propDef.description}
+                      help={isGlobalInstance ? "Disabled for instances. Edit the master component to change this." : propDef.description}
                       placeholder="Type text... (Cmd+B for bold, Cmd+I for italic)"
+                      disabled={isGlobalInstance}
                     />
                   ) : propDef.type === "string" ? (
                     <TextControl
@@ -864,13 +873,16 @@ export const PropertiesPanel: React.FC = () => {
                         handlePropChange(propDef.name, value)
                       }
                       help={
-                        isMultiSelect && !isShared
+                        isGlobalInstance
+                          ? "Disabled for instances. Edit the master component to change this."
+                          : isMultiSelect && !isShared
                           ? `${propDef.description} (applying to all ${selectedNodes.length} items)`
                           : propDef.description
                       }
                       placeholder={
                         isMultiSelect && !isShared ? "Mixed values" : undefined
                       }
+                      disabled={isGlobalInstance}
                     />
                   ) : null}
 
@@ -927,8 +939,9 @@ export const PropertiesPanel: React.FC = () => {
                   {propDef.type === "boolean" && (() => {
                     // Check if this control should be disabled based on another prop's value
                     const disabledWhen = (propDef as any).disabledWhen;
-                    const isDisabled = disabledWhen &&
+                    const isDisabledByProp = disabledWhen &&
                       firstNode.props?.[disabledWhen.prop] === disabledWhen.value;
+                    const isDisabled = isGlobalInstance || isDisabledByProp;
 
                     return (
                       <ToggleControl
@@ -939,9 +952,11 @@ export const PropertiesPanel: React.FC = () => {
                         }
                         disabled={isDisabled}
                         help={
-                          isMultiSelect && !isShared
+                          isGlobalInstance
+                            ? "Disabled for instances. Edit the master component to change this."
+                            : isMultiSelect && !isShared
                             ? `${propDef.description} (applying to all ${selectedNodes.length} items)`
-                            : isDisabled
+                            : isDisabledByProp
                             ? `${propDef.description} (requires ${disabledWhen.prop} to be enabled)`
                             : propDef.description
                         }
@@ -1019,8 +1034,11 @@ export const PropertiesPanel: React.FC = () => {
                         onChange={(value) =>
                           handlePropChange(propDef.name, value)
                         }
+                        disabled={isGlobalInstance}
                         help={
-                          isMultiSelect && !isShared
+                          isGlobalInstance
+                            ? "Disabled for instances. Edit the master component to change this."
+                            : isMultiSelect && !isShared
                             ? `${propDef.description} (applying to all ${selectedNodes.length} items)`
                             : propDef.description
                         }
@@ -1434,6 +1452,35 @@ export const PropertiesPanel: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Global Component Instance Banner */}
+          {isGlobalInstance && globalComponent && (
+            <div
+              style={{
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                borderBottom: '1px solid rgba(139, 92, 246, 0.3)',
+                padding: '12px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <div style={{ fontSize: '12px', color: '#8b5cf6', fontWeight: 500 }}>
+                Instance of: {globalComponent.name || globalComponent.type}
+              </div>
+              <div style={{ fontSize: '11px', color: '#666' }}>
+                Layout properties can be edited here. To edit content, double-click this instance or:
+              </div>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setEditingGlobalComponent(firstNode.globalComponentId!)}
+                style={{ fontSize: '11px' }}
+              >
+                Edit Master Component
+              </Button>
+            </div>
+          )}
 
           {/* TabContainer */}
           <TabContainer

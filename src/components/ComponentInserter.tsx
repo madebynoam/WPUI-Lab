@@ -348,10 +348,7 @@ export const ComponentInserter: React.FC<ComponentInserterProps> = ({
               {filteredComponents.map((comp) => (
                 <button
                   key={comp.id}
-                  onClick={() => {
-                    console.log('[ComponentInserter] Button clicked for global component:', comp.id);
-                    onAddGlobalComponent?.(comp.id);
-                  }}
+                  onClick={() => onAddGlobalComponent?.(comp.id)}
                   style={{
                     padding: "8px 4px",
                     border: "none",

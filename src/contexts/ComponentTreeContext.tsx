@@ -233,14 +233,24 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
   );
 
   // Get current tree for convenience
+  // When in isolation mode (editingGlobalComponentId), return the global component as the tree
   const tree = useMemo(
     () => {
       if (!currentProject) {
         return [];
       }
+
+      // If editing a global component in isolation mode, return it as the tree
+      if (state.editingGlobalComponentId) {
+        const globalComponent = currentProject.globalComponents?.find(
+          gc => gc.id === state.editingGlobalComponentId
+        );
+        return globalComponent ? [globalComponent] : [];
+      }
+
       return getCurrentTree(currentProject.pages, currentProject.currentPageId);
     },
-    [currentProject]
+    [currentProject, state.editingGlobalComponentId]
   );
 
   // Get current pages and pageId from current project

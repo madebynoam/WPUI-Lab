@@ -19,7 +19,7 @@ export const RenderNode: React.FC<{
   node: ComponentNode;
   renderInteractive?: boolean;
 }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentPageId, currentProjectId, projects, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentPageId, currentProjectId, projects, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode, setEditingGlobalComponent } = useComponentTree();
   const playModeState = usePlayModeState();
   const router = useRouter();
   const params = useParams();
@@ -212,6 +212,25 @@ export const RenderNode: React.FC<{
       return;
     }
 
+    // DOUBLE-CLICK on global component instance - enter isolation mode to edit master
+    if (node.isGlobalInstance && selectedNodeIds.includes(node.id)) {
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTimeRef.current;
+      const isDoubleClick = timeSinceLastClick < 350 && lastClickedIdRef.current === node.id;
+
+      if (isDoubleClick) {
+        // Enter isolation mode to edit the master global component
+        setEditingGlobalComponent(node.globalComponentId!);
+        lastClickTimeRef.current = 0;
+        lastClickedIdRef.current = null;
+        return;
+      }
+
+      // Update refs for next click
+      lastClickTimeRef.current = now;
+      lastClickedIdRef.current = node.id;
+    }
+
     // COMMENTED OUT: Text mode single-click editing (now using RichTextControl in Properties Panel)
     // Text mode: Single click on text components immediately enters edit mode
     // if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
@@ -256,7 +275,7 @@ export const RenderNode: React.FC<{
     // }
 
     // All other selection logic now happens in mousedown for instant feel
-  }, [isAgentExecuting, draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, setIsEditingText, lastClickTimeRef, lastClickedIdRef]);
+  }, [isAgentExecuting, draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, node.isGlobalInstance, node.globalComponentId, setIsEditingText, setEditingGlobalComponent, lastClickTimeRef, lastClickedIdRef]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
