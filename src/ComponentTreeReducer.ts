@@ -193,6 +193,73 @@ export function componentTreeReducer(
 
     case 'UPDATE_COMPONENT_PROPS': {
       const { id, props } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // If editing a global component in isolation mode, update it directly
+      if (state.editingGlobalComponentId) {
+        const globalComponents = currentProject.globalComponents || [];
+        const globalComponent = globalComponents.find(gc => gc.id === state.editingGlobalComponentId);
+
+        if (!globalComponent) {
+          console.warn('[Reducer] UPDATE_COMPONENT_PROPS in isolation: Global component not found');
+          return state;
+        }
+
+        // Separate node-level properties from component props
+        const { width, ...componentProps } = props;
+
+        // Update the global component tree
+        const updatedGlobalComponent = updateNodeInTree([globalComponent], id, (node) => ({
+          ...node,
+          ...(width !== undefined ? { width } : {}),
+          props: { ...node.props, ...componentProps },
+        }))[0];
+
+        // Update in globalComponents array
+        const newGlobalComponents = globalComponents.map(gc =>
+          gc.id === state.editingGlobalComponentId ? updatedGlobalComponent : gc
+        );
+
+        // Update all instances across all pages
+        const updateInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+          return tree.map(node => {
+            if (node.isGlobalInstance && node.globalComponentId === state.editingGlobalComponentId) {
+              const cloneWithMetadata = (sourceNode: ComponentNode, targetId: string): ComponentNode => {
+                return {
+                  ...sourceNode,
+                  id: targetId,
+                  isGlobalInstance: true,
+                  globalComponentId: state.editingGlobalComponentId,
+                  props: { ...sourceNode.props },
+                  children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
+                };
+              };
+              return cloneWithMetadata(updatedGlobalComponent, node.id);
+            }
+            if (node.children) {
+              return { ...node, children: updateInstancesInTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        const updatedPages = currentProject.pages.map(page => ({
+          ...page,
+          tree: updateInstancesInTree(page.tree),
+        }));
+
+        const updatedProject = {
+          ...currentProject,
+          globalComponents: newGlobalComponents,
+          pages: updatedPages,
+          lastModified: Date.now(),
+        };
+
+        const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+        return updateHistory(state, newProjects, state.currentProjectId);
+      }
+
+      // Normal mode: update page tree
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       // Separate node-level properties from component props
@@ -204,7 +271,6 @@ export function componentTreeReducer(
         props: { ...node.props, ...componentProps },
       }));
 
-      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
@@ -213,6 +279,73 @@ export function componentTreeReducer(
 
     case 'UPDATE_MULTIPLE_COMPONENT_PROPS': {
       const { ids, props } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // If editing a global component in isolation mode, update it directly
+      if (state.editingGlobalComponentId) {
+        const globalComponents = currentProject.globalComponents || [];
+        const globalComponent = globalComponents.find(gc => gc.id === state.editingGlobalComponentId);
+
+        if (!globalComponent) {
+          console.warn('[Reducer] UPDATE_MULTIPLE_COMPONENT_PROPS in isolation: Global component not found');
+          return state;
+        }
+
+        // Separate node-level properties from component props
+        const { width, ...componentProps } = props;
+
+        // Update the global component tree
+        const updatedGlobalComponent = updateMultipleNodesInTree([globalComponent], ids, (node) => ({
+          ...node,
+          ...(width !== undefined ? { width } : {}),
+          props: { ...node.props, ...componentProps },
+        }))[0];
+
+        // Update in globalComponents array
+        const newGlobalComponents = globalComponents.map(gc =>
+          gc.id === state.editingGlobalComponentId ? updatedGlobalComponent : gc
+        );
+
+        // Update all instances across all pages
+        const updateInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+          return tree.map(node => {
+            if (node.isGlobalInstance && node.globalComponentId === state.editingGlobalComponentId) {
+              const cloneWithMetadata = (sourceNode: ComponentNode, targetId: string): ComponentNode => {
+                return {
+                  ...sourceNode,
+                  id: targetId,
+                  isGlobalInstance: true,
+                  globalComponentId: state.editingGlobalComponentId,
+                  props: { ...sourceNode.props },
+                  children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
+                };
+              };
+              return cloneWithMetadata(updatedGlobalComponent, node.id);
+            }
+            if (node.children) {
+              return { ...node, children: updateInstancesInTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        const updatedPages = currentProject.pages.map(page => ({
+          ...page,
+          tree: updateInstancesInTree(page.tree),
+        }));
+
+        const updatedProject = {
+          ...currentProject,
+          globalComponents: newGlobalComponents,
+          pages: updatedPages,
+          lastModified: Date.now(),
+        };
+
+        const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+        return updateHistory(state, newProjects, state.currentProjectId);
+      }
+
+      // Normal mode: update page tree
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       // Separate node-level properties from component props
@@ -224,7 +357,6 @@ export function componentTreeReducer(
         props: { ...node.props, ...componentProps },
       }));
 
-      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
@@ -233,6 +365,69 @@ export function componentTreeReducer(
 
     case 'UPDATE_COMPONENT_NAME': {
       const { id, name } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // If editing a global component in isolation mode, update it directly
+      if (state.editingGlobalComponentId) {
+        const globalComponents = currentProject.globalComponents || [];
+        const globalComponent = globalComponents.find(gc => gc.id === state.editingGlobalComponentId);
+
+        if (!globalComponent) {
+          console.warn('[Reducer] UPDATE_COMPONENT_NAME in isolation: Global component not found');
+          return state;
+        }
+
+        // Update the global component tree
+        const updatedGlobalComponent = updateNodeInTree([globalComponent], id, (node) => ({
+          ...node,
+          name: name || undefined,
+        }))[0];
+
+        // Update in globalComponents array
+        const newGlobalComponents = globalComponents.map(gc =>
+          gc.id === state.editingGlobalComponentId ? updatedGlobalComponent : gc
+        );
+
+        // Update all instances across all pages
+        const updateInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+          return tree.map(node => {
+            if (node.isGlobalInstance && node.globalComponentId === state.editingGlobalComponentId) {
+              const cloneWithMetadata = (sourceNode: ComponentNode, targetId: string): ComponentNode => {
+                return {
+                  ...sourceNode,
+                  id: targetId,
+                  isGlobalInstance: true,
+                  globalComponentId: state.editingGlobalComponentId,
+                  props: { ...sourceNode.props },
+                  children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
+                };
+              };
+              return cloneWithMetadata(updatedGlobalComponent, node.id);
+            }
+            if (node.children) {
+              return { ...node, children: updateInstancesInTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        const updatedPages = currentProject.pages.map(page => ({
+          ...page,
+          tree: updateInstancesInTree(page.tree),
+        }));
+
+        const updatedProject = {
+          ...currentProject,
+          globalComponents: newGlobalComponents,
+          pages: updatedPages,
+          lastModified: Date.now(),
+        };
+
+        const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+        return updateHistory(state, newProjects, state.currentProjectId);
+      }
+
+      // Normal mode: update page tree
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, id, (node) => ({
@@ -240,7 +435,6 @@ export function componentTreeReducer(
         name: name || undefined,
       }));
 
-      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
@@ -647,10 +841,12 @@ export function componentTreeReducer(
         return state;
       }
 
-      // Remove node from tree
-      const newTree = removeNodeFromTree(currentTree, nodeId);
+      // Find the parent and index of the original node
+      const parent = findParent(currentTree, nodeId);
+      const parentId = parent?.id;
+      const nodeIndex = parent?.children?.findIndex(child => child.id === nodeId);
 
-      // Add to global components with a clean clone and name
+      // Create global component with a clean clone and name
       const globalComponent: ComponentNode = {
         ...node,
         name: name || node.name || node.type,
@@ -658,35 +854,52 @@ export function componentTreeReducer(
         globalComponentId: undefined,
       };
 
+      // Remove original node from tree
+      let newTree = removeNodeFromTree(currentTree, nodeId);
+
+      // Create an instance of the global component with new IDs
+      const cloneWithMetadata = (sourceNode: ComponentNode): ComponentNode => {
+        return {
+          ...sourceNode,
+          id: generateId(),
+          isGlobalInstance: true,
+          globalComponentId: globalComponent.id,
+          props: { ...sourceNode.props },
+          children: sourceNode.children?.map(cloneWithMetadata),
+        };
+      };
+
+      const instance = cloneWithMetadata(globalComponent);
+
+      // Insert the instance where the original node was
+      newTree = insertNodeInTree(newTree, instance, parentId, nodeIndex);
+
       const updatedProject = {
         ...currentProject,
-        tree: newTree,
+        pages: updateTreeForPage(currentProject.pages, currentProject.currentPageId, newTree),
         globalComponents: [...(currentProject.globalComponents || []), globalComponent],
+        lastModified: Date.now(),
       };
 
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
       return {
         ...updateHistory(state, newProjects, state.currentProjectId),
-        selectedNodeIds: [ROOT_GRID_ID],
+        selectedNodeIds: [instance.id],
       };
     }
 
     case 'INSERT_GLOBAL_COMPONENT_INSTANCE': {
       const { globalComponentId, parentId, index } = action.payload;
-      console.log('[Reducer] INSERT_GLOBAL_COMPONENT_INSTANCE:', { globalComponentId, parentId, index });
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);
 
-      console.log('[Reducer] Current project globalComponents:', currentProject.globalComponents);
       // Find the global component definition
       const globalComponent = (currentProject.globalComponents || []).find(gc => gc.id === globalComponentId);
       if (!globalComponent) {
         console.warn('[Reducer] INSERT_GLOBAL_COMPONENT_INSTANCE: Global component not found');
         return state;
       }
-
-      console.log('[Reducer] Found global component:', globalComponent);
 
       // Create a deep clone with new IDs and add instance metadata
       const cloneWithMetadata = (node: ComponentNode): ComponentNode => {
@@ -701,9 +914,7 @@ export function componentTreeReducer(
       };
 
       const instance = cloneWithMetadata(globalComponent);
-      console.log('[Reducer] Created instance:', instance);
       const newTree = insertNodeInTree(currentTree, instance, parentId, index);
-      console.log('[Reducer] New tree after insert:', newTree);
 
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
@@ -1271,6 +1482,69 @@ export function componentTreeReducer(
 
     case 'ADD_INTERACTION': {
       const { nodeId, interaction } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // If editing a global component in isolation mode, update it directly
+      if (state.editingGlobalComponentId) {
+        const globalComponents = currentProject.globalComponents || [];
+        const globalComponent = globalComponents.find(gc => gc.id === state.editingGlobalComponentId);
+
+        if (!globalComponent) {
+          console.warn('[Reducer] ADD_INTERACTION in isolation: Global component not found');
+          return state;
+        }
+
+        // Update the global component tree
+        const updatedGlobalComponent = updateNodeInTree([globalComponent], nodeId, (node) => ({
+          ...node,
+          interactions: [...(node.interactions || []), interaction],
+        }))[0];
+
+        // Update in globalComponents array
+        const newGlobalComponents = globalComponents.map(gc =>
+          gc.id === state.editingGlobalComponentId ? updatedGlobalComponent : gc
+        );
+
+        // Update all instances across all pages
+        const updateInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+          return tree.map(node => {
+            if (node.isGlobalInstance && node.globalComponentId === state.editingGlobalComponentId) {
+              const cloneWithMetadata = (sourceNode: ComponentNode, targetId: string): ComponentNode => {
+                return {
+                  ...sourceNode,
+                  id: targetId,
+                  isGlobalInstance: true,
+                  globalComponentId: state.editingGlobalComponentId,
+                  props: { ...sourceNode.props },
+                  children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
+                };
+              };
+              return cloneWithMetadata(updatedGlobalComponent, node.id);
+            }
+            if (node.children) {
+              return { ...node, children: updateInstancesInTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        const updatedPages = currentProject.pages.map(page => ({
+          ...page,
+          tree: updateInstancesInTree(page.tree),
+        }));
+
+        const updatedProject = {
+          ...currentProject,
+          globalComponents: newGlobalComponents,
+          pages: updatedPages,
+          lastModified: Date.now(),
+        };
+
+        const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+        return { ...state, projects: newProjects };
+      }
+
+      // Normal mode: update page tree
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, nodeId, (node) => ({
@@ -1278,7 +1552,6 @@ export function componentTreeReducer(
         interactions: [...(node.interactions || []), interaction],
       }));
 
-      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
@@ -1287,6 +1560,69 @@ export function componentTreeReducer(
 
     case 'REMOVE_INTERACTION': {
       const { nodeId, interactionId } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // If editing a global component in isolation mode, update it directly
+      if (state.editingGlobalComponentId) {
+        const globalComponents = currentProject.globalComponents || [];
+        const globalComponent = globalComponents.find(gc => gc.id === state.editingGlobalComponentId);
+
+        if (!globalComponent) {
+          console.warn('[Reducer] REMOVE_INTERACTION in isolation: Global component not found');
+          return state;
+        }
+
+        // Update the global component tree
+        const updatedGlobalComponent = updateNodeInTree([globalComponent], nodeId, (node) => ({
+          ...node,
+          interactions: node.interactions?.filter(i => i.id !== interactionId) || [],
+        }))[0];
+
+        // Update in globalComponents array
+        const newGlobalComponents = globalComponents.map(gc =>
+          gc.id === state.editingGlobalComponentId ? updatedGlobalComponent : gc
+        );
+
+        // Update all instances across all pages
+        const updateInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+          return tree.map(node => {
+            if (node.isGlobalInstance && node.globalComponentId === state.editingGlobalComponentId) {
+              const cloneWithMetadata = (sourceNode: ComponentNode, targetId: string): ComponentNode => {
+                return {
+                  ...sourceNode,
+                  id: targetId,
+                  isGlobalInstance: true,
+                  globalComponentId: state.editingGlobalComponentId,
+                  props: { ...sourceNode.props },
+                  children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
+                };
+              };
+              return cloneWithMetadata(updatedGlobalComponent, node.id);
+            }
+            if (node.children) {
+              return { ...node, children: updateInstancesInTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        const updatedPages = currentProject.pages.map(page => ({
+          ...page,
+          tree: updateInstancesInTree(page.tree),
+        }));
+
+        const updatedProject = {
+          ...currentProject,
+          globalComponents: newGlobalComponents,
+          pages: updatedPages,
+          lastModified: Date.now(),
+        };
+
+        const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+        return { ...state, projects: newProjects };
+      }
+
+      // Normal mode: update page tree
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, nodeId, (node) => ({
@@ -1294,7 +1630,6 @@ export function componentTreeReducer(
         interactions: node.interactions?.filter(i => i.id !== interactionId) || [],
       }));
 
-      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
@@ -1303,6 +1638,71 @@ export function componentTreeReducer(
 
     case 'UPDATE_INTERACTION': {
       const { nodeId, interactionId, interaction } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+
+      // If editing a global component in isolation mode, update it directly
+      if (state.editingGlobalComponentId) {
+        const globalComponents = currentProject.globalComponents || [];
+        const globalComponent = globalComponents.find(gc => gc.id === state.editingGlobalComponentId);
+
+        if (!globalComponent) {
+          console.warn('[Reducer] UPDATE_INTERACTION in isolation: Global component not found');
+          return state;
+        }
+
+        // Update the global component tree
+        const updatedGlobalComponent = updateNodeInTree([globalComponent], nodeId, (node) => ({
+          ...node,
+          interactions: node.interactions?.map(i =>
+            i.id === interactionId ? { ...i, ...interaction } : i
+          ) || [],
+        }))[0];
+
+        // Update in globalComponents array
+        const newGlobalComponents = globalComponents.map(gc =>
+          gc.id === state.editingGlobalComponentId ? updatedGlobalComponent : gc
+        );
+
+        // Update all instances across all pages
+        const updateInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+          return tree.map(node => {
+            if (node.isGlobalInstance && node.globalComponentId === state.editingGlobalComponentId) {
+              const cloneWithMetadata = (sourceNode: ComponentNode, targetId: string): ComponentNode => {
+                return {
+                  ...sourceNode,
+                  id: targetId,
+                  isGlobalInstance: true,
+                  globalComponentId: state.editingGlobalComponentId,
+                  props: { ...sourceNode.props },
+                  children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
+                };
+              };
+              return cloneWithMetadata(updatedGlobalComponent, node.id);
+            }
+            if (node.children) {
+              return { ...node, children: updateInstancesInTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        const updatedPages = currentProject.pages.map(page => ({
+          ...page,
+          tree: updateInstancesInTree(page.tree),
+        }));
+
+        const updatedProject = {
+          ...currentProject,
+          globalComponents: newGlobalComponents,
+          pages: updatedPages,
+          lastModified: Date.now(),
+        };
+
+        const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+        return { ...state, projects: newProjects };
+      }
+
+      // Normal mode: update page tree
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       const newTree = updateNodeInTree(currentTree, nodeId, (node) => ({
@@ -1312,7 +1712,6 @@ export function componentTreeReducer(
         ) || [],
       }));
 
-      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 

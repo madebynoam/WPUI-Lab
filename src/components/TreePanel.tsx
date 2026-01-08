@@ -896,7 +896,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                   key={page.id}
                   page={page}
                   isEditing={editingPageId === page.id}
-                  isCurrent={currentPageId === page.id}
+                  isCurrent={currentPageId === page.id && !editingGlobalComponentId}
                   editingName={editingPageName}
                   onEditNameChange={setEditingPageName}
                   onEditSubmit={() => {
@@ -908,6 +908,10 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                   onEditCancel={() => setEditingPageId(null)}
                   onPageClick={() => {
                     if (editingPageId !== page.id) {
+                      // Exit isolation mode if active
+                      if (editingGlobalComponentId) {
+                        setEditingGlobalComponent(null);
+                      }
                       setCurrentPage(page.id);
                       if (binId) {
                         router.push(`/editor/${binId}/${page.id}`);
@@ -923,6 +927,10 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                     if (pageClickCountRef.current[page.id] === 1) {
                       // Select page on first click
                       if (editingPageId !== page.id) {
+                        // Exit isolation mode if active
+                        if (editingGlobalComponentId) {
+                          setEditingGlobalComponent(null);
+                        }
                         setCurrentPage(page.id);
                         if (binId) {
                           router.push(`/editor/${binId}/${page.id}`);
@@ -1117,7 +1125,6 @@ export const TreePanel: React.FC<TreePanelProps> = ({
             }
           }
 
-          console.log('[TreePanel] Inserting global component instance:', { globalComponentId, parentId });
           insertGlobalComponentInstance(globalComponentId, parentId);
           setSearchTerm("");
         }}
