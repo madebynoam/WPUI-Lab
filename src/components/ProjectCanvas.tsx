@@ -611,25 +611,6 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
         onAutoArrange={handleAutoArrange}
         onClose={onClose}
       />
-      
-      {/* Instructions hint */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 24,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: '#fff',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          color: '#757575',
-          padding: '8px 16px',
-          borderRadius: 6,
-          fontSize: 12,
-          pointerEvents: 'none',
-        }}
-      >
-        Double-click a page to edit • Scroll to pan • ⌘+Scroll to zoom • Drag pages to reposition
-      </div>
     </div>
   );
 };

@@ -9,7 +9,6 @@ import {
 } from "@wordpress/icons";
 import { useComponentTree } from "@/contexts/ComponentTreeContext";
 import { usePlayModeState } from "@/contexts/PlayModeContext";
-import { useRouter } from "next/navigation";
 
 interface TopBarProps {
   showInserter: boolean;
@@ -23,6 +22,7 @@ interface TopBarProps {
   onToggleCanvasView?: () => void;
   binId: string;
   pageId: string;
+  projectName?: string;
   // Cloud save props
   isDirty?: boolean;
   isSaving?: boolean;
@@ -41,14 +41,13 @@ export const TopBar: React.FC<TopBarProps> = ({
   onToggleCanvasView,
   binId,
   pageId,
+  projectName,
   isDirty,
   isSaving,
   onSave,
 }) => {
-  const router = useRouter();
-  const { pages, currentPageId, isPlayMode, setPlayMode, editingMode, setEditingMode } = useComponentTree();
+  const { currentPageId, isPlayMode, setPlayMode } = useComponentTree();
   const playModeState = usePlayModeState();
-  const currentPage = pages.find((p) => p.id === currentPageId);
 
   return (
     <div
@@ -321,7 +320,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             whiteSpace: "nowrap",
           }}
         >
-          {currentPage?.name || "WP Designer"}
+          {isCanvasView
+            ? `${projectName || "WP Designer"} / All pages`
+            : projectName || "WP Designer"}
         </div>
       </div>
 
