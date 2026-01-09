@@ -13,10 +13,13 @@ This complements the responsive grid system by providing visual tooling to test 
 ```
 EditorLayout
   └─ Canvas
-      ├─ ViewportControls (new - toolbar with viewport/zoom buttons)
       ├─ ViewportFrame (new - wrapper that constrains width and applies zoom)
       │   └─ Canvas Content (existing - all rendered components)
-      └─ ViewportIndicator (existing - shows current breakpoint)
+      └─ Bottom Bar (existing container)
+          ├─ Breadcrumb (existing)
+          ├─ ViewportIndicator (existing - shows current breakpoint)
+          ├─ ViewportPresetButtons (new - Mobile/Tablet/Desktop/Full buttons)
+          └─ ZoomSlider (new - zoom slider with percentage display)
 ```
 
 ### Data Flow
@@ -167,37 +170,95 @@ export function useResponsiveViewport(): ResponsiveViewport {
 }
 ```
 
-### 3. Viewport Controls Component
+### 3. Viewport Preset Buttons Component
 
-**Location**: `src/components/ViewportControls.tsx` (new file)
+**Location**: `src/components/ViewportPresetButtons.tsx` (new file)
 
-Toolbar with viewport preset buttons and zoom controls:
+Compact preset buttons that integrate into the bottom bar:
 
 ```typescript
 import React from 'react';
 import { useComponentTree } from '@/contexts/ComponentTreeContext';
-import * as wpIcons from '@wordpress/icons';
+
+export const ViewportPresetButtons: React.FC = () => {
+  const { viewportPreset, setViewportPreset, isPlayMode } = useComponentTree();
+  
+  // Don't show in play mode
+  if (isPlayMode) return null;
+  
+  const presets = [
+    { id: 'mobile' as const, label: '📱', title: 'Mobile (375px) - Cmd+1' },
+    { id: 'tablet' as const, label: '📱', title: 'Tablet (768px) - Cmd+2' },
+    { id: 'desktop' as const, label: '🖥️', title: 'Desktop (1440px) - Cmd+3' },
+    { id: 'full' as const, label: '↔️', title: 'Full Width - Cmd+0' },
+  ];
+  
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2px',
+      marginLeft: '12px',
+      paddingLeft: '12px',
+      borderLeft: '1px solid #ddd',
+    }}>
+      {presets.map((preset) => (
+        <button
+          key={preset.id}
+          onClick={() => setViewportPreset(preset.id)}
+          title={preset.title}
+          style={{
+            padding: '2px 6px',
+            fontSize: '14px',
+            border: '1px solid transparent',
+            borderRadius: '3px',
+            backgroundColor: viewportPreset === preset.id ? '#f0f0f0' : 'transparent',
+            color: '#1e1e1e',
+            cursor: 'pointer',
+            transition: 'background-color 0.1s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (viewportPreset !== preset.id) {
+              e.currentTarget.style.backgroundColor = '#f8f8f8';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (viewportPreset !== preset.id) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
+          {preset.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+```
+
+### 4. Zoom Slider Component
+
+**Location**: `src/components/ZoomSlider.tsx` (new file)
+
+Compact zoom slider with percentage display:
+
+```typescript
+import React from 'react';
+import { useComponentTree } from '@/contexts/ComponentTreeContext';
 
 const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.5, 2.0];
 
-export const ViewportControls: React.FC = () => {
-  const { viewportPreset, setViewportPreset, zoomLevel, setZoomLevel, isPlayMode } = useComponentTree();
+export const ZoomSlider: React.FC = () => {
+  const { zoomLevel, setZoomLevel, isPlayMode } = useComponentTree();
   
-  // Don't show controls in play mode
+  // Don't show in play mode
   if (isPlayMode) return null;
   
-  const handleZoomIn = () => {
-    const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
-    if (currentIndex < ZOOM_LEVELS.length - 1) {
-      setZoomLevel(ZOOM_LEVELS[currentIndex + 1]);
-    }
-  };
+  const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
   
-  const handleZoomOut = () => {
-    const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
-    if (currentIndex > 0) {
-      setZoomLevel(ZOOM_LEVELS[currentIndex - 1]);
-    }
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const index = parseInt(e.target.value);
+    setZoomLevel(ZOOM_LEVELS[index]);
   };
   
   const handleZoomReset = () => {
@@ -208,137 +269,49 @@ export const ViewportControls: React.FC = () => {
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
-      padding: '8px 12px',
-      backgroundColor: '#ffffff',
-      borderBottom: '1px solid #e0e0e0',
-      userSelect: 'none',
+      gap: '6px',
+      marginLeft: '12px',
+      paddingLeft: '12px',
+      borderLeft: '1px solid #ddd',
     }}>
-      {/* Viewport Presets */}
-      <div style={{ display: 'flex', gap: '4px', marginRight: '12px' }}>
-        <button
-          onClick={() => setViewportPreset('mobile')}
-          title="Mobile (375px) - Cmd+1"
-          style={{
-            padding: '6px 12px',
-            fontSize: '12px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            backgroundColor: viewportPreset === 'mobile' ? '#3858e9' : '#ffffff',
-            color: viewportPreset === 'mobile' ? '#ffffff' : '#1e1e1e',
-            cursor: 'pointer',
-            fontWeight: viewportPreset === 'mobile' ? 600 : 400,
-          }}
-        >
-          📱 Mobile
-        </button>
-        <button
-          onClick={() => setViewportPreset('tablet')}
-          title="Tablet (768px) - Cmd+2"
-          style={{
-            padding: '6px 12px',
-            fontSize: '12px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            backgroundColor: viewportPreset === 'tablet' ? '#3858e9' : '#ffffff',
-            color: viewportPreset === 'tablet' ? '#ffffff' : '#1e1e1e',
-            cursor: 'pointer',
-            fontWeight: viewportPreset === 'tablet' ? 600 : 400,
-          }}
-        >
-          📱 Tablet
-        </button>
-        <button
-          onClick={() => setViewportPreset('desktop')}
-          title="Desktop (1440px) - Cmd+3"
-          style={{
-            padding: '6px 12px',
-            fontSize: '12px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            backgroundColor: viewportPreset === 'desktop' ? '#3858e9' : '#ffffff',
-            color: viewportPreset === 'desktop' ? '#ffffff' : '#1e1e1e',
-            cursor: 'pointer',
-            fontWeight: viewportPreset === 'desktop' ? 600 : 400,
-          }}
-        >
-          🖥️ Desktop
-        </button>
-        <button
-          onClick={() => setViewportPreset('full')}
-          title="Full Width - Cmd+0"
-          style={{
-            padding: '6px 12px',
-            fontSize: '12px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            backgroundColor: viewportPreset === 'full' ? '#3858e9' : '#ffffff',
-            color: viewportPreset === 'full' ? '#ffffff' : '#1e1e1e',
-            cursor: 'pointer',
-            fontWeight: viewportPreset === 'full' ? 600 : 400,
-          }}
-        >
-          ↔️ Full
-        </button>
-      </div>
-      
-      {/* Zoom Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid #e0e0e0', paddingLeft: '12px' }}>
-        <button
-          onClick={handleZoomOut}
-          disabled={zoomLevel === ZOOM_LEVELS[0]}
-          title="Zoom Out - Cmd+Minus"
-          style={{
-            padding: '4px 8px',
-            fontSize: '14px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            backgroundColor: '#ffffff',
-            cursor: zoomLevel === ZOOM_LEVELS[0] ? 'not-allowed' : 'pointer',
-            opacity: zoomLevel === ZOOM_LEVELS[0] ? 0.5 : 1,
-          }}
-        >
-          −
-        </button>
-        <button
-          onClick={handleZoomReset}
-          title="Reset Zoom - Cmd+Shift+0"
-          style={{
-            padding: '4px 12px',
-            fontSize: '11px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            backgroundColor: '#ffffff',
-            cursor: 'pointer',
-            minWidth: '50px',
-            fontWeight: 500,
-          }}
-        >
-          {Math.round(zoomLevel * 100)}%
-        </button>
-        <button
-          onClick={handleZoomIn}
-          disabled={zoomLevel === ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
-          title="Zoom In - Cmd+Plus"
-          style={{
-            padding: '4px 8px',
-            fontSize: '14px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            backgroundColor: '#ffffff',
-            cursor: zoomLevel === ZOOM_LEVELS[ZOOM_LEVELS.length - 1] ? 'not-allowed' : 'pointer',
-            opacity: zoomLevel === ZOOM_LEVELS[ZOOM_LEVELS.length - 1] ? 0.5 : 1,
-          }}
-        >
-          +
-        </button>
-      </div>
+      <span style={{ fontSize: '11px', color: '#757575' }}>Zoom:</span>
+      <input
+        type="range"
+        min="0"
+        max={ZOOM_LEVELS.length - 1}
+        step="1"
+        value={currentIndex}
+        onChange={handleSliderChange}
+        title="Zoom Level - Cmd+Plus/Minus"
+        style={{
+          width: '80px',
+          height: '4px',
+          cursor: 'pointer',
+        }}
+      />
+      <button
+        onClick={handleZoomReset}
+        title="Reset Zoom - Cmd+Shift+0"
+        style={{
+          padding: '2px 6px',
+          fontSize: '11px',
+          border: '1px solid #ddd',
+          borderRadius: '3px',
+          backgroundColor: '#ffffff',
+          cursor: 'pointer',
+          minWidth: '42px',
+          fontWeight: 500,
+          color: '#1e1e1e',
+        }}
+      >
+        {Math.round(zoomLevel * 100)}%
+      </button>
     </div>
   );
 };
 ```
 
-### 4. Viewport Frame Component
+### 5. Viewport Frame Component
 
 **Location**: `src/components/ViewportFrame.tsx` (new file)
 
@@ -440,14 +413,15 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
 };
 ```
 
-### 5. Canvas Updates
+### 6. Canvas Updates
 
 **Location**: `src/components/Canvas.tsx` (update existing)
 
-Integrate ViewportControls and ViewportFrame:
+Integrate ViewportPresetButtons and ZoomSlider into existing bottom bar:
 
 ```typescript
-import { ViewportControls } from './ViewportControls';
+import { ViewportPresetButtons } from './ViewportPresetButtons';
+import { ZoomSlider } from './ZoomSlider';
 import { ViewportFrame } from './ViewportFrame';
 
 export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
@@ -468,9 +442,6 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
           userSelect: 'none',
           position: 'relative',
         }}>
-          {/* Viewport Controls Toolbar */}
-          <ViewportControls />
-          
           {/* Canvas Content with Viewport Frame */}
           <ViewportFrame>
             <div
@@ -495,11 +466,18 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
             </div>
           </ViewportFrame>
           
-          {/* Breadcrumb and Viewport Indicator */}
+          {/* Bottom Bar with Breadcrumb, Viewport Indicator, Preset Buttons, and Zoom Slider */}
           {showBreadcrumb && !isPlayMode && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              flexWrap: 'wrap',
+            }}>
               <Breadcrumb />
               <ViewportIndicator />
+              <ViewportPresetButtons />
+              <ZoomSlider />
             </div>
           )}
           
@@ -511,7 +489,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
 };
 ```
 
-### 6. Keyboard Shortcuts
+### 7. Keyboard Shortcuts
 
 **Location**: `src/components/KeyboardHandler.tsx` (update existing)
 
@@ -570,7 +548,7 @@ if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '0') {
 }
 ```
 
-### 7. Interaction Coordinate Scaling
+### 8. Interaction Coordinate Scaling
 
 **Location**: `src/components/RenderNode.tsx` (update existing)
 
@@ -613,7 +591,7 @@ const handleMouseDown = useCallback((e: React.MouseEvent) => {
 // Apply to: handleMouseDown, handleMouseMove, handleMouseUp, drag detection, etc.
 ```
 
-### 8. SessionStorage Persistence
+### 9. SessionStorage Persistence
 
 **Location**: `src/contexts/ComponentTreeContext.tsx` (update existing)
 
