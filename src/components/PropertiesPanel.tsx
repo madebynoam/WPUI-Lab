@@ -991,7 +991,6 @@ export const PropertiesPanel: React.FC = () => {
                       }
                       help={isGlobalInstance ? "Disabled for instances. Edit the master component to change this." : propDef.description}
                       placeholder="Type text... (Cmd+B for bold, Cmd+I for italic)"
-                      disabled={isGlobalInstance}
                     />
                   ) : propDef.type === "string" ? (
                     <TextControl
