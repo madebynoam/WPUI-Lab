@@ -37,6 +37,9 @@ export const KeyboardHandler: React.FC<{
     pages,
     currentPageId,
     isAgentExecuting,
+    setViewportPreset,
+    setZoomLevel,
+    zoomLevel,
   } = useComponentTree();
 
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
@@ -58,6 +61,8 @@ export const KeyboardHandler: React.FC<{
 
   // Keyboard shortcuts
   useEffect(() => {
+    const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.5, 2.0];
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Disable all keyboard shortcuts when agent is executing
       if (isAgentExecuting) {
@@ -90,6 +95,63 @@ export const KeyboardHandler: React.FC<{
         e.preventDefault();
         e.stopPropagation();
         redo();
+        return;
+      }
+
+      // Viewport preset shortcuts
+      if ((e.ctrlKey || e.metaKey) && e.key === "1" && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        setViewportPreset('mobile');
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "2" && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        setViewportPreset('tablet');
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "3" && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        setViewportPreset('desktop');
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "0" && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        setViewportPreset('full');
+        return;
+      }
+
+      // Zoom controls
+      if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
+        if (currentIndex < ZOOM_LEVELS.length - 1) {
+          setZoomLevel(ZOOM_LEVELS[currentIndex + 1]);
+        }
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === "-" || e.key === "_")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
+        if (currentIndex > 0) {
+          setZoomLevel(ZOOM_LEVELS[currentIndex - 1]);
+        }
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "0") {
+        e.preventDefault();
+        e.stopPropagation();
+        setZoomLevel(1.0);
         return;
       }
 
