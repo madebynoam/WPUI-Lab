@@ -7,6 +7,13 @@ export interface Interaction {
   targetId: string; // Page ID for navigate, Modal node ID for showModal
 }
 
+export interface ResponsiveColumns {
+  small?: number;    // < 782px (default: 2)
+  medium?: number;   // >= 782px (default: 4)
+  large?: number;    // >= 1080px (default: 8)
+  xlarge?: number;   // >= 1280px (default: 12)
+}
+
 export interface ComponentNode {
   id: string;
   type: string;
@@ -16,6 +23,7 @@ export interface ComponentNode {
   children?: ComponentNode[];
   collapsed?: boolean;
   width?: 'content' | 'full'; // Optional width override for layout containers
+  responsiveColumns?: ResponsiveColumns; // For Grid components only
   // Global component metadata
   isGlobalInstance?: boolean; // True if this is an instance of a global component
   globalComponentId?: string; // ID of the global component definition this instance references

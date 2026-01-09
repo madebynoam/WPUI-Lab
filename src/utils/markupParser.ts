@@ -91,6 +91,24 @@ function validateDesignTokens(componentName: string, props: Record<string, any>,
       );
     }
   }
+
+  // Validate responsiveColumns (Grid containers)
+  if ('responsiveColumns' in props && typeof props.responsiveColumns === 'object') {
+    const rc = props.responsiveColumns;
+    const validBreakpoints = ['small', 'medium', 'large', 'xlarge'];
+
+    for (const breakpoint of validBreakpoints) {
+      if (breakpoint in rc) {
+        const value = rc[breakpoint];
+        if (typeof value !== 'number' || value < 1 || !Number.isInteger(value)) {
+          throw createError(
+            state,
+            `Invalid responsiveColumns.${breakpoint} value: ${value}. Must be a positive integer`
+          );
+        }
+      }
+    }
+  }
 }
 
 /**

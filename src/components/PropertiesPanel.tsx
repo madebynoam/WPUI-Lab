@@ -4,6 +4,8 @@ import React, { useMemo, useState } from "react";
 import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
 import { componentRegistry } from "@/componentRegistry";
 import { findParent } from "../utils/treeHelpers";
+import { ResponsiveColumns } from "@/types";
+import { DEFAULT_RESPONSIVE_COLUMNS } from "@/utils/responsiveHelpers";
 import {
   TextControl,
   TextareaControl,
@@ -525,6 +527,148 @@ export const PropertiesPanel: React.FC = () => {
                 });
               }}
             />
+
+            {/* Responsive Columns */}
+            <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #ddd' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px', marginTop: 0 }}>
+                Responsive Columns
+              </h3>
+              <p style={{ fontSize: '11px', color: '#757575', marginBottom: '16px', marginTop: 0 }}>
+                Set column count for each viewport breakpoint. Grid automatically adjusts as screen size changes.
+              </p>
+
+              {(() => {
+                const responsiveColumns = firstNode.responsiveColumns || {};
+                const updateResponsiveColumns = (breakpoint: keyof ResponsiveColumns, value: number) => {
+                  const updated = { ...responsiveColumns, [breakpoint]: value };
+                  updateComponentProps(firstNode.id, { responsiveColumns: updated });
+                };
+
+                return (
+                  <>
+                    {/* XLarge breakpoint */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        color: '#1e1e1e'
+                      }}>
+                        XLarge (≥1280px)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={responsiveColumns.xlarge ?? DEFAULT_RESPONSIVE_COLUMNS.xlarge}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || DEFAULT_RESPONSIVE_COLUMNS.xlarge;
+                          updateResponsiveColumns('xlarge', value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Large breakpoint */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        color: '#1e1e1e'
+                      }}>
+                        Large (≥1080px)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={responsiveColumns.large ?? DEFAULT_RESPONSIVE_COLUMNS.large}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || DEFAULT_RESPONSIVE_COLUMNS.large;
+                          updateResponsiveColumns('large', value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Medium breakpoint */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        color: '#1e1e1e'
+                      }}>
+                        Medium (≥782px)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={responsiveColumns.medium ?? DEFAULT_RESPONSIVE_COLUMNS.medium}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || DEFAULT_RESPONSIVE_COLUMNS.medium;
+                          updateResponsiveColumns('medium', value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Small breakpoint */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        color: '#1e1e1e'
+                      }}>
+                        Small (&lt;782px)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={responsiveColumns.small ?? DEFAULT_RESPONSIVE_COLUMNS.small}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || DEFAULT_RESPONSIVE_COLUMNS.small;
+                          updateResponsiveColumns('small', value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </PanelBody>
         )}
 

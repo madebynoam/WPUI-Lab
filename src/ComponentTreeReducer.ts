@@ -195,12 +195,13 @@ export function componentTreeReducer(
         }
 
         // Separate node-level properties from component props
-        const { width, ...componentProps } = props;
+        const { width, responsiveColumns, ...componentProps } = props;
 
         // Update the global component tree
         const updatedGlobalComponent = updateNodeInTree([globalComponent], id, (node) => ({
           ...node,
           ...(width !== undefined ? { width } : {}),
+          ...(responsiveColumns !== undefined ? { responsiveColumns } : {}),
           props: { ...node.props, ...componentProps },
         }))[0];
 
@@ -252,11 +253,12 @@ export function componentTreeReducer(
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       // Separate node-level properties from component props
-      const { width, ...componentProps } = props;
+      const { width, responsiveColumns, ...componentProps } = props;
 
       const newTree = updateNodeInTree(currentTree, id, (node) => ({
         ...node,
         ...(width !== undefined ? { width } : {}),
+        ...(responsiveColumns !== undefined ? { responsiveColumns } : {}),
         props: { ...node.props, ...componentProps },
       }));
 
@@ -281,12 +283,13 @@ export function componentTreeReducer(
         }
 
         // Separate node-level properties from component props
-        const { width, ...componentProps } = props;
+        const { width, responsiveColumns, ...componentProps } = props;
 
         // Update the global component tree
         const updatedGlobalComponent = updateMultipleNodesInTree([globalComponent], ids, (node) => ({
           ...node,
           ...(width !== undefined ? { width } : {}),
+          ...(responsiveColumns !== undefined ? { responsiveColumns } : {}),
           props: { ...node.props, ...componentProps },
         }))[0];
 
@@ -338,11 +341,12 @@ export function componentTreeReducer(
       const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
 
       // Separate node-level properties from component props
-      const { width, ...componentProps } = props;
+      const { width, responsiveColumns, ...componentProps } = props;
 
       const newTree = updateMultipleNodesInTree(currentTree, ids, (node) => ({
         ...node,
         ...(width !== undefined ? { width } : {}),
+        ...(responsiveColumns !== undefined ? { responsiveColumns } : {}),
         props: { ...node.props, ...componentProps },
       }));
 

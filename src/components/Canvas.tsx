@@ -3,6 +3,8 @@ import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext"
 import { useAgentDebug } from "@/contexts/AgentDebugContext";
 import { ComponentNode } from "@/types";
 import { Breadcrumb } from "./Breadcrumb";
+import { ViewportIndicator } from "./ViewportIndicator";
+import { findParent } from "@/utils/treeHelpers";
 import { RenderNode } from "./RenderNode";
 import { SelectionProvider } from "@/contexts/SelectionContext";
 import { SimpleDragProvider } from "@/contexts/SimpleDragContext";
@@ -255,7 +257,17 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
               </div>
             </ThemeProvider>
           </div>
-          {showBreadcrumb && !isPlayMode && <Breadcrumb />}
+          {showBreadcrumb && !isPlayMode && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              flexWrap: 'wrap',
+            }}>
+              <Breadcrumb />
+              <ViewportIndicator />
+            </div>
+          )}
 
           {/* Debug UI - rendered in canvas area */}
           <AgentDebugUI />

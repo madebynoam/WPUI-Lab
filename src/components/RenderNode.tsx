@@ -13,6 +13,8 @@ import { useSelection } from '@/contexts/SelectionContext';
 import { useSimpleDrag } from '@/contexts/SimpleDragContext';
 import { useRouter, useParams } from 'next/navigation';
 import { GridResizeHandles } from './GridResizeHandles';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { getGridColumns, calculateProportionalSpan } from '@/utils/responsiveHelpers';
 
 // Simple Figma-style drag-and-drop component
 export const RenderNode: React.FC<{
@@ -34,6 +36,9 @@ export const RenderNode: React.FC<{
   const [isDragging, setIsDragging] = useState(false);
   const [_ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Responsive viewport detection
+  const viewport = useResponsiveViewport();
 
   // Local drag state
   const [parentLayoutDirection, setParentLayoutDirection] = useState<'vertical' | 'horizontal' | 'grid'>('vertical');
@@ -961,18 +966,29 @@ export const RenderNode: React.FC<{
   delete props.minHeight;
   delete props.customMinHeight;
 
+  // Find parent early - needed for responsive grid calculations
+  const parent = findParent(tree, node.id);
+
+  // Apply responsive grid logic
+  let adjustedGridColumnSpan = gridColumnSpan;
+  if (gridColumnSpan && parent?.type === 'Grid') {
+    // Parent is a Grid - calculate responsive column count and adjust child span
+    const baseColumns = parent.props?.columns || 12;
+    const currentColumns = getGridColumns(parent.responsiveColumns, viewport.size, baseColumns);
+
+    // Calculate proportional span for child
+    adjustedGridColumnSpan = calculateProportionalSpan(gridColumnSpan, baseColumns, currentColumns);
+  }
+
   // Convert span numbers to CSS grid syntax
   // If gridColumnStart is specified, use it; otherwise just use span
   let gridColumn: string | undefined;
-  if (gridColumnStart && gridColumnSpan) {
-    gridColumn = `${gridColumnStart} / span ${gridColumnSpan}`;
-  } else if (gridColumnSpan && gridColumnSpan > 1) {
-    gridColumn = `span ${gridColumnSpan}`;
+  if (gridColumnStart && adjustedGridColumnSpan) {
+    gridColumn = `${gridColumnStart} / span ${adjustedGridColumnSpan}`;
+  } else if (adjustedGridColumnSpan && adjustedGridColumnSpan > 1) {
+    gridColumn = `span ${adjustedGridColumnSpan}`;
   }
   const gridRow = gridRowSpan && gridRowSpan > 1 ? `span ${gridRowSpan}` : undefined;
-
-  // Find parent early - needed for height calculation in getWrapperStyle
-  const parent = findParent(tree, node.id);
 
   // Base wrapper style with grid child properties
   const isRootVStack = node.id === ROOT_GRID_ID;
@@ -1885,6 +1901,13 @@ export const RenderNode: React.FC<{
       ...props.style,
     },
   };
+
+  // Apply responsive columns for Grid components
+  if (node.type === 'Grid') {
+    const baseColumns = mergedProps.columns || 12;
+    const responsiveColumns = getGridColumns(node.responsiveColumns, viewport.size, baseColumns);
+    mergedProps.columns = responsiveColumns;
+  }
 
   // Apply layout constraints for layout containers
   const _maxWidthPresets: Record<string, string> = {
