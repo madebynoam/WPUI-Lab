@@ -78,7 +78,7 @@ export default function PlayModeContent({ binId, pageId }: { binId: string; page
       <div style={{ flex: 1, overflow: 'auto' }}>
         <AgentDebugProvider>
           <PlayModeProvider>
-            <Canvas showBreadcrumb={false} />
+            <Canvas />
           </PlayModeProvider>
         </AgentDebugProvider>
       </div>

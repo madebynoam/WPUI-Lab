@@ -2,8 +2,7 @@ import React, { useEffect, useCallback, useMemo } from "react";
 import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
 import { useAgentDebug } from "@/contexts/AgentDebugContext";
 import { ComponentNode } from "@/types";
-import { Breadcrumb } from "./Breadcrumb";
-import { ViewportIndicator } from "./ViewportIndicator";
+import { ViewportFrame } from "./ViewportFrame";
 import { findParent } from "@/utils/treeHelpers";
 import { RenderNode } from "./RenderNode";
 import { SelectionProvider } from "@/contexts/SelectionContext";
@@ -17,11 +16,7 @@ import { KeyboardHandler } from "./KeyboardHandler";
 
 const { ThemeProvider } = unlock(themePrivateApis);
 
-interface CanvasProps {
-  showBreadcrumb?: boolean;
-}
-
-export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
+export const Canvas: React.FC = () => {
   const {
     tree,
     selectedNodeIds,
@@ -162,17 +157,18 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
             position: "relative",
           }}
         >
-          <div
-            style={{
-              flex: 1,
-              padding: `${pagePadding * 4}px`,
-              backgroundColor: pageBackgroundColor,
-              overflow: "auto",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "flex-start",
-            }}
-            onMouseDown={(e) => {
+          <ViewportFrame>
+            <div
+              style={{
+                flex: 1,
+                padding: `${pagePadding * 4}px`,
+                backgroundColor: pageBackgroundColor,
+                overflow: "auto",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "flex-start",
+              }}
+              onMouseDown={(e) => {
               // Check if the click was on empty space (not on a component)
               const isClickOnComponent = (
                 target: EventTarget | null
@@ -218,10 +214,6 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
                         key={node.id}
                         node={node}
                         renderInteractive={false}
-                        onNodeUpdate={(updatedNode) => {
-                          // Update the global component definition
-                          updateGlobalComponent(editingGlobalComponentId!, updatedNode);
-                        }}
                       />
                     ))}
                   </div>
@@ -257,17 +249,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
               </div>
             </ThemeProvider>
           </div>
-          {showBreadcrumb && !isPlayMode && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              flexWrap: 'wrap',
-            }}>
-              <Breadcrumb />
-              <ViewportIndicator />
-            </div>
-          )}
+          </ViewportFrame>
 
           {/* Debug UI - rendered in canvas area */}
           <AgentDebugUI />

@@ -5,10 +5,10 @@ export const ViewportIndicator: React.FC = () => {
   const viewport = useResponsiveViewport();
 
   const viewportLabels = {
-    small: 'Small (<782px)',
-    medium: 'Medium (782-1080px)',
-    large: 'Large (1080-1280px)',
-    xlarge: 'XLarge (≥1280px)',
+    small: 'Small',
+    medium: 'Medium',
+    large: 'Large',
+    xlarge: 'XLarge',
   };
 
   const viewportColors = {
@@ -41,7 +41,7 @@ export const ViewportIndicator: React.FC = () => {
           backgroundColor: viewportColors[viewport.size],
         }}
       />
-      <span>Viewport: {viewportLabels[viewport.size]}</span>
+      <span>Viewport: {viewportLabels[viewport.size]} ({viewport.actualWidth}px)</span>
     </div>
   );
 };

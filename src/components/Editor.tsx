@@ -11,6 +11,9 @@ import { ProjectCanvas } from './ProjectCanvas';
 import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { AgentPanel } from './AgentPanel';
+import { Breadcrumb } from './Breadcrumb';
+import { ViewportPresetButtons } from './ViewportPresetButtons';
+import { ZoomSlider } from './ZoomSlider';
 import { useRouter } from 'next/navigation';
 import { useCloudProject } from '@/hooks/useCloudProject';
 
@@ -307,19 +310,46 @@ function EditorContent({ binId, pageId }: EditorProps) {
           )}
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
-            {isCanvasView ? (
-              <ProjectCanvas
-                onPageClick={(newPageId) => {
-                  setIsCanvasView(false);
-                  // Navigate to the new page URL - this ensures the URL sync effect
-                  // in Editor will correctly update currentPageId
-                  router.push(`/editor/${binId}/${newPageId}`);
-                }}
-                onClose={() => setIsCanvasView(false)}
-              />
-            ) : (
-              <Canvas showBreadcrumb={showHeader && !isPlayMode} />
-            )}
+
+            {/* Middle section: Canvas + Bottom Bar wrapper */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {isCanvasView ? (
+                <ProjectCanvas
+                  onPageClick={(newPageId) => {
+                    setIsCanvasView(false);
+                    // Navigate to the new page URL - this ensures the URL sync effect
+                    // in Editor will correctly update currentPageId
+                    router.push(`/editor/${binId}/${newPageId}`);
+                  }}
+                  onClose={() => setIsCanvasView(false)}
+                />
+              ) : (
+                <Canvas />
+              )}
+
+              {/* Bottom bar - breadcrumb and viewport controls */}
+              {showHeader && !isPlayMode && !isCanvasView && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 16px',
+                  borderTop: '1px solid rgba(0,0,0,0.1)',
+                  backgroundColor: '#fff',
+                }}>
+                  <Breadcrumb />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}>
+                    <ViewportPresetButtons />
+                    <ZoomSlider />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {shouldShowPanels && rightPanel === 'props' && (
               <PropertiesPanel />
             )}
@@ -340,7 +370,7 @@ function EditorContent({ binId, pageId }: EditorProps) {
           onClick={() => setShowAgentPanel(true)}
           style={{
             position: 'fixed',
-            bottom: '24px',
+            bottom: '72px',
             right: '24px',
             width: '56px',
             height: '56px',
