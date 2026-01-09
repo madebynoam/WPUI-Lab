@@ -71,6 +71,10 @@ export type ComponentTreeAction =
   // Editing mode actions
   | { type: 'SET_EDITING_MODE'; payload: { mode: 'selection' | 'text' } }
 
+  // Viewport preview actions
+  | { type: 'SET_VIEWPORT_PRESET'; payload: { preset: 'mobile' | 'tablet' | 'desktop' | 'full' } }
+  | { type: 'SET_ZOOM_LEVEL'; payload: { level: number } }
+
   // Interaction actions
   | { type: 'ADD_INTERACTION'; payload: { nodeId: string; interaction: Interaction } }
   | { type: 'REMOVE_INTERACTION'; payload: { nodeId: string; interactionId: string } }

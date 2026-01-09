@@ -101,6 +101,12 @@ interface ComponentTreeContextType {
   isPlayMode: boolean;
   setPlayMode: (isPlay: boolean) => void;
 
+  // Viewport preview
+  viewportPreset: 'mobile' | 'tablet' | 'desktop' | 'full';
+  setViewportPreset: (preset: 'mobile' | 'tablet' | 'desktop' | 'full') => void;
+  zoomLevel: number;
+  setZoomLevel: (level: number) => void;
+
   // Agent execution state
   isAgentExecuting: boolean;
   setAgentExecuting: (isExecuting: boolean) => void;
@@ -196,6 +202,8 @@ function initializeState(): ComponentTreeState {
     isAgentExecuting: false,
     editingMode: 'selection',
     editingGlobalComponentId: null,
+    viewportPreset: 'full', // Default to full width
+    zoomLevel: 1.0, // Default to 100% zoom
     isDirty: false,
     history: {
       past: [],
@@ -225,6 +233,26 @@ function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNod
 
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(componentTreeReducerWithDirtyTracking, undefined, initializeState);
+
+  // Load viewport and zoom settings from sessionStorage when project changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && state.currentProjectId) {
+      // Load viewport preset
+      const storedPreset = sessionStorage.getItem(`viewport-preset-${state.currentProjectId}`);
+      if (storedPreset && ['mobile', 'tablet', 'desktop', 'full'].includes(storedPreset)) {
+        dispatch({ type: 'SET_VIEWPORT_PRESET', payload: { preset: storedPreset as any } });
+      }
+
+      // Load zoom level
+      const storedZoom = sessionStorage.getItem(`zoom-level-${state.currentProjectId}`);
+      if (storedZoom) {
+        const zoomValue = parseFloat(storedZoom);
+        if (!isNaN(zoomValue) && zoomValue >= 0.5 && zoomValue <= 2.0) {
+          dispatch({ type: 'SET_ZOOM_LEVEL', payload: { level: zoomValue } });
+        }
+      }
+    }
+  }, [state.currentProjectId]);
 
   // Get current project
   const currentProject = useMemo(
@@ -565,6 +593,24 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'SET_PLAY_MODE', payload: { isPlay } });
   };
 
+  // ===== Viewport Preview =====
+
+  const setViewportPreset = useCallback((preset: 'mobile' | 'tablet' | 'desktop' | 'full') => {
+    dispatch({ type: 'SET_VIEWPORT_PRESET', payload: { preset } });
+    // Persist to sessionStorage with project ID for isolation
+    if (typeof window !== 'undefined' && state.currentProjectId) {
+      sessionStorage.setItem(`viewport-preset-${state.currentProjectId}`, preset);
+    }
+  }, [state.currentProjectId]);
+
+  const setZoomLevel = useCallback((level: number) => {
+    dispatch({ type: 'SET_ZOOM_LEVEL', payload: { level } });
+    // Persist to sessionStorage with project ID for isolation
+    if (typeof window !== 'undefined' && state.currentProjectId) {
+      sessionStorage.setItem(`zoom-level-${state.currentProjectId}`, level.toString());
+    }
+  }, [state.currentProjectId]);
+
   // ===== Agent Execution State =====
 
   const setAgentExecuting = (isExecuting: boolean) => {
@@ -694,6 +740,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     clearHistory,
     isPlayMode: state.isPlayMode,
     setPlayMode,
+    viewportPreset: state.viewportPreset,
+    setViewportPreset,
+    zoomLevel: state.zoomLevel,
+    setZoomLevel,
     isAgentExecuting: state.isAgentExecuting,
     setAgentExecuting,
     editingMode: state.editingMode,

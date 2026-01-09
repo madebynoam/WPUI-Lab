@@ -35,6 +35,10 @@ export interface ComponentTreeState {
   editingMode: 'selection' | 'text';
   editingGlobalComponentId: string | null; // ID of global component being edited in isolation mode
 
+  // Viewport preview state
+  viewportPreset: 'mobile' | 'tablet' | 'desktop' | 'full';
+  zoomLevel: number; // 0.5, 0.75, 1.0, 1.5, 2.0
+
   // Cloud save state
   isDirty: boolean; // True when there are unsaved changes
 
@@ -219,7 +223,7 @@ export function componentTreeReducer(
                   ...sourceNode,
                   id: targetId,
                   isGlobalInstance: true,
-                  globalComponentId: state.editingGlobalComponentId,
+                  globalComponentId: state.editingGlobalComponentId ?? undefined,
                   props: { ...sourceNode.props },
                   children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
                 };
@@ -307,7 +311,7 @@ export function componentTreeReducer(
                   ...sourceNode,
                   id: targetId,
                   isGlobalInstance: true,
-                  globalComponentId: state.editingGlobalComponentId,
+                  globalComponentId: state.editingGlobalComponentId ?? undefined,
                   props: { ...sourceNode.props },
                   children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
                 };
@@ -390,7 +394,7 @@ export function componentTreeReducer(
                   ...sourceNode,
                   id: targetId,
                   isGlobalInstance: true,
-                  globalComponentId: state.editingGlobalComponentId,
+                  globalComponentId: state.editingGlobalComponentId ?? undefined,
                   props: { ...sourceNode.props },
                   children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
                 };
@@ -1461,6 +1465,18 @@ export function componentTreeReducer(
       return { ...state, isPlayMode: isPlay };
     }
 
+    // ===== Viewport Preview Actions =====
+
+    case 'SET_VIEWPORT_PRESET': {
+      const { preset } = action.payload;
+      return { ...state, viewportPreset: preset };
+    }
+
+    case 'SET_ZOOM_LEVEL': {
+      const { level } = action.payload;
+      return { ...state, zoomLevel: level };
+    }
+
     case 'SET_AGENT_EXECUTING': {
       const { isExecuting } = action.payload;
       return { ...state, isAgentExecuting: isExecuting };
@@ -1507,7 +1523,7 @@ export function componentTreeReducer(
                   ...sourceNode,
                   id: targetId,
                   isGlobalInstance: true,
-                  globalComponentId: state.editingGlobalComponentId,
+                  globalComponentId: state.editingGlobalComponentId ?? undefined,
                   props: { ...sourceNode.props },
                   children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
                 };
@@ -1585,7 +1601,7 @@ export function componentTreeReducer(
                   ...sourceNode,
                   id: targetId,
                   isGlobalInstance: true,
-                  globalComponentId: state.editingGlobalComponentId,
+                  globalComponentId: state.editingGlobalComponentId ?? undefined,
                   props: { ...sourceNode.props },
                   children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
                 };
@@ -1665,7 +1681,7 @@ export function componentTreeReducer(
                   ...sourceNode,
                   id: targetId,
                   isGlobalInstance: true,
-                  globalComponentId: state.editingGlobalComponentId,
+                  globalComponentId: state.editingGlobalComponentId ?? undefined,
                   props: { ...sourceNode.props },
                   children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
                 };
