@@ -53,7 +53,6 @@ export const Breadcrumb: React.FC = () => {
   return (
     <div
       style={{
-        borderTop: '1px solid #ddd',
         backgroundColor: '#fff',
         padding: '0 12px',
         display: 'flex',
