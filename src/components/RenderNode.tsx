@@ -16,6 +16,34 @@ import { GridResizeHandles } from './GridResizeHandles';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { getGridColumns, calculateProportionalSpan } from '@/utils/responsiveHelpers';
 
+/**
+ * Scale mouse coordinates inversely to zoom level for accurate hit detection when zoomed
+ */
+function scaleMouseCoordinates(e: MouseEvent | React.MouseEvent): { x: number; y: number } {
+  const frameRef = (window as any).__viewportFrameRef;
+  const zoomLevel = (window as any).__viewportZoomLevel || 1.0;
+
+  if (!frameRef || zoomLevel === 1.0) {
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  const frameRect = frameRef.getBoundingClientRect();
+
+  // Calculate position relative to frame
+  const relativeX = e.clientX - frameRect.left;
+  const relativeY = e.clientY - frameRect.top;
+
+  // Scale coordinates inversely to zoom level
+  const scaledX = relativeX / zoomLevel;
+  const scaledY = relativeY / zoomLevel;
+
+  // Convert back to screen coordinates
+  return {
+    x: frameRect.left + scaledX,
+    y: frameRect.top + scaledY,
+  };
+}
+
 // Simple Figma-style drag-and-drop component
 export const RenderNode: React.FC<{
   node: ComponentNode;
@@ -503,8 +531,9 @@ export const RenderNode: React.FC<{
         return;
       }
 
-      // Find child component at click location using DOM
-      const clickedElement = document.elementFromPoint(e.clientX, e.clientY);
+      // Find child component at click location using DOM (scaled for zoom)
+      const scaledCoords = scaleMouseCoordinates(e);
+      const clickedElement = document.elementFromPoint(scaledCoords.x, scaledCoords.y);
 
       if (clickedElement) {
         // Walk up DOM to find first child component of current selection
@@ -547,8 +576,9 @@ export const RenderNode: React.FC<{
     // Use the SELECTED component for drag, not the clicked nested component
     const dragTargetId = effectiveSelectedNode!.id;
 
-    // Capture initial mouse position for drag threshold
-    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    // Capture initial mouse position for drag threshold (scaled for zoom)
+    const scaledStartCoords = scaleMouseCoordinates(e);
+    dragStartPosRef.current = { x: scaledStartCoords.x, y: scaledStartCoords.y };
     dragThresholdMet.current = false;
 
     // Store the drag target ID temporarily (will start drag after threshold)
@@ -566,8 +596,9 @@ export const RenderNode: React.FC<{
 
       // Check if we're waiting to start a drag (threshold not met yet)
       if (pendingDragTargetId && dragStartPosRef.current && !dragThresholdMet.current) {
-        const dx = e.clientX - dragStartPosRef.current.x;
-        const dy = e.clientY - dragStartPosRef.current.y;
+        const scaledCoords = scaleMouseCoordinates(e);
+        const dx = scaledCoords.x - dragStartPosRef.current.x;
+        const dy = scaledCoords.y - dragStartPosRef.current.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         // Start drag if threshold exceeded (5px)
@@ -629,17 +660,18 @@ export const RenderNode: React.FC<{
               const rect = draggedElement.getBoundingClientRect();
               setDraggedSize({ width: rect.width, height: rect.height });
 
-              // Calculate offset from cursor to element's top-left corner
+              // Calculate offset from cursor to element's top-left corner (scaled for zoom)
+              const scaledDragCoords = scaleMouseCoordinates(e);
               dragOffsetRef.current = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
+                x: scaledDragCoords.x - rect.left,
+                y: scaledDragCoords.y - rect.top
               };
 
               // Clone the element for dragging
               const clone = draggedElement.cloneNode(true) as HTMLElement;
               clone.style.position = 'fixed';
-              clone.style.left = `${e.clientX - dragOffsetRef.current.x}px`;
-              clone.style.top = `${e.clientY - dragOffsetRef.current.y}px`;
+              clone.style.left = `${scaledDragCoords.x - dragOffsetRef.current.x}px`;
+              clone.style.top = `${scaledDragCoords.y - dragOffsetRef.current.y}px`;
               clone.style.width = `${rect.width}px`;
               clone.style.height = `${rect.height}px`;
               clone.style.zIndex = '10000';
@@ -666,12 +698,13 @@ export const RenderNode: React.FC<{
 
       // If drag is active, update clone position and detect drop position
       if (draggedNodeId) {
-        // Update clone position using offset
+        const scaledMoveCoords = scaleMouseCoordinates(e);
+        // Update clone position using offset (scaled for zoom)
         if (clonedElementRef.current && dragOffsetRef.current) {
-          clonedElementRef.current.style.left = `${e.clientX - dragOffsetRef.current.x}px`;
-          clonedElementRef.current.style.top = `${e.clientY - dragOffsetRef.current.y}px`;
+          clonedElementRef.current.style.left = `${scaledMoveCoords.x - dragOffsetRef.current.x}px`;
+          clonedElementRef.current.style.top = `${scaledMoveCoords.y - dragOffsetRef.current.y}px`;
         }
-        setGhostPosition({ x: e.clientX, y: e.clientY });
+        setGhostPosition({ x: scaledMoveCoords.x, y: scaledMoveCoords.y });
 
         // Direction and edge-based hover detection
         if (!draggedItemParentId || !draggedSize || !dragOffsetRef.current) return;
@@ -690,9 +723,10 @@ export const RenderNode: React.FC<{
           const isFullWidth = gridColumnSpan >= parentColumns;
 
           if (isGridChild && !isFullWidth) {
-            // Calculate movement from drag start
-            const dx = e.clientX - dragStartPosRef.current.x;
-            const dy = e.clientY - dragStartPosRef.current.y;
+            // Calculate movement from drag start (scaled for zoom)
+            const scaledDragModeCoords = scaleMouseCoordinates(e);
+            const dx = scaledDragModeCoords.x - dragStartPosRef.current.x;
+            const dy = scaledDragModeCoords.y - dragStartPosRef.current.y;
             const absDx = Math.abs(dx);
             const absDy = Math.abs(dy);
 
@@ -1904,9 +1938,9 @@ export const RenderNode: React.FC<{
 
   // Apply responsive columns for Grid components
   if (node.type === 'Grid') {
-    const baseColumns = mergedProps.columns || 12;
+    const baseColumns = (mergedProps as any).columns || 12;
     const responsiveColumns = getGridColumns(node.responsiveColumns, viewport.size, baseColumns);
-    mergedProps.columns = responsiveColumns;
+    (mergedProps as any).columns = responsiveColumns;
   }
 
   // Apply layout constraints for layout containers
