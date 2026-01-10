@@ -592,6 +592,10 @@ Escape         Deselect / Exit play mode
    - Never add extra wrapper containers/divs for styling hacks
    - Use proper component props instead of inline style workarounds
    - If a WordPress component prop doesn't work, find the correct prop name (e.g., `align` vs `alignment`)
+14. **No unused variables** - ESLint enforces `@typescript-eslint/no-unused-vars` as an error:
+   - Run `npm run lint` before committing to catch unused vars
+   - Prefix intentionally unused variables with underscore (`_unusedVar`) to suppress
+   - Remove unused imports and variables, don't leave dead code
 
 ## Debugging
 

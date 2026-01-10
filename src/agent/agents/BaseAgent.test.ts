@@ -9,7 +9,7 @@
  */
 
 import { BaseAgent } from './BaseAgent';
-import { AgentResult, LLMProvider, AgentProgressMessage } from './types';
+import { AgentResult, AgentProgressMessage } from './types';
 import { ToolContext, AgentTool } from '../types';
 import { MemoryStore } from '../memory/MemoryStore';
 import { MockLLMProvider, createTextResponse } from '../__mocks__/MockLLMProvider';

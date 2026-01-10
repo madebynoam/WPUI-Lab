@@ -8,7 +8,6 @@
 import React from 'react';
 import {
   Button,
-  __experimentalNumberControl as NumberControl,
   Tooltip,
 } from '@wordpress/components';
 import {
@@ -19,7 +18,6 @@ import {
   justifyStretch,
   justifyTop,
   arrowDown,
-  arrowRight,
   justifyCenterVertical,
   justifyBottom,
   justifyStretchVertical,

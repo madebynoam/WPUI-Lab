@@ -2,7 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { StorageProvider, ProjectSummary, ProjectData, CreateProjectResult, ProjectMeta } from './types';
 import type { Project } from '@/types';
 
-interface ProjectRow {
+interface _ProjectRow {
   id: string;
   owner_email: string;
   name: string;

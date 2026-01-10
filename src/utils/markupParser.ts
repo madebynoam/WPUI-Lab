@@ -224,7 +224,7 @@ function createError(state: ParseState, message: string): ParseError {
 /**
  * Get context around error position (3 lines before and after)
  */
-function getContext(state: ParseState, pos: number): string {
+function getContext(state: ParseState, _pos: number): string {
   const lines = state.source.split('\n');
   const currentLine = state.line - 1; // Convert to 0-based
 

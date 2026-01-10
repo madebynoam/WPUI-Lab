@@ -5,7 +5,7 @@
  */
 
 import { UpdateAgent } from './UpdateAgent';
-import { MockLLMProvider, createToolCallResponse, createTextResponse } from '../__mocks__/MockLLMProvider';
+import { MockLLMProvider, createToolCallResponse } from '../__mocks__/MockLLMProvider';
 import { MemoryStore } from '../memory/MemoryStore';
 import { ToolContext } from '../types';
 import { AgentProgressMessage } from './types';

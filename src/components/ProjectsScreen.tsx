@@ -33,7 +33,7 @@ interface CloudProject {
 export const ProjectsScreen: React.FC = () => {
   const router = useRouter();
   const { email } = useAuth();
-  const { listProjects, createProject, deleteProject, isLoading } = useCloudProject();
+  const { listProjects, createProject, deleteProject } = useCloudProject();
   const [projects, setProjects] = useState<CloudProject[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);

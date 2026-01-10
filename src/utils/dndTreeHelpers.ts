@@ -109,7 +109,7 @@ export function getProjection(
     return null;
   }
 
-  const activeItem = items[activeItemIndex];
+  const _activeItem = items[activeItemIndex];
   const overItem = items[overItemIndex];
 
   // Calculate depth based on horizontal drag offset

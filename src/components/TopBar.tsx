@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Icon } from "@wordpress/components";
+import { Button } from "@wordpress/components";
 import {
   plus as plusIcon,
   chevronLeft,
@@ -40,7 +40,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   isCanvasView,
   onToggleCanvasView,
   binId,
-  pageId,
+  pageId: _pageId,
   projectName,
   isDirty,
   isSaving,

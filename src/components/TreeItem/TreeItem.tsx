@@ -4,7 +4,6 @@ import React, { forwardRef, HTMLAttributes, CSSProperties, useState, useEffect, 
 import { DropdownMenu, MenuGroup, MenuItem, Icon } from '@wordpress/components';
 import { moreVertical, page } from '@wordpress/icons';
 import styles from './TreeItem.module.css';
-import { ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { Page } from '../../types';
 
 // Helper to get designer-friendly labels for layout containers
@@ -89,7 +88,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
       isRootVStack = false,
       isGlobalInstance = false,
       currentPage,
-      onDoubleClick,
+      onDoubleClick: _onDoubleClick,
       editingNodeId,
       editingNodeName = '',
       onEditStart,
@@ -101,7 +100,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
     },
     ref
   ) => {
-    const [isHovered, setIsHovered] = useState(false);
+    const [_isHovered, setIsHovered] = useState(false);
     const [clickCount, setClickCount] = useState(0);
     const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 

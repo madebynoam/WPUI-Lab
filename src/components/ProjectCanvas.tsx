@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useComponentTree } from '@/contexts/ComponentTreeContext';
-import { Page, ComponentNode } from '@/types';
+import { Page } from '@/types';
 import { RenderNode } from './RenderNode';
 import { PageConnectors } from './PageConnectors';
 import { CanvasControls } from './CanvasControls';
@@ -439,7 +439,6 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
 
   // Handle pointer up
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    const wasOnPage = draggingPageId;
     const didDrag = hasDraggedRef.current;
     
     if (draggingPageId) {

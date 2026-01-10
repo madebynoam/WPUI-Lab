@@ -490,7 +490,7 @@ ${secondaryCTA ? `    <Button variant="default" size="lg">${secondaryCTA}</Butto
 }
 
 // Helper: Build component tree from YAML structure
-async function buildComponentTree(yamlObj: any, context: ToolContext): Promise<ComponentNode[]> {
+async function _buildComponentTree(yamlObj: any, _context: ToolContext): Promise<ComponentNode[]> {
   // This is a simplified version - in production, reuse the buildFromYAML logic
   const nodes: ComponentNode[] = [];
 
@@ -498,7 +498,7 @@ async function buildComponentTree(yamlObj: any, context: ToolContext): Promise<C
     const type = Object.keys(obj)[0];
     const props = obj[type] || {};
 
-    const { semanticId, uuid, displayName } = generateSemanticId(type, {
+    const { semanticId } = generateSemanticId(type, {
       purpose: parent?.type,
       content: getContentPreview(props) || undefined,
     });

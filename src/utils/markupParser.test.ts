@@ -1,4 +1,4 @@
-import { parseMarkup, ParseResult } from './markupParser';
+import { parseMarkup } from './markupParser';
 
 // Mock generateId for predictable test IDs
 jest.mock('./idGenerator', () => {

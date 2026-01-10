@@ -25,7 +25,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
   const { updateComponentProps, isAgentExecuting, undo } = useComponentTree();
 
   // Only use state for hover and active drag side
-  const [isHoveringLeft, setIsHoveringLeft] = useState(false);
+  const [isHoveringLeft, _setIsHoveringLeft] = useState(false);
   const [isHoveringRight, setIsHoveringRight] = useState(false);
   const [activeDragSide, setActiveDragSide] = useState<'left' | 'right' | null>(null);
 
@@ -43,7 +43,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
   } | null>(null);
 
   // Ref to track the element being resized for live visual updates
-  const elementRef = useRef<HTMLElement | null>(null);
+  const _elementRef = useRef<HTMLElement | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +91,7 @@ export const GridResizeHandles: React.FC<GridResizeHandlesProps> = ({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }, [gridColumnStart, gridColumnSpan, parentColumns]);
 
-  const handleLeftPointerDown = useCallback((e: React.PointerEvent) => {
+  const _handleLeftPointerDown = useCallback((e: React.PointerEvent) => {
     startDrag(e, 'left');
   }, [startDrag]);
 

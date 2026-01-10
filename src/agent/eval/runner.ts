@@ -16,7 +16,7 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 import { ToolContext } from '../types';
-import { evalDataset, EvalScenario, calculateTotalBudget } from './dataset';
+import { evalDataset, EvalScenario } from './dataset';
 import { ComponentNode, Page } from '../../types';
 
 interface EvalResult {
@@ -160,7 +160,7 @@ function createMockToolContext(setupState?: EvalScenario['setupState']): ToolCon
     removeInteraction: () => {},
     updateInteraction: () => {},
 
-    createPage: (name: string, route: string) => {
+    createPage: (name: string, _route: string) => {
       const newPageId = `page-${Date.now()}`;
       pages.push({
         id: newPageId,

@@ -15,11 +15,7 @@ import {
   PanelBody,
   Popover,
   Icon,
-  DropdownMenu,
-  MenuGroup,
-  MenuItem,
   __experimentalHStack as HStack,
-  __experimentalVStack as VStack,
   __experimentalItemGroup as ItemGroup,
   __experimentalItem as Item,
   __experimentalToggleGroupControl as ToggleGroupControl,
@@ -31,7 +27,6 @@ import {
   trash as trashIcon,
   close,
   blockDefault,
-  moreVertical,
   button,
   seen,
   dragHandle,
@@ -68,23 +63,17 @@ const formatRelativeTime = (timestamp: number): string => {
 };
 
 import {
-  WidthPresetControl,
   AlignmentControl,
   SpacingControl,
   PaddingControl,
   WidthControl,
-  GridAlignmentControl,
-  GridAlignment,
   HeightControl,
-  GridChildHeightControl,
   GridHeightPreset,
   GridChildHeightPreset,
   VSTACK_PRIMARY_OPTIONS,
   VSTACK_CROSS_OPTIONS,
   HSTACK_PRIMARY_OPTIONS,
   HSTACK_CROSS_OPTIONS,
-  PrimaryAlign,
-  CrossAlign,
 } from "./LayoutControls";
 
 // Color swatch button with popover
@@ -170,14 +159,11 @@ export const PropertiesPanel: React.FC = () => {
     getNodeById,
     updateComponentProps,
     updateMultipleComponentProps,
-    updateComponentName,
     tree,
     gridLinesVisible,
     toggleGridLines,
     swapLayoutType,
     pages,
-    currentPageId,
-    updatePageTheme,
     addInteraction,
     removeInteraction,
     updateInteraction,
@@ -246,7 +232,6 @@ export const PropertiesPanel: React.FC = () => {
       padding: 0,
       spacing: 4,
     };
-    const maxWidth = projectLayout.maxWidth ?? 0;
     const padding = projectLayout.padding ?? 0;
     const spacing = projectLayout.spacing ?? 4;
 
@@ -486,7 +471,7 @@ export const PropertiesPanel: React.FC = () => {
 
   const renderStylesTab = () => {
     // Layout containers that support width control
-    const layoutContainers = [
+    const _layoutContainers = [
       "VStack",
       "HStack",
       "Grid",
@@ -497,7 +482,6 @@ export const PropertiesPanel: React.FC = () => {
       "Spinner",
       "DataViews",
     ];
-    const isLayoutContainer = layoutContainers.includes(firstNode.type);
 
     return (
       <div style={{ flex: 1, overflow: "auto" }}>

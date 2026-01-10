@@ -34,7 +34,7 @@ export class CreatorAgent extends BaseAgent {
     this.tools = tools;
   }
 
-  async canHandle(userMessage: string, memory: MemoryStore): Promise<boolean> {
+  async canHandle(userMessage: string, _memory: MemoryStore): Promise<boolean> {
     const lowerMessage = userMessage.toLowerCase();
 
     const creationKeywords = [
@@ -434,10 +434,7 @@ When user says "selected", "the selected", or "this" - use parentId: "${selected
     if (args.template === 'pricing') return 3;
     if (args.markup) {
       // Count only leaf components (Card, Button, Text, etc.), not containers (Grid, VStack, HStack)
-      const containerPattern = /<(Grid|VStack|HStack|CardHeader|CardBody|CardFooter)/g;
       const leafPattern = /<(Card|Button|Text|Heading|DataViews)/g;
-
-      const containers = (args.markup.match(containerPattern) || []).length;
       const allComponents = (args.markup.match(leafPattern) || []).length;
 
       // If we found Cards specifically, count those

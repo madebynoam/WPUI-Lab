@@ -65,14 +65,6 @@ const createButton = (id: string, text = 'Button'): ComponentNode => ({
   interactions: [],
 });
 
-const createVStack = (id: string, children: ComponentNode[] = []): ComponentNode => ({
-  id,
-  type: 'VStack',
-  props: { spacing: 4 },
-  children,
-  interactions: [],
-});
-
 const createPage = (id: string, name: string, tree: ComponentNode[]): Page => ({
   id,
   name,

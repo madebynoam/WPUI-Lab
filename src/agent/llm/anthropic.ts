@@ -2,7 +2,6 @@ import {
   LLMProvider,
   LLMChatOptions,
   LLMResponse,
-  LLMMessage,
   LLMToolCall,
 } from "./types";
 import { getModelCapabilities } from "../agentConfig";

@@ -14,7 +14,6 @@ import {
 } from "../utils/normalizeComponent";
 import "./TreePanel.css";
 import {
-  Button,
   DropdownMenu,
   MenuGroup,
   MenuItem,
@@ -22,15 +21,6 @@ import {
 import { ComponentInserter } from "./ComponentInserter";
 import {
   moreVertical,
-  layout,
-  box,
-  pencil,
-  tag,
-  brush,
-  settings,
-  plugins,
-  plus,
-  table,
 } from "@wordpress/icons";
 import {
   DndContext,
@@ -61,10 +51,6 @@ import {
 } from "../utils/dndTreeHelpers";
 import { SortableTreeItem } from "./TreeItem/SortableTreeItem";
 import { TreeItem } from "./TreeItem/TreeItem";
-import {
-  componentGroups,
-  type ComponentGroup,
-} from "../config/availableComponents";
 
 // Interactive component types that should be rendered in isolation when selected
 export const INTERACTIVE_COMPONENT_TYPES = [
@@ -167,7 +153,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
         cursor: "default",
       }}
       {...attributes}
-      onMouseDown={!isEditing ? (e) => {
+      onMouseDown={!isEditing ? () => {
         onPageClick();
       } : undefined}
     >
@@ -316,9 +302,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     updateComponentName,
     pages,
     currentPageId,
-    currentProjectId,
     setCurrentPage,
-    addPage,
     createPageWithId,
     deletePage,
     renamePage,
@@ -356,7 +340,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
   // dnd-kit state
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
-  const [offsetLeft, setOffsetLeft] = useState(0);
+  const [_offsetLeft, setOffsetLeft] = useState(0);
   const [currentProjection, setCurrentProjection] = useState<Projection | null>(
     null
   );
@@ -670,7 +654,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     setSearchTerm("");
   };
 
-  const registerNodeRef = useCallback(
+  const _registerNodeRef = useCallback(
     (id: string, el: HTMLDivElement | null) => {
       if (el) {
         nodeRefs.current.set(id, el);

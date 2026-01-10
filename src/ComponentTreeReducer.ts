@@ -13,7 +13,6 @@ import {
   moveNodeInTree,
   reorderNodeInTree,
   updateTreeForPage,
-  flattenTree,
   findParent,
 } from './utils/treeHelpers';
 import { generateId } from './utils/idGenerator';
@@ -87,16 +86,6 @@ const HISTORY_ACTIONS = new Set([
   'RESET_EXAMPLE_PROJECT',
 ]);
 
-// Actions that should be debounced (for history)
-const DEBOUNCED_ACTIONS = new Set([
-  'UPDATE_COMPONENT_PROPS',
-  'UPDATE_COMPONENT_NAME',
-  'UPDATE_PROJECT_THEME',
-  'UPDATE_PROJECT_LAYOUT',
-  'UPDATE_PROJECT_DESCRIPTION',
-  'RENAME_PAGE',
-  'RENAME_PROJECT',
-]);
 
 // Actions that modify content and should mark the document as dirty
 // Excludes navigation actions (SET_CURRENT_PAGE, SET_CURRENT_PROJECT) that don't change content
@@ -994,7 +983,7 @@ export function componentTreeReducer(
         return tree.map(node => {
           if (node.isGlobalInstance && node.globalComponentId === globalComponentId) {
             // Remove instance metadata, converting to normal component
-            const { isGlobalInstance, globalComponentId: _, ...normalNode } = node;
+            const { isGlobalInstance: _gi, globalComponentId: _gcid, ...normalNode } = node;
             return {
               ...normalNode,
               children: node.children ? detachInstancesInTree(node.children) : undefined,
@@ -1041,7 +1030,7 @@ export function componentTreeReducer(
         return tree.map(n => {
           if (n.id === nodeId) {
             // Remove instance metadata
-            const { isGlobalInstance, globalComponentId, ...normalNode } = n;
+            const { isGlobalInstance: _gi, globalComponentId: _gcid, ...normalNode } = n;
             return normalNode;
           }
           if (n.children) {

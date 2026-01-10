@@ -3,7 +3,6 @@ import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext"
 import { useAgentDebug } from "@/contexts/AgentDebugContext";
 import { ComponentNode } from "@/types";
 import { Breadcrumb } from "./Breadcrumb";
-import { findParent } from "@/utils/treeHelpers";
 import { RenderNode } from "./RenderNode";
 import { SelectionProvider } from "@/contexts/SelectionContext";
 import { SimpleDragProvider } from "@/contexts/SimpleDragContext";
@@ -25,28 +24,10 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
     tree,
     selectedNodeIds,
     setSelectedNodeIds,
-    toggleNodeSelection,
     getNodeById,
-    toggleGridLines,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    removeComponent,
-    copyComponent,
-    cutComponent,
-    pasteComponent,
-    canPaste,
-    duplicateComponent,
-    reorderComponent,
-    groupComponents,
     isPlayMode,
-    pages,
-    currentPageId,
     projects,
     currentProjectId,
-    editingMode,
-    setEditingMode,
     globalComponents,
     editingGlobalComponentId,
     updateGlobalComponent,
@@ -81,7 +62,6 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   };
 
   // Use project-level layout settings (applies to all pages)
-  const pageMaxWidth = projectLayout.maxWidth ?? 0;
   const pagePadding = projectLayout.padding ?? 0;
   const pageSpacing = projectLayout.spacing ?? 4;
 
@@ -148,7 +128,7 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   const isInteractiveSelected = !!interactiveAncestor;
 
   // Figma-style: If a container component is selected, show its children as draggable context
-  const editingContext =
+  const _editingContext =
     selectedNode &&
     componentRegistry[selectedNode.type]?.acceptsChildren &&
     !INTERACTIVE_COMPONENT_TYPES.includes(selectedNode.type)

@@ -13,7 +13,7 @@ import {
   ToolContext,
   AgentOrchestrator,
 } from "../agent";
-import { getTool, getToolsForLLM, convertToolToLLM } from "../agent/tools/registry";
+import { getTool, convertToolToLLM } from "../agent/tools/registry";
 
 // File version 3: Match project storage version (Grid-first layout system)
 const AGENT_MESSAGES_STORAGE_KEY = 'wp-designer-agent-messages-v3';
@@ -39,8 +39,8 @@ async function getOrchestrator() {
 
 // v2.0 stubs (disabled)
 const PLANNER_PROMPT = '';
-const executePhase = async (...args: any[]) => ({ output: '', tokens: 0, cost: 0 });
-const generateSuggestions = (...args: any[]) => [];
+const _executePhase = async (..._args: any[]) => ({ output: '', tokens: 0, cost: 0 });
+const _generateSuggestions = (..._args: any[]) => [];
 
 export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   const PANEL_WIDTH = 280;
@@ -74,18 +74,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   const {
     isDebugMode,
     setIsDebugMode,
-    phaseResults,
     setPhaseResults,
-    currentPhase,
     setCurrentPhase,
-    currentUserMessage,
     setCurrentUserMessage,
-    planOutput,
     setPlanOutput,
     plannerPrompt,
     setPlannerPrompt,
-    builderPrompt,
-    setBuilderPrompt,
   } = useAgentDebug();
 
   // Initialize planner prompt

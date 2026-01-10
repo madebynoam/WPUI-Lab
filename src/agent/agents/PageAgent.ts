@@ -36,7 +36,7 @@ export class PageAgent extends BaseAgent {
   /**
    * Check if this agent can handle the request
    */
-  async canHandle(userMessage: string, memory: MemoryStore): Promise<boolean> {
+  async canHandle(userMessage: string, _memory: MemoryStore): Promise<boolean> {
     const lowerMessage = userMessage.toLowerCase();
 
     // Strong page indicators
@@ -127,7 +127,7 @@ export class PageAgent extends BaseAgent {
             type: 'object',
             properties: Object.fromEntries(
               Object.entries(tool.parameters || {}).map(([key, param]) => {
-                const { required, ...rest } = param as any;
+                const { required: _req, ...rest } = param as any;
                 return [key, rest];
               })
             ),

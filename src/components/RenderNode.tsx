@@ -8,7 +8,7 @@ import { componentRegistry } from '@/componentRegistry';
 import * as wpIcons from '@wordpress/icons';
 import { INTERACTIVE_COMPONENT_TYPES } from './TreePanel';
 import { getMockData, getFieldDefinitions, DataSetType } from '../utils/mockDataGenerator';
-import { findTopMostContainer, findPathBetweenNodes, findNodeById, findParent } from '../utils/treeHelpers';
+import { findTopMostContainer, findNodeById, findParent } from '../utils/treeHelpers';
 import { useSelection } from '@/contexts/SelectionContext';
 import { useSimpleDrag } from '@/contexts/SimpleDragContext';
 import { useRouter, useParams } from 'next/navigation';
@@ -19,7 +19,7 @@ export const RenderNode: React.FC<{
   node: ComponentNode;
   renderInteractive?: boolean;
 }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentPageId, currentProjectId, projects, setPlayMode, updateComponentProps, setCurrentPage, reorderComponent, editingMode, setEditingGlobalComponent } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentProjectId, projects, updateComponentProps, reorderComponent, editingMode, setEditingGlobalComponent } = useComponentTree();
   const playModeState = usePlayModeState();
   const router = useRouter();
   const params = useParams();
@@ -32,12 +32,12 @@ export const RenderNode: React.FC<{
   // Simple drag state
   const { draggedNodeId, setDraggedNodeId, hoveredSiblingId, setHoveredSiblingId, dropPosition, setDropPosition, draggedSize, setDraggedSize, justFinishedDragging, setJustFinishedDragging, draggedItemParentId, setDraggedItemParentId, dragMode, setDragMode, targetGridColumnStart, setTargetGridColumnStart, parentGridColumns: contextParentGridColumns, setParentGridColumns: setContextParentGridColumns } = useSimpleDrag();
   const [isDragging, setIsDragging] = useState(false);
-  const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
+  const [_ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Local drag state
   const [parentLayoutDirection, setParentLayoutDirection] = useState<'vertical' | 'horizontal' | 'grid'>('vertical');
-  const [parentGridColumns, setParentGridColumns] = useState<number>(1);
+  const [_parentGridColumns, setParentGridColumns] = useState<number>(1);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const dragThresholdMet = useRef<boolean>(false);
   const clonedElementRef = useRef<HTMLElement | null>(null);
@@ -769,8 +769,6 @@ export const RenderNode: React.FC<{
         }
         prevMousePosRef.current = { x: e.clientX, y: e.clientY };
 
-        let foundSlot = false;
-
         // Check each sibling
         for (const sibling of parent.children) {
           if (sibling.id === draggedNodeId) continue;
@@ -792,7 +790,6 @@ export const RenderNode: React.FC<{
               const position = leadingEdge < siblingMidY ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
-              foundSlot = true;
               break;
             }
           } else if (parentLayoutDirection === 'horizontal') {
@@ -805,7 +802,6 @@ export const RenderNode: React.FC<{
               const position = leadingEdge < siblingMidX ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
-              foundSlot = true;
               break;
             }
           } else {
@@ -823,7 +819,6 @@ export const RenderNode: React.FC<{
               const position = leadingEdgeX < siblingMidX ? 'before' : 'after';
               setHoveredSiblingId(sibling.id);
               setDropPosition(position);
-              foundSlot = true;
               break;
             }
           }
@@ -984,7 +979,7 @@ export const RenderNode: React.FC<{
   const isSelected = selectedNodeIds.includes(node.id);
 
   // DISABLED: Sibling animations - replaced with simple grid line indicator
-  const shouldAnimateAsSibling = false;
+  const _shouldAnimateAsSibling = false;
 
   // Check if this is the hovered sibling (used for drop indicator)
   const isHoveredSibling = hoveredSiblingId === node.id;
@@ -1030,7 +1025,7 @@ export const RenderNode: React.FC<{
 
   const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => {
     // DISABLED: Transform calculation for sibling animations
-    const transform = 'none';
+    const _transform = 'none';
 
     // DISABLED: Background highlight for hovered sibling
     const backgroundColor = undefined;
@@ -1198,7 +1193,7 @@ export const RenderNode: React.FC<{
               cursor: 'text',
               outline: 'none', // Remove browser default outline
             }}
-            onFocus={(e) => {
+            onFocus={() => {
               // When contentEditable receives focus, select component and mark as editing
               if (!selectedNodeIds.includes(node.id)) {
                 toggleNodeSelection(node.id, false, false, tree);
@@ -1304,7 +1299,7 @@ export const RenderNode: React.FC<{
     // For buttons, preserve the outline from editorProps (selection state)
     // but remove outline and boxShadow from buttonStyle (which would override it)
     if (node.type === 'Button') {
-      const { outline, boxShadow, ...restButtonStyle } = buttonStyle;
+      const { outline: _outline, boxShadow: _boxShadow, ...restButtonStyle } = buttonStyle;
       const mergedStyle = { ...editorProps.style, ...restButtonStyle };
 
       return (
@@ -1879,8 +1874,8 @@ export const RenderNode: React.FC<{
 
   // Regular components with children - merge with defaultProps
   // For VStack/HStack, preserve explicit inline width/height styles (they override hug/fill)
-  const hasExplicitWidth = (node.type === 'VStack' || node.type === 'HStack') && props.style?.width;
-  const hasExplicitHeight = (node.type === 'VStack' || node.type === 'HStack') && props.style?.height;
+  const _hasExplicitWidth = (node.type === 'VStack' || node.type === 'HStack') && props.style?.width;
+  const _hasExplicitHeight = (node.type === 'VStack' || node.type === 'HStack') && props.style?.height;
 
   const mergedProps = {
     ...definition.defaultProps,
@@ -1892,7 +1887,7 @@ export const RenderNode: React.FC<{
   };
 
   // Apply layout constraints for layout containers
-  const maxWidthPresets: Record<string, string> = {
+  const _maxWidthPresets: Record<string, string> = {
     content: '1344px',
     full: '100%',
   };

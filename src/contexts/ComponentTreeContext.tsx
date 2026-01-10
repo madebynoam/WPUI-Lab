@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useEffect, useReducer, useMemo, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useReducer, useMemo, useCallback } from 'react';
 import { ComponentNode, Page, Project, Interaction, PatternNode } from '@/types';
 import { componentRegistry } from '@/componentRegistry';
 import { componentTreeReducerWithDirtyTracking, ComponentTreeState } from '@/ComponentTreeReducer';

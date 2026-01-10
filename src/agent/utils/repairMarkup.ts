@@ -1,4 +1,4 @@
-import { parseMarkup, ParseError, ParseResult } from '../../utils/markupParser';
+import { parseMarkup, ParseError } from '../../utils/markupParser';
 import { createLLMProvider } from '../llm/factory';
 import { getAgentModel, getModelCapabilities } from '../agentConfig';
 import { getAgentComponentSummary } from '../../config/availableComponents';

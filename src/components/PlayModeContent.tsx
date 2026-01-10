@@ -8,7 +8,7 @@ import { Canvas } from '@/components/Canvas';
 import { useCloudProject } from '@/hooks/useCloudProject';
 
 export default function PlayModeContent({ binId, pageId }: { binId: string; pageId: string }) {
-  const { currentPageId, setCurrentPage, setSelectedNodeIds, setPlayMode, importProject } = useComponentTree();
+  const { setCurrentPage, setSelectedNodeIds, setPlayMode, importProject } = useComponentTree();
   const { loadProject } = useCloudProject();
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 

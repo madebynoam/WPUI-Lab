@@ -6,7 +6,7 @@
  */
 
 import { ComponentNode, Page } from '../../types';
-import { MemoryEntry, ActionType } from '../__fixtures__/memory';
+import { ActionType } from '../__fixtures__/memory';
 
 export interface EvalScenario {
   id: string;

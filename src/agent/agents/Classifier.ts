@@ -47,11 +47,6 @@ export class Classifier extends BaseAgent {
 
     this.resetTokens();
 
-    // Build agent capabilities context
-    const agentList = this.agents.map(agent =>
-      `- ${agent.name}: ${agent.capabilities.join(', ')}`
-    ).join('\n');
-
     // Get recent memory context (last 5 actions)
     const recentActions = memory.search({});
     const memoryContext = recentActions.slice(-5).map(entry => {

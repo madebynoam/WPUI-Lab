@@ -201,7 +201,7 @@ describe('PageAgent', () => {
         createTextResponse('Page "Nonexistent" not found'),
       ]);
 
-      const result = await agent.execute(
+      await agent.execute(
         'Switch to the nonexistent page',
         mockContext,
         memory
@@ -327,7 +327,7 @@ describe('PageAgent', () => {
         createTextResponse('Dashboard page already exists'),
       ]);
 
-      const result = await agent.execute(
+      await agent.execute(
         'Create a dashboard page',
         mockContext,
         memory

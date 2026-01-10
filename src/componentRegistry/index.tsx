@@ -1722,7 +1722,7 @@ export const componentRegistry: Record<string, ComponentDefinition> = {
         package: '@wordpress/dataviews',
         components: ['DataViews'],
       },
-      generateCode: (node, generateChildren) => {
+      generateCode: (node, _generateChildren) => {
         const dataPreset = node.props.data || 'sites';
         const viewType = node.props.viewType || 'table';
         const itemsPerPage = node.props.itemsPerPage || 10;
