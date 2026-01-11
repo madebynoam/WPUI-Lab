@@ -123,7 +123,11 @@ export const KeyboardHandler: React.FC<{
       if ((e.ctrlKey || e.metaKey) && e.key === "0" && !e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
-        setViewportPreset('full');
+        // Fit to width - auto-calculate zoom to fill available space
+        const fitToWidth = (window as any).__viewportFitToWidth;
+        if (fitToWidth) {
+          fitToWidth();
+        }
         return;
       }
 

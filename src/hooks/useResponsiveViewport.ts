@@ -20,6 +20,14 @@ export const VIEWPORT_WIDTHS = {
   full: 0, // 0 means use actual window width
 } as const;
 
+// Viewport preset heights (for device-like proportions)
+export const VIEWPORT_HEIGHTS = {
+  mobile: 667,   // iPhone proportions
+  tablet: 1024,  // iPad proportions
+  desktop: 900,  // Desktop monitor proportions
+  full: 0,       // 0 means use container height
+} as const;
+
 /**
  * Hook to detect current viewport size using WordPress breakpoints
  * Supports viewport preview override for testing responsive behavior

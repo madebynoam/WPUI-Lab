@@ -45,8 +45,14 @@ export const ViewportPresetButtons: React.FC = () => {
     { id: 'mobile' as const, title: 'Mobile (375px) - Cmd+1' },
     { id: 'tablet' as const, title: 'Tablet (768px) - Cmd+2' },
     { id: 'desktop' as const, title: 'Desktop (1440px) - Cmd+3' },
-    { id: 'full' as const, title: 'Full Width - Cmd+0' },
   ];
+
+  const handleFitToWidth = () => {
+    const fitToWidth = (window as any).__viewportFitToWidth;
+    if (fitToWidth) {
+      fitToWidth();
+    }
+  };
 
   return (
     <div
@@ -92,6 +98,32 @@ export const ViewportPresetButtons: React.FC = () => {
           <ViewportIcon preset={preset.id} size={14} />
         </button>
       ))}
+      {/* Fit to Width button */}
+      <button
+        onClick={handleFitToWidth}
+        style={{
+          width: 28,
+          height: 24,
+          borderRadius: 3,
+          border: 'none',
+          backgroundColor: 'transparent',
+          color: '#1e1e1e',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'background-color 0.15s ease, color 0.15s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#f0f0f0';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+        title="Fit to Width - Cmd+0"
+      >
+        <ViewportIcon preset="full" size={14} />
+      </button>
     </div>
   );
 };

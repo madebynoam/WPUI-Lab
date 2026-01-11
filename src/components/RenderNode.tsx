@@ -18,30 +18,12 @@ import { getGridColumns, calculateProportionalSpan } from '@/utils/responsiveHel
 
 /**
  * Scale mouse coordinates inversely to zoom level for accurate hit detection when zoomed
+ * Note: With CSS zoom, the browser handles coordinate scaling automatically, so we skip manual scaling
  */
 function scaleMouseCoordinates(e: MouseEvent | React.MouseEvent): { x: number; y: number } {
-  const frameRef = (window as any).__viewportFrameRef;
-  const zoomLevel = (window as any).__viewportZoomLevel || 1.0;
-
-  if (!frameRef || zoomLevel === 1.0) {
-    return { x: e.clientX, y: e.clientY };
-  }
-
-  const frameRect = frameRef.getBoundingClientRect();
-
-  // Calculate position relative to frame
-  const relativeX = e.clientX - frameRect.left;
-  const relativeY = e.clientY - frameRect.top;
-
-  // Scale coordinates inversely to zoom level
-  const scaledX = relativeX / zoomLevel;
-  const scaledY = relativeY / zoomLevel;
-
-  // Convert back to screen coordinates
-  return {
-    x: frameRect.left + scaledX,
-    y: frameRect.top + scaledY,
-  };
+  // CSS zoom handles coordinate scaling automatically - no manual scaling needed
+  // This function now just returns raw coordinates since we use CSS zoom instead of transform: scale
+  return { x: e.clientX, y: e.clientY };
 }
 
 // Simple Figma-style drag-and-drop component
