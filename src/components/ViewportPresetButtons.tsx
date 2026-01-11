@@ -93,13 +93,6 @@ export function ViewportPresetButtons(): React.ReactElement | null {
     { id: 'desktop', title: 'Desktop (1440px) - Cmd+3' },
   ];
 
-  function handleFitToWidth(): void {
-    const fitToWidth = (window as { __viewportFitToWidth?: () => void }).__viewportFitToWidth;
-    if (fitToWidth) {
-      fitToWidth();
-    }
-  }
-
   return (
     <div
       style={{
@@ -127,15 +120,6 @@ export function ViewportPresetButtons(): React.ReactElement | null {
           </button>
         );
       })}
-      <button
-        onClick={handleFitToWidth}
-        style={getButtonStyle(false)}
-        onMouseEnter={(e) => handleHoverEnter(e, false)}
-        onMouseLeave={(e) => handleHoverLeave(e, false)}
-        title="Fit to Width - Cmd+0"
-      >
-        <ViewportIcon preset="full" size={14} />
-      </button>
     </div>
   );
 }

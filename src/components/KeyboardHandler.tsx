@@ -58,7 +58,7 @@ export const KeyboardHandler: React.FC<{
 
   // Keyboard shortcuts
   useEffect(() => {
-    const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.5, 2.0];
+    const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Disable all keyboard shortcuts when agent is executing

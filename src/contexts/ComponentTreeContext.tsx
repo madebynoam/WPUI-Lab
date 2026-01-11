@@ -247,7 +247,7 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
       const storedZoom = sessionStorage.getItem(`zoom-level-${state.currentProjectId}`);
       if (storedZoom) {
         const zoomValue = parseFloat(storedZoom);
-        if (!isNaN(zoomValue) && zoomValue >= 0.5 && zoomValue <= 2.0) {
+        if (!isNaN(zoomValue) && zoomValue >= 0.25 && zoomValue <= 2.0) {
           dispatch({ type: 'SET_ZOOM_LEVEL', payload: { level: zoomValue } });
         }
       }
