@@ -19,16 +19,18 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
   const presetHeight = VIEWPORT_HEIGHTS[effectivePreset];
   const isConstrained = presetWidth > 0;
 
-  // Fit to width function - calculates zoom to fill available container width
-  const fitToWidth = useCallback(() => {
+  // Fit to width: Calculate zoom to fill available container width
+  const fitToWidth = useCallback((): void => {
     if (!containerRef.current || !isConstrained) return;
 
-    // Get available width (container width minus padding)
-    const containerWidth = containerRef.current.clientWidth - 40; // 20px padding each side
-    const optimalZoom = Math.min(1.0, containerWidth / presetWidth);
+    const CONTAINER_PADDING = 40; // 20px each side
+    const MIN_ZOOM = 0.5;
+    const MAX_ZOOM = 1.0;
 
-    // Clamp to slider range (0.5 to 1.0)
-    const clampedZoom = Math.max(0.5, Math.min(1.0, optimalZoom));
+    const containerWidth = containerRef.current.clientWidth - CONTAINER_PADDING;
+    const optimalZoom = Math.min(MAX_ZOOM, containerWidth / presetWidth);
+    const clampedZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, optimalZoom));
+
     setZoomLevel(clampedZoom);
   }, [isConstrained, presetWidth, setZoomLevel]);
 

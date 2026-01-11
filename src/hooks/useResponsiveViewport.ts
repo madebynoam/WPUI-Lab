@@ -9,28 +9,58 @@ export interface ResponsiveViewport {
   isMedium: boolean;
   isLarge: boolean;
   isXLarge: boolean;
-  actualWidth: number; // The width being used for calculations
+  actualWidth: number;
 }
 
-// Viewport preset widths
+// Viewport preset dimensions
 export const VIEWPORT_WIDTHS = {
   mobile: 375,
   tablet: 768,
   desktop: 1440,
-  full: 0, // 0 means use actual window width
+  full: 0, // 0 = use actual window width
 } as const;
 
-// Viewport preset heights (for device-like proportions)
 export const VIEWPORT_HEIGHTS = {
   mobile: 667,   // iPhone proportions
   tablet: 1024,  // iPad proportions
   desktop: 900,  // Desktop monitor proportions
-  full: 0,       // 0 means use container height
+  full: 0,       // 0 = use container height
+} as const;
+
+// WordPress-compatible breakpoints
+const BREAKPOINTS = {
+  xlarge: 1280,
+  large: 1080,
+  medium: 782,
 } as const;
 
 /**
- * Hook to detect current viewport size using WordPress breakpoints
- * Supports viewport preview override for testing responsive behavior
+ * Determine viewport size from width using WordPress breakpoints.
+ */
+function getViewportSizeFromWidth(width: number): ViewportSize {
+  if (width >= BREAKPOINTS.xlarge) return 'xlarge';
+  if (width >= BREAKPOINTS.large) return 'large';
+  if (width >= BREAKPOINTS.medium) return 'medium';
+  return 'small';
+}
+
+/**
+ * Determine viewport size from WordPress viewport match hooks.
+ */
+function getViewportSizeFromHooks(
+  isXLarge: boolean,
+  isLarge: boolean,
+  isMedium: boolean
+): ViewportSize {
+  if (isXLarge) return 'xlarge';
+  if (isLarge) return 'large';
+  if (isMedium) return 'medium';
+  return 'small';
+}
+
+/**
+ * Hook to detect current viewport size using WordPress breakpoints.
+ * Supports viewport preview override for testing responsive behavior.
  *
  * Breakpoints:
  * - small: < 782px
@@ -41,47 +71,22 @@ export const VIEWPORT_HEIGHTS = {
 export function useResponsiveViewport(): ResponsiveViewport {
   const { viewportPreset } = useComponentTree();
 
-  // Always call hooks (Rules of Hooks requirement)
+  // Always call hooks unconditionally (Rules of Hooks requirement)
   const isXLarge = useViewportMatch('xlarge');
   const isLarge = useViewportMatch('large');
   const isMedium = useViewportMatch('medium');
 
-  // Get viewport preset width (0 = use actual window width)
   const presetWidth = VIEWPORT_WIDTHS[viewportPreset];
+  const isPreviewMode = presetWidth > 0;
 
-  // If viewport preview is active, use preset width for breakpoint detection
-  // Otherwise, use WordPress useViewportMatch for actual window width
-  let size: ViewportSize;
-  let actualWidth: number;
+  // Calculate size and actualWidth based on mode
+  const size = isPreviewMode
+    ? getViewportSizeFromWidth(presetWidth)
+    : getViewportSizeFromHooks(isXLarge, isLarge, isMedium);
 
-  if (presetWidth > 0) {
-    // Viewport preview mode - use preset width
-    actualWidth = presetWidth;
-
-    // Manually determine breakpoint based on preset width
-    if (actualWidth >= 1280) {
-      size = 'xlarge';
-    } else if (actualWidth >= 1080) {
-      size = 'large';
-    } else if (actualWidth >= 782) {
-      size = 'medium';
-    } else {
-      size = 'small';
-    }
-  } else {
-    // Full width mode - use actual window width from hooks
-    if (isXLarge) {
-      size = 'xlarge';
-    } else if (isLarge) {
-      size = 'large';
-    } else if (isMedium) {
-      size = 'medium';
-    } else {
-      size = 'small';
-    }
-
-    actualWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
-  }
+  const actualWidth = isPreviewMode
+    ? presetWidth
+    : (typeof window !== 'undefined' ? window.innerWidth : 1280);
 
   return {
     size,
