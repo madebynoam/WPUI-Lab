@@ -117,7 +117,7 @@ export const PageFrame = React.memo(function PageFrame({
           color: isSelected ? '#3858e9' : '#757575',
           whiteSpace: 'nowrap',
           transformOrigin: 'left bottom',
-          cursor: 'pointer',
+          cursor: 'default',
           padding: `${4 / zoom}px ${8 / zoom}px`,
           marginLeft: -8 / zoom,
           marginTop: -4 / zoom,
@@ -140,7 +140,7 @@ export const PageFrame = React.memo(function PageFrame({
           flexDirection: 'column',
           backgroundColor: pageBackgroundColor,
           boxShadow: isSelected
-            ? `0 0 0 ${2 / zoom}px #3858e9`
+            ? `0 0 0 ${1 / zoom}px #3858e9`
             : '0 0 0 1px rgba(0, 0, 0, 0.1)',
           borderRadius: '4px',
           overflow: 'hidden',
@@ -154,7 +154,7 @@ export const PageFrame = React.memo(function PageFrame({
               position: 'absolute',
               inset: 0,
               zIndex: 10,
-              cursor: 'pointer',
+              cursor: 'default',
             }}
             onClick={handleClick}
             onDoubleClick={handleDoubleClick}
