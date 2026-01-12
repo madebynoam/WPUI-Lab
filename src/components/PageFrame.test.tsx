@@ -14,6 +14,9 @@ import { Page } from '@/types';
 // MOCKS
 // =============================================================================
 
+// Mock setSelectedNodeIds for testing selection clearing behavior
+const mockSetSelectedNodeIds = jest.fn();
+
 // Mock useComponentTree hook
 jest.mock('@/contexts/ComponentTreeContext', () => ({
   useComponentTree: jest.fn(() => ({
@@ -25,6 +28,7 @@ jest.mock('@/contexts/ComponentTreeContext', () => ({
       },
     ],
     currentProjectId: 'proj-1',
+    setSelectedNodeIds: mockSetSelectedNodeIds,
   })),
 }));
 
@@ -97,6 +101,7 @@ function getPageFrame() {
 describe('PageFrame', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSetSelectedNodeIds.mockClear();
   });
 
   // ===========================================================================
@@ -226,6 +231,45 @@ describe('PageFrame', () => {
       fireEvent.click(pageFrame, { ctrlKey: true });
 
       expect(onDrillIn).toHaveBeenCalledWith('page-1');
+    });
+
+    /**
+     * BUG FIX TEST: Verify single-click clears item selections
+     *
+     * Root cause: When an item was selected inside a drilled-in page,
+     * clicking the page label didn't deselect the item.
+     *
+     * Fix: Call setSelectedNodeIds([]) on single-click to select page,
+     * but NOT on double-click to drill in.
+     */
+    it('clears item selections on single-click (select page)', () => {
+      renderPageFrame();
+
+      const pageFrame = getPageFrame() as HTMLElement;
+      fireEvent.click(pageFrame);
+
+      // Single-click to select page should clear item selections
+      expect(mockSetSelectedNodeIds).toHaveBeenCalledWith([]);
+    });
+
+    it('does NOT clear item selections on double-click (drill in)', () => {
+      renderPageFrame();
+
+      const pageFrame = getPageFrame() as HTMLElement;
+      fireEvent.doubleClick(pageFrame);
+
+      // Double-click to drill in should NOT clear selections
+      expect(mockSetSelectedNodeIds).not.toHaveBeenCalled();
+    });
+
+    it('does NOT clear item selections on Cmd+click (drill in)', () => {
+      renderPageFrame();
+
+      const pageFrame = getPageFrame() as HTMLElement;
+      fireEvent.click(pageFrame, { metaKey: true });
+
+      // Cmd+click to drill in should NOT clear selections
+      expect(mockSetSelectedNodeIds).not.toHaveBeenCalled();
     });
   });
 
