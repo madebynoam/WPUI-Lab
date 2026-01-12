@@ -6,6 +6,7 @@ import { usePageSelection } from '@/hooks/usePageSelection';
 import { VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS } from '@/hooks/useResponsiveViewport';
 import { PageFrame } from './PageFrame';
 import { Page } from '@/types';
+import { ROOT_GRID_ID } from '@/utils/treeHelpers';
 
 // Constants for page layout
 const PAGE_GAP = 100;
@@ -47,9 +48,15 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     selectedPageId,
     currentPageId,
     currentProjectId,
+    selectedNodeIds,
     updatePageCanvasPosition,
     updateAllPageCanvasPositions,
   } = useComponentTree();
+
+  // Check if items are selected inside the current page (not just root grid)
+  // Selections are now cleared on page switch, so we just check if any non-root items are selected
+  const hasItemSelectedInCurrentPage = selectedNodeIds.length > 0 &&
+    !(selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_GRID_ID);
 
   // SessionStorage key for pan offset persistence (survives component remounts from URL changes)
   const panStorageKey = `pan-offset-${currentProjectId}`;
@@ -417,7 +424,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
               <PageFrame
                 key={page.id}
                 page={page}
-                isSelected={page.id === selectedPageId}
+                isSelected={page.id === selectedPageId && !(page.id === currentPageId && hasItemSelectedInCurrentPage)}
                 isDrilledIn={page.id === currentPageId}
                 position={pagePositions[page.id] || { x: 0, y: 0 }}
                 presetWidth={presetWidth}

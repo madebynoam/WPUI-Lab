@@ -1128,9 +1128,15 @@ export function componentTreeReducer(
     case 'SET_CURRENT_PAGE': {
       const { pageId } = action.payload;
       const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      // Only clear selections when actually switching to a different page
+      const isPageChange = currentProject.currentPageId !== pageId;
       const updatedProject = { ...currentProject, currentPageId: pageId, lastModified: Date.now() };
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
-      return updateHistory(state, newProjects, state.currentProjectId);
+      return {
+        ...updateHistory(state, newProjects, state.currentProjectId),
+        // Clear selection only when switching pages - previous page's selections are stale
+        ...(isPageChange && { selectedNodeIds: [] }),
+      };
     }
 
     case 'SET_SELECTED_PAGE_ID': {
