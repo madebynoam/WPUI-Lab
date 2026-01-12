@@ -44,12 +44,18 @@ export const PageFrame = React.memo(function PageFrame({
   const lastClickTimeRef = useRef(0);
   const lastClickIdRef = useRef<string | null>(null);
 
-  // Get project theme
+  // Get project theme and layout
   const currentProject = projects.find((p) => p.id === currentProjectId);
   const projectTheme = currentProject?.theme ?? {
     primaryColor: '#3858e9',
     backgroundColor: '#ffffff',
   };
+  const projectLayout = currentProject?.layout ?? {
+    maxWidth: 0,
+    padding: 0,
+    spacing: 4,
+  };
+  const pagePadding = projectLayout.padding ?? 0;
 
   // Calculate actual position including drag offset
   const actualPosition = isDragging
@@ -89,8 +95,8 @@ export const PageFrame = React.memo(function PageFrame({
     onDrillIn(page.id);
   }, [page.id, onDrillIn]);
 
-  // Page background color
-  const pageBackgroundColor = page.theme?.backgroundColor || projectTheme.backgroundColor || '#fff';
+  // Page background color - hardcoded for now
+  const pageBackgroundColor = '#FCFCFC';
 
   return (
     <div
@@ -168,6 +174,7 @@ export const PageFrame = React.memo(function PageFrame({
             flex: 1,
             pointerEvents: isDrilledIn ? 'auto' : 'none',
             overflow: 'auto',
+            padding: pagePadding > 0 ? `${pagePadding * 4}px` : undefined,
           }}
         >
           {page.tree.length > 0 ? (

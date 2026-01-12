@@ -40,11 +40,6 @@ export const Canvas: React.FC = () => {
     }
   }, [setIsDebugMode]);
 
-  // Get page-level properties from root VStack
-  const rootVStack = getNodeById(ROOT_GRID_ID);
-  const pageBackgroundColor =
-    rootVStack?.props.backgroundColor ?? "rgb(249, 250, 251)";
-
   // Get current project and layout settings (project-wide)
   const currentProject = projects.find((p) => p.id === currentProjectId);
   const projectTheme = currentProject?.theme ?? {
@@ -146,7 +141,7 @@ export const Canvas: React.FC = () => {
       style={{
         flex: 1,
         padding: `${pagePadding * 4}px`,
-        backgroundColor: pageBackgroundColor,
+        backgroundColor: '#FCFCFC',
         overflow: "auto",
         display: "flex",
         justifyContent: "center",
