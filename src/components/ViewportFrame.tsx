@@ -7,9 +7,6 @@ import { VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS } from '@/hooks/useResponsiveViewport
 import { PageFrame } from './PageFrame';
 import { Page } from '@/types';
 
-// Extra space around content for free panning
-const CANVAS_PADDING = 200;
-
 // Constants for page layout
 const PAGE_GAP = 100;
 const GRID_COLUMNS = 3;
@@ -59,6 +56,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
 
   const frameRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const panWrapperRef = useRef<HTMLDivElement>(null);
 
   // Pan offset state - initialized from sessionStorage to survive component remounts
   const [panOffset, setPanOffset] = useState(() => {
@@ -177,11 +175,16 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
 
   // Refs for smooth zoom - apply directly to DOM, sync to React state after gesture ends
   const zoomLevelRef = useRef(zoomLevel);
+  const panOffsetRef = useRef(panOffset);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     zoomLevelRef.current = zoomLevel;
   }, [zoomLevel]);
+
+  useEffect(() => {
+    panOffsetRef.current = panOffset;
+  }, [panOffset]);
 
   // Wheel event handler for two-finger trackpad panning and pinch-to-zoom (Figma-style)
   // Listen on window level with capture to intercept before browser navigation
@@ -202,27 +205,71 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
       e.stopPropagation();
 
       if (e.ctrlKey || e.metaKey) {
-        // Pinch-to-zoom or Cmd+scroll
+        // Pinch-to-zoom or Cmd+scroll - zoom toward visible viewport center
+        const panWrapper = panWrapperRef.current;
+        if (!panWrapper) return;
+
         const zoomFactor = Math.pow(0.995, e.deltaY);
         const currentZoom = zoomLevelRef.current;
         const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom * zoomFactor));
 
-        frame.style.zoom = String(newZoom);
+        // Get the visible viewport center (the center of the container element)
+        const containerRect = container.getBoundingClientRect();
+        const viewportCenterX = containerRect.width / 2;
+        const viewportCenterY = containerRect.height / 2;
+
+        // Current pan offset
+        const currentPan = panOffsetRef.current;
+
+        // Calculate what content point is at the viewport center
+        // The content position formula: screenPos = contentPos * zoom + panOffset
+        // So: contentPos = (screenPos - panOffset) / zoom
+        const contentX = (viewportCenterX - currentPan.x) / currentZoom;
+        const contentY = (viewportCenterY - currentPan.y) / currentZoom;
+
+        // After zooming, adjust pan so the same content point stays at viewport center
+        // We want: viewportCenter = contentPos * newZoom + newPan
+        // So: newPan = viewportCenter - contentPos * newZoom
+        const newPanX = viewportCenterX - contentX * newZoom;
+        const newPanY = viewportCenterY - contentY * newZoom;
+
+        // Apply both transforms directly to DOM (no React state during gesture)
+        frame.style.transform = `scale(${newZoom})`;
+        panWrapper.style.transform = `translate(${newPanX}px, ${newPanY}px)`;
+
+        // Update refs
         zoomLevelRef.current = newZoom;
+        panOffsetRef.current = { x: newPanX, y: newPanY };
         (window as any).__viewportZoomLevel = newZoom;
 
+        // Debounce sync to React state (only after gesture ends)
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
         debounceTimerRef.current = setTimeout(() => {
           setZoomLevel(newZoom);
+          setPanOffset({ x: newPanX, y: newPanY });
         }, SYNC_DELAY);
       } else {
-        // Two-finger trackpad pan - functional update (no ref needed)
-        setPanOffset((prev: { x: number; y: number }) => ({
-          x: prev.x - e.deltaX,
-          y: prev.y - e.deltaY,
-        }));
+        // Two-finger trackpad pan - update DOM directly for smooth panning
+        const panWrapper = panWrapperRef.current;
+        if (!panWrapper) return;
+
+        const currentPan = panOffsetRef.current;
+        const newPanX = currentPan.x - e.deltaX;
+        const newPanY = currentPan.y - e.deltaY;
+
+        // Apply directly to DOM
+        panWrapper.style.transform = `translate(${newPanX}px, ${newPanY}px)`;
+        panOffsetRef.current = { x: newPanX, y: newPanY };
+
+        // Debounce sync to React state
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+        debounceTimerRef.current = setTimeout(() => {
+          setPanOffset({ x: newPanX, y: newPanY });
+        }, SYNC_DELAY);
       }
     };
 
@@ -335,10 +382,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
       style={{
         width: '100%',
         height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        padding: `${CANVAS_PADDING}px`,
+        position: 'relative',
         overflow: 'hidden',
         backgroundColor: '#f5f5f5',
         // Prevent browser back/forward navigation on horizontal swipe
@@ -348,6 +392,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     >
       {/* Pan transform wrapper */}
       <div
+        ref={panWrapperRef}
         className="pan-wrapper"
         style={{
           transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
@@ -358,12 +403,13 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
       >
         {/* Wrapper for positioning */}
         <div style={{ position: 'relative' }}>
-          {/* Zoom frame - CSS zoom applied */}
+          {/* Zoom frame - transform scale applied */}
           <div
             ref={frameRef}
             style={{
               position: 'relative',
-              zoom: effectiveZoom,
+              transform: `scale(${effectiveZoom})`,
+              transformOrigin: '0 0',
             }}
           >
             {/* Page frames instead of children */}
