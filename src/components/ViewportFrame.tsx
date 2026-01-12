@@ -106,6 +106,9 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
   const [draggingPageId, setDraggingPageId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const hasDraggedRef = useRef(false);
+  const pointerIdRef = useRef<number | null>(null);
+  const hasCaptureRef = useRef(false);
+  const justFinishedDragRef = useRef(false);
 
   // In play mode, always use full width and 100% zoom
   const effectivePreset = isPlayMode ? 'full' : viewportPreset;
@@ -297,7 +300,10 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     setDraggingPageId(pageId);
     setDragOffset({ x: 0, y: 0 });
     hasDraggedRef.current = false;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    pointerIdRef.current = e.pointerId;
+    hasCaptureRef.current = false;
+    // Don't set pointer capture here - defer until actual drag movement
+    // This allows click events to fire normally for page selection
   }, []);
 
   // Pointer move handler (like ProjectCanvas - React event handler)
@@ -308,6 +314,16 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
         const canvasDeltaY = e.movementY / zoomLevelRef.current;
         if (Math.abs(canvasDeltaX) > 2 || Math.abs(canvasDeltaY) > 2) {
           hasDraggedRef.current = true;
+          // Set pointer capture on first significant movement
+          // This ensures we keep receiving events even if pointer leaves the page
+          if (!hasCaptureRef.current && panWrapperRef.current && pointerIdRef.current !== null) {
+            try {
+              panWrapperRef.current.setPointerCapture(pointerIdRef.current);
+              hasCaptureRef.current = true;
+            } catch {
+              // Ignore - pointer may have been released
+            }
+          }
         }
         setDragOffset((prev) => ({
           x: prev.x + canvasDeltaX,
@@ -329,21 +345,35 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
             y: currentPosition.y + dragOffset.y,
           });
         }
+        // Ensure the page is selected after drag ends
+        selectPage(draggingPageId);
+        // Flag to prevent handleBackgroundClick from deselecting
+        justFinishedDragRef.current = true;
         setDraggingPageId(null);
         setDragOffset({ x: 0, y: 0 });
-        try {
-          (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-        } catch {
-          // Ignore
+        // Release capture only if it was set during drag
+        if (hasCaptureRef.current && panWrapperRef.current) {
+          try {
+            panWrapperRef.current.releasePointerCapture(e.pointerId);
+          } catch {
+            // Ignore - capture may have already been released
+          }
         }
+        pointerIdRef.current = null;
+        hasCaptureRef.current = false;
       }
     },
-    [draggingPageId, dragOffset, pagePositions, updatePageCanvasPosition]
+    [draggingPageId, dragOffset, pagePositions, updatePageCanvasPosition, selectPage]
   );
 
   // Background click handler - deselect page
   const handleBackgroundClick = useCallback(
     (e: React.MouseEvent) => {
+      // Skip if we just finished a drag (click fires after pointerup due to capture)
+      if (justFinishedDragRef.current) {
+        justFinishedDragRef.current = false;
+        return;
+      }
       if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('pan-wrapper')) {
         selectPage(null);
       }

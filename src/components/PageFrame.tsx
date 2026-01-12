@@ -114,7 +114,7 @@ export const PageFrame = React.memo(function PageFrame({
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
-      {/* Page label - clickable to select/drill, outside zoom, counter-scaled for consistent size */}
+      {/* Page label - clickable to select/drill, draggable even when drilled-in */}
       <div
         style={{
           position: 'absolute',
@@ -133,6 +133,7 @@ export const PageFrame = React.memo(function PageFrame({
           zIndex: 100,
           backgroundColor: 'transparent',
         }}
+        onPointerDown={(e) => { e.stopPropagation(); setSelectedNodeIds([]); onPointerDown(e, page.id); }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
