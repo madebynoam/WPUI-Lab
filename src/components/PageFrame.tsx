@@ -40,7 +40,7 @@ export const PageFrame = React.memo(function PageFrame({
   onSelect,
   onDrillIn,
 }: PageFrameProps) {
-  const { projects, currentProjectId } = useComponentTree();
+  const { projects, currentProjectId, setSelectedNodeIds } = useComponentTree();
   const lastClickTimeRef = useRef(0);
   const lastClickIdRef = useRef<string | null>(null);
 
@@ -77,9 +77,11 @@ export const PageFrame = React.memo(function PageFrame({
     if (isDoubleClick) {
       onDrillIn(page.id);
     } else {
+      // Clear item selections when clicking to select a page (not drill-in)
+      setSelectedNodeIds([]);
       onSelect(page.id);
     }
-  }, [page.id, onSelect, onDrillIn]);
+  }, [page.id, onSelect, onDrillIn, setSelectedNodeIds]);
 
   // Handle native double-click as backup
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
