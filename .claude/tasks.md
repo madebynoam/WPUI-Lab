@@ -6,7 +6,6 @@
 
 ## Pending
 
-- [ ] Fix page drag-and-drop when page is selected (currently only works for unselected pages; should work for selected pages too, but if a child is selected, keep drag context for the child)
 - [ ] Cmd+click on item in non-drilled page should drill into that page AND select the clicked item in one action
 - [ ] Page label should size correctly to the zoom
 - [ ] Long breadcrumb should have ellipsis (...) so it doesn't clip zoom controls or push them past the edge
@@ -15,6 +14,7 @@
 
 ## Completed
 
+- [x] ~~Fix page drag-and-drop when page is selected~~
 - [x] ~~Remove the blue background on the page level if it's selected~~
 - [x] ~~If an item is selected, the page highlight doesn't need to show, just like a parent and item work~~
 - [x] ~~Fix stale item highlight when switching pages~~
