@@ -102,7 +102,7 @@ export const PageFrame = React.memo(function PageFrame({
         cursor: 'default',
         zIndex: isDragging ? 1000 : isSelected ? 10 : 1,
       }}
-      onPointerDown={(e) => onPointerDown(e, page.id)}
+      onPointerDown={isDrilledIn ? undefined : (e) => onPointerDown(e, page.id)}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
