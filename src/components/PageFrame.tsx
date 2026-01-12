@@ -123,7 +123,7 @@ export const PageFrame = React.memo(function PageFrame({
           marginTop: -4 / zoom,
           borderRadius: 4 / zoom,
           zIndex: 100,
-          backgroundColor: isSelected ? 'rgba(56, 88, 233, 0.1)' : 'transparent',
+          backgroundColor: 'transparent',
         }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
