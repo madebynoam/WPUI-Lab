@@ -39,6 +39,7 @@ export interface ComponentTreeState {
   // Viewport preview state
   viewportPreset: 'mobile' | 'tablet' | 'desktop' | 'full';
   zoomLevel: number; // 0.5, 0.75, 1.0, 1.5, 2.0
+  showWires: boolean; // Show interaction wires on canvas
 
   // Cloud save state
   isDirty: boolean; // True when there are unsaved changes
@@ -1487,6 +1488,11 @@ export function componentTreeReducer(
     case 'SET_ZOOM_LEVEL': {
       const { level } = action.payload;
       return { ...state, zoomLevel: level };
+    }
+
+    case 'SET_SHOW_WIRES': {
+      const { show } = action.payload;
+      return { ...state, showWires: show };
     }
 
     case 'SET_AGENT_EXECUTING': {

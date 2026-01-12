@@ -142,6 +142,8 @@ export const PageFrame = React.memo(function PageFrame({
 
       {/* Page content frame */}
       <div
+        className="project-canvas-page-thumb"
+        data-page-id={page.id}
         style={{
           width: presetWidth,
           minHeight: presetHeight,

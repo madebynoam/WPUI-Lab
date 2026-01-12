@@ -13,6 +13,7 @@ import { AgentPanel } from './AgentPanel';
 import { Breadcrumb } from './Breadcrumb';
 import { ViewportPresetButtons } from './ViewportPresetButtons';
 import { ZoomSlider } from './ZoomSlider';
+import { WiresToggleButton } from './WiresToggleButton';
 import { useRouter } from 'next/navigation';
 import { useCloudProject } from '@/hooks/useCloudProject';
 
@@ -352,6 +353,7 @@ function EditorContent({ binId, pageId }: EditorProps) {
                   }}>
                     <ViewportPresetButtons />
                     <ZoomSlider />
+                    <WiresToggleButton />
                   </div>
                 </div>
               )}

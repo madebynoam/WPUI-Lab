@@ -109,6 +109,8 @@ interface ComponentTreeContextType {
   setViewportPreset: (preset: 'mobile' | 'tablet' | 'desktop' | 'full') => void;
   zoomLevel: number;
   setZoomLevel: (level: number) => void;
+  showWires: boolean;
+  setShowWires: (show: boolean) => void;
 
   // Agent execution state
   isAgentExecuting: boolean;
@@ -208,6 +210,7 @@ function initializeState(): ComponentTreeState {
     editingGlobalComponentId: null,
     viewportPreset: 'full', // Default to full width
     zoomLevel: 1.0, // Default to 100% zoom
+    showWires: false, // Hide interaction wires by default
     isDirty: false,
     history: {
       past: [],
@@ -627,6 +630,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     }
   }, [state.currentProjectId]);
 
+  const setShowWires = useCallback((show: boolean) => {
+    dispatch({ type: 'SET_SHOW_WIRES', payload: { show } });
+  }, []);
+
   // ===== Agent Execution State =====
 
   const setAgentExecuting = (isExecuting: boolean) => {
@@ -763,6 +770,8 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     setViewportPreset,
     zoomLevel: state.zoomLevel,
     setZoomLevel,
+    showWires: state.showWires,
+    setShowWires,
     isAgentExecuting: state.isAgentExecuting,
     setAgentExecuting,
     editingMode: state.editingMode,

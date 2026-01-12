@@ -75,6 +75,7 @@ export type ComponentTreeAction =
   // Viewport preview actions
   | { type: 'SET_VIEWPORT_PRESET'; payload: { preset: 'mobile' | 'tablet' | 'desktop' | 'full' } }
   | { type: 'SET_ZOOM_LEVEL'; payload: { level: number } }
+  | { type: 'SET_SHOW_WIRES'; payload: { show: boolean } }
 
   // Interaction actions
   | { type: 'ADD_INTERACTION'; payload: { nodeId: string; interaction: Interaction } }

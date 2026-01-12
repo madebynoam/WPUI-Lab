@@ -11,6 +11,7 @@
 - [ ] Long breadcrumb should have ellipsis (...) so it doesn't clip zoom controls or push them past the edge
 - [ ] Add option to show interaction wires (like ProjectCanvas), but draw from the item with the interaction, not from the page
 - [ ] Switching viewport size (tablet/mobile/desktop) should preserve canvas pan position
+- [ ] Fit button should pan to current page (or first page if none selected), not a random default position
 
 ## Completed
 

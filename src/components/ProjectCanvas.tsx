@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useComponentTree } from '@/contexts/ComponentTreeContext';
 import { Page } from '@/types';
 import { RenderNode } from './RenderNode';
-import { PageConnectors } from './PageConnectors';
+import { ComponentConnectors } from './ComponentConnectors';
 import { CanvasControls } from './CanvasControls';
 import { SelectionProvider } from '@/contexts/SelectionContext';
 import { SimpleDragProvider } from '@/contexts/SimpleDragContext';
@@ -141,6 +141,8 @@ const PageThumbnail = React.memo(function PageThumbnail({
     >
       {/* Page content container */}
       <div
+        className="project-canvas-page-thumb"
+        data-page-id={page.id}
         style={{
           width: thumbWidth,
           height: thumbHeight,
@@ -231,6 +233,8 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
     currentPageId,
     updatePageCanvasPosition,
     updateAllPageCanvasPositions,
+    showWires,
+    setShowWires,
   } = useComponentTree();
 
   // Local selection state for canvas view (doesn't affect global currentPageId)
@@ -239,7 +243,7 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
 
   // Viewport preset state
   const [viewportPreset, setViewportPreset] = useState<ViewportPreset>('desktop');
-  
+
   // Calculate thumbnail dimensions from viewport preset
   const viewport = VIEWPORT_PRESETS[viewportPreset];
   const thumbWidth = viewport.width * viewport.scale;
@@ -628,14 +632,17 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
           />
         ))}
         
-        {/* Connector lines */}
-        <PageConnectors
-          pages={pages}
-          pagePositions={livePagePositions}
-          thumbWidth={thumbWidth}
-          thumbHeight={thumbHeight}
-          zoom={zoom}
-        />
+        {/* Connector lines - show ComponentConnectors when wires enabled */}
+        {showWires && (
+          <ComponentConnectors
+            pages={pages}
+            pagePositions={livePagePositions}
+            thumbWidth={thumbWidth}
+            thumbHeight={thumbHeight}
+            contentScale={contentScale}
+            zoom={zoom}
+          />
+        )}
       </div>
       
       {/* Controls overlay */}
@@ -649,6 +656,8 @@ export const ProjectCanvas: React.FC<ProjectCanvasProps> = ({ onPageClick, onClo
         onClose={onClose}
         viewportPreset={viewportPreset}
         onViewportChange={setViewportPreset}
+        showWires={showWires}
+        onShowWiresChange={setShowWires}
       />
     </div>
   );

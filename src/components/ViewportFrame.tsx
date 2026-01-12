@@ -5,6 +5,7 @@ import { useComponentTree } from '@/contexts/ComponentTreeContext';
 import { usePageSelection } from '@/hooks/usePageSelection';
 import { VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS } from '@/hooks/useResponsiveViewport';
 import { PageFrame } from './PageFrame';
+import { ComponentConnectors } from './ComponentConnectors';
 import { Page } from '@/types';
 import { ROOT_GRID_ID } from '@/utils/treeHelpers';
 
@@ -51,6 +52,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     selectedNodeIds,
     updatePageCanvasPosition,
     updateAllPageCanvasPositions,
+    showWires,
   } = useComponentTree();
 
   // Check if items are selected inside the current page (not just root grid)
@@ -467,6 +469,18 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
                 onDrillIn={handlePageDrillIn}
               />
             ))}
+
+            {/* Interaction wires */}
+            {showWires && (
+              <ComponentConnectors
+                pages={pages}
+                pagePositions={pagePositions}
+                thumbWidth={presetWidth}
+                thumbHeight={presetHeight}
+                contentScale={1}
+                zoom={effectiveZoom}
+              />
+            )}
           </div>
         </div>
       </div>
