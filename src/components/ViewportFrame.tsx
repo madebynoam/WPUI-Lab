@@ -49,15 +49,53 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     pages,
     selectedPageId,
     currentPageId,
+    currentProjectId,
     updatePageCanvasPosition,
     updateAllPageCanvasPositions,
   } = useComponentTree();
 
+  // SessionStorage key for pan offset persistence (survives component remounts from URL changes)
+  const panStorageKey = `pan-offset-${currentProjectId}`;
+
   const frameRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Pan offset state
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  // Pan offset state - initialized from sessionStorage to survive component remounts
+  const [panOffset, setPanOffset] = useState(() => {
+    if (typeof window === 'undefined' || !currentProjectId) return { x: 0, y: 0 };
+    try {
+      const stored = sessionStorage.getItem(`pan-offset-${currentProjectId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+    return { x: 0, y: 0 };
+  });
+
+  // Save panOffset to sessionStorage (debounced to avoid excessive writes during panning)
+  const panSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !currentProjectId) return;
+
+    // Debounce the save to avoid excessive writes during panning
+    if (panSaveTimerRef.current) {
+      clearTimeout(panSaveTimerRef.current);
+    }
+    panSaveTimerRef.current = setTimeout(() => {
+      sessionStorage.setItem(panStorageKey, JSON.stringify(panOffset));
+    }, 100);
+
+    return () => {
+      if (panSaveTimerRef.current) {
+        clearTimeout(panSaveTimerRef.current);
+      }
+    };
+  }, [panOffset, panStorageKey, currentProjectId]);
 
   // Dragging state
   const [draggingPageId, setDraggingPageId] = useState<string | null>(null);
@@ -107,7 +145,11 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
 
     setZoomLevel(clampedZoom);
     setPanOffset({ x: 0, y: 0 });
-  }, [isConstrained, presetWidth, setZoomLevel]);
+    // Also clear from sessionStorage since we're intentionally resetting
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(panStorageKey);
+    }
+  }, [isConstrained, presetWidth, setZoomLevel, panStorageKey]);
 
   // Track previous viewport preset to reset pan when it changes
   const prevViewportPresetRef = useRef(viewportPreset);
@@ -126,8 +168,12 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     if (prevViewportPresetRef.current !== viewportPreset) {
       setPanOffset({ x: 0, y: 0 });
       prevViewportPresetRef.current = viewportPreset;
+      // Also clear from sessionStorage since we're intentionally resetting
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(panStorageKey);
+      }
     }
-  }, [viewportPreset]);
+  }, [viewportPreset, panStorageKey]);
 
   // Refs for smooth zoom - apply directly to DOM, sync to React state after gesture ends
   const zoomLevelRef = useRef(zoomLevel);
@@ -173,7 +219,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
         }, SYNC_DELAY);
       } else {
         // Two-finger trackpad pan - functional update (no ref needed)
-        setPanOffset(prev => ({
+        setPanOffset((prev: { x: number; y: number }) => ({
           x: prev.x - e.deltaX,
           y: prev.y - e.deltaY,
         }));
