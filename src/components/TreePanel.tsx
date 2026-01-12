@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useParams } from "next/navigation";
 import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
+import { usePageSelection } from "@/hooks/usePageSelection";
 import { ComponentNode, PatternNode } from "../types";
 import { componentRegistry } from "@/componentRegistry";
 import { patterns, assignIds } from "../patterns";
@@ -290,6 +291,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
   const router = useRouter();
   const params = useParams();
   const binId = params.binId as string; // Get binId from URL for navigation
+  const { selectPage } = usePageSelection(); // Unified page selection with URL update
   const {
     tree,
     addComponent,
@@ -302,7 +304,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     updateComponentName,
     pages,
     currentPageId,
+    selectedPageId,
     setCurrentPage,
+    setSelectedPageId,
     createPageWithId,
     deletePage,
     renamePage,
@@ -880,7 +884,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                   key={page.id}
                   page={page}
                   isEditing={editingPageId === page.id}
-                  isCurrent={currentPageId === page.id && !editingGlobalComponentId}
+                  isCurrent={selectedPageId === page.id && !editingGlobalComponentId}
                   editingName={editingPageName}
                   onEditNameChange={setEditingPageName}
                   onEditSubmit={() => {
@@ -896,10 +900,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                       if (editingGlobalComponentId) {
                         setEditingGlobalComponent(null);
                       }
-                      setCurrentPage(page.id);
-                      if (binId) {
-                        router.push(`/editor/${binId}/${page.id}`);
-                      }
+                      // Select the page (hook handles both state + URL update)
+                      selectPage(page.id);
                     }
                   }}
                   onNameClick={(e: React.MouseEvent) => {
@@ -915,20 +917,19 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                         if (editingGlobalComponentId) {
                           setEditingGlobalComponent(null);
                         }
-                        setCurrentPage(page.id);
-                        if (binId) {
-                          router.push(`/editor/${binId}/${page.id}`);
-                        }
+                        // Select the page (hook handles both state + URL update)
+                        selectPage(page.id);
                       }
                       pageClickTimeoutRef.current[page.id] = setTimeout(() => {
                         pageClickCountRef.current[page.id] = 0;
                       }, 350);
                     } else if (pageClickCountRef.current[page.id] === 2) {
+                      // Double-click: drill into page (same as single-click now with unified selection)
                       e.stopPropagation();
                       clearTimeout(pageClickTimeoutRef.current[page.id]);
                       pageClickCountRef.current[page.id] = 0;
-                      setEditingPageId(page.id);
-                      setEditingPageName(page.name);
+                      // Select the page (hook handles both state + URL update)
+                      selectPage(page.id);
                     }
                   }}
                   onEditStart={() => {
@@ -1064,28 +1065,31 @@ export const TreePanel: React.FC<TreePanelProps> = ({
         </>
       )}
 
-      {/* Layers Label */}
-      <div
-        style={{
-          padding: "12px 8px 12px 8px",
-          borderTop: "1px solid #e0e0e0",
-          borderBottom: "1px solid #e0e0e0",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "11px",
-            fontWeight: 600,
-            color: "#666",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
-          Layers
-        </span>
-      </div>
+      {/* Layers section - only show when a page is selected */}
+      {selectedPageId && (
+        <>
+          {/* Layers Label */}
+          <div
+            style={{
+              padding: "12px 8px 12px 8px",
+              borderTop: "1px solid #e0e0e0",
+              borderBottom: "1px solid #e0e0e0",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "#666",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Layers
+            </span>
+          </div>
 
-      {/* Inserter Overlay */}
+          {/* Inserter Overlay */}
       <ComponentInserter
         showInserter={showInserter}
         onCloseInserter={onCloseInserter}
@@ -1237,6 +1241,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
           )}
         </DndContext>
       </div>
+        </>
+      )}
     </div>
   );
 };

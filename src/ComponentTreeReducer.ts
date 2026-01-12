@@ -27,6 +27,7 @@ export interface ComponentTreeState {
 
   // UI state
   selectedNodeIds: string[];
+  selectedPageId: string | null; // ID of selected page frame on multi-page canvas
   gridLinesVisible: Set<string>;
   clipboard: ComponentNode | null;
   cutNodeId: string | null; // ID of the node that was cut (to remove after paste)
@@ -1130,6 +1131,11 @@ export function componentTreeReducer(
       const updatedProject = { ...currentProject, currentPageId: pageId, lastModified: Date.now() };
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
       return updateHistory(state, newProjects, state.currentProjectId);
+    }
+
+    case 'SET_SELECTED_PAGE_ID': {
+      const { pageId } = action.payload;
+      return { ...state, selectedPageId: pageId };
     }
 
     case 'ADD_PAGE': {

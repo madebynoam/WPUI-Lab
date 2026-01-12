@@ -7,7 +7,6 @@ import { AgentDebugProvider } from '@/contexts/AgentDebugContext';
 import { TopBar } from './TopBar';
 import { TreePanel } from './TreePanel';
 import { Canvas } from './Canvas';
-import { ProjectCanvas } from './ProjectCanvas';
 import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { AgentPanel } from './AgentPanel';
@@ -89,6 +88,9 @@ function EditorContent({ binId, pageId }: EditorProps) {
       });
     } else if (isCorrectProjectLoaded && currentPageId !== pageId) {
       // Correct project already loaded, just switch page
+      // This handles browser back/forward navigation and direct URL access
+      // Note: When user clicks a page, usePageSelection already sets currentPageId,
+      // so this will be a no-op in that case (currentPageId === pageId)
       setCurrentPage(pageId);
     }
   }, [binId, loadProject, importProject, pageId, setCurrentPage, isCorrectProjectLoaded, currentPageId, markSaved]);
@@ -135,9 +137,6 @@ function EditorContent({ binId, pageId }: EditorProps) {
     const saved = localStorage.getItem('wp-designer-show-agent-panel');
     return saved === 'true';
   });
-  
-  // Canvas view state (multi-page overview)
-  const [isCanvasView, setIsCanvasView] = useState(false);
 
   // Save right panel selection to localStorage whenever it changes
   useEffect(() => {
@@ -145,6 +144,28 @@ function EditorContent({ binId, pageId }: EditorProps) {
       localStorage.setItem('wp-designer-right-panel', rightPanel);
     }
   }, [rightPanel]);
+
+  // Prevent browser back/forward swipe gestures in the editor
+  // Combining overscroll-behavior with overflow-x: hidden (recommended approach)
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'prevent-swipe-navigation';
+    style.textContent = `
+      html, body {
+        overscroll-behavior: none !important;
+        overscroll-behavior-x: none !important;
+        overflow-x: hidden !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      const existingStyle = document.getElementById('prevent-swipe-navigation');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, []);
 
   // Save code panel width to localStorage whenever it changes
   useEffect(() => {
@@ -219,8 +240,8 @@ function EditorContent({ binId, pageId }: EditorProps) {
     };
   }, [isResizing]);
 
-  // Hide panels when in play mode or canvas view
-  const shouldShowPanels = showPanels && !isPlayMode && !isCanvasView;
+  // Hide panels when in play mode
+  const shouldShowPanels = showPanels && !isPlayMode;
 
   const handleNavigateToProjects = useCallback(() => {
     if (isDirty) {
@@ -296,8 +317,6 @@ function EditorContent({ binId, pageId }: EditorProps) {
                 rightPanel={rightPanel}
                 onToggleRightPanel={setRightPanel}
                 onNavigateToProjects={handleNavigateToProjects}
-                isCanvasView={isCanvasView}
-                onToggleCanvasView={() => setIsCanvasView(prev => !prev)}
                 binId={binId}
                 pageId={pageId}
                 projectName={currentProject?.name}
@@ -313,22 +332,10 @@ function EditorContent({ binId, pageId }: EditorProps) {
 
             {/* Middle section: Canvas + Bottom Bar wrapper */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {isCanvasView ? (
-                <ProjectCanvas
-                  onPageClick={(newPageId) => {
-                    setIsCanvasView(false);
-                    // Navigate to the new page URL - this ensures the URL sync effect
-                    // in Editor will correctly update currentPageId
-                    router.push(`/editor/${binId}/${newPageId}`);
-                  }}
-                  onClose={() => setIsCanvasView(false)}
-                />
-              ) : (
-                <Canvas />
-              )}
+              <Canvas />
 
               {/* Bottom bar - breadcrumb and viewport controls */}
-              {showHeader && !isPlayMode && !isCanvasView && (
+              {showHeader && !isPlayMode && (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',

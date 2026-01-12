@@ -1,21 +1,68 @@
-import React, { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
-import { useComponentTree } from '@/contexts/ComponentTreeContext';
-import { VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS } from '@/hooks/useResponsiveViewport';
+'use client';
 
-interface ViewportFrameProps {
-  children: React.ReactNode;
-}
+import React, { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } from 'react';
+import { useComponentTree } from '@/contexts/ComponentTreeContext';
+import { usePageSelection } from '@/hooks/usePageSelection';
+import { VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS } from '@/hooks/useResponsiveViewport';
+import { PageFrame } from './PageFrame';
+import { Page } from '@/types';
 
 // Extra space around content for free panning
 const CANVAS_PADDING = 200;
 
+// Constants for page layout
+const PAGE_GAP = 100;
+const GRID_COLUMNS = 3;
+
+// Calculate auto-layout positions for pages
+function calculateAutoLayout(
+  pages: Page[],
+  thumbWidth: number,
+  thumbHeight: number
+): Record<string, { x: number; y: number }> {
+  const positions: Record<string, { x: number; y: number }> = {};
+
+  pages.forEach((page, index) => {
+    const col = index % GRID_COLUMNS;
+    const row = Math.floor(index / GRID_COLUMNS);
+    positions[page.id] = {
+      x: col * (thumbWidth + PAGE_GAP),
+      y: row * (thumbHeight + PAGE_GAP + 40),
+    };
+  });
+
+  return positions;
+}
+
+interface ViewportFrameProps {
+  children?: React.ReactNode;
+}
+
 export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
-  const { viewportPreset, zoomLevel, isPlayMode, setZoomLevel } = useComponentTree();
+  const { selectPage } = usePageSelection();
+
+  const {
+    viewportPreset,
+    zoomLevel,
+    isPlayMode,
+    setZoomLevel,
+    pages,
+    selectedPageId,
+    currentPageId,
+    updatePageCanvasPosition,
+    updateAllPageCanvasPositions,
+  } = useComponentTree();
+
   const frameRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Pan offset state for transform-based panning
+  // Pan offset state
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+
+  // Dragging state
+  const [draggingPageId, setDraggingPageId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const hasDraggedRef = useRef(false);
 
   // In play mode, always use full width and 100% zoom
   const effectivePreset = isPlayMode ? 'full' : viewportPreset;
@@ -25,11 +72,32 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
   const presetHeight = VIEWPORT_HEIGHTS[effectivePreset];
   const isConstrained = presetWidth > 0;
 
-  // Fit to width: Calculate zoom to fill available container width
+  // Calculate page positions
+  const pagePositions = useMemo(() => {
+    const positions: Record<string, { x: number; y: number }> = {};
+    const defaultPositions = calculateAutoLayout(pages, presetWidth, presetHeight);
+
+    pages.forEach((page) => {
+      positions[page.id] = page.canvasPosition || defaultPositions[page.id] || { x: 0, y: 0 };
+    });
+
+    return positions;
+  }, [pages, presetWidth, presetHeight]);
+
+  // Initialize page positions on mount if not set
+  useEffect(() => {
+    const hasPositions = pages.some((p) => p.canvasPosition);
+    if (!hasPositions && pages.length > 0) {
+      const positions = calculateAutoLayout(pages, presetWidth, presetHeight);
+      updateAllPageCanvasPositions(positions);
+    }
+  }, [pages, updateAllPageCanvasPositions, presetWidth, presetHeight]);
+
+  // Fit to width
   const fitToWidth = useCallback((): void => {
     if (!containerRef.current || !isConstrained) return;
 
-    const CONTAINER_PADDING = 40; // 20px each side
+    const CONTAINER_PADDING = 40;
     const MIN_ZOOM = 0.25;
     const MAX_ZOOM = 1.0;
 
@@ -38,14 +106,13 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     const clampedZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, optimalZoom));
 
     setZoomLevel(clampedZoom);
-    // Reset pan when fitting to width
     setPanOffset({ x: 0, y: 0 });
   }, [isConstrained, presetWidth, setZoomLevel]);
 
   // Track previous viewport preset to reset pan when it changes
   const prevViewportPresetRef = useRef(viewportPreset);
 
-  // Store frame ref and fitToWidth in window for coordinate scaling and external access
+  // Store frame ref and fitToWidth in window
   useEffect(() => {
     if (frameRef.current) {
       (window as any).__viewportFrameRef = frameRef.current;
@@ -54,10 +121,10 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     (window as any).__viewportFitToWidth = fitToWidth;
   }, [effectiveZoom, fitToWidth]);
 
-  // Reset pan when viewport preset changes (useLayoutEffect for synchronous update before paint)
+  // Reset pan when viewport preset changes
   useLayoutEffect(() => {
     if (prevViewportPresetRef.current !== viewportPreset) {
-      setPanOffset({ x: 0, y: 0 }); // eslint-disable-line react-hooks/set-state-in-effect -- Intentional reset
+      setPanOffset({ x: 0, y: 0 });
       prevViewportPresetRef.current = viewportPreset;
     }
   }, [viewportPreset]);
@@ -71,6 +138,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
   }, [zoomLevel]);
 
   // Wheel event handler for two-finger trackpad panning and pinch-to-zoom (Figma-style)
+  // Listen on window level with capture to intercept before browser navigation
   useEffect(() => {
     const container = containerRef.current;
     const frame = frameRef.current;
@@ -78,26 +146,25 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
 
     const MIN_ZOOM = 0.25;
     const MAX_ZOOM = 1.0;
-    const SYNC_DELAY = 150; // Only sync to React after 150ms of no zooming
+    const SYNC_DELAY = 150;
 
     const handleWheel = (e: WheelEvent) => {
+      // Only handle if event is within our container
+      if (!container.contains(e.target as Node)) return;
+
       e.preventDefault();
       e.stopPropagation();
 
-      // Pinch-to-zoom (trackpad pinch reports as ctrlKey) or Cmd+scroll
       if (e.ctrlKey || e.metaKey) {
-        // Use multiplicative zoom for smoother feel (like Figma)
+        // Pinch-to-zoom or Cmd+scroll
         const zoomFactor = Math.pow(0.995, e.deltaY);
         const currentZoom = zoomLevelRef.current;
         const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom * zoomFactor));
 
-        // Apply zoom directly to DOM for immediate visual feedback (no React re-render)
         frame.style.zoom = String(newZoom);
         zoomLevelRef.current = newZoom;
-        // Also update window global for coordinate calculations
         (window as any).__viewportZoomLevel = newZoom;
 
-        // Debounce React state sync - only update after gesture ends
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
@@ -105,7 +172,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
           setZoomLevel(newZoom);
         }, SYNC_DELAY);
       } else {
-        // Two-finger trackpad pan: deltaX = horizontal, deltaY = vertical
+        // Two-finger trackpad pan - functional update (no ref needed)
         setPanOffset(prev => ({
           x: prev.x - e.deltaX,
           y: prev.y - e.deltaY,
@@ -113,17 +180,91 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
       }
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
+    // Use capture phase on window to intercept before browser handles navigation
+    window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
     return () => {
-      container.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('wheel', handleWheel, { capture: true });
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
     };
   }, [isConstrained, setZoomLevel]);
 
+  // Page dragging handlers
+  const handlePagePointerDown = useCallback((e: React.PointerEvent, pageId: string) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    setDraggingPageId(pageId);
+    setDragOffset({ x: 0, y: 0 });
+    hasDraggedRef.current = false;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, []);
+
+  // Pointer move handler (like ProjectCanvas - React event handler)
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (draggingPageId) {
+        const canvasDeltaX = e.movementX / zoomLevelRef.current;
+        const canvasDeltaY = e.movementY / zoomLevelRef.current;
+        if (Math.abs(canvasDeltaX) > 2 || Math.abs(canvasDeltaY) > 2) {
+          hasDraggedRef.current = true;
+        }
+        setDragOffset((prev) => ({
+          x: prev.x + canvasDeltaX,
+          y: prev.y + canvasDeltaY,
+        }));
+      }
+    },
+    [draggingPageId]
+  );
+
+  // Pointer up handler (like ProjectCanvas - React event handler)
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (draggingPageId) {
+        if (hasDraggedRef.current) {
+          const currentPosition = pagePositions[draggingPageId] || { x: 0, y: 0 };
+          updatePageCanvasPosition(draggingPageId, {
+            x: currentPosition.x + dragOffset.x,
+            y: currentPosition.y + dragOffset.y,
+          });
+        }
+        setDraggingPageId(null);
+        setDragOffset({ x: 0, y: 0 });
+        try {
+          (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+        } catch {
+          // Ignore
+        }
+      }
+    },
+    [draggingPageId, dragOffset, pagePositions, updatePageCanvasPosition]
+  );
+
+  // Background click handler - deselect page
+  const handleBackgroundClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('pan-wrapper')) {
+        selectPage(null);
+      }
+    },
+    [selectPage]
+  );
+
+  // Unified page selection handler - hook handles both state + URL update
+  const handlePageSelect = useCallback(
+    (pageId: string) => selectPage(pageId),
+    [selectPage]
+  );
+
+  // Drill-in is same as select now (unified selection)
+  const handlePageDrillIn = useCallback(
+    (pageId: string) => selectPage(pageId),
+    [selectPage]
+  );
+
   if (!isConstrained) {
-    // Full width mode - no frame, just apply transform
+    // Full width mode - render single page (legacy behavior for play mode)
     return (
       <div
         ref={frameRef}
@@ -141,8 +282,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     );
   }
 
-  // Constrained viewport mode - show frame with border
-  // Use CSS zoom which affects layout size (unlike transform: scale)
+  // Multi-page canvas mode - SAME STRUCTURE as original
   return (
     <div
       ref={containerRef}
@@ -155,47 +295,49 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
         padding: `${CANVAS_PADDING}px`,
         overflow: 'hidden',
         backgroundColor: '#f5f5f5',
+        // Prevent browser back/forward navigation on horizontal swipe
+        overscrollBehavior: 'none',
       }}
+      onClick={handleBackgroundClick}
     >
       {/* Pan transform wrapper */}
       <div
+        className="pan-wrapper"
         style={{
           transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
           willChange: 'transform',
         }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
       >
-        {/* Wrapper for label positioning */}
+        {/* Wrapper for positioning */}
         <div style={{ position: 'relative' }}>
-          {/* Viewport width label - outside zoom */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '-24px',
-              left: '0',
-              fontSize: '11px',
-              color: '#757575',
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {presetWidth}px
-          </div>
-
-          {/* Viewport frame - CSS zoom applied */}
+          {/* Zoom frame - CSS zoom applied */}
           <div
             ref={frameRef}
             style={{
-              width: `${presetWidth}px`,
-              minHeight: `${presetHeight}px`,
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: '#ffffff',
-              boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1)',
-              borderRadius: '4px',
+              position: 'relative',
               zoom: effectiveZoom,
             }}
           >
-            {children}
+            {/* Page frames instead of children */}
+            {pages.map((page) => (
+              <PageFrame
+                key={page.id}
+                page={page}
+                isSelected={page.id === selectedPageId}
+                isDrilledIn={page.id === currentPageId}
+                position={pagePositions[page.id] || { x: 0, y: 0 }}
+                presetWidth={presetWidth}
+                presetHeight={presetHeight}
+                zoom={effectiveZoom}
+                isDragging={page.id === draggingPageId}
+                dragOffset={page.id === draggingPageId ? dragOffset : { x: 0, y: 0 }}
+                onPointerDown={handlePagePointerDown}
+                onSelect={handlePageSelect}
+                onDrillIn={handlePageDrillIn}
+              />
+            ))}
           </div>
         </div>
       </div>

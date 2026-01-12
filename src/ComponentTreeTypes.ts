@@ -30,6 +30,7 @@ export type ComponentTreeAction =
 
   // Page actions
   | { type: 'SET_CURRENT_PAGE'; payload: { pageId: string } }
+  | { type: 'SET_SELECTED_PAGE_ID'; payload: { pageId: string | null } }
   | { type: 'ADD_PAGE'; payload: { page: Page } }
   | { type: 'DELETE_PAGE'; payload: { pageId: string } }
   | { type: 'RENAME_PAGE'; payload: { pageId: string; name: string } }

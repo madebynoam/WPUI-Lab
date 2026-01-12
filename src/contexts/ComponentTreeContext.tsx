@@ -65,7 +65,10 @@ interface ComponentTreeContextType {
   // Pages management (within current project)
   pages: Page[];
   currentPageId: string;
+  selectedPageId: string | null;
   setCurrentPage: (pageId: string) => void;
+  setSelectedPageId: (pageId: string | null) => void;
+  selectPage: (pageId: string | null) => void;
   addPage: (name?: string) => void;
   createPageWithId: (name?: string) => string;
   deletePage: (pageId: string) => void;
@@ -195,6 +198,7 @@ function initializeState(): ComponentTreeState {
     projects,
     currentProjectId,
     selectedNodeIds: [],
+    selectedPageId: null,
     gridLinesVisible: new Set(),
     clipboard: null,
     cutNodeId: null,
@@ -468,6 +472,18 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'SET_CURRENT_PAGE', payload: { pageId } });
   }, [dispatch]);
 
+  const setSelectedPageId = useCallback((pageId: string | null) => {
+    dispatch({ type: 'SET_SELECTED_PAGE_ID', payload: { pageId } });
+  }, [dispatch]);
+
+  // Unified page selection - ensures both selectedPageId and currentPageId stay in sync
+  const selectPage = useCallback((pageId: string | null) => {
+    dispatch({ type: 'SET_SELECTED_PAGE_ID', payload: { pageId } });
+    if (pageId) {
+      dispatch({ type: 'SET_CURRENT_PAGE', payload: { pageId } });
+    }
+  }, [dispatch]);
+
   const addPage = (name?: string) => {
     const newPageNumber = pages.length + 1;
     const newPage = createInitialPage(
@@ -711,7 +727,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     canPaste: state.clipboard !== null,
     pages,
     currentPageId,
+    selectedPageId: state.selectedPageId,
     setCurrentPage,
+    setSelectedPageId,
+    selectPage,
     addPage,
     createPageWithId,
     deletePage,
