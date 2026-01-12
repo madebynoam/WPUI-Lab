@@ -132,6 +132,20 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     return positions;
   }, [pages, presetWidth, presetHeight]);
 
+  // Live positions include current drag offset so wires redraw in real time
+  const livePagePositions = useMemo(() => {
+    if (!draggingPageId) return pagePositions;
+
+    const current = pagePositions[draggingPageId] || { x: 0, y: 0 };
+    return {
+      ...pagePositions,
+      [draggingPageId]: {
+        x: current.x + dragOffset.x,
+        y: current.y + dragOffset.y,
+      },
+    };
+  }, [pagePositions, draggingPageId, dragOffset]);
+
   // Initialize page positions on mount if not set
   useEffect(() => {
     const hasPositions = pages.some((p) => p.canvasPosition);
@@ -474,7 +488,7 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
             {showWires && (
               <ComponentConnectors
                 pages={pages}
-                pagePositions={pagePositions}
+                pagePositions={livePagePositions}
                 thumbWidth={presetWidth}
                 thumbHeight={presetHeight}
                 contentScale={1}

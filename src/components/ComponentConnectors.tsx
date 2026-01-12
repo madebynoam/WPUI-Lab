@@ -28,6 +28,8 @@ interface RenderedConnection extends Connection {
   sourcePt: { x: number; y: number };
   targetPt: { x: number; y: number };
   path: string;
+  cp1: { x: number; y: number };
+  cp2: { x: number; y: number };
 }
 
 // =============================================================================
@@ -82,6 +84,7 @@ function getPageCenter(
 
 /**
  * Find the best edge point on a page given a source point
+ * Snaps to the CENTER of the chosen edge for cleaner connections
  */
 function getPageEdgePoint(
   pageId: string,
@@ -100,40 +103,35 @@ function getPageEdgePoint(
   const centerX = pos.x + thumbWidth / 2;
   const centerY = pos.y + thumbHeight / 2;
 
-  // Determine which edge the line would intersect
+  // Choose the edge based on relative direction, and snap to that edge's center
   const dx = fromPt.x - centerX;
   const dy = fromPt.y - centerY;
-  const angle = Math.atan2(dy, dx);
-  const cornerAngle = Math.atan2(thumbHeight / 2, thumbWidth / 2);
 
-  if (angle >= -cornerAngle && angle < cornerAngle) {
-    // Right edge
-    const t = (right - centerX) / dx;
-    return { x: right, y: centerY + dy * t, edge: 'right' };
-  } else if (angle >= cornerAngle && angle < Math.PI - cornerAngle) {
-    // Bottom edge
-    const t = (bottom - centerY) / dy;
-    return { x: centerX + dx * t, y: bottom, edge: 'bottom' };
-  } else if (angle >= Math.PI - cornerAngle || angle < -Math.PI + cornerAngle) {
-    // Left edge
-    const t = (left - centerX) / dx;
-    return { x: left, y: centerY + dy * t, edge: 'left' };
-  } else {
-    // Top edge
-    const t = (top - centerY) / dy;
-    return { x: centerX + dx * t, y: top, edge: 'top' };
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // Favor horizontal edges when horizontal delta dominates
+    if (dx > 0) {
+      return { x: right, y: centerY, edge: 'right' };
+    }
+    return { x: left, y: centerY, edge: 'left' };
   }
+
+  // Otherwise favor vertical edges
+  if (dy > 0) {
+    return { x: centerX, y: bottom, edge: 'bottom' };
+  }
+  return { x: centerX, y: top, edge: 'top' };
 }
 
 /**
  * Create a smooth bezier curve between two points
+ * Returns path string and control points for arrow alignment
  */
 function createBezierPath(
   from: { x: number; y: number },
   to: { x: number; y: number },
   fromEdge?: 'top' | 'right' | 'bottom' | 'left',
   toEdge?: 'top' | 'right' | 'bottom' | 'left'
-): string {
+): { path: string; cp1: { x: number; y: number }; cp2: { x: number; y: number } } {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const distance = Math.hypot(dx, dy);
@@ -162,27 +160,57 @@ function createBezierPath(
   else if (toEdge === 'bottom') cp2y += curvature;
   else if (toEdge === 'top') cp2y -= curvature;
 
-  return `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`;
+  return {
+    path: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
+    cp1: { x: cp1x, y: cp1y },
+    cp2: { x: cp2x, y: cp2y },
+  };
 }
 
 /**
- * Calculate arrowhead points
+ * Calculate arrowhead points - returns a filled triangle
+ * The arrow points in the direction of travel (from control point to endpoint)
  */
 function calculateArrowhead(
-  x: number,
-  y: number,
+  tipX: number,
+  tipY: number,
   fromX: number,
   fromY: number,
   size: number
-): { x1: number; y1: number; x2: number; y2: number } {
-  const angle = Math.atan2(y - fromY, x - fromX);
-  const angle1 = angle + Math.PI * 0.8;
-  const angle2 = angle - Math.PI * 0.8;
+): { x1: number; y1: number; x2: number; y2: number; baseX: number; baseY: number } {
+  // Direction from control point to tip
+  const dx = tipX - fromX;
+  const dy = tipY - fromY;
+  const len = Math.hypot(dx, dy);
+  
+  if (len === 0) {
+    return { x1: tipX, y1: tipY - size, x2: tipX, y2: tipY + size, baseX: tipX, baseY: tipY };
+  }
+  
+  // Normalized direction vector
+  const nx = dx / len;
+  const ny = dy / len;
+  
+  // Perpendicular vector
+  const px = -ny;
+  const py = nx;
+  
+  // Arrow dimensions - length and half-width
+  const arrowLength = size * 1.2;
+  const arrowHalfWidth = size * 0.5;
+  
+  // Base of arrow (pulled back from tip)
+  const baseX = tipX - nx * arrowLength;
+  const baseY = tipY - ny * arrowLength;
+  
+  // Two corners of the arrow base
   return {
-    x1: x + Math.cos(angle1) * size,
-    y1: y + Math.sin(angle1) * size,
-    x2: x + Math.cos(angle2) * size,
-    y2: y + Math.sin(angle2) * size,
+    x1: baseX + px * arrowHalfWidth,
+    y1: baseY + py * arrowHalfWidth,
+    x2: baseX - px * arrowHalfWidth,
+    y2: baseY - py * arrowHalfWidth,
+    baseX,
+    baseY,
   };
 }
 
@@ -198,8 +226,10 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
   contentScale,
   zoom,
 }) => {
-  // Store component bounds (not just center) so we can draw from the correct edge
-  const [componentBounds, setComponentBounds] = useState<Record<string, {
+  // Store component bounds RELATIVE to their page (not absolute)
+  // This way we only need to re-query DOM when layout changes, not when pages move
+  const [relativeComponentBounds, setRelativeComponentBounds] = useState<Record<string, {
+    pageId: string;
     left: number;
     right: number;
     top: number;
@@ -221,10 +251,11 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
     return result;
   }, [pages]);
 
-  // Query DOM for component bounds
+  // Query DOM for component bounds RELATIVE to their page
   useEffect(() => {
     const updateBounds = () => {
       const bounds: Record<string, {
+        pageId: string;
         left: number;
         right: number;
         top: number;
@@ -248,31 +279,29 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
             const compRect = componentEl.getBoundingClientRect();
 
             // Calculate bounds relative to page container in screen pixels, then convert to canvas coords
+            // Store RELATIVE bounds (not absolute) - we'll add page position later
             const left = (compRect.left - pageRect.left) / zoom;
             const right = (compRect.right - pageRect.left) / zoom;
             const top = (compRect.top - pageRect.top) / zoom;
             const bottom = (compRect.bottom - pageRect.top) / zoom;
 
-            // Get page position in canvas coords
-            const pagePos = pagePositions[conn.sourcePageId];
-            if (pagePos) {
-              bounds[conn.sourceComponentId] = {
-                left: pagePos.x + left,
-                right: pagePos.x + right,
-                top: pagePos.y + top,
-                bottom: pagePos.y + bottom,
-                centerX: pagePos.x + (left + right) / 2,
-                centerY: pagePos.y + (top + bottom) / 2,
-              };
-            }
+            bounds[conn.sourceComponentId] = {
+              pageId: conn.sourcePageId,
+              left,
+              right,
+              top,
+              bottom,
+              centerX: (left + right) / 2,
+              centerY: (top + bottom) / 2,
+            };
           }
         }
       });
 
-      setComponentBounds(bounds);
+      setRelativeComponentBounds(bounds);
     };
 
-    // Debounce updates
+    // Debounce updates - only for DOM queries, not position updates
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
     }
@@ -283,7 +312,36 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
         clearTimeout(updateTimeoutRef.current);
       }
     };
-  }, [connections, pagePositions, thumbWidth, thumbHeight, contentScale, zoom]);
+  }, [connections, thumbWidth, thumbHeight, contentScale, zoom]);
+
+  // Calculate absolute component bounds using live page positions
+  // This runs on every render when pagePositions change (during drag)
+  const componentBounds = useMemo(() => {
+    const absoluteBounds: Record<string, {
+      left: number;
+      right: number;
+      top: number;
+      bottom: number;
+      centerX: number;
+      centerY: number;
+    }> = {};
+
+    Object.entries(relativeComponentBounds).forEach(([componentId, relBounds]) => {
+      const pagePos = pagePositions[relBounds.pageId];
+      if (pagePos) {
+        absoluteBounds[componentId] = {
+          left: pagePos.x + relBounds.left,
+          right: pagePos.x + relBounds.right,
+          top: pagePos.y + relBounds.top,
+          bottom: pagePos.y + relBounds.bottom,
+          centerX: pagePos.x + relBounds.centerX,
+          centerY: pagePos.y + relBounds.centerY,
+        };
+      }
+    });
+
+    return absoluteBounds;
+  }, [relativeComponentBounds, pagePositions]);
 
   // Build rendered connections
   const renderedConnections = useMemo(() => {
@@ -351,13 +409,20 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
         sourcePt
       );
 
-      const path = createBezierPath(sourcePt, targetEdgePt, sourceEdge, targetEdgePt.edge);
+      const { path, cp1, cp2 } = createBezierPath(
+        sourcePt,
+        targetEdgePt,
+        sourceEdge,
+        targetEdgePt.edge
+      );
 
       result.push({
         ...conn,
         sourcePt,
         targetPt: targetEdgePt,
         path,
+        cp1,
+        cp2,
       });
     });
 
@@ -410,27 +475,29 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
         height: bounds.height,
         pointerEvents: 'none',
         overflow: 'visible',
-        zIndex: 2,
+        zIndex: 50, // Above selected pages (10) but below dragging pages (1000)
       }}
       viewBox={`${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`}
     >
       {renderedConnections.map((connection) => {
         const isHovered = hoveredConnection === connection.id;
 
-        // Counter-scale sizes to appear constant regardless of zoom
-        const strokeWidth = (isHovered ? 2 : 1.5) / zoom;
-        const dotRadius = (isHovered ? 5 : 4) / zoom;
-        const arrowSize = 8 / zoom;
-        const dashArray = `${6 / zoom} ${3 / zoom}`;
+        // Fixed sizes - don't scale with zoom for consistent appearance
+        const strokeWidth = isHovered ? 3 : 2.5;
+        const dotRadius = isHovered ? 5 : 4;
+        const arrowSize = 10;
 
-        // Calculate arrowhead
+        // Calculate arrowhead pointing in direction of curve (using cp2 for tangent)
         const arrow = calculateArrowhead(
           connection.targetPt.x,
           connection.targetPt.y,
-          connection.sourcePt.x,
-          connection.sourcePt.y,
+          connection.cp2.x,
+          connection.cp2.y,
           arrowSize
         );
+
+        // Create path that ends at arrow base instead of tip
+        const shortenedPath = `M ${connection.sourcePt.x} ${connection.sourcePt.y} C ${connection.cp1.x} ${connection.cp1.y}, ${connection.cp2.x} ${connection.cp2.y}, ${arrow.baseX} ${arrow.baseY}`;
 
         return (
           <g key={connection.id}>
@@ -439,34 +506,30 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
               d={connection.path}
               fill="none"
               stroke="transparent"
-              strokeWidth={20 / zoom}
+              strokeWidth={20}
               style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
               onMouseEnter={() => setHoveredConnection(connection.id)}
               onMouseLeave={() => setHoveredConnection(null)}
               onClick={() => handleConnectionClick(connection)}
             />
 
-            {/* Visible path */}
+            {/* Visible path - solid line ending at arrow base */}
             <path
-              d={connection.path}
-              fill="none"
-              stroke={isHovered ? '#818cf8' : '#6366f1'}
-              strokeWidth={strokeWidth}
-              strokeDasharray={isHovered ? 'none' : dashArray}
-              style={{
-                transition: 'stroke 0.15s ease',
-                pointerEvents: 'none',
-              }}
-            />
-
-            {/* Arrowhead */}
-            <path
-              d={`M ${arrow.x1} ${arrow.y1} L ${connection.targetPt.x} ${connection.targetPt.y} L ${arrow.x2} ${arrow.y2}`}
+              d={shortenedPath}
               fill="none"
               stroke={isHovered ? '#818cf8' : '#6366f1'}
               strokeWidth={strokeWidth}
               strokeLinecap="round"
-              strokeLinejoin="round"
+              style={{
+                pointerEvents: 'none',
+              }}
+            />
+
+            {/* Arrowhead - filled triangle pointing forward */}
+            <path
+              d={`M ${connection.targetPt.x} ${connection.targetPt.y} L ${arrow.x1} ${arrow.y1} L ${arrow.x2} ${arrow.y2} Z`}
+              fill={isHovered ? '#818cf8' : '#6366f1'}
+              stroke="none"
               style={{ pointerEvents: 'none' }}
             />
 
