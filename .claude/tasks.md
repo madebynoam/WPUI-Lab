@@ -12,6 +12,7 @@
 
 ## Completed
 
+- [x] ~~Fix isolation mode with new responsive viewport~~
 - [x] ~~Switching viewport size (tablet/mobile/desktop) should preserve canvas pan position~~
 
 - [x] ~~Fit button should pan to current page (or first page if none selected), not a random default position~~
