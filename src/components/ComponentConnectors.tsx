@@ -126,37 +126,40 @@ function getPageEdgePoint(
 
 /**
  * Create a smooth Figma-style S-curve bezier between two points
- * Control points extend in the direction of travel for natural curves
+ * Control points are positioned to make the curve approach edges perpendicularly
  */
 function createBezierPath(
   from: { x: number; y: number },
   to: { x: number; y: number },
-  _fromEdge?: 'top' | 'right' | 'bottom' | 'left',
-  _toEdge?: 'top' | 'right' | 'bottom' | 'left'
+  fromEdge?: 'top' | 'right' | 'bottom' | 'left',
+  toEdge?: 'top' | 'right' | 'bottom' | 'left'
 ): { path: string; cp1: { x: number; y: number }; cp2: { x: number; y: number } } {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
-  const absDx = Math.abs(dx);
-  const absDy = Math.abs(dy);
-
-  // Calculate offset based on distance
   const distance = Math.hypot(dx, dy);
-  const offset = Math.max(50, Math.min(distance * 0.4, 150));
+  const offset = Math.max(50, Math.min(distance * 0.5, 150));
 
   let cp1: { x: number; y: number };
   let cp2: { x: number; y: number };
 
-  // Determine if this is primarily horizontal or vertical
-  if (absDx >= absDy) {
-    // Horizontal-ish: control points extend horizontally in direction of travel
-    const direction = dx >= 0 ? 1 : -1;
-    cp1 = { x: from.x + offset * direction, y: from.y };
-    cp2 = { x: to.x - offset * direction, y: to.y };
-  } else {
-    // Vertical-ish: control points extend vertically in direction of travel
-    const direction = dy >= 0 ? 1 : -1;
-    cp1 = { x: from.x, y: from.y + offset * direction };
-    cp2 = { x: to.x, y: to.y - offset * direction };
+  // CP1: Extend perpendicular from source edge
+  if (fromEdge === 'right') cp1 = { x: from.x + offset, y: from.y };
+  else if (fromEdge === 'left') cp1 = { x: from.x - offset, y: from.y };
+  else if (fromEdge === 'bottom') cp1 = { x: from.x, y: from.y + offset };
+  else if (fromEdge === 'top') cp1 = { x: from.x, y: from.y - offset };
+  else {
+    // Default: extend toward target
+    cp1 = { x: from.x + dx * 0.4, y: from.y + dy * 0.1 };
+  }
+
+  // CP2: Extend perpendicular from target edge (so curve enters perpendicular)
+  if (toEdge === 'left') cp2 = { x: to.x - offset, y: to.y };
+  else if (toEdge === 'right') cp2 = { x: to.x + offset, y: to.y };
+  else if (toEdge === 'top') cp2 = { x: to.x, y: to.y - offset };
+  else if (toEdge === 'bottom') cp2 = { x: to.x, y: to.y + offset };
+  else {
+    // Default: extend away from source
+    cp2 = { x: to.x - dx * 0.4, y: to.y - dy * 0.1 };
   }
 
   return {
@@ -506,12 +509,24 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
         const dotRadius = isHovered ? 5 : 4;
         const arrowSize = 10;
 
-        // Calculate arrowhead pointing in direction of curve (using cp2 for tangent)
+        // Calculate arrowhead pointing INTO the target (perpendicular to target edge)
+        // Use edge direction to determine where the arrow "comes from"
+        const targetEdge = connection.targetPt.edge;
+        let arrowFromX = connection.targetPt.x;
+        let arrowFromY = connection.targetPt.y;
+
+        // Position the "from" point based on which edge we're entering
+        // Arrow should point INTO the target
+        if (targetEdge === 'left') arrowFromX -= 50;      // Coming from left, pointing right
+        else if (targetEdge === 'right') arrowFromX += 50; // Coming from right, pointing left
+        else if (targetEdge === 'top') arrowFromY -= 50;   // Coming from top, pointing down
+        else if (targetEdge === 'bottom') arrowFromY += 50; // Coming from bottom, pointing up
+
         const arrow = calculateArrowhead(
           connection.targetPt.x,
           connection.targetPt.y,
-          connection.cp2.x,
-          connection.cp2.y,
+          arrowFromX,
+          arrowFromY,
           arrowSize
         );
 

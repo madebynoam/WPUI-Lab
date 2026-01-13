@@ -553,75 +553,48 @@ function allocateTargetPorts(
 
 /**
  * Calculate a Figma-style S-curve bezier path
- * Control points extend in the direction of travel for natural curves
+ * Control points extend perpendicular to edges for proper entry angles
  */
 function calculateBezierPath(
   sourcePort: Port,
   targetPort: Port,
   obstacles: PageBounds[]
 ): string {
-  const dx = targetPort.x - sourcePort.x;
-  const dy = targetPort.y - sourcePort.y;
-  const absDx = Math.abs(dx);
-  const absDy = Math.abs(dy);
-
-  // Calculate offset based on distance
-  const distance = Math.hypot(dx, dy);
-  let offset = Math.max(60, Math.min(distance * 0.4, 150));
+  const distance = Math.hypot(targetPort.x - sourcePort.x, targetPort.y - sourcePort.y);
+  let offset = Math.max(60, Math.min(distance * 0.5, 150));
 
   // Find pages that would block the direct path
   const blocking = obstacles.filter((page) =>
     lineIntersectsRect(sourcePort, targetPort, page)
   );
 
-  let cp1: Point;
-  let cp2: Point;
-
   if (blocking.length > 0) {
-    // Increase offset to route around obstacles
     const maxBlockingSize = Math.max(
       ...blocking.map((b) => Math.max(b.right - b.left, b.bottom - b.top))
     );
     offset = Math.max(offset, maxBlockingSize * 0.6 + 80);
+  }
 
-    // Calculate avoidance direction
+  // CP1: Extend perpendicular from source edge
+  let cp1: Point;
+  if (sourcePort.edge === 'right') cp1 = { x: sourcePort.x + offset, y: sourcePort.y };
+  else if (sourcePort.edge === 'left') cp1 = { x: sourcePort.x - offset, y: sourcePort.y };
+  else if (sourcePort.edge === 'bottom') cp1 = { x: sourcePort.x, y: sourcePort.y + offset };
+  else cp1 = { x: sourcePort.x, y: sourcePort.y - offset }; // top
+
+  // CP2: Extend perpendicular from target edge
+  let cp2: Point;
+  if (targetPort.edge === 'left') cp2 = { x: targetPort.x - offset, y: targetPort.y };
+  else if (targetPort.edge === 'right') cp2 = { x: targetPort.x + offset, y: targetPort.y };
+  else if (targetPort.edge === 'top') cp2 = { x: targetPort.x, y: targetPort.y - offset };
+  else cp2 = { x: targetPort.x, y: targetPort.y + offset }; // bottom
+
+  // Add avoidance offset if there are obstacles
+  if (blocking.length > 0) {
     const avoidDirection = calculateAvoidanceDirection(sourcePort, targetPort, blocking);
-
-    // Determine primary direction and add avoidance
-    if (absDx >= absDy) {
-      const direction = dx >= 0 ? 1 : -1;
-      cp1 = {
-        x: sourcePort.x + offset * direction,
-        y: sourcePort.y + avoidDirection.y * offset * 0.4,
-      };
-      cp2 = {
-        x: targetPort.x - offset * direction,
-        y: targetPort.y + avoidDirection.y * offset * 0.4,
-      };
-    } else {
-      const direction = dy >= 0 ? 1 : -1;
-      cp1 = {
-        x: sourcePort.x + avoidDirection.x * offset * 0.4,
-        y: sourcePort.y + offset * direction,
-      };
-      cp2 = {
-        x: targetPort.x + avoidDirection.x * offset * 0.4,
-        y: targetPort.y - offset * direction,
-      };
-    }
-  } else {
-    // No obstacles: S-curve in direction of travel
-    if (absDx >= absDy) {
-      // Horizontal-ish
-      const direction = dx >= 0 ? 1 : -1;
-      cp1 = { x: sourcePort.x + offset * direction, y: sourcePort.y };
-      cp2 = { x: targetPort.x - offset * direction, y: targetPort.y };
-    } else {
-      // Vertical-ish
-      const direction = dy >= 0 ? 1 : -1;
-      cp1 = { x: sourcePort.x, y: sourcePort.y + offset * direction };
-      cp2 = { x: targetPort.x, y: targetPort.y - offset * direction };
-    }
+    const avoidOffset = offset * 0.4;
+    cp1 = { x: cp1.x + avoidDirection.x * avoidOffset, y: cp1.y + avoidDirection.y * avoidOffset };
+    cp2 = { x: cp2.x + avoidDirection.x * avoidOffset, y: cp2.y + avoidDirection.y * avoidOffset };
   }
 
   return `M ${sourcePort.x} ${sourcePort.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${targetPort.x} ${targetPort.y}`;
