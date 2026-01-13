@@ -642,11 +642,76 @@ export function componentTreeReducer(
 
     case 'DUPLICATE_COMPONENT': {
       const { id } = action.payload;
-      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
 
+      // Check if we're in isolation mode editing a global component
+      if (state.editingGlobalComponentId) {
+        const globalComponents = currentProject.globalComponents || [];
+        const globalComponent = globalComponents.find(gc => gc.id === state.editingGlobalComponentId);
+
+        if (globalComponent) {
+          // Check if the node exists in the global component tree
+          const nodeInGlobal = findNodeById([globalComponent], id);
+
+          if (nodeInGlobal) {
+            // Duplicate in the global component tree
+            const { tree: updatedGlobalTree, newNodeId } = duplicateNodeInTree([globalComponent], id);
+            const updatedGlobalComponent = updatedGlobalTree[0];
+
+            // Update in globalComponents array
+            const newGlobalComponents = globalComponents.map(gc =>
+              gc.id === state.editingGlobalComponentId ? updatedGlobalComponent : gc
+            );
+
+            // Update all instances across all pages
+            const updateInstancesInTree = (tree: ComponentNode[]): ComponentNode[] => {
+              return tree.map(treeNode => {
+                if (treeNode.isGlobalInstance && treeNode.globalComponentId === state.editingGlobalComponentId) {
+                  const cloneWithMetadata = (sourceNode: ComponentNode, targetId: string): ComponentNode => {
+                    return {
+                      ...sourceNode,
+                      id: targetId,
+                      isGlobalInstance: true,
+                      globalComponentId: state.editingGlobalComponentId ?? undefined,
+                      props: { ...sourceNode.props },
+                      children: sourceNode.children?.map(child => cloneWithMetadata(child, generateId())),
+                    };
+                  };
+                  return cloneWithMetadata(updatedGlobalComponent, treeNode.id);
+                }
+                if (treeNode.children) {
+                  return { ...treeNode, children: updateInstancesInTree(treeNode.children) };
+                }
+                return treeNode;
+              });
+            };
+
+            const updatedPages = currentProject.pages.map(page => ({
+              ...page,
+              tree: updateInstancesInTree(page.tree),
+            }));
+
+            const updatedProject = {
+              ...currentProject,
+              globalComponents: newGlobalComponents,
+              pages: updatedPages,
+              lastModified: Date.now(),
+            };
+
+            const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+            return {
+              ...updateHistory(state, newProjects, state.currentProjectId),
+              selectedNodeIds: newNodeId ? [newNodeId] : state.selectedNodeIds,
+            };
+          }
+        }
+        // Fall through to normal duplication if not in global component
+      }
+
+      const currentTree = getCurrentTreeFromProjects(state.projects, state.currentProjectId);
       const { tree: newTree, newNodeId } = duplicateNodeInTree(currentTree, id);
 
-      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
       const updatedProject = updateTreeInProject(currentProject, newTree);
       const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
 
