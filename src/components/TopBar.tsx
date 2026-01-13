@@ -18,8 +18,6 @@ interface TopBarProps {
   rightPanel: "props" | "code" | "none";
   onToggleRightPanel: (panel: "props" | "code" | "none") => void;
   onNavigateToProjects?: () => void;
-  isCanvasView?: boolean;
-  onToggleCanvasView?: () => void;
   binId: string;
   pageId: string;
   projectName?: string;
@@ -37,8 +35,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   rightPanel,
   onToggleRightPanel,
   onNavigateToProjects,
-  isCanvasView,
-  onToggleCanvasView,
   binId,
   pageId: _pageId,
   projectName,
@@ -181,42 +177,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             }}
           />
 
-          {/* Canvas view toggle button */}
-          {onToggleCanvasView && (
-            <button
-              onClick={onToggleCanvasView}
-              title={isCanvasView ? "Exit canvas view" : "View all pages"}
-              style={{
-                backgroundColor: isCanvasView ? "#1e1e1e" : "transparent",
-                color: isCanvasView ? "#fff" : "#666",
-                border: "none",
-                outline: "none",
-                boxShadow: "none",
-                borderRadius: "2px",
-                cursor: "pointer",
-                padding: "6px 8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
-            </button>
-          )}
 
           {/* Mode switcher container */}
           <div
@@ -320,9 +280,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             whiteSpace: "nowrap",
           }}
         >
-          {isCanvasView
-            ? `${projectName || "WP Designer"} / All pages`
-            : projectName || "WP Designer"}
+          {projectName || "WP Designer"}
         </div>
       </div>
 

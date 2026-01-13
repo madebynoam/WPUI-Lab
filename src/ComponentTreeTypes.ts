@@ -30,6 +30,7 @@ export type ComponentTreeAction =
 
   // Page actions
   | { type: 'SET_CURRENT_PAGE'; payload: { pageId: string } }
+  | { type: 'SET_SELECTED_PAGE_ID'; payload: { pageId: string | null } }
   | { type: 'ADD_PAGE'; payload: { page: Page } }
   | { type: 'DELETE_PAGE'; payload: { pageId: string } }
   | { type: 'RENAME_PAGE'; payload: { pageId: string; name: string } }
@@ -70,6 +71,17 @@ export type ComponentTreeAction =
 
   // Editing mode actions
   | { type: 'SET_EDITING_MODE'; payload: { mode: 'selection' | 'text' } }
+
+  // Viewport preview actions
+  | { type: 'SET_VIEWPORT_PRESET'; payload: { preset: 'mobile' | 'tablet' | 'desktop' | 'full' } }
+  | { type: 'SET_ZOOM_LEVEL'; payload: { level: number } }
+  | { type: 'SET_SHOW_WIRES'; payload: { show: boolean } }
+
+  // Properties panel actions
+  | { type: 'SET_REQUESTED_PROPERTIES_TAB'; payload: { tab: 'styles' | 'interactions' | null } }
+
+  // Compound actions (for atomic operations)
+  | { type: 'SELECT_COMPONENT_ON_PAGE'; payload: { pageId: string; componentId: string; openTab?: 'styles' | 'interactions' } }
 
   // Interaction actions
   | { type: 'ADD_INTERACTION'; payload: { nodeId: string; interaction: Interaction } }

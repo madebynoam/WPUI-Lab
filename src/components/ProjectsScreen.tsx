@@ -7,7 +7,6 @@ import {
   __experimentalHStack as HStack,
   __experimentalHeading as Heading,
   __experimentalText as Text,
-  __experimentalSpacer as Spacer,
   Button,
   Card,
   CardBody,
@@ -30,6 +29,15 @@ interface CloudProject {
   lastSaved: number;
 }
 
+interface ProjectBinRecord {
+  metadata?: { id?: string };
+  binId?: string;
+  record?: {
+    project?: { id?: string; name?: string; pages?: { id: string }[] };
+    meta?: { lastSaved?: number };
+  };
+}
+
 export const ProjectsScreen: React.FC = () => {
   const router = useRouter();
   const { email } = useAuth();
@@ -40,9 +48,10 @@ export const ProjectsScreen: React.FC = () => {
 
   useEffect(() => {
     listProjects(email || undefined).then(data => {
-      const mapped = (Array.isArray(data) ? data : []).map((b: any) => ({
-        binId: b.metadata?.id || b.binId,
-        projectId: b.record?.project?.id || b.metadata?.id || b.binId,
+      const records = Array.isArray(data) ? data : [];
+      const mapped = records.map((b: ProjectBinRecord) => ({
+        binId: b.metadata?.id || b.binId || '',
+        projectId: b.record?.project?.id || b.metadata?.id || b.binId || '',
         pageId: b.record?.project?.pages?.[0]?.id || 'page-1',
         name: b.record?.project?.name || 'Untitled',
         lastSaved: b.record?.meta?.lastSaved || Date.now(),
@@ -82,102 +91,80 @@ export const ProjectsScreen: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh' }}>
-      <VStack spacing={12} style={{ padding: '40px', maxWidth: '1440px', margin: '0 auto' }}>
-        <VStack spacing={2} style={{ width: '100%', alignItems: 'center' }}>
-          <VStack spacing={2} style={{ width: '100%', maxWidth: '800px' }}>
-            {/* Header */}
-            <HStack spacing={2}>
-              <Heading level={4}>Your projects</Heading>
-              <Button
-                variant="secondary"
-                icon={plus}
-                size="compact"
-                onClick={() => setShowNewProjectModal(true)}
+    <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh', padding: 40 }}>
+      <VStack spacing={4} style={{ maxWidth: 800, margin: '0 auto' }}>
+        <HStack spacing={2}>
+          <Heading level={4}>Your projects</Heading>
+          <Button
+            variant="secondary"
+            icon={plus}
+            size="compact"
+            onClick={() => setShowNewProjectModal(true)}
+          >
+            New project
+          </Button>
+        </HStack>
+
+        {!initialLoadDone && (
+          <Card size="medium">
+            <CardBody size="small" style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <Spinner />
+              <Text variant="muted" style={{ marginTop: 16 }}>Loading projects...</Text>
+            </CardBody>
+          </Card>
+        )}
+
+        {initialLoadDone && projects.map((project) => (
+          <Card key={project.binId} size="medium">
+            <CardBody size="small">
+              <HStack
+                spacing={6}
+                style={{ justifyContent: 'space-between', cursor: 'pointer' }}
+                onClick={() => handleOpen(project)}
               >
-                New project
-              </Button>
-            </HStack>
+                <HStack spacing={2} style={{ flex: 1, minWidth: 0 }}>
+                  <Icon icon={pages} size={24} />
+                  <VStack spacing={1} style={{ flex: 1, minWidth: 0 }}>
+                    <Heading level={4} style={{ margin: 0 }}>{project.name}</Heading>
+                    <Text variant="muted">{formatDate(project.lastSaved)}</Text>
+                  </VStack>
+                </HStack>
 
-            <Spacer margin={0} />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu icon={moreVertical} label="Project actions">
+                    {({ onClose }) => (
+                      <MenuGroup>
+                        <MenuItem
+                          icon={trash}
+                          onClick={() => {
+                            handleDelete(project.binId, project.name);
+                            onClose();
+                          }}
+                          isDestructive
+                        >
+                          Delete
+                        </MenuItem>
+                      </MenuGroup>
+                    )}
+                  </DropdownMenu>
+                </div>
+              </HStack>
+            </CardBody>
+          </Card>
+        ))}
 
-            {/* Loading state */}
-            {!initialLoadDone && (
-              <Card size="medium">
-                <CardBody size="small" style={{ textAlign: 'center', padding: '60px 20px' }}>
-                  <Spinner />
-                  <Text variant="muted" style={{ marginTop: 16 }}>Loading projects...</Text>
-                </CardBody>
-              </Card>
-            )}
-
-            {/* Projects List */}
-            {initialLoadDone && projects.map((project) => (
-              <Card key={project.binId} size="medium">
-                <CardBody size="small">
-                  <HStack
-                    spacing={6}
-                    style={{
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => handleOpen(project)}
-                  >
-                    <HStack spacing={2} style={{ alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
-                      <Icon icon={pages} size={24} />
-                      <VStack spacing={1} style={{ flex: 1, minWidth: 0 }}>
-                        <Heading level={4} style={{ margin: 0 }}>{project.name}</Heading>
-                        <Text variant="muted">
-                          {formatDate(project.lastSaved)}
-                        </Text>
-                      </VStack>
-                    </HStack>
-
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu
-                        icon={moreVertical}
-                        label="Project actions"
-                      >
-                        {({ onClose }) => (
-                          <MenuGroup>
-                            <MenuItem
-                              icon={trash}
-                              onClick={() => {
-                                handleDelete(project.binId, project.name);
-                                onClose();
-                              }}
-                              isDestructive
-                            >
-                              Delete
-                            </MenuItem>
-                          </MenuGroup>
-                        )}
-                      </DropdownMenu>
-                    </div>
-                  </HStack>
-                </CardBody>
-              </Card>
-            ))}
-
-            {/* Empty state */}
-            {initialLoadDone && projects.length === 0 && (
-              <Card size="medium">
-                <CardBody size="small" style={{ textAlign: 'center', padding: '60px 20px' }}>
-                  <Text variant="muted">No projects yet</Text>
-                  <div style={{ marginTop: '8px' }}>
-                    <Text variant="muted" style={{ fontSize: '13px', color: '#999' }}>
-                      Create your first project to get started
-                    </Text>
-                  </div>
-                </CardBody>
-              </Card>
-            )}
-          </VStack>
-        </VStack>
+        {initialLoadDone && projects.length === 0 && (
+          <Card size="medium">
+            <CardBody size="small" style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <Text variant="muted">No projects yet</Text>
+              <Text variant="muted" style={{ fontSize: 13, color: '#999', marginTop: 8 }}>
+                Create your first project to get started
+              </Text>
+            </CardBody>
+          </Card>
+        )}
       </VStack>
 
-      {/* New Project Modal */}
       {showNewProjectModal && (
         <NewProjectModal
           onClose={() => setShowNewProjectModal(false)}

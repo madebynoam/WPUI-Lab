@@ -13,6 +13,8 @@ interface CanvasControlsProps {
   onClose: () => void;
   viewportPreset: ViewportPreset;
   onViewportChange: (preset: ViewportPreset) => void;
+  showWires: boolean;
+  onShowWiresChange: (show: boolean) => void;
 }
 
 // Device icons for viewport presets
@@ -53,6 +55,8 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   onClose,
   viewportPreset,
   onViewportChange,
+  showWires,
+  onShowWiresChange,
 }) => {
   const zoomPercentage = Math.round(zoom * 100);
   const viewportPresets: ViewportPreset[] = ['mobile', 'tablet', 'desktop'];
@@ -149,6 +153,46 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Wires toggle button */}
+        <button
+          onClick={() => onShowWiresChange(!showWires)}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 8,
+            border: 'none',
+            backgroundColor: showWires ? '#3858e9' : '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            color: showWires ? '#fff' : '#1e1e1e',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!showWires) {
+              e.currentTarget.style.backgroundColor = '#f5f5f5';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!showWires) {
+              e.currentTarget.style.backgroundColor = '#fff';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+            }
+          }}
+          title={showWires ? 'Hide interaction wires' : 'Show interaction wires'}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="19" cy="6" r="2" />
+            <circle cx="19" cy="18" r="2" />
+            <path d="M7 12h4c2 0 3-1 4-3l2-3" />
+            <path d="M7 12h4c2 0 3 1 4 3l2 3" />
+          </svg>
+        </button>
 
         {/* Divider */}
         <div style={{ width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' }} />

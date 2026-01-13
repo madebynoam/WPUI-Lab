@@ -1,4 +1,5 @@
-import { ComponentNode } from '../types';
+import { ComponentNode, ResponsiveColumns } from '../types';
+import { DEFAULT_RESPONSIVE_COLUMNS, calculateProportionalSpan } from './responsiveHelpers';
 
 // Conditionally import componentRegistry
 let componentRegistry: Record<string, any> = {};
@@ -29,6 +30,140 @@ function sanitizeName(name: string): string {
     .replace(/[^a-z0-9-_]/g, '-') // Replace invalid chars with hyphens
     .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
     .replace(/-+/g, '-'); // Collapse multiple hyphens
+}
+
+/**
+ * Generate CSS media queries for responsive Grid columns
+ */
+function generateResponsiveGridCSS(
+  node: ComponentNode,
+  className: string
+): string {
+  if (node.type !== 'Grid' || !node.responsiveColumns) {
+    return '';
+  }
+
+  const responsiveColumns = node.responsiveColumns;
+  const baseColumns = node.props?.columns || 12;
+
+  let css = '';
+  // Use both ID and class selectors to cover both unique and duplicate names
+  const selector = `#${className}, .${className}`;
+
+  // Small breakpoint (< 782px) - mobile first, no media query needed
+  const smallCols = responsiveColumns.small ?? DEFAULT_RESPONSIVE_COLUMNS.small;
+  css += `  ${selector} {\n`;
+  css += `    grid-template-columns: repeat(${smallCols}, 1fr);\n`;
+  css += `  }\n\n`;
+
+  // Medium breakpoint (>= 782px)
+  const mediumCols = responsiveColumns.medium ?? DEFAULT_RESPONSIVE_COLUMNS.medium;
+  css += `  @media (min-width: 782px) {\n`;
+  css += `    ${selector} {\n`;
+  css += `      grid-template-columns: repeat(${mediumCols}, 1fr);\n`;
+  css += `    }\n`;
+  css += `  }\n\n`;
+
+  // Large breakpoint (>= 1080px)
+  const largeCols = responsiveColumns.large ?? DEFAULT_RESPONSIVE_COLUMNS.large;
+  css += `  @media (min-width: 1080px) {\n`;
+  css += `    ${selector} {\n`;
+  css += `      grid-template-columns: repeat(${largeCols}, 1fr);\n`;
+  css += `    }\n`;
+  css += `  }\n\n`;
+
+  // XLarge breakpoint (>= 1280px)
+  const xlargeCols = responsiveColumns.xlarge ?? DEFAULT_RESPONSIVE_COLUMNS.xlarge;
+  css += `  @media (min-width: 1280px) {\n`;
+  css += `    ${selector} {\n`;
+  css += `      grid-template-columns: repeat(${xlargeCols}, 1fr);\n`;
+  css += `    }\n`;
+  css += `  }\n\n`;
+
+  return css;
+}
+
+/**
+ * Generate CSS media queries for responsive child spans
+ */
+function generateResponsiveChildCSS(
+  node: ComponentNode,
+  parentNode: ComponentNode,
+  className: string
+): string {
+  if (parentNode.type !== 'Grid' || !parentNode.responsiveColumns) {
+    return '';
+  }
+
+  const childSpan = node.props?.gridColumnSpan || 1;
+  const baseColumns = parentNode.props?.columns || 12;
+  const responsiveColumns = parentNode.responsiveColumns;
+
+  let css = '';
+  // Use both ID and class selectors to cover both unique and duplicate names
+  const selector = `#${className}, .${className}`;
+
+  // Calculate proportional spans for each breakpoint
+  const smallCols = responsiveColumns.small ?? DEFAULT_RESPONSIVE_COLUMNS.small;
+  const smallSpan = calculateProportionalSpan(childSpan, baseColumns, smallCols);
+  css += `  ${selector} {\n`;
+  css += `    grid-column: span ${smallSpan};\n`;
+  css += `  }\n\n`;
+
+  const mediumCols = responsiveColumns.medium ?? DEFAULT_RESPONSIVE_COLUMNS.medium;
+  const mediumSpan = calculateProportionalSpan(childSpan, baseColumns, mediumCols);
+  css += `  @media (min-width: 782px) {\n`;
+  css += `    ${selector} {\n`;
+  css += `      grid-column: span ${mediumSpan};\n`;
+  css += `    }\n`;
+  css += `  }\n\n`;
+
+  const largeCols = responsiveColumns.large ?? DEFAULT_RESPONSIVE_COLUMNS.large;
+  const largeSpan = calculateProportionalSpan(childSpan, baseColumns, largeCols);
+  css += `  @media (min-width: 1080px) {\n`;
+  css += `    ${selector} {\n`;
+  css += `      grid-column: span ${largeSpan};\n`;
+  css += `    }\n`;
+  css += `  }\n\n`;
+
+  const xlargeCols = responsiveColumns.xlarge ?? DEFAULT_RESPONSIVE_COLUMNS.xlarge;
+  const xlargeSpan = calculateProportionalSpan(childSpan, baseColumns, xlargeCols);
+  css += `  @media (min-width: 1280px) {\n`;
+  css += `    ${selector} {\n`;
+  css += `      grid-column: span ${xlargeSpan};\n`;
+  css += `    }\n`;
+  css += `  }\n\n`;
+
+  return css;
+}
+
+/**
+ * Collect responsive CSS for all nodes in the tree
+ * Note: Only generates CSS for nodes with names assigned
+ */
+function collectResponsiveCSS(nodes: ComponentNode[], parentNode?: ComponentNode): string {
+  let css = '';
+
+  for (const node of nodes) {
+    // Generate CSS for Grid containers with responsive columns (only if node has a name)
+    if (node.type === 'Grid' && node.responsiveColumns && node.name) {
+      const className = sanitizeName(node.name);
+      css += generateResponsiveGridCSS(node, className);
+    }
+
+    // Generate CSS for children of responsive Grids (only if child has a name)
+    if (parentNode?.type === 'Grid' && parentNode.responsiveColumns && node.props?.gridColumnSpan && node.name) {
+      const className = sanitizeName(node.name);
+      css += generateResponsiveChildCSS(node, parentNode, className);
+    }
+
+    // Recursively process children
+    if (node.children && node.children.length > 0) {
+      css += collectResponsiveCSS(node.children, node);
+    }
+  }
+
+  return css;
 }
 
 /**
@@ -64,9 +199,20 @@ export const generateComponentCode = (
   // Collect all names to detect duplicates
   const nameCount = collectComponentNames(nodes);
 
-  return nodes
+  // Generate JSX code
+  const jsxCode = nodes
     .map((n) => generateNodeCode(n, indent, includeInteractions, undefined, nameCount))
     .join('\n');
+
+  // Collect responsive CSS
+  const responsiveCSS = collectResponsiveCSS(nodes);
+
+  // If there's responsive CSS, prepend a style tag
+  if (responsiveCSS.trim()) {
+    return `<style>\n${responsiveCSS}</style>\n${jsxCode}`;
+  }
+
+  return jsxCode;
 };
 
 /**

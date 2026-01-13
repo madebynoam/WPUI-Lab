@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useReducer, useMemo, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useReducer, useMemo, useCallback, useEffect } from 'react';
 import { ComponentNode, Page, Project, Interaction, PatternNode } from '@/types';
 import { componentRegistry } from '@/componentRegistry';
 import { componentTreeReducerWithDirtyTracking, ComponentTreeState } from '@/ComponentTreeReducer';
@@ -65,7 +65,10 @@ interface ComponentTreeContextType {
   // Pages management (within current project)
   pages: Page[];
   currentPageId: string;
+  selectedPageId: string | null;
   setCurrentPage: (pageId: string) => void;
+  setSelectedPageId: (pageId: string | null) => void;
+  selectPage: (pageId: string | null) => void;
   addPage: (name?: string) => void;
   createPageWithId: (name?: string) => string;
   deletePage: (pageId: string) => void;
@@ -100,6 +103,17 @@ interface ComponentTreeContextType {
   // Play mode
   isPlayMode: boolean;
   setPlayMode: (isPlay: boolean) => void;
+
+  // Viewport preview
+  viewportPreset: 'mobile' | 'tablet' | 'desktop' | 'full';
+  setViewportPreset: (preset: 'mobile' | 'tablet' | 'desktop' | 'full') => void;
+  zoomLevel: number;
+  setZoomLevel: (level: number) => void;
+  showWires: boolean;
+  setShowWires: (show: boolean) => void;
+  requestedPropertiesTab: 'styles' | 'interactions' | null;
+  setRequestedPropertiesTab: (tab: 'styles' | 'interactions' | null) => void;
+  selectComponentOnPage: (pageId: string, componentId: string, openTab?: 'styles' | 'interactions') => void;
 
   // Agent execution state
   isAgentExecuting: boolean;
@@ -189,6 +203,7 @@ function initializeState(): ComponentTreeState {
     projects,
     currentProjectId,
     selectedNodeIds: [],
+    selectedPageId: null,
     gridLinesVisible: new Set(),
     clipboard: null,
     cutNodeId: null,
@@ -196,6 +211,10 @@ function initializeState(): ComponentTreeState {
     isAgentExecuting: false,
     editingMode: 'selection',
     editingGlobalComponentId: null,
+    viewportPreset: 'full', // Default to full width
+    zoomLevel: 1.0, // Default to 100% zoom
+    showWires: false, // Hide interaction wires by default
+    requestedPropertiesTab: null, // Tab to open in properties panel (set by noodle click, etc.)
     isDirty: false,
     history: {
       past: [],
@@ -225,6 +244,26 @@ function patternNodesToComponentNodes(patternNodes: PatternNode[]): ComponentNod
 
 export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(componentTreeReducerWithDirtyTracking, undefined, initializeState);
+
+  // Load viewport and zoom settings from sessionStorage when project changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && state.currentProjectId) {
+      // Load viewport preset
+      const storedPreset = sessionStorage.getItem(`viewport-preset-${state.currentProjectId}`);
+      if (storedPreset && ['mobile', 'tablet', 'desktop', 'full'].includes(storedPreset)) {
+        dispatch({ type: 'SET_VIEWPORT_PRESET', payload: { preset: storedPreset as any } });
+      }
+
+      // Load zoom level
+      const storedZoom = sessionStorage.getItem(`zoom-level-${state.currentProjectId}`);
+      if (storedZoom) {
+        const zoomValue = parseFloat(storedZoom);
+        if (!isNaN(zoomValue) && zoomValue >= 0.25 && zoomValue <= 2.0) {
+          dispatch({ type: 'SET_ZOOM_LEVEL', payload: { level: zoomValue } });
+        }
+      }
+    }
+  }, [state.currentProjectId]);
 
   // Get current project
   const currentProject = useMemo(
@@ -440,6 +479,18 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'SET_CURRENT_PAGE', payload: { pageId } });
   }, [dispatch]);
 
+  const setSelectedPageId = useCallback((pageId: string | null) => {
+    dispatch({ type: 'SET_SELECTED_PAGE_ID', payload: { pageId } });
+  }, [dispatch]);
+
+  // Unified page selection - ensures both selectedPageId and currentPageId stay in sync
+  const selectPage = useCallback((pageId: string | null) => {
+    dispatch({ type: 'SET_SELECTED_PAGE_ID', payload: { pageId } });
+    if (pageId) {
+      dispatch({ type: 'SET_CURRENT_PAGE', payload: { pageId } });
+    }
+  }, [dispatch]);
+
   const addPage = (name?: string) => {
     const newPageNumber = pages.length + 1;
     const newPage = createInitialPage(
@@ -565,6 +616,36 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'SET_PLAY_MODE', payload: { isPlay } });
   };
 
+  // ===== Viewport Preview =====
+
+  const setViewportPreset = useCallback((preset: 'mobile' | 'tablet' | 'desktop' | 'full') => {
+    dispatch({ type: 'SET_VIEWPORT_PRESET', payload: { preset } });
+    // Persist to sessionStorage with project ID for isolation
+    if (typeof window !== 'undefined' && state.currentProjectId) {
+      sessionStorage.setItem(`viewport-preset-${state.currentProjectId}`, preset);
+    }
+  }, [state.currentProjectId]);
+
+  const setZoomLevel = useCallback((level: number) => {
+    dispatch({ type: 'SET_ZOOM_LEVEL', payload: { level } });
+    // Persist to sessionStorage with project ID for isolation
+    if (typeof window !== 'undefined' && state.currentProjectId) {
+      sessionStorage.setItem(`zoom-level-${state.currentProjectId}`, level.toString());
+    }
+  }, [state.currentProjectId]);
+
+  const setShowWires = useCallback((show: boolean) => {
+    dispatch({ type: 'SET_SHOW_WIRES', payload: { show } });
+  }, []);
+
+  const setRequestedPropertiesTab = useCallback((tab: 'styles' | 'interactions' | null) => {
+    dispatch({ type: 'SET_REQUESTED_PROPERTIES_TAB', payload: { tab } });
+  }, []);
+
+  const selectComponentOnPage = useCallback((pageId: string, componentId: string, openTab?: 'styles' | 'interactions') => {
+    dispatch({ type: 'SELECT_COMPONENT_ON_PAGE', payload: { pageId, componentId, openTab } });
+  }, []);
+
   // ===== Agent Execution State =====
 
   const setAgentExecuting = (isExecuting: boolean) => {
@@ -665,7 +746,10 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     canPaste: state.clipboard !== null,
     pages,
     currentPageId,
+    selectedPageId: state.selectedPageId,
     setCurrentPage,
+    setSelectedPageId,
+    selectPage,
     addPage,
     createPageWithId,
     deletePage,
@@ -694,6 +778,15 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     clearHistory,
     isPlayMode: state.isPlayMode,
     setPlayMode,
+    viewportPreset: state.viewportPreset,
+    setViewportPreset,
+    zoomLevel: state.zoomLevel,
+    setZoomLevel,
+    showWires: state.showWires,
+    setShowWires,
+    requestedPropertiesTab: state.requestedPropertiesTab,
+    setRequestedPropertiesTab,
+    selectComponentOnPage,
     isAgentExecuting: state.isAgentExecuting,
     setAgentExecuting,
     editingMode: state.editingMode,

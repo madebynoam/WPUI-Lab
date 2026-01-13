@@ -552,68 +552,49 @@ function allocateTargetPorts(
 // =============================================================================
 
 /**
- * Calculate the bezier path string with obstacle awareness
+ * Calculate a Figma-style S-curve bezier path
+ * Control points extend perpendicular to edges for proper entry angles
  */
 function calculateBezierPath(
   sourcePort: Port,
   targetPort: Port,
   obstacles: PageBounds[]
 ): string {
-  const dx = targetPort.x - sourcePort.x;
-  const dy = targetPort.y - sourcePort.y;
-  const distance = Math.hypot(dx, dy);
-
-  // Base curvature proportional to distance
-  let baseCurvature = Math.min(distance * 0.35, 120);
-  baseCurvature = Math.max(baseCurvature, 40);
-
-  // Get the direction vectors for each edge
-  const sourceDir = getEdgeDirection(sourcePort.edge);
-  const targetDir = getEdgeDirection(targetPort.edge);
+  const distance = Math.hypot(targetPort.x - sourcePort.x, targetPort.y - sourcePort.y);
+  let offset = Math.max(60, Math.min(distance * 0.5, 150));
 
   // Find pages that would block the direct path
   const blocking = obstacles.filter((page) =>
     lineIntersectsRect(sourcePort, targetPort, page)
   );
 
-  let cp1: Point;
-  let cp2: Point;
-
   if (blocking.length > 0) {
-    // Calculate avoidance direction based on blocking pages
-    const avoidDirection = calculateAvoidanceDirection(
-      sourcePort,
-      targetPort,
-      blocking
-    );
-
-    // Increase curvature to route around obstacles
     const maxBlockingSize = Math.max(
-      ...blocking.map((b) =>
-        Math.max(b.right - b.left, b.bottom - b.top)
-      )
+      ...blocking.map((b) => Math.max(b.right - b.left, b.bottom - b.top))
     );
-    const avoidCurvature = Math.max(baseCurvature, maxBlockingSize * 0.6 + 50);
+    offset = Math.max(offset, maxBlockingSize * 0.6 + 80);
+  }
 
-    // Offset control points perpendicular to the direct path
-    cp1 = {
-      x: sourcePort.x + sourceDir.x * avoidCurvature + avoidDirection.x * avoidCurvature * 0.5,
-      y: sourcePort.y + sourceDir.y * avoidCurvature + avoidDirection.y * avoidCurvature * 0.5,
-    };
-    cp2 = {
-      x: targetPort.x + targetDir.x * avoidCurvature + avoidDirection.x * avoidCurvature * 0.5,
-      y: targetPort.y + targetDir.y * avoidCurvature + avoidDirection.y * avoidCurvature * 0.5,
-    };
-  } else {
-    // No obstacles: standard smooth bezier extending from edges
-    cp1 = {
-      x: sourcePort.x + sourceDir.x * baseCurvature,
-      y: sourcePort.y + sourceDir.y * baseCurvature,
-    };
-    cp2 = {
-      x: targetPort.x + targetDir.x * baseCurvature,
-      y: targetPort.y + targetDir.y * baseCurvature,
-    };
+  // CP1: Extend perpendicular from source edge
+  let cp1: Point;
+  if (sourcePort.edge === 'right') cp1 = { x: sourcePort.x + offset, y: sourcePort.y };
+  else if (sourcePort.edge === 'left') cp1 = { x: sourcePort.x - offset, y: sourcePort.y };
+  else if (sourcePort.edge === 'bottom') cp1 = { x: sourcePort.x, y: sourcePort.y + offset };
+  else cp1 = { x: sourcePort.x, y: sourcePort.y - offset }; // top
+
+  // CP2: Extend perpendicular from target edge
+  let cp2: Point;
+  if (targetPort.edge === 'left') cp2 = { x: targetPort.x - offset, y: targetPort.y };
+  else if (targetPort.edge === 'right') cp2 = { x: targetPort.x + offset, y: targetPort.y };
+  else if (targetPort.edge === 'top') cp2 = { x: targetPort.x, y: targetPort.y - offset };
+  else cp2 = { x: targetPort.x, y: targetPort.y + offset }; // bottom
+
+  // Add avoidance offset if there are obstacles
+  if (blocking.length > 0) {
+    const avoidDirection = calculateAvoidanceDirection(sourcePort, targetPort, blocking);
+    const avoidOffset = offset * 0.4;
+    cp1 = { x: cp1.x + avoidDirection.x * avoidOffset, y: cp1.y + avoidDirection.y * avoidOffset };
+    cp2 = { x: cp2.x + avoidDirection.x * avoidOffset, y: cp2.y + avoidDirection.y * avoidOffset };
   }
 
   return `M ${sourcePort.x} ${sourcePort.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${targetPort.x} ${targetPort.y}`;
@@ -928,13 +909,15 @@ export const PageConnectors: React.FC<PageConnectorsProps> = ({
               style={{ pointerEvents: 'none' }}
             />
 
-            {/* Connection dot at source */}
+            {/* Connection ring at source (Figma-style unfilled circle) */}
             <circle
               cx={connection.sourcePort.x}
               cy={connection.sourcePort.y}
               r={dotRadius}
-              fill={isHovered ? '#818cf8' : '#6366f1'}
-              style={{ transition: 'fill 0.15s ease' }}
+              fill="white"
+              stroke={isHovered ? '#818cf8' : '#6366f1'}
+              strokeWidth={1.5 / zoom}
+              style={{ transition: 'stroke 0.15s ease' }}
             />
           </g>
         );

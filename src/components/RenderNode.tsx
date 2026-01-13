@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
+import React, { useCallback, useState, useRef, useMemo } from 'react';
 import { useComponentTree, ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { usePlayModeState } from '@/contexts/PlayModeContext';
 import { ComponentNode } from '../types';
@@ -13,13 +13,23 @@ import { useSelection } from '@/contexts/SelectionContext';
 import { useSimpleDrag } from '@/contexts/SimpleDragContext';
 import { useRouter, useParams } from 'next/navigation';
 import { GridResizeHandles } from './GridResizeHandles';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { getGridColumns, calculateProportionalSpan } from '@/utils/responsiveHelpers';
+
+/**
+ * Get mouse coordinates for hit detection.
+ * CSS zoom handles coordinate scaling automatically, so we return raw coordinates.
+ */
+function getMouseCoordinates(e: MouseEvent | React.MouseEvent): { x: number; y: number } {
+  return { x: e.clientX, y: e.clientY };
+}
 
 // Simple Figma-style drag-and-drop component
 export const RenderNode: React.FC<{
   node: ComponentNode;
   renderInteractive?: boolean;
 }> = ({ node, renderInteractive = true }) => {
-  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentProjectId, projects, updateComponentProps, reorderComponent, editingMode, setEditingGlobalComponent } = useComponentTree();
+  const { toggleNodeSelection, selectedNodeIds, tree, gridLinesVisible, isPlayMode, isAgentExecuting, pages, currentProjectId, projects, updateComponentProps, reorderComponent, setEditingGlobalComponent } = useComponentTree();
   const playModeState = usePlayModeState();
   const router = useRouter();
   const params = useParams();
@@ -35,6 +45,9 @@ export const RenderNode: React.FC<{
   const [_ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Responsive viewport detection
+  const viewport = useResponsiveViewport();
+
   // Local drag state
   const [parentLayoutDirection, setParentLayoutDirection] = useState<'vertical' | 'horizontal' | 'grid'>('vertical');
   const [_parentGridColumns, setParentGridColumns] = useState<number>(1);
@@ -44,9 +57,6 @@ export const RenderNode: React.FC<{
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const prevMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Text editing state for inline contenteditable
-  const [isEditingText, setIsEditingText] = useState(false);
-  const editableRef = useRef<HTMLDivElement>(null);
 
   // Hover state for Figma-style hover behavior
   const [isHovered, setIsHovered] = useState(false);
@@ -100,16 +110,6 @@ export const RenderNode: React.FC<{
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
   }, []);
-
-  // Focus editable element when entering edit mode
-  useEffect(() => {
-    if (isEditingText && editableRef.current) {
-      // Only focus if not already focused (to preserve cursor position from click)
-      if (document.activeElement !== editableRef.current) {
-        editableRef.current.focus();
-      }
-    }
-  }, [isEditingText]);
 
   if (!definition) {
     return <div>Unknown component: {node.type}</div>;
@@ -231,51 +231,8 @@ export const RenderNode: React.FC<{
       lastClickedIdRef.current = node.id;
     }
 
-    // COMMENTED OUT: Text mode single-click editing (now using RichTextControl in Properties Panel)
-    // Text mode: Single click on text components immediately enters edit mode
-    // if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
-    //   // Select the component first if not selected
-    //   if (!selectedNodeIds.includes(node.id)) {
-    //     toggleNodeSelection(node.id, false, false, tree);
-    //   }
-    //   // Enter edit mode immediately
-    //   setIsEditingText(true);
-    //   return;
-    // }
-
-    // COMMENTED OUT: Double-click text editing (now using RichTextControl in Properties Panel)
-    // DOUBLE-CLICK TEXT EDITING (Selection mode)
-    // Check for double-click on text components to enter edit mode
-    // ONLY handle this if the text component is already selected (don't interfere with container drill-in)
-    // if (editingMode === 'selection' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button') && selectedNodeIds.includes(node.id)) {
-    //   const now = Date.now();
-    //   const timeSinceLastClick = now - lastClickTimeRef.current;
-    //   const isDoubleClick = timeSinceLastClick < 350 && lastClickedIdRef.current === node.id;
-
-    //   console.log('[onClick] Text component click - double-click check:', {
-    //     nodeId: node.id,
-    //     nodeType: node.type,
-    //     timeSinceLastClick,
-    //     isDoubleClick,
-    //     lastClickedId: lastClickedIdRef.current,
-    //     isSelected: selectedNodeIds.includes(node.id)
-    //   });
-
-    //   if (isDoubleClick) {
-    //     console.log('[onClick] DOUBLE-CLICK on text component - entering edit mode');
-    //     setIsEditingText(true);
-    //     lastClickTimeRef.current = 0;
-    //     lastClickedIdRef.current = null;
-    //     return;
-    //   }
-
-    //   // Update refs for next click - only if text component is selected
-    //   lastClickTimeRef.current = now;
-    //   lastClickedIdRef.current = node.id;
-    // }
-
-    // All other selection logic now happens in mousedown for instant feel
-  }, [isAgentExecuting, draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, editingMode, node.type, node.id, node.isGlobalInstance, node.globalComponentId, setIsEditingText, setEditingGlobalComponent, lastClickTimeRef, lastClickedIdRef]);
+    // Selection logic happens in mousedown for instant Figma-style feel
+  }, [isAgentExecuting, draggedNodeId, justFinishedDragging, isPlayMode, selectedNodeIds, tree, toggleNodeSelection, node.interactions, node.id, node.isGlobalInstance, node.globalComponentId, setEditingGlobalComponent, lastClickTimeRef, lastClickedIdRef]);
 
   // Execute interactions on a component
   const executeInteractions = (nodeInteractions: any[] | undefined) => {
@@ -498,8 +455,9 @@ export const RenderNode: React.FC<{
         return;
       }
 
-      // Find child component at click location using DOM
-      const clickedElement = document.elementFromPoint(e.clientX, e.clientY);
+      // Find child component at click location using DOM (scaled for zoom)
+      const scaledCoords = getMouseCoordinates(e);
+      const clickedElement = document.elementFromPoint(scaledCoords.x, scaledCoords.y);
 
       if (clickedElement) {
         // Walk up DOM to find first child component of current selection
@@ -542,8 +500,9 @@ export const RenderNode: React.FC<{
     // Use the SELECTED component for drag, not the clicked nested component
     const dragTargetId = effectiveSelectedNode!.id;
 
-    // Capture initial mouse position for drag threshold
-    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    // Capture initial mouse position for drag threshold (scaled for zoom)
+    const scaledStartCoords = getMouseCoordinates(e);
+    dragStartPosRef.current = { x: scaledStartCoords.x, y: scaledStartCoords.y };
     dragThresholdMet.current = false;
 
     // Store the drag target ID temporarily (will start drag after threshold)
@@ -552,7 +511,7 @@ export const RenderNode: React.FC<{
     // Update tracking
     lastClickTimeRef.current = now;
     lastClickedIdRef.current = effectiveSelectedNode!.id;
-  }, [isAgentExecuting, isPlayMode, draggedNodeId, node.id, node.type, selectedNodeIds, tree, toggleNodeSelection, setIsEditingText]);
+  }, [isAgentExecuting, isPlayMode, draggedNodeId, node.id, selectedNodeIds, tree, toggleNodeSelection]);
 
   // Document-level mouse move for drag tracking
   React.useEffect(() => {
@@ -561,8 +520,9 @@ export const RenderNode: React.FC<{
 
       // Check if we're waiting to start a drag (threshold not met yet)
       if (pendingDragTargetId && dragStartPosRef.current && !dragThresholdMet.current) {
-        const dx = e.clientX - dragStartPosRef.current.x;
-        const dy = e.clientY - dragStartPosRef.current.y;
+        const scaledCoords = getMouseCoordinates(e);
+        const dx = scaledCoords.x - dragStartPosRef.current.x;
+        const dy = scaledCoords.y - dragStartPosRef.current.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         // Start drag if threshold exceeded (5px)
@@ -624,23 +584,39 @@ export const RenderNode: React.FC<{
               const rect = draggedElement.getBoundingClientRect();
               setDraggedSize({ width: rect.width, height: rect.height });
 
-              // Calculate offset from cursor to element's top-left corner
+              // Calculate offset from cursor to element's top-left corner (scaled for zoom)
+              const scaledDragCoords = getMouseCoordinates(e);
               dragOffsetRef.current = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
+                x: scaledDragCoords.x - rect.left,
+                y: scaledDragCoords.y - rect.top
               };
 
               // Clone the element for dragging
+              // The original element is inside a zoomed container, so we need to:
+              // 1. Get the unzoomed dimensions (rect is zoomed by getBoundingClientRect)
+              // 2. Apply transform: scale to match the visual appearance
+              const zoomLevel = (window as any).__viewportZoomLevel || 1.0;
+
               const clone = draggedElement.cloneNode(true) as HTMLElement;
               clone.style.position = 'fixed';
-              clone.style.left = `${e.clientX - dragOffsetRef.current.x}px`;
-              clone.style.top = `${e.clientY - dragOffsetRef.current.y}px`;
-              clone.style.width = `${rect.width}px`;
-              clone.style.height = `${rect.height}px`;
               clone.style.zIndex = '10000';
               clone.style.pointerEvents = 'none';
               clone.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
               clone.style.borderRadius = '4px';
+
+              // Set unzoomed dimensions and use transform: scale for proper scaling
+              // This ensures inner content is also scaled correctly
+              const unzoomedWidth = rect.width / zoomLevel;
+              const unzoomedHeight = rect.height / zoomLevel;
+              clone.style.width = `${unzoomedWidth}px`;
+              clone.style.height = `${unzoomedHeight}px`;
+              clone.style.transform = `scale(${zoomLevel})`;
+              clone.style.transformOrigin = 'top left';
+
+              // Position accounts for the scale transform origin at top-left
+              clone.style.left = `${scaledDragCoords.x - dragOffsetRef.current.x}px`;
+              clone.style.top = `${scaledDragCoords.y - dragOffsetRef.current.y}px`;
+
               clone.setAttribute('data-drag-clone', 'true');
               document.body.appendChild(clone);
               clonedElementRef.current = clone;
@@ -661,12 +637,13 @@ export const RenderNode: React.FC<{
 
       // If drag is active, update clone position and detect drop position
       if (draggedNodeId) {
-        // Update clone position using offset
+        const scaledMoveCoords = getMouseCoordinates(e);
+        // Update clone position using offset (scaled for zoom)
         if (clonedElementRef.current && dragOffsetRef.current) {
-          clonedElementRef.current.style.left = `${e.clientX - dragOffsetRef.current.x}px`;
-          clonedElementRef.current.style.top = `${e.clientY - dragOffsetRef.current.y}px`;
+          clonedElementRef.current.style.left = `${scaledMoveCoords.x - dragOffsetRef.current.x}px`;
+          clonedElementRef.current.style.top = `${scaledMoveCoords.y - dragOffsetRef.current.y}px`;
         }
-        setGhostPosition({ x: e.clientX, y: e.clientY });
+        setGhostPosition({ x: scaledMoveCoords.x, y: scaledMoveCoords.y });
 
         // Direction and edge-based hover detection
         if (!draggedItemParentId || !draggedSize || !dragOffsetRef.current) return;
@@ -685,9 +662,10 @@ export const RenderNode: React.FC<{
           const isFullWidth = gridColumnSpan >= parentColumns;
 
           if (isGridChild && !isFullWidth) {
-            // Calculate movement from drag start
-            const dx = e.clientX - dragStartPosRef.current.x;
-            const dy = e.clientY - dragStartPosRef.current.y;
+            // Calculate movement from drag start (scaled for zoom)
+            const scaledDragModeCoords = getMouseCoordinates(e);
+            const dx = scaledDragModeCoords.x - dragStartPosRef.current.x;
+            const dy = scaledDragModeCoords.y - dragStartPosRef.current.y;
             const absDx = Math.abs(dx);
             const absDy = Math.abs(dy);
 
@@ -730,9 +708,13 @@ export const RenderNode: React.FC<{
             const parentRect = parentElement.getBoundingClientRect();
             const gap = parent.props?.gap || 24; // Grid gap (default 24px)
             const gridColumnSpan = draggedNode.props?.gridColumnSpan || 12;
+            const zoomLevel = (window as any).__viewportZoomLevel || 1.0;
 
-            // Calculate column width
-            const totalGapWidth = gap * (contextParentGridColumns - 1);
+            // Scale gap by zoom to match screen coordinates from getBoundingClientRect
+            const screenGap = gap * zoomLevel;
+
+            // Calculate column width in screen coordinates
+            const totalGapWidth = screenGap * (contextParentGridColumns - 1);
             const availableWidth = parentRect.width - totalGapWidth;
             const columnWidth = availableWidth / contextParentGridColumns;
 
@@ -740,7 +722,7 @@ export const RenderNode: React.FC<{
             // Card's left edge = cursor X - drag offset X
             const cardLeftEdge = e.clientX - dragOffsetRef.current.x;
             const relativeX = cardLeftEdge - parentRect.left;
-            const columnWithGap = columnWidth + gap;
+            const columnWithGap = columnWidth + screenGap;
             let targetColumn = Math.floor(relativeX / columnWithGap) + 1;
 
             // Clamp to valid range (can't position beyond what spans allow)
@@ -933,7 +915,7 @@ export const RenderNode: React.FC<{
   }
 
   const Component = definition.component;
-  let props = { ...node.props };
+  const props = { ...node.props };
 
   // Extract grid child properties to apply to wrapper
   const gridColumnSpan = props.gridColumnSpan;
@@ -961,25 +943,33 @@ export const RenderNode: React.FC<{
   delete props.minHeight;
   delete props.customMinHeight;
 
+  // Find parent early - needed for responsive grid calculations
+  const parent = findParent(tree, node.id);
+
+  // Apply responsive grid logic
+  let adjustedGridColumnSpan = gridColumnSpan;
+  if (gridColumnSpan && parent?.type === 'Grid') {
+    // Parent is a Grid - calculate responsive column count and adjust child span
+    const baseColumns = parent.props?.columns || 12;
+    const currentColumns = getGridColumns(parent.responsiveColumns, viewport.size, baseColumns);
+
+    // Calculate proportional span for child
+    adjustedGridColumnSpan = calculateProportionalSpan(gridColumnSpan, baseColumns, currentColumns);
+  }
+
   // Convert span numbers to CSS grid syntax
   // If gridColumnStart is specified, use it; otherwise just use span
   let gridColumn: string | undefined;
-  if (gridColumnStart && gridColumnSpan) {
-    gridColumn = `${gridColumnStart} / span ${gridColumnSpan}`;
-  } else if (gridColumnSpan && gridColumnSpan > 1) {
-    gridColumn = `span ${gridColumnSpan}`;
+  if (gridColumnStart && adjustedGridColumnSpan) {
+    gridColumn = `${gridColumnStart} / span ${adjustedGridColumnSpan}`;
+  } else if (adjustedGridColumnSpan && adjustedGridColumnSpan > 1) {
+    gridColumn = `span ${adjustedGridColumnSpan}`;
   }
   const gridRow = gridRowSpan && gridRowSpan > 1 ? `span ${gridRowSpan}` : undefined;
-
-  // Find parent early - needed for height calculation in getWrapperStyle
-  const parent = findParent(tree, node.id);
 
   // Base wrapper style with grid child properties
   const isRootVStack = node.id === ROOT_GRID_ID;
   const isSelected = selectedNodeIds.includes(node.id);
-
-  // DISABLED: Sibling animations - replaced with simple grid line indicator
-  const _shouldAnimateAsSibling = false;
 
   // Check if this is the hovered sibling (used for drop indicator)
   const isHoveredSibling = hoveredSiblingId === node.id;
@@ -1023,37 +1013,25 @@ export const RenderNode: React.FC<{
     };
   }, [isHoveredSibling, dropPosition, isPlayMode, node.id, parent?.type, parent?.props?.direction]);
 
-  const getWrapperStyle = (additionalStyles: React.CSSProperties = {}) => {
-    // DISABLED: Transform calculation for sibling animations
-    const _transform = 'none';
-
-    // DISABLED: Background highlight for hovered sibling
-    const backgroundColor = undefined;
-
+  const getWrapperStyle = (additionalStyles: React.CSSProperties = {}): React.CSSProperties => {
     // Figma-style hover border - single pixel blue outline
     const showHoverBorder = shouldShowHoverBorder();
     const hoverOutline = showHoverBorder && !isSelected ? '1px solid #3858e9' : undefined;
 
-    // Determine cursor style based on mode and component type
-    const getCursorStyle = () => {
-      // In play mode, don't set cursor - let native components use their natural cursor styles
-      if (isPlayMode) return undefined;
-
-      // COMMENTED OUT: Text mode cursor (now using RichTextControl in Properties Panel)
-      // In text mode, show text cursor for text components
-      // if (editingMode === 'text' && (node.type === 'Text' || node.type === 'Heading' || node.type === 'Badge' || node.type === 'Button')) {
-      //   return 'text';
-      // }
-
-      // Default cursor for selection mode
-      return 'default';
+    // Determine cursor style - play mode uses native cursor, design mode uses default
+    const getCursorStyle = (): string | undefined => {
+      return isPlayMode ? undefined : 'default';
     };
 
     // Apply height for Grid children
-    const gridChildHeight = parent?.type === 'Grid' && heightProp === 'fill' ? '100%' :
-                           parent?.type === 'Grid' && heightProp === 'auto' ? 'fit-content' :
-                           parent?.type === 'Grid' && heightProp === 'custom' && customHeightProp ? customHeightProp :
-                           undefined;
+    const getGridChildHeight = (): string | undefined => {
+      if (parent?.type !== 'Grid') return undefined;
+      if (heightProp === 'fill') return '100%';
+      if (heightProp === 'auto') return 'fit-content';
+      if (heightProp === 'custom' && customHeightProp) return customHeightProp;
+      return undefined;
+    };
+    const gridChildHeight = getGridChildHeight();
 
     // Grid container height is applied to component props, not wrapper
 
@@ -1066,11 +1044,6 @@ export const RenderNode: React.FC<{
       ...(gridColumn && { gridColumn }),
       ...(gridRow && { gridRow }),
       ...(gridChildHeight && { height: gridChildHeight }),
-      backgroundColor,
-
-      // DISABLED: Sibling animation transforms
-      transform: 'none',
-      transition: 'none',
     };
 
     return { ...baseStyle, ...additionalStyles };
@@ -1168,132 +1141,7 @@ export const RenderNode: React.FC<{
       buttonProps = props;
     }
 
-    // COMMENTED OUT: In-canvas text editing (now using RichTextControl in Properties Panel)
-    // Render contenteditable wrapper preserving component styling (WYSIWYG)
-    // NOTE: In text mode, always render as contentEditable so clicks naturally position cursor
-    // In selection mode, only make contentEditable when actively editing (isEditingText)
-    if (false && ((editingMode === 'text' && !isPlayMode) || isEditingText)) {
-      return (
-        <div
-          ref={wrapperRef}
-          data-component-id={node.id}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          style={{
-            ...getWrapperStyle(),
-            // Only show outline when component is selected
-            outline: isSelected ? '2px solid #3858e9' : 'none',
-          }}
-        >
-          <div
-            ref={editableRef}
-            contentEditable
-            suppressContentEditableWarning
-            style={{
-              cursor: 'text',
-              outline: 'none', // Remove browser default outline
-            }}
-            onFocus={() => {
-              // When contentEditable receives focus, select component and mark as editing
-              if (!selectedNodeIds.includes(node.id)) {
-                toggleNodeSelection(node.id, false, false, tree);
-              }
-              setIsEditingText(true);
-            }}
-            onClick={(e) => {
-              // In text mode, allow click to naturally focus and position cursor
-              // In selection mode (double-click to edit), prevent bubbling
-              if (editingMode === 'selection') {
-                e.stopPropagation();
-              }
-            }}
-            onMouseDown={(e) => {
-              // Prevent mousedown from bubbling up to drag handlers
-              e.stopPropagation();
-            }}
-            onPaste={(e) => {
-              // Strip all formatting and insert plain text only
-              e.preventDefault();
-              const plainText = e.clipboardData.getData('text/plain');
-              document.execCommand('insertText', false, plainText);
-            }}
-            onKeyDown={(e) => {
-              // Block formatting shortcuts
-              if ((e.ctrlKey || e.metaKey) && ['b', 'i', 'u'].includes(e.key.toLowerCase())) {
-                e.preventDefault();
-                return;
-              }
-
-              // Save and exit edit mode on Escape
-              if (e.key === 'Escape') {
-                e.preventDefault();
-                const newContent = editableRef.current?.textContent || '';
-                if (node.type === 'Button') {
-                  updateComponentProps(node.id, { text: newContent });
-                } else {
-                  updateComponentProps(node.id, { children: newContent });
-                }
-                setIsEditingText(false);
-                return;
-              }
-
-              // Save and exit on Enter (for single-line text and buttons only, not headings)
-              if (e.key === 'Enter' && (node.type === 'Text' || node.type === 'Button')) {
-                e.preventDefault();
-                const newContent = editableRef.current?.textContent || '';
-                if (node.type === 'Button') {
-                  updateComponentProps(node.id, { text: newContent });
-                } else {
-                  updateComponentProps(node.id, { children: newContent });
-                }
-                setIsEditingText(false);
-                return;
-              }
-            }}
-            onBlur={() => {
-              // Save plain text content and exit edit mode
-              const newContent = editableRef.current?.textContent || '';
-              if (node.type === 'Button') {
-                updateComponentProps(node.id, { text: newContent });
-              } else {
-                updateComponentProps(node.id, { children: newContent });
-              }
-              setIsEditingText(false);
-            }}
-            onContextMenu={(e) => {
-              // Disable right-click format menu
-              e.preventDefault();
-            }}
-          >
-            {node.type === 'Button' ? (
-              // For buttons, render text directly without button wrapper for better cursor control
-              <span style={{
-                padding: '6px 12px',
-                display: 'inline-block',
-                backgroundColor: buttonProps.variant === 'primary' ? '#2271b1' :
-                                 buttonProps.variant === 'secondary' ? 'transparent' :
-                                 'transparent',
-                color: buttonProps.variant === 'primary' ? '#fff' : '#2271b1',
-                border: buttonProps.variant === 'secondary' ? '1px solid #2271b1' : 'none',
-                borderRadius: '2px',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif',
-                fontSize: '13px',
-                fontWeight: '400',
-                lineHeight: '1.4',
-                cursor: 'text',
-                whiteSpace: 'nowrap',
-              }}>
-                {content}
-              </span>
-            ) : (
-              <Component {...buttonProps}>{content}</Component>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // Normal rendering (non-edit mode) - pass editor props directly to component
+    // Normal rendering - pass editor props directly to component
     const editorProps = getEditorProps();
 
     // For buttons, preserve the outline from editorProps (selection state)
@@ -1873,10 +1721,6 @@ export const RenderNode: React.FC<{
   }
 
   // Regular components with children - merge with defaultProps
-  // For VStack/HStack, preserve explicit inline width/height styles (they override hug/fill)
-  const _hasExplicitWidth = (node.type === 'VStack' || node.type === 'HStack') && props.style?.width;
-  const _hasExplicitHeight = (node.type === 'VStack' || node.type === 'HStack') && props.style?.height;
-
   const mergedProps = {
     ...definition.defaultProps,
     ...props,
@@ -1886,11 +1730,12 @@ export const RenderNode: React.FC<{
     },
   };
 
-  // Apply layout constraints for layout containers
-  const _maxWidthPresets: Record<string, string> = {
-    content: '1344px',
-    full: '100%',
-  };
+  // Apply responsive columns for Grid components
+  if (node.type === 'Grid') {
+    const baseColumns = (mergedProps as any).columns || 12;
+    const responsiveColumns = getGridColumns(node.responsiveColumns, viewport.size, baseColumns);
+    (mergedProps as any).columns = responsiveColumns;
+  }
 
   // Layout containers that support width control
   // Note: CardBody, CardHeader, CardFooter are NOT included - they should always fill parent Card width

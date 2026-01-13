@@ -2,7 +2,7 @@ import React, { useEffect, useCallback, useMemo } from "react";
 import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
 import { useAgentDebug } from "@/contexts/AgentDebugContext";
 import { ComponentNode } from "@/types";
-import { Breadcrumb } from "./Breadcrumb";
+import { ViewportFrame } from "./ViewportFrame";
 import { RenderNode } from "./RenderNode";
 import { SelectionProvider } from "@/contexts/SelectionContext";
 import { SimpleDragProvider } from "@/contexts/SimpleDragContext";
@@ -15,11 +15,7 @@ import { KeyboardHandler } from "./KeyboardHandler";
 
 const { ThemeProvider } = unlock(themePrivateApis);
 
-interface CanvasProps {
-  showBreadcrumb?: boolean;
-}
-
-export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
+export const Canvas: React.FC = () => {
   const {
     tree,
     selectedNodeIds,
@@ -43,11 +39,6 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
       setIsDebugMode(debugMode);
     }
   }, [setIsDebugMode]);
-
-  // Get page-level properties from root VStack
-  const rootVStack = getNodeById(ROOT_GRID_ID);
-  const pageBackgroundColor =
-    rootVStack?.props.backgroundColor ?? "rgb(249, 250, 251)";
 
   // Get current project and layout settings (project-wide)
   const currentProject = projects.find((p) => p.id === currentProjectId);
@@ -143,6 +134,96 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
   // Wrap the global component in an array to render it like a tree
   const globalComponentTree = editingGlobalComponent ? [editingGlobalComponent] : null;
 
+  // In play mode or full width, render single page content inside ViewportFrame
+  // Otherwise, ViewportFrame renders all pages internally
+  const singlePageContent = isPlayMode ? (
+    <div
+      style={{
+        flex: 1,
+        padding: `${pagePadding * 4}px`,
+        backgroundColor: '#FCFCFC',
+        overflow: "auto",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+      }}
+      onMouseDown={(e) => {
+        const isClickOnComponent = (
+          target: EventTarget | null
+        ): boolean => {
+          if (!target || !(target instanceof HTMLElement)) return false;
+          let current: HTMLElement | null = target as HTMLElement;
+          while (current) {
+            if (current.hasAttribute("data-component-id")) {
+              return true;
+            }
+            current = current.parentElement;
+          }
+          return false;
+        };
+
+        if (!isClickOnComponent(e.target)) {
+          setSelectedNodeIds([]);
+        }
+      }}
+    >
+      <ThemeProvider
+        color={{
+          primary: projectTheme.primaryColor,
+          bg: projectTheme.backgroundColor,
+        }}
+      >
+        <div style={{ width: "100%", height: "100%", alignSelf: "stretch" }}>
+          {editingGlobalComponent && globalComponentTree ? (
+            <div
+              style={{
+                padding: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "100%",
+              }}
+            >
+              {globalComponentTree.map((node) => (
+                <RenderNode
+                  key={node.id}
+                  node={node}
+                  renderInteractive={false}
+                />
+              ))}
+            </div>
+          ) : isInteractiveSelected && interactiveAncestor ? (
+            <div
+              style={{
+                padding: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "100%",
+              }}
+            >
+              <RenderNode
+                key={interactiveAncestor.id}
+                node={interactiveAncestor}
+                renderInteractive={true}
+              />
+            </div>
+          ) : (
+            <>
+              {modifiedTree.map((node) => (
+                <RenderNode
+                  key={node.id}
+                  node={node}
+                  renderInteractive={false}
+                />
+              ))}
+            </>
+          )}
+        </div>
+      </ThemeProvider>
+    </div>
+  ) : null;
+
   return (
     <SelectionProvider>
       <SimpleDragProvider>
@@ -160,102 +241,9 @@ export const Canvas: React.FC<CanvasProps> = ({ showBreadcrumb = true }) => {
             position: "relative",
           }}
         >
-          <div
-            style={{
-              flex: 1,
-              padding: `${pagePadding * 4}px`,
-              backgroundColor: pageBackgroundColor,
-              overflow: "auto",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "flex-start",
-            }}
-            onMouseDown={(e) => {
-              // Check if the click was on empty space (not on a component)
-              const isClickOnComponent = (
-                target: EventTarget | null
-              ): boolean => {
-                if (!target || !(target instanceof HTMLElement)) return false;
-                // Traverse up the DOM to see if we're inside a component wrapper
-                let current: HTMLElement | null = target as HTMLElement;
-                while (current) {
-                  if (current.hasAttribute("data-component-id")) {
-                    return true;
-                  }
-                  current = current.parentElement;
-                }
-                return false;
-              };
-
-              // If clicked on empty space, deselect everything to show Project Settings
-              if (!isClickOnComponent(e.target)) {
-                setSelectedNodeIds([]);
-              }
-            }}
-          >
-            <ThemeProvider
-              color={{
-                primary: projectTheme.primaryColor,
-                bg: projectTheme.backgroundColor,
-              }}
-            >
-              <div style={{ width: "100%", height: "100%", alignSelf: "stretch" }}>
-                {editingGlobalComponent && globalComponentTree ? (
-                  // Render global component in isolation mode
-                  <div
-                    style={{
-                      padding: "20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minHeight: "100%",
-                    }}
-                  >
-                    {globalComponentTree.map((node) => (
-                      <RenderNode
-                        key={node.id}
-                        node={node}
-                        renderInteractive={false}
-                        onNodeUpdate={(updatedNode) => {
-                          // Update the global component definition
-                          updateGlobalComponent(editingGlobalComponentId!, updatedNode);
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : isInteractiveSelected && interactiveAncestor ? (
-                  // Render only the interactive component in isolation
-                  <div
-                    style={{
-                      padding: "20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minHeight: "100%",
-                    }}
-                  >
-                    <RenderNode
-                      key={interactiveAncestor.id}
-                      node={interactiveAncestor}
-                      renderInteractive={true}
-                    />
-                  </div>
-                ) : (
-                  // Render full page tree with simple custom drag-drop
-                  <>
-                    {modifiedTree.map((node) => (
-                      <RenderNode
-                        key={node.id}
-                        node={node}
-                        renderInteractive={false}
-                      />
-                    ))}
-                  </>
-                )}
-              </div>
-            </ThemeProvider>
-          </div>
-          {showBreadcrumb && !isPlayMode && <Breadcrumb />}
+          <ViewportFrame>
+            {singlePageContent}
+          </ViewportFrame>
 
           {/* Debug UI - rendered in canvas area */}
           <AgentDebugUI />

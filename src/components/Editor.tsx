@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useComponentTree, ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { PlayModeProvider } from '@/contexts/PlayModeContext';
 import { AgentDebugProvider } from '@/contexts/AgentDebugContext';
 import { TopBar } from './TopBar';
 import { TreePanel } from './TreePanel';
 import { Canvas } from './Canvas';
-import { ProjectCanvas } from './ProjectCanvas';
 import { PropertiesPanel } from './PropertiesPanel';
 import { CodePanel } from './CodePanel';
 import { AgentPanel } from './AgentPanel';
+import { Breadcrumb } from './Breadcrumb';
+import { ViewportPresetButtons } from './ViewportPresetButtons';
+import { ZoomSlider } from './ZoomSlider';
+import { WiresToggleButton } from './WiresToggleButton';
 import { useRouter } from 'next/navigation';
 import { useCloudProject } from '@/hooks/useCloudProject';
 
@@ -44,6 +47,10 @@ function EditorContent({ binId, pageId }: EditorProps) {
 
   // Check if the CORRECT project is already loaded (binId stored in project matches URL)
   const isCorrectProjectLoaded = currentProject?.binId === binId;
+
+  // Track last URL pageId to detect external navigation (back/forward, direct URL)
+  // vs programmatic navigation (clicking noodles, pages)
+  const lastUrlPageIdRef = useRef<string>(pageId);
 
   // Load from cloud on mount (only if correct project not already in context)
   useEffect(() => {
@@ -84,9 +91,15 @@ function EditorContent({ binId, pageId }: EditorProps) {
       }).finally(() => {
         setIsLoading(false);
       });
-    } else if (isCorrectProjectLoaded && currentPageId !== pageId) {
-      // Correct project already loaded, just switch page
-      setCurrentPage(pageId);
+    } else if (isCorrectProjectLoaded && pageId !== lastUrlPageIdRef.current) {
+      // URL pageId changed externally (browser back/forward, direct URL access)
+      // Sync state to match the new URL
+      // Note: We only trigger this when the URL actually changes, not when
+      // currentPageId changes from programmatic navigation (clicking noodles/pages)
+      lastUrlPageIdRef.current = pageId;
+      if (currentPageId !== pageId) {
+        setCurrentPage(pageId);
+      }
     }
   }, [binId, loadProject, importProject, pageId, setCurrentPage, isCorrectProjectLoaded, currentPageId, markSaved]);
 
@@ -132,9 +145,6 @@ function EditorContent({ binId, pageId }: EditorProps) {
     const saved = localStorage.getItem('wp-designer-show-agent-panel');
     return saved === 'true';
   });
-  
-  // Canvas view state (multi-page overview)
-  const [isCanvasView, setIsCanvasView] = useState(false);
 
   // Save right panel selection to localStorage whenever it changes
   useEffect(() => {
@@ -142,6 +152,28 @@ function EditorContent({ binId, pageId }: EditorProps) {
       localStorage.setItem('wp-designer-right-panel', rightPanel);
     }
   }, [rightPanel]);
+
+  // Prevent browser back/forward swipe gestures in the editor
+  // Combining overscroll-behavior with overflow-x: hidden (recommended approach)
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'prevent-swipe-navigation';
+    style.textContent = `
+      html, body {
+        overscroll-behavior: none !important;
+        overscroll-behavior-x: none !important;
+        overflow-x: hidden !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      const existingStyle = document.getElementById('prevent-swipe-navigation');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, []);
 
   // Save code panel width to localStorage whenever it changes
   useEffect(() => {
@@ -216,8 +248,8 @@ function EditorContent({ binId, pageId }: EditorProps) {
     };
   }, [isResizing]);
 
-  // Hide panels when in play mode or canvas view
-  const shouldShowPanels = showPanels && !isPlayMode && !isCanvasView;
+  // Hide panels when in play mode
+  const shouldShowPanels = showPanels && !isPlayMode;
 
   const handleNavigateToProjects = useCallback(() => {
     if (isDirty) {
@@ -293,8 +325,6 @@ function EditorContent({ binId, pageId }: EditorProps) {
                 rightPanel={rightPanel}
                 onToggleRightPanel={setRightPanel}
                 onNavigateToProjects={handleNavigateToProjects}
-                isCanvasView={isCanvasView}
-                onToggleCanvasView={() => setIsCanvasView(prev => !prev)}
                 binId={binId}
                 pageId={pageId}
                 projectName={currentProject?.name}
@@ -307,19 +337,35 @@ function EditorContent({ binId, pageId }: EditorProps) {
           )}
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             {shouldShowPanels && (showTreePanel || showInserter) && <TreePanel showInserter={showInserter} onCloseInserter={() => setShowInserter(false)} />}
-            {isCanvasView ? (
-              <ProjectCanvas
-                onPageClick={(newPageId) => {
-                  setIsCanvasView(false);
-                  // Navigate to the new page URL - this ensures the URL sync effect
-                  // in Editor will correctly update currentPageId
-                  router.push(`/editor/${binId}/${newPageId}`);
-                }}
-                onClose={() => setIsCanvasView(false)}
-              />
-            ) : (
-              <Canvas showBreadcrumb={showHeader && !isPlayMode} />
-            )}
+
+            {/* Middle section: Canvas + Bottom Bar wrapper */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <Canvas />
+
+              {/* Bottom bar - breadcrumb and viewport controls */}
+              {showHeader && !isPlayMode && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 16px',
+                  borderTop: '1px solid rgba(0,0,0,0.1)',
+                  backgroundColor: '#fff',
+                }}>
+                  <Breadcrumb />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}>
+                    <ViewportPresetButtons />
+                    <ZoomSlider />
+                    <WiresToggleButton />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {shouldShowPanels && rightPanel === 'props' && (
               <PropertiesPanel />
             )}
@@ -340,7 +386,7 @@ function EditorContent({ binId, pageId }: EditorProps) {
           onClick={() => setShowAgentPanel(true)}
           style={{
             position: 'fixed',
-            bottom: '24px',
+            bottom: '72px',
             right: '24px',
             width: '56px',
             height: '56px',

@@ -292,7 +292,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
           setCurrentPhase('planner');
 
           const contextTools = [getTool('context_getProject'), getTool('context_searchComponents')].filter(Boolean);
-          const plannerResult = await executePhase(
+          const plannerResult = await _executePhase(
             'planner',
             plannerPrompt,
             userMessageText,
@@ -431,7 +431,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ onClose }) => {
   );
 
   // Generate contextual suggestions
-  const suggestions = generateSuggestions(createToolContext());
+  const suggestions = _generateSuggestions(createToolContext());
 
   return (
     <>

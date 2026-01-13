@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useLayoutEffect } from "react";
 import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
 import { componentRegistry } from "@/componentRegistry";
 import { findParent } from "../utils/treeHelpers";
+import { ResponsiveColumns } from "@/types";
+import { DEFAULT_RESPONSIVE_COLUMNS } from "@/utils/responsiveHelpers";
 import {
   TextControl,
   TextareaControl,
@@ -176,6 +178,8 @@ export const PropertiesPanel: React.FC = () => {
     isAgentExecuting,
     globalComponents,
     setEditingGlobalComponent,
+    requestedPropertiesTab,
+    setRequestedPropertiesTab,
   } = useComponentTree();
 
   const selectedNodes = useMemo(() => {
@@ -185,6 +189,16 @@ export const PropertiesPanel: React.FC = () => {
         (n): n is NonNullable<ReturnType<typeof getNodeById>> => n !== null
       );
   }, [selectedNodeIds, getNodeById]);
+
+  // Respond to external requests to switch tabs (e.g., from noodle click)
+  // useLayoutEffect runs synchronously before paint, ensuring tab switches
+  // before the component is visible to the user
+  useLayoutEffect(() => {
+    if (requestedPropertiesTab) {
+      setActiveTab(requestedPropertiesTab);
+      setRequestedPropertiesTab(null);
+    }
+  }, [requestedPropertiesTab, setRequestedPropertiesTab]);
 
   const isMultiSelect = selectedNodes.length > 1;
   const firstNode = selectedNodes[0];
@@ -460,12 +474,14 @@ export const PropertiesPanel: React.FC = () => {
   };
 
   // Reset tab to styles for multi-select since interactions are only single-select
-  if (isMultiSelect && activeTab === "interactions") {
+  // Don't reset if there's a pending request to open a specific tab
+  if (isMultiSelect && activeTab === "interactions" && !requestedPropertiesTab) {
     setActiveTab("styles");
   }
 
   // Reset tab to styles if interactions are disabled for this component
-  if (definition.disableInteractions && activeTab === "interactions") {
+  // Don't reset if there's a pending request to open a specific tab
+  if (definition.disableInteractions && activeTab === "interactions" && !requestedPropertiesTab) {
     setActiveTab("styles");
   }
 
@@ -525,6 +541,148 @@ export const PropertiesPanel: React.FC = () => {
                 });
               }}
             />
+
+            {/* Responsive Columns */}
+            <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #ddd' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px', marginTop: 0 }}>
+                Responsive Columns
+              </h3>
+              <p style={{ fontSize: '11px', color: '#757575', marginBottom: '16px', marginTop: 0 }}>
+                Set column count for each viewport breakpoint. Grid automatically adjusts as screen size changes.
+              </p>
+
+              {(() => {
+                const responsiveColumns = firstNode.responsiveColumns || {};
+                const updateResponsiveColumns = (breakpoint: keyof ResponsiveColumns, value: number) => {
+                  const updated = { ...responsiveColumns, [breakpoint]: value };
+                  updateComponentProps(firstNode.id, { responsiveColumns: updated });
+                };
+
+                return (
+                  <>
+                    {/* XLarge breakpoint */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        color: '#1e1e1e'
+                      }}>
+                        XLarge (≥1280px)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={responsiveColumns.xlarge ?? DEFAULT_RESPONSIVE_COLUMNS.xlarge}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || DEFAULT_RESPONSIVE_COLUMNS.xlarge;
+                          updateResponsiveColumns('xlarge', value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Large breakpoint */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        color: '#1e1e1e'
+                      }}>
+                        Large (≥1080px)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={responsiveColumns.large ?? DEFAULT_RESPONSIVE_COLUMNS.large}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || DEFAULT_RESPONSIVE_COLUMNS.large;
+                          updateResponsiveColumns('large', value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Medium breakpoint */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        color: '#1e1e1e'
+                      }}>
+                        Medium (≥782px)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={responsiveColumns.medium ?? DEFAULT_RESPONSIVE_COLUMNS.medium}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || DEFAULT_RESPONSIVE_COLUMNS.medium;
+                          updateResponsiveColumns('medium', value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Small breakpoint */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        color: '#1e1e1e'
+                      }}>
+                        Small (&lt;782px)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={responsiveColumns.small ?? DEFAULT_RESPONSIVE_COLUMNS.small}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || DEFAULT_RESPONSIVE_COLUMNS.small;
+                          updateResponsiveColumns('small', value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          border: '1px solid #ddd',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </PanelBody>
         )}
 
@@ -847,7 +1005,6 @@ export const PropertiesPanel: React.FC = () => {
                       }
                       help={isGlobalInstance ? "Disabled for instances. Edit the master component to change this." : propDef.description}
                       placeholder="Type text... (Cmd+B for bold, Cmd+I for italic)"
-                      disabled={isGlobalInstance}
                     />
                   ) : propDef.type === "string" ? (
                     <TextControl

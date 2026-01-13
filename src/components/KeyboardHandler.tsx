@@ -17,7 +17,6 @@ export const KeyboardHandler: React.FC<{
     setSelectedNodeIds,
     toggleNodeSelection,
     getNodeById,
-    toggleGridLines,
     toggleAllGridLines,
     undo,
     redo,
@@ -32,11 +31,12 @@ export const KeyboardHandler: React.FC<{
     reorderComponent,
     groupComponents,
     ungroupComponents,
-    editingMode,
-    setEditingMode,
     pages,
     currentPageId,
     isAgentExecuting,
+    setViewportPreset,
+    setZoomLevel,
+    zoomLevel,
   } = useComponentTree();
 
   const { lastClickTimeRef, lastClickedIdRef } = useSelection();
@@ -58,23 +58,17 @@ export const KeyboardHandler: React.FC<{
 
   // Keyboard shortcuts
   useEffect(() => {
+    const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Disable all keyboard shortcuts when agent is executing
       if (isAgentExecuting) {
         return;
       }
 
-      // In play mode, most shortcuts are disabled except Escape
-      // (Escape is handled below to allow exiting play mode if needed)
-      if (isPlayMode) {
-        // Allow escaping play mode with Escape key
-        if (e.key === "Escape") {
-          // This will be handled by the play mode exit logic in TopBar
-          // For now, just allow the event to propagate
-        } else {
-          // Block all other keyboard shortcuts in play mode
-          return;
-        }
+      // In play mode, only allow Escape key (handled by TopBar for exiting play mode)
+      if (isPlayMode && e.key !== "Escape") {
+        return;
       }
 
       // Cmd/Ctrl+Z for undo
@@ -90,6 +84,61 @@ export const KeyboardHandler: React.FC<{
         e.preventDefault();
         e.stopPropagation();
         redo();
+        return;
+      }
+
+      // Viewport preset shortcuts: Cmd+1 (mobile), Cmd+2 (tablet), Cmd+3 (desktop)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        const presetMap: Record<string, 'mobile' | 'tablet' | 'desktop'> = {
+          '1': 'mobile',
+          '2': 'tablet',
+          '3': 'desktop',
+        };
+        const preset = presetMap[e.key];
+        if (preset) {
+          e.preventDefault();
+          e.stopPropagation();
+          setViewportPreset(preset);
+          return;
+        }
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "0" && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Fit to width - auto-calculate zoom to fill available space
+        const fitToWidth = (window as any).__viewportFitToWidth;
+        if (fitToWidth) {
+          fitToWidth();
+        }
+        return;
+      }
+
+      // Zoom controls
+      if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
+        if (currentIndex < ZOOM_LEVELS.length - 1) {
+          setZoomLevel(ZOOM_LEVELS[currentIndex + 1]);
+        }
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === "-" || e.key === "_")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
+        if (currentIndex > 0) {
+          setZoomLevel(ZOOM_LEVELS[currentIndex - 1]);
+        }
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "0") {
+        e.preventDefault();
+        e.stopPropagation();
+        setZoomLevel(1.0);
         return;
       }
 
@@ -281,23 +330,6 @@ export const KeyboardHandler: React.FC<{
         toggleAllGridLines();
       }
 
-      // COMMENTED OUT: Mode switcher keyboard shortcuts (now using RichTextControl in Properties Panel)
-      // V key to switch to selection mode (skip if in edit mode)
-      // if (e.key === "v" && !isInEditMode()) {
-      //   e.preventDefault();
-      //   e.stopPropagation();
-      //   setEditingMode('selection');
-      //   return;
-      // }
-
-      // T key to switch to text mode (skip if in edit mode)
-      // if (e.key === "t" && !isInEditMode()) {
-      //   e.preventDefault();
-      //   e.stopPropagation();
-      //   setEditingMode('text');
-      //   return;
-      // }
-
       // Arrow keys to reorder items (Figma-style)
       // Only single selection, not in edit mode, and not root
       if (
@@ -386,11 +418,8 @@ export const KeyboardHandler: React.FC<{
     reorderComponent,
     groupComponents,
     ungroupComponents,
-    toggleGridLines,
     toggleAllGridLines,
     getNodeById,
-    editingMode,
-    setEditingMode,
     isPlayMode,
     isInEditMode,
     findInteractiveAncestor,
@@ -398,6 +427,9 @@ export const KeyboardHandler: React.FC<{
     lastClickedIdRef,
     pages,
     currentPageId,
+    setViewportPreset,
+    setZoomLevel,
+    zoomLevel,
   ]);
 
   // This component doesn't render anything

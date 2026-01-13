@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useParams } from "next/navigation";
 import { useComponentTree, ROOT_GRID_ID } from "@/contexts/ComponentTreeContext";
+import { usePageSelection } from "@/hooks/usePageSelection";
 import { ComponentNode, PatternNode } from "../types";
 import { componentRegistry } from "@/componentRegistry";
 import { patterns, assignIds } from "../patterns";
@@ -290,6 +291,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
   const router = useRouter();
   const params = useParams();
   const binId = params.binId as string; // Get binId from URL for navigation
+  const { selectPage } = usePageSelection(); // Unified page selection with URL update
   const {
     tree,
     addComponent,
@@ -302,7 +304,9 @@ export const TreePanel: React.FC<TreePanelProps> = ({
     updateComponentName,
     pages,
     currentPageId,
+    selectedPageId,
     setCurrentPage,
+    setSelectedPageId,
     createPageWithId,
     deletePage,
     renamePage,
@@ -376,12 +380,14 @@ export const TreePanel: React.FC<TreePanelProps> = ({
       activeId != null ? [activeId, ...collapsedItems] : collapsedItems
     );
 
-    // Hide the root VStack (page node) from layers panel and adjust depth
-    // Since we're removing root (depth 0), subtract 1 from all depths so direct children start at 0
+    // Hide the root from layers panel and adjust depth
+    // In page mode: filter out ROOT_GRID_ID
+    // In isolation mode: filter out the global component itself (show its children)
+    const rootId = editingGlobalComponentId || ROOT_GRID_ID;
     return filteredTree
-      .filter((item) => item.id !== ROOT_GRID_ID)
+      .filter((item) => item.id !== rootId)
       .map((item) => ({ ...item, depth: item.depth - 1 }));
-  }, [tree, activeId]);
+  }, [tree, activeId, editingGlobalComponentId]);
 
   const sortedIds = React.useMemo(
     () => flattenedItems.map((item) => item.id),
@@ -880,7 +886,7 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                   key={page.id}
                   page={page}
                   isEditing={editingPageId === page.id}
-                  isCurrent={currentPageId === page.id && !editingGlobalComponentId}
+                  isCurrent={selectedPageId === page.id && !editingGlobalComponentId}
                   editingName={editingPageName}
                   onEditNameChange={setEditingPageName}
                   onEditSubmit={() => {
@@ -896,10 +902,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                       if (editingGlobalComponentId) {
                         setEditingGlobalComponent(null);
                       }
-                      setCurrentPage(page.id);
-                      if (binId) {
-                        router.push(`/editor/${binId}/${page.id}`);
-                      }
+                      // Select the page (hook handles both state + URL update)
+                      selectPage(page.id);
                     }
                   }}
                   onNameClick={(e: React.MouseEvent) => {
@@ -915,15 +919,14 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                         if (editingGlobalComponentId) {
                           setEditingGlobalComponent(null);
                         }
-                        setCurrentPage(page.id);
-                        if (binId) {
-                          router.push(`/editor/${binId}/${page.id}`);
-                        }
+                        // Select the page (hook handles both state + URL update)
+                        selectPage(page.id);
                       }
                       pageClickTimeoutRef.current[page.id] = setTimeout(() => {
                         pageClickCountRef.current[page.id] = 0;
                       }, 350);
                     } else if (pageClickCountRef.current[page.id] === 2) {
+                      // Double-click: start editing page name
                       e.stopPropagation();
                       clearTimeout(pageClickTimeoutRef.current[page.id]);
                       pageClickCountRef.current[page.id] = 0;
@@ -1064,28 +1067,31 @@ export const TreePanel: React.FC<TreePanelProps> = ({
         </>
       )}
 
-      {/* Layers Label */}
-      <div
-        style={{
-          padding: "12px 8px 12px 8px",
-          borderTop: "1px solid #e0e0e0",
-          borderBottom: "1px solid #e0e0e0",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "11px",
-            fontWeight: 600,
-            color: "#666",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
-          Layers
-        </span>
-      </div>
+      {/* Layers section - show when a page is selected OR in isolation mode */}
+      {(selectedPageId || editingGlobalComponentId) && (
+        <>
+          {/* Layers Label */}
+          <div
+            style={{
+              padding: "12px 8px 12px 8px",
+              borderTop: "1px solid #e0e0e0",
+              borderBottom: "1px solid #e0e0e0",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "#666",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Layers
+            </span>
+          </div>
 
-      {/* Inserter Overlay */}
+          {/* Inserter Overlay */}
       <ComponentInserter
         showInserter={showInserter}
         onCloseInserter={onCloseInserter}
@@ -1237,6 +1243,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
           )}
         </DndContext>
       </div>
+        </>
+      )}
     </div>
   );
 };
