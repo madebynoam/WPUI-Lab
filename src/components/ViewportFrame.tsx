@@ -155,25 +155,41 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     }
   }, [pages, updateAllPageCanvasPositions, presetWidth, presetHeight]);
 
-  // Fit to width
+  // Fit to width - pan to selected page (or first page if none selected)
   const fitToWidth = useCallback((): void => {
     if (!containerRef.current || !isConstrained) return;
+    if (pages.length === 0) return;
 
     const CONTAINER_PADDING = 40;
     const MIN_ZOOM = 0.25;
     const MAX_ZOOM = 1.0;
 
-    const containerWidth = containerRef.current.clientWidth - CONTAINER_PADDING;
-    const optimalZoom = Math.min(MAX_ZOOM, containerWidth / presetWidth);
+    // Determine target page: selected page, or first page if none selected
+    const targetPageId = selectedPageId || pages[0].id;
+    const targetPosition = pagePositions[targetPageId] || { x: 0, y: 0 };
+
+    const containerWidth = containerRef.current.clientWidth;
+    const availableWidth = containerWidth - CONTAINER_PADDING * 2;
+
+    // Calculate zoom to fit page WIDTH
+    const optimalZoom = availableWidth / presetWidth;
     const clampedZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, optimalZoom));
 
+    // Center the page horizontally
+    const pageCenterX = targetPosition.x + presetWidth / 2;
+    const panX = containerWidth / 2 - pageCenterX * clampedZoom;
+
+    // Align top of page with some padding from top of container
+    const topPadding = CONTAINER_PADDING;
+    const panY = topPadding - targetPosition.y * clampedZoom;
+
     setZoomLevel(clampedZoom);
-    setPanOffset({ x: 0, y: 0 });
+    setPanOffset({ x: panX, y: panY });
     // Also clear from sessionStorage since we're intentionally resetting
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem(panStorageKey);
     }
-  }, [isConstrained, presetWidth, setZoomLevel, panStorageKey]);
+  }, [isConstrained, presetWidth, setZoomLevel, panStorageKey, pages, selectedPageId, pagePositions]);
 
   // Track previous viewport preset to reset pan when it changes
   const prevViewportPresetRef = useRef(viewportPreset);
