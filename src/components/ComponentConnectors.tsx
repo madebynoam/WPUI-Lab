@@ -28,7 +28,7 @@ interface Connection {
 
 interface RenderedConnection extends Connection {
   sourcePt: { x: number; y: number };
-  targetPt: { x: number; y: number };
+  targetPt: { x: number; y: number; edge: 'top' | 'right' | 'bottom' | 'left' };
   path: string;
   cp1: { x: number; y: number };
   cp2: { x: number; y: number };
