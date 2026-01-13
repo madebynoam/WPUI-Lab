@@ -40,6 +40,7 @@ export interface ComponentTreeState {
   viewportPreset: 'mobile' | 'tablet' | 'desktop' | 'full';
   zoomLevel: number; // 0.5, 0.75, 1.0, 1.5, 2.0
   showWires: boolean; // Show interaction wires on canvas
+  requestedPropertiesTab: 'styles' | 'interactions' | null; // Tab to open in properties panel
 
   // Cloud save state
   isDirty: boolean; // True when there are unsaved changes
@@ -1496,6 +1497,28 @@ export function componentTreeReducer(
     case 'SET_SHOW_WIRES': {
       const { show } = action.payload;
       return { ...state, showWires: show };
+    }
+
+    case 'SET_REQUESTED_PROPERTIES_TAB': {
+      const { tab } = action.payload;
+      return { ...state, requestedPropertiesTab: tab };
+    }
+
+    // Atomic action: switch to page, select component, and optionally open properties tab
+    // This avoids race conditions when clicking noodles/wires
+    case 'SELECT_COMPONENT_ON_PAGE': {
+      const { pageId, componentId, openTab } = action.payload;
+      const currentProject = getCurrentProject(state.projects, state.currentProjectId);
+      const updatedProject = { ...currentProject, currentPageId: pageId, lastModified: Date.now() };
+      const newProjects = updateProjectInProjects(state.projects, state.currentProjectId, () => updatedProject);
+
+      return {
+        ...state,
+        projects: newProjects,
+        selectedPageId: pageId,
+        selectedNodeIds: [componentId],
+        requestedPropertiesTab: openTab || null,
+      };
     }
 
     case 'SET_AGENT_EXECUTING': {

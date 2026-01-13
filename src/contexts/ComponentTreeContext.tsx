@@ -111,6 +111,9 @@ interface ComponentTreeContextType {
   setZoomLevel: (level: number) => void;
   showWires: boolean;
   setShowWires: (show: boolean) => void;
+  requestedPropertiesTab: 'styles' | 'interactions' | null;
+  setRequestedPropertiesTab: (tab: 'styles' | 'interactions' | null) => void;
+  selectComponentOnPage: (pageId: string, componentId: string, openTab?: 'styles' | 'interactions') => void;
 
   // Agent execution state
   isAgentExecuting: boolean;
@@ -211,6 +214,7 @@ function initializeState(): ComponentTreeState {
     viewportPreset: 'full', // Default to full width
     zoomLevel: 1.0, // Default to 100% zoom
     showWires: false, // Hide interaction wires by default
+    requestedPropertiesTab: null, // Tab to open in properties panel (set by noodle click, etc.)
     isDirty: false,
     history: {
       past: [],
@@ -634,6 +638,14 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     dispatch({ type: 'SET_SHOW_WIRES', payload: { show } });
   }, []);
 
+  const setRequestedPropertiesTab = useCallback((tab: 'styles' | 'interactions' | null) => {
+    dispatch({ type: 'SET_REQUESTED_PROPERTIES_TAB', payload: { tab } });
+  }, []);
+
+  const selectComponentOnPage = useCallback((pageId: string, componentId: string, openTab?: 'styles' | 'interactions') => {
+    dispatch({ type: 'SELECT_COMPONENT_ON_PAGE', payload: { pageId, componentId, openTab } });
+  }, []);
+
   // ===== Agent Execution State =====
 
   const setAgentExecuting = (isExecuting: boolean) => {
@@ -772,6 +784,9 @@ export const ComponentTreeProvider = ({ children }: { children: ReactNode }) => 
     setZoomLevel,
     showWires: state.showWires,
     setShowWires,
+    requestedPropertiesTab: state.requestedPropertiesTab,
+    setRequestedPropertiesTab,
+    selectComponentOnPage,
     isAgentExecuting: state.isAgentExecuting,
     setAgentExecuting,
     editingMode: state.editingMode,

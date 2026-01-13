@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
+import { useParams } from 'next/navigation';
 import { Page, ComponentNode, Interaction } from '@/types';
+import { useComponentTree } from '@/contexts/ComponentTreeContext';
 
 // =============================================================================
 // TYPES
@@ -226,6 +228,11 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
   contentScale,
   zoom,
 }) => {
+  const params = useParams();
+  const binId = params?.binId as string;
+
+  const { selectComponentOnPage } = useComponentTree();
+
   // Store component bounds RELATIVE to their page (not absolute)
   // This way we only need to re-query DOM when layout changes, not when pages move
   const [relativeComponentBounds, setRelativeComponentBounds] = useState<Record<string, {
@@ -458,8 +465,23 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
   }, [renderedConnections]);
 
   const handleConnectionClick = useCallback((connection: RenderedConnection) => {
-    console.log('Connection clicked:', connection);
-  }, []);
+    // Atomically set page + component + tab (all in one reducer dispatch)
+    selectComponentOnPage(
+      connection.sourcePageId,
+      connection.sourceComponentId,
+      'interactions'
+    );
+
+    // Update URL to match without triggering a full navigation
+    // Using replaceState to avoid adding to history and prevent re-render flash
+    if (binId && typeof window !== 'undefined') {
+      window.history.replaceState(
+        null,
+        '',
+        `/editor/${binId}/${connection.sourcePageId}`
+      );
+    }
+  }, [binId, selectComponentOnPage]);
 
   if (renderedConnections.length === 0) {
     return null;
@@ -510,7 +532,11 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
               style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
               onMouseEnter={() => setHoveredConnection(connection.id)}
               onMouseLeave={() => setHoveredConnection(null)}
-              onClick={() => handleConnectionClick(connection)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleConnectionClick(connection);
+              }}
             />
 
             {/* Visible path - solid line ending at arrow base */}

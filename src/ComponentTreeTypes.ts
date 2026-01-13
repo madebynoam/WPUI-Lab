@@ -77,6 +77,12 @@ export type ComponentTreeAction =
   | { type: 'SET_ZOOM_LEVEL'; payload: { level: number } }
   | { type: 'SET_SHOW_WIRES'; payload: { show: boolean } }
 
+  // Properties panel actions
+  | { type: 'SET_REQUESTED_PROPERTIES_TAB'; payload: { tab: 'styles' | 'interactions' | null } }
+
+  // Compound actions (for atomic operations)
+  | { type: 'SELECT_COMPONENT_ON_PAGE'; payload: { pageId: string; componentId: string; openTab?: 'styles' | 'interactions' } }
+
   // Interaction actions
   | { type: 'ADD_INTERACTION'; payload: { nodeId: string; interaction: Interaction } }
   | { type: 'REMOVE_INTERACTION'; payload: { nodeId: string; interactionId: string } }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useComponentTree, ROOT_GRID_ID } from '@/contexts/ComponentTreeContext';
 import { PlayModeProvider } from '@/contexts/PlayModeContext';
 import { AgentDebugProvider } from '@/contexts/AgentDebugContext';
@@ -48,6 +48,10 @@ function EditorContent({ binId, pageId }: EditorProps) {
   // Check if the CORRECT project is already loaded (binId stored in project matches URL)
   const isCorrectProjectLoaded = currentProject?.binId === binId;
 
+  // Track last URL pageId to detect external navigation (back/forward, direct URL)
+  // vs programmatic navigation (clicking noodles, pages)
+  const lastUrlPageIdRef = useRef<string>(pageId);
+
   // Load from cloud on mount (only if correct project not already in context)
   useEffect(() => {
     if (binId && !isCorrectProjectLoaded && !isLoading) {
@@ -87,12 +91,15 @@ function EditorContent({ binId, pageId }: EditorProps) {
       }).finally(() => {
         setIsLoading(false);
       });
-    } else if (isCorrectProjectLoaded && currentPageId !== pageId) {
-      // Correct project already loaded, just switch page
-      // This handles browser back/forward navigation and direct URL access
-      // Note: When user clicks a page, usePageSelection already sets currentPageId,
-      // so this will be a no-op in that case (currentPageId === pageId)
-      setCurrentPage(pageId);
+    } else if (isCorrectProjectLoaded && pageId !== lastUrlPageIdRef.current) {
+      // URL pageId changed externally (browser back/forward, direct URL access)
+      // Sync state to match the new URL
+      // Note: We only trigger this when the URL actually changes, not when
+      // currentPageId changes from programmatic navigation (clicking noodles/pages)
+      lastUrlPageIdRef.current = pageId;
+      if (currentPageId !== pageId) {
+        setCurrentPage(pageId);
+      }
     }
   }, [binId, loadProject, importProject, pageId, setCurrentPage, isCorrectProjectLoaded, currentPageId, markSaved]);
 
