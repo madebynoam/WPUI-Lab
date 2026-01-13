@@ -125,47 +125,44 @@ function getPageEdgePoint(
 }
 
 /**
- * Create a smooth bezier curve between two points
- * Returns path string and control points for arrow alignment
+ * Create a smooth Figma-style S-curve bezier between two points
+ * Control points extend in the direction of travel for natural curves
  */
 function createBezierPath(
   from: { x: number; y: number },
   to: { x: number; y: number },
-  fromEdge?: 'top' | 'right' | 'bottom' | 'left',
-  toEdge?: 'top' | 'right' | 'bottom' | 'left'
+  _fromEdge?: 'top' | 'right' | 'bottom' | 'left',
+  _toEdge?: 'top' | 'right' | 'bottom' | 'left'
 ): { path: string; cp1: { x: number; y: number }; cp2: { x: number; y: number } } {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+
+  // Calculate offset based on distance
   const distance = Math.hypot(dx, dy);
-  const curvature = Math.min(distance * 0.4, 100);
+  const offset = Math.max(50, Math.min(distance * 0.4, 150));
 
-  // Control point offsets based on edges
-  let cp1x = from.x;
-  let cp1y = from.y;
-  let cp2x = to.x;
-  let cp2y = to.y;
+  let cp1: { x: number; y: number };
+  let cp2: { x: number; y: number };
 
-  // Offset control point 1 based on source edge
-  if (fromEdge === 'right') cp1x += curvature;
-  else if (fromEdge === 'left') cp1x -= curvature;
-  else if (fromEdge === 'bottom') cp1y += curvature;
-  else if (fromEdge === 'top') cp1y -= curvature;
-  else {
-    // Default: curve away from target
-    cp1x += dx * 0.3;
-    cp1y += dy * 0.1;
+  // Determine if this is primarily horizontal or vertical
+  if (absDx >= absDy) {
+    // Horizontal-ish: control points extend horizontally in direction of travel
+    const direction = dx >= 0 ? 1 : -1;
+    cp1 = { x: from.x + offset * direction, y: from.y };
+    cp2 = { x: to.x - offset * direction, y: to.y };
+  } else {
+    // Vertical-ish: control points extend vertically in direction of travel
+    const direction = dy >= 0 ? 1 : -1;
+    cp1 = { x: from.x, y: from.y + offset * direction };
+    cp2 = { x: to.x, y: to.y - offset * direction };
   }
 
-  // Offset control point 2 based on target edge
-  if (toEdge === 'right') cp2x += curvature;
-  else if (toEdge === 'left') cp2x -= curvature;
-  else if (toEdge === 'bottom') cp2y += curvature;
-  else if (toEdge === 'top') cp2y -= curvature;
-
   return {
-    path: `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`,
-    cp1: { x: cp1x, y: cp1y },
-    cp2: { x: cp2x, y: cp2y },
+    path: `M ${from.x} ${from.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${to.x} ${to.y}`,
+    cp1,
+    cp2,
   };
 }
 
@@ -559,13 +556,15 @@ export const ComponentConnectors: React.FC<ComponentConnectorsProps> = ({
               style={{ pointerEvents: 'none' }}
             />
 
-            {/* Connection dot at source */}
+            {/* Connection ring at source (Figma-style unfilled circle) */}
             <circle
               cx={connection.sourcePt.x}
               cy={connection.sourcePt.y}
               r={dotRadius}
-              fill={isHovered ? '#818cf8' : '#6366f1'}
-              style={{ transition: 'fill 0.15s ease' }}
+              fill="white"
+              stroke={isHovered ? '#818cf8' : '#6366f1'}
+              strokeWidth={2}
+              style={{ transition: 'stroke 0.15s ease' }}
             />
           </g>
         );
