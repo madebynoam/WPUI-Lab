@@ -380,12 +380,14 @@ export const TreePanel: React.FC<TreePanelProps> = ({
       activeId != null ? [activeId, ...collapsedItems] : collapsedItems
     );
 
-    // Hide the root VStack (page node) from layers panel and adjust depth
-    // Since we're removing root (depth 0), subtract 1 from all depths so direct children start at 0
+    // Hide the root from layers panel and adjust depth
+    // In page mode: filter out ROOT_GRID_ID
+    // In isolation mode: filter out the global component itself (show its children)
+    const rootId = editingGlobalComponentId || ROOT_GRID_ID;
     return filteredTree
-      .filter((item) => item.id !== ROOT_GRID_ID)
+      .filter((item) => item.id !== rootId)
       .map((item) => ({ ...item, depth: item.depth - 1 }));
-  }, [tree, activeId]);
+  }, [tree, activeId, editingGlobalComponentId]);
 
   const sortedIds = React.useMemo(
     () => flattenedItems.map((item) => item.id),
@@ -924,12 +926,12 @@ export const TreePanel: React.FC<TreePanelProps> = ({
                         pageClickCountRef.current[page.id] = 0;
                       }, 350);
                     } else if (pageClickCountRef.current[page.id] === 2) {
-                      // Double-click: drill into page (same as single-click now with unified selection)
+                      // Double-click: start editing page name
                       e.stopPropagation();
                       clearTimeout(pageClickTimeoutRef.current[page.id]);
                       pageClickCountRef.current[page.id] = 0;
-                      // Select the page (hook handles both state + URL update)
-                      selectPage(page.id);
+                      setEditingPageId(page.id);
+                      setEditingPageName(page.name);
                     }
                   }}
                   onEditStart={() => {
@@ -1065,8 +1067,8 @@ export const TreePanel: React.FC<TreePanelProps> = ({
         </>
       )}
 
-      {/* Layers section - only show when a page is selected */}
-      {selectedPageId && (
+      {/* Layers section - show when a page is selected OR in isolation mode */}
+      {(selectedPageId || editingGlobalComponentId) && (
         <>
           {/* Layers Label */}
           <div

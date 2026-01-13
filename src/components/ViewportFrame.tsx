@@ -6,8 +6,13 @@ import { usePageSelection } from '@/hooks/usePageSelection';
 import { VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS } from '@/hooks/useResponsiveViewport';
 import { PageFrame } from './PageFrame';
 import { ComponentConnectors } from './ComponentConnectors';
+import { RenderNode } from './RenderNode';
 import { Page } from '@/types';
 import { ROOT_GRID_ID } from '@/utils/treeHelpers';
+import { privateApis as themePrivateApis } from "@wordpress/theme";
+import { unlock } from "@/utils/wordpressPrivateApis";
+
+const { ThemeProvider } = unlock(themePrivateApis);
 
 // Constants for page layout
 const PAGE_GAP = 100;
@@ -53,12 +58,27 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     updatePageCanvasPosition,
     updateAllPageCanvasPositions,
     showWires,
+    editingGlobalComponentId,
+    globalComponents,
+    projects,
   } = useComponentTree();
 
   // Check if items are selected inside the current page (not just root grid)
   // Selections are now cleared on page switch, so we just check if any non-root items are selected
   const hasItemSelectedInCurrentPage = selectedNodeIds.length > 0 &&
     !(selectedNodeIds.length === 1 && selectedNodeIds[0] === ROOT_GRID_ID);
+
+  // Find the global component being edited in isolation mode
+  const editingGlobalComponent = editingGlobalComponentId
+    ? globalComponents.find((gc) => gc.id === editingGlobalComponentId)
+    : null;
+
+  // Get project theme for isolation mode rendering
+  const currentProject = projects.find((p) => p.id === currentProjectId);
+  const projectTheme = currentProject?.theme ?? {
+    primaryColor: "#3858e9",
+    backgroundColor: "#ffffff",
+  };
 
   // SessionStorage key for pan offset persistence (survives component remounts from URL changes)
   const panStorageKey = `pan-offset-${currentProjectId}`;
@@ -112,6 +132,10 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
   const hasCaptureRef = useRef(false);
   const justFinishedDragRef = useRef(false);
 
+  // Track isolation mode transitions to save/restore pan and zoom
+  const prevEditingGlobalComponentIdRef = useRef<string | null>(null);
+  const savedViewStateRef = useRef<{ pan: { x: number; y: number }; zoom: number } | null>(null);
+
   // In play mode, always use full width and 100% zoom
   const effectivePreset = isPlayMode ? 'full' : viewportPreset;
   const effectiveZoom = isPlayMode ? 1.0 : zoomLevel;
@@ -154,6 +178,38 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
       updateAllPageCanvasPositions(positions);
     }
   }, [pages, updateAllPageCanvasPositions, presetWidth, presetHeight]);
+
+  // Handle isolation mode transitions - save/restore pan and zoom
+  useEffect(() => {
+    const wasInIsolation = prevEditingGlobalComponentIdRef.current !== null;
+    const isInIsolation = editingGlobalComponentId !== null;
+
+    if (!wasInIsolation && isInIsolation) {
+      // Entering isolation mode - save current pan and zoom
+      savedViewStateRef.current = { pan: { ...panOffset }, zoom: zoomLevel };
+
+      // Center the global component (positioned at 0,0) in the viewport
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          const containerWidth = containerRef.current.clientWidth;
+          const PADDING = 40;
+          const panX = (containerWidth - presetWidth * zoomLevel) / 2;
+          const panY = PADDING;
+          setPanOffset({ x: panX, y: panY });
+        }
+      });
+    } else if (wasInIsolation && !isInIsolation) {
+      // Exiting isolation mode - restore saved pan and zoom
+      if (savedViewStateRef.current) {
+        setPanOffset(savedViewStateRef.current.pan);
+        setZoomLevel(savedViewStateRef.current.zoom);
+        savedViewStateRef.current = null;
+      }
+    }
+
+    prevEditingGlobalComponentIdRef.current = editingGlobalComponentId;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on editingGlobalComponentId change
+  }, [editingGlobalComponentId]);
 
   // Fit to width - pan to selected page (or first page if none selected)
   const fitToWidth = useCallback((): void => {
@@ -425,6 +481,73 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
         }}
       >
         {children}
+      </div>
+    );
+  }
+
+  // Isolation mode - render global component being edited
+  if (editingGlobalComponent) {
+    return (
+      <div
+        ref={containerRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: '#f5f5f5',
+          overscrollBehavior: 'none',
+        }}
+      >
+        {/* Pan transform wrapper */}
+        <div
+          ref={panWrapperRef}
+          className="pan-wrapper"
+          style={{
+            transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+            willChange: 'transform',
+          }}
+        >
+          {/* Wrapper for positioning */}
+          <div style={{ position: 'relative' }}>
+            {/* Zoom frame - transform scale applied */}
+            <div
+              ref={frameRef}
+              style={{
+                position: 'relative',
+                transform: `scale(${effectiveZoom})`,
+                transformOrigin: '0 0',
+              }}
+            >
+              {/* Global component container at position 0,0 */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: presetWidth,
+                  backgroundColor: '#ffffff',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  padding: '40px',
+                }}
+              >
+                <ThemeProvider
+                  color={{
+                    primary: projectTheme.primaryColor,
+                    bg: projectTheme.backgroundColor,
+                  }}
+                >
+                  <RenderNode
+                    key={editingGlobalComponent.id}
+                    node={editingGlobalComponent}
+                    renderInteractive={false}
+                  />
+                </ThemeProvider>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
