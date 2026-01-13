@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useComponentTree } from '@/contexts/ComponentTreeContext';
 import { usePageSelection } from '@/hooks/usePageSelection';
 import { VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS } from '@/hooks/useResponsiveViewport';
@@ -191,9 +191,6 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     }
   }, [isConstrained, presetWidth, setZoomLevel, panStorageKey, pages, selectedPageId, pagePositions]);
 
-  // Track previous viewport preset to reset pan when it changes
-  const prevViewportPresetRef = useRef(viewportPreset);
-
   // Store frame ref and fitToWidth in window
   useEffect(() => {
     if (frameRef.current) {
@@ -202,18 +199,6 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     }
     (window as any).__viewportFitToWidth = fitToWidth;
   }, [effectiveZoom, fitToWidth]);
-
-  // Reset pan when viewport preset changes
-  useLayoutEffect(() => {
-    if (prevViewportPresetRef.current !== viewportPreset) {
-      setPanOffset({ x: 0, y: 0 });
-      prevViewportPresetRef.current = viewportPreset;
-      // Also clear from sessionStorage since we're intentionally resetting
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem(panStorageKey);
-      }
-    }
-  }, [viewportPreset, panStorageKey]);
 
   // Refs for smooth zoom - apply directly to DOM, sync to React state after gesture ends
   const zoomLevelRef = useRef(zoomLevel);
