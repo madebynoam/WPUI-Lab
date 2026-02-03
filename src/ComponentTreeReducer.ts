@@ -2043,15 +2043,19 @@ export function componentTreeReducer(
       return {
         ...updateHistory(state, newProjects, project.id),
         selectedNodeIds: [ROOT_GRID_ID],
+        selectedPageId: project.pages[0]?.id || null,
         gridLinesVisible: new Set(),
       };
     }
 
     case 'SET_CURRENT_PROJECT': {
       const { projectId } = action.payload;
+      const project = state.projects.find(p => p.id === projectId);
+      const firstPageId = project?.pages[0]?.id || project?.currentPageId || null;
       return {
         ...updateHistory(state, state.projects, projectId),
         selectedNodeIds: [ROOT_GRID_ID],
+        selectedPageId: firstPageId,
         gridLinesVisible: new Set(),
       };
     }

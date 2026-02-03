@@ -211,7 +211,7 @@ function initializeState(): ComponentTreeState {
     isAgentExecuting: false,
     editingMode: 'selection',
     editingGlobalComponentId: null,
-    viewportPreset: 'full', // Default to full width
+    viewportPreset: 'desktop', // Default to desktop
     zoomLevel: 1.0, // Default to 100% zoom
     showWires: false, // Hide interaction wires by default
     requestedPropertiesTab: null, // Tab to open in properties panel (set by noodle click, etc.)

@@ -256,6 +256,25 @@ export const ViewportFrame: React.FC<ViewportFrameProps> = ({ children }) => {
     (window as any).__viewportFitToWidth = fitToWidth;
   }, [effectiveZoom, fitToWidth]);
 
+  // Auto fit-to-width on initial mount when no stored pan offset
+  const hasAutoFitted = useRef(false);
+  useEffect(() => {
+    if (hasAutoFitted.current) return;
+    if (!containerRef.current || !isConstrained || pages.length === 0) return;
+
+    // Only auto-fit if there's no stored pan offset (fresh session)
+    const stored = typeof window !== 'undefined' && currentProjectId
+      ? sessionStorage.getItem(panStorageKey)
+      : null;
+    if (stored) {
+      hasAutoFitted.current = true;
+      return;
+    }
+
+    hasAutoFitted.current = true;
+    fitToWidth();
+  }, [isConstrained, pages, currentProjectId, panStorageKey, fitToWidth]);
+
   // Refs for smooth zoom - apply directly to DOM, sync to React state after gesture ends
   const zoomLevelRef = useRef(zoomLevel);
   const panOffsetRef = useRef(panOffset);
